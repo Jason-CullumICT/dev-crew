@@ -4,3 +4,5 @@ node_modules/
 dist/
 .playwright/
 test-results/
+*.db-shm
+*.db-wal

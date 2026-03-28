@@ -3,7 +3,7 @@
 ## This is an AI-first, spec-first project.
 
 <!-- Replace with a 1-2 sentence project description -->
-**Work-backlog** — AI-managed project. Update this description in CLAUDE.md.
+**dev-crew** — AI-powered development platform. Orchestrates autonomous agent teams to build software through specifications, plans, and automated pipelines.
 
 Every decision and line of code must trace back to a specification. If the spec doesn't cover it, write the spec first.
 
@@ -28,10 +28,14 @@ The workflow is always: **Specifications -> Plans -> Source -> Tests**.
 <!-- Customize the source layout below to match your project structure -->
 ```
 Specifications/          # Domain truth (technology-agnostic)
-Source/                  # Application source code
+Source/                  # Application source code (the product)
 Plans/                   # Feature plans (prompt/design/plan per feature)
 Teams/                   # Agent team definitions and learnings
 tools/                   # Pipeline dashboard scripts
+platform/                # Orchestrator infrastructure (Docker, server, scripts)
+portal/                  # Debug UI (embedded via iframe)
+templates/               # Clean scaffold for external projects
+docs/                    # Design specs and implementation plans
 ```
 
 ## Key Domain Concepts
@@ -54,8 +58,11 @@ tools/                   # Pipeline dashboard scripts
 
 | Item | Value |
 |------|-------|
-| Backend URL | `http://localhost:3001` |
-| Frontend URL | `http://localhost:5173` |
+| Orchestrator Dashboard | `http://localhost:9800` |
+| Portal (Debug UI) | `http://localhost:4200` |
+| Reports Dashboard | `http://localhost:9801` |
+| App Backend URL | `http://localhost:3001` |
+| App Frontend URL | `http://localhost:5173` |
 | Login credentials | `admin@example.com / admin123` |
 
 <!-- Add more environment items as needed: -->
@@ -160,7 +167,10 @@ If any gate fails: fix it, re-run the full gate sequence, then mark done.
 | `Source/Backend/` | backend-coder | Routes, services, database, tests |
 | `Source/Frontend/` | frontend-coder | Components, hooks, pages, tests |
 | `Source/Shared/` | api-contract | Shared types -- backend-coder may update if no api-contract agent in pipeline |
+| `platform/orchestrator/` | backend-coder | Orchestrator server and lib |
+| `portal/` | frontend-coder | Debug portal UI |
 | `Specifications/` | requirements-reviewer | Domain truth documents |
+| `templates/` | solo-session | Clean scaffold -- no team pipeline needed |
 
 <!-- Add more modules as needed: -->
 <!-- | `Source/Controller/` | controller-coder | Firmware, hardware interfaces | -->

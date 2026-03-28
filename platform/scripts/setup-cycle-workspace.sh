@@ -9,8 +9,8 @@ GITHUB_TOKEN="${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
 RUN_ID="${RUN_ID:?RUN_ID is required}"
 
 # ── Git identity ─────────────────────────────────────────────────────────────
-git config --global user.name  "${GIT_AUTHOR_NAME:-claude-ai-OS}"
-git config --global user.email "${GIT_AUTHOR_EMAIL:-pipeline@claude-ai-os.local}"
+git config --global user.name  "${GIT_AUTHOR_NAME:-dev-crew}"
+git config --global user.email "${GIT_AUTHOR_EMAIL:-pipeline@dev-crew.local}"
 
 # ── Clone URL with embedded token ────────────────────────────────────────────
 CLONE_URL=$(echo "$GITHUB_REPO" | sed "s|https://|https://${GITHUB_TOKEN}@|")
@@ -35,10 +35,10 @@ fi
 
 cd "$WORKSPACE"
 
-# ── Bootstrap with claude-ai-OS templates if Teams/ doesn't exist ────────────
+# ── Bootstrap with dev-crew templates if Teams/ doesn't exist ────────────
 TEMPLATE_DIR="/app/templates"
 if [ ! -d "$WORKSPACE/Teams" ] && [ -d "$TEMPLATE_DIR/Teams" ]; then
-  echo "[setup] Bootstrapping with claude-ai-OS framework templates..."
+  echo "[setup] Bootstrapping with dev-crew framework templates..."
   cp -r "$TEMPLATE_DIR/Teams" "$WORKSPACE/Teams"
   [ -d "$TEMPLATE_DIR/Plans" ] && [ ! -d "$WORKSPACE/Plans" ] && cp -r "$TEMPLATE_DIR/Plans" "$WORKSPACE/Plans"
   mkdir -p "$WORKSPACE/tools"
@@ -60,7 +60,7 @@ if [ ! -d "$WORKSPACE/Teams" ] && [ -d "$TEMPLATE_DIR/Teams" ]; then
   fi
   # Commit bootstrapped files before creating cycle branch
   git add -A
-  git commit -m "chore: bootstrap with claude-ai-OS framework" || true
+  git commit -m "chore: scaffold agent team structure from dev-crew templates" || true
   git push origin "$GITHUB_BRANCH" || true
   echo "[setup] Framework bootstrapped"
 fi

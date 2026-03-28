@@ -64,7 +64,7 @@ app.use('/api/learnings', learningsRouter);
 app.use('/api/features', featuresRouter);
 app.use('/api/pipeline-runs', pipelineRunsRouter);
 
-// Orchestrator proxy — forwards requests to the claude-ai-OS orchestrator
+// Orchestrator proxy — forwards requests to the dev-crew orchestrator
 // Allows the feature portal to submit work and monitor cycles
 // Verifies: FR-078
 // Orchestrator proxy — supports both JSON and multipart form-data (DD-IMG-06)

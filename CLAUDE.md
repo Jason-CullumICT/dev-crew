@@ -3,7 +3,7 @@
 ## This is an AI-first, spec-first project.
 
 <!-- Replace with a 1-2 sentence project description -->
-**Work-backlog** — AI-managed project. Update this description in CLAUDE.md.
+**dev-crew** — AI-powered development platform. Orchestrates autonomous agent teams to build software through specifications, plans, and automated pipelines.
 
 Every decision and line of code must trace back to a specification. If the spec doesn't cover it, write the spec first.
 

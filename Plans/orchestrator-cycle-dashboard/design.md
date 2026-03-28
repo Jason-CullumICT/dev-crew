@@ -2,7 +2,7 @@
 
 ## Overview
 
-Replace the existing `DevelopmentCyclePage` (which manages internal dev cycles via the `/api/cycles` REST API) with a new `OrchestratorCyclesPage` that displays real-time orchestrator cycles from the external claude-ai-OS orchestrator, accessed via the existing `/api/orchestrator/*` proxy.
+Replace the existing `DevelopmentCyclePage` (which manages internal dev cycles via the `/api/cycles` REST API) with a new `OrchestratorCyclesPage` that displays real-time orchestrator cycles from the external dev-crew orchestrator, accessed via the existing `/api/orchestrator/*` proxy.
 
 ## Architecture Decisions
 

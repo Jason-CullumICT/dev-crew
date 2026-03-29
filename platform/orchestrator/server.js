@@ -1,5 +1,5 @@
 /**
- * dev-crew Orchestrator
+ * claude-ai-OS Orchestrator
  *
  * Multi-stage pipeline orchestrator that:
  *   1. Routes tasks to the correct team (Claude decides)
@@ -685,7 +685,8 @@ app.post("/api/repos/validate", async (req, res) => {
 app.get("/api/repos/list", (req, res) => {
   // Return known repos — can be extended to scan GitHub later
   const knownRepos = [
-    { name: "dev-crew", fullName: "Jason-CullumICT/dev-crew", url: "https://github.com/Jason-CullumICT/dev-crew" },
+    { name: "container-test", fullName: "Jason-CullumICT/container-test", url: "https://github.com/Jason-CullumICT/container-test" },
+    { name: "claude-ai-OS", fullName: "Jason-CullumICT/claude-ai-OS", url: "https://github.com/Jason-CullumICT/claude-ai-OS" },
   ];
   res.json({ data: knownRepos });
 });
@@ -901,7 +902,7 @@ app.get("/", (req, res) => {
     .join("\n");
 
   res.send(`<!DOCTYPE html>
-<html><head><title>dev-crew Pipeline</title>
+<html><head><title>claude-ai-OS Pipeline</title>
 <meta http-equiv="refresh" content="10">
 <style>
   body { font-family: -apple-system, system-ui, sans-serif; background: #0f1117; color: #e2e4f0; padding: 2rem; }
@@ -938,7 +939,7 @@ app.get("/", (req, res) => {
   .submit-form button { background: #6366f1; color: white; border: none; border-radius: 4px; padding: 0.4rem 1rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
   .submit-form button:hover { background: #4f46e5; }
 </style></head><body>
-<h1>dev-crew Pipeline</h1>
+<h1>claude-ai-OS Pipeline</h1>
 <p class="subtitle">Container-based dispatch: Leader -> Parse -> Code -> QA (feedback loops) -> Validate. Auto-refreshes 10s.</p>
 ${engineBanner}
 ${appBanners}
@@ -982,7 +983,7 @@ ${runs.length === 0 ? '<p class="empty">No runs yet.</p>' : `
 // ══════════════════════════════════════════════════════════════
 
 app.listen(config.port, "0.0.0.0", async () => {
-  console.log(`dev-crew orchestrator on :${config.port}`);
+  console.log(`claude-ai-OS orchestrator on :${config.port}`);
   console.log(`  Dashboard: http://localhost:${config.port}`);
   console.log(`  Submit:    POST http://localhost:${config.port}/api/work`);
 

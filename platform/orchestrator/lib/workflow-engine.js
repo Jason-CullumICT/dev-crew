@@ -778,7 +778,7 @@ ${feedback}`;
 
         // Refresh git + gh credentials
         await this.containerManager.execInWorker(containerId, "bash", ["-c",
-          `cd /workspace && git config user.name "dev-crew" && git config user.email "pipeline@dev-crew.local" && echo "https://$GITHUB_TOKEN@github.com" > ~/.git-credentials && git config --global credential.helper store && (echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null; gh auth setup-git 2>/dev/null) || true`
+          `cd /workspace && git config user.name "claude-ai-OS" && git config user.email "pipeline@claude-ai-os.local" && echo "https://$GITHUB_TOKEN@github.com" > ~/.git-credentials && git config --global credential.helper store && (echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null; gh auth setup-git 2>/dev/null) || true`
         ], { label: "git-auth", quiet: true });
       } else {
         console.log(`[${run.id}] Initializing workspace in worker...`);
@@ -960,11 +960,11 @@ ${feedback}`;
             containerId, "bash", ["-c",
               "cd /workspace && " +
               "if git rev-parse --git-dir >/dev/null 2>&1; then " +
-              "  { git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | " +
-              "  grep -iE '^(Source/|src/|backend/|frontend/|lib/|app/|services/|routes/|components/|pages/|docker/orchestrator/|Teams/|Specifications/)' | head -50; " +
+              "  { git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; git diff --name-only $(git merge-base HEAD origin/master 2>/dev/null || echo HEAD~5) HEAD 2>/dev/null; } | sort -u | " +
+              "  grep -iE '^(Source/|src/|backend/|frontend/|lib/|app/|services/|routes/|components/|pages/|docker/orchestrator/|platform/|portal/|Teams/|Specifications/|templates/|tools/|CLAUDE\\.md|docs/)' | head -50; " +
               "else " +
               "  find . -maxdepth 4 -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.md' -o -name '*.sh' 2>/dev/null | " +
-              "  grep -iE '/(Source|src|backend|frontend|lib|app|services|routes|components|pages|docker|orchestrator|Teams)/' | head -50; " +
+              "  grep -iE '/(Source|src|backend|frontend|lib|app|services|routes|components|pages|docker|orchestrator|platform|portal|Teams)/' | head -50; " +
               "fi"
             ],
             { label: "impl-verify", quiet: true }
@@ -1024,8 +1024,8 @@ ${feedback}`;
             const retryDiff = await this.containerManager.execInWorker(
               containerId, "bash", ["-c",
                 "cd /workspace && " +
-                "{ git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | " +
-                "grep -iE '^(Source/|src/|backend/|frontend/|lib/|app/|services/|routes/|components/|pages/|docker/orchestrator/|Teams/|Specifications/)' | head -50"
+                "{ git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; git diff --name-only $(git merge-base HEAD origin/master 2>/dev/null || echo HEAD~5) HEAD 2>/dev/null; } | sort -u | " +
+                "grep -iE '^(Source/|src/|backend/|frontend/|lib/|app/|services/|routes/|components/|pages/|docker/orchestrator/|platform/|portal/|Teams/|Specifications/|templates/|tools/|CLAUDE\\.md|docs/)' | head -50"
               ],
               { label: "impl-retry-verify", quiet: true }
             );
@@ -1433,11 +1433,11 @@ ${feedback}`;
       // ── Phase 9: Auto-update portal if this cycle targeted the portal repo ──
       // Only trigger if actual Source/ code was committed (not just plans/reports)
       if (run.status === "complete" && run.repo) {
-        const isPortalRepo = run.repo.includes("container-test") || run.repo.includes("dev-crew");
+        const isPortalRepo = run.repo.includes("container-test");
         if (isPortalRepo) {
           // Verify Source/ files were actually changed before updating portal
           const sourceCheck = await this.containerManager.execInWorker(
-            containerId, "bash", ["-c", `cd /workspace && git diff --name-only ${run.repoBranch || "master"}..HEAD -- Source/ portal/`],
+            containerId, "bash", ["-c", `cd /workspace && git diff --name-only ${run.repoBranch || "master"}..HEAD -- Source/`],
             { label: "portal-gate", quiet: true }
           );
           const hasSourceChanges = sourceCheck.stdout.trim().length > 0;

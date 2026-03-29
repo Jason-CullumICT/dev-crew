@@ -62,12 +62,12 @@ class ContainerManager {
   }
 
   async _findNetwork() {
-    // Docker Compose prepends project name to networks (e.g., "docker_claude-net")
+    // Docker Compose prepends project name to networks (e.g., "platform_dev-crew-net")
     // Discover the actual network name dynamically
     if (this._networkName) return this._networkName;
     try {
       const networks = await this.docker.docker.listNetworks();
-      const match = networks.find((n) => n.Name.includes("claude-net"));
+      const match = networks.find((n) => n.Name.includes("dev-crew-net"));
       if (match) {
         this._networkName = match.Name;
         return this._networkName;
@@ -77,7 +77,7 @@ class ContainerManager {
       console.log(`[container] Network lookup failed: ${err.message}`);
     }
     // Fallback: try common patterns
-    this._networkName = "docker_claude-net";
+    this._networkName = "platform_dev-crew-net";
     return this._networkName;
   }
 

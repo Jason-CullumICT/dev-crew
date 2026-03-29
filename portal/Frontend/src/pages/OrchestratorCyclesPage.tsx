@@ -1,10 +1,9 @@
 // Verifies: FR-070
-// Orchestrator cycles dashboard — polls listCycles() every 5s, separates active vs completed
+// Orchestrator cycles dashboard — polls listCycles() every 5s, shows active runs only
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Header } from '../components/layout/Header'
 import { CycleCard } from '../components/orchestrator/CycleCard'
-import { CompletedCyclesSection } from '../components/orchestrator/CompletedCyclesSection'
 import { orchestrator } from '../api/client'
 import type { OrchestratorCycle } from '../components/orchestrator/types'
 
@@ -49,7 +48,6 @@ export function OrchestratorCyclesPage() {
   }, [fetchCycles])
 
   const activeCycles = cycles.filter((c) => c.status === 'running')
-  const completedCycles = cycles.filter((c) => c.status !== 'running')
 
   return (
     <div>
@@ -69,7 +67,7 @@ export function OrchestratorCyclesPage() {
           <div className="flex items-center justify-center py-16" data-testid="loading-spinner">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
           </div>
-        ) : activeCycles.length === 0 && completedCycles.length === 0 ? (
+        ) : activeCycles.length === 0 ? (
           <div className="text-center py-16" data-testid="empty-state">
             <p className="text-4xl mb-3">⚡</p>
             <p className="text-lg font-medium text-gray-600">No orchestrator cycles</p>
@@ -78,27 +76,20 @@ export function OrchestratorCyclesPage() {
             </p>
           </div>
         ) : (
-          <>
-            {/* Active cycles — Verifies: FR-071 */}
-            {activeCycles.length > 0 && (
-              <div className="space-y-4" data-testid="active-cycles">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                  Active ({activeCycles.length})
-                </h3>
-                {activeCycles.map((cycle) => (
-                  <CycleCard
-                    key={cycle.id}
-                    cycle={cycle}
-                    onStop={handleStop}
-                    onRefresh={fetchCycles}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Completed cycles — Verifies: FR-074 */}
-            <CompletedCyclesSection cycles={completedCycles} />
-          </>
+          /* Active cycles — Verifies: FR-071 */
+          <div className="space-y-4" data-testid="active-cycles">
+            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+              Active ({activeCycles.length})
+            </h3>
+            {activeCycles.map((cycle) => (
+              <CycleCard
+                key={cycle.id}
+                cycle={cycle}
+                onStop={handleStop}
+                onRefresh={fetchCycles}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

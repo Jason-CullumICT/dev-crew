@@ -19,6 +19,8 @@ export function Sidebar({ activeBugs, pendingFRs }: SidebarProps) {
     { path: '/', label: 'Dashboard', icon: '🏠' },
     { path: '/feature-requests', label: 'Feature Requests', icon: '✨', badge: pendingFRs },
     { path: '/bugs', label: 'Bug Reports', icon: '🐛', badge: activeBugs },
+    { path: '/approvals', label: 'Approvals', icon: '✅' }, // Verifies: FR-028
+    { path: '/development', label: 'Development Cycle', icon: '🔄' }, // Verifies: FR-027
     { path: '/cycle', label: 'Orchestrator', icon: '⚡' }, // Verifies: FR-076
     { path: '/features', label: 'Feature Browser', icon: '📦' },
     { path: '/learnings', label: 'Learnings', icon: '📚' },

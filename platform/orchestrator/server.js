@@ -1,5 +1,5 @@
 /**
- * claude-ai-OS Orchestrator
+ * dev-crew Orchestrator
  *
  * Multi-stage pipeline orchestrator that:
  *   1. Routes tasks to the correct team (Claude decides)
@@ -41,7 +41,6 @@ const { PortAllocator } = require("./lib/port-allocator");
 const { CycleRegistry } = require("./lib/cycle-registry");
 const { TokenPool } = require("./lib/token-pool");
 const { ContainerManager } = require("./lib/container-manager");
-// LearningsSync removed — learnings sync runs as in-worker bash script (workflow-engine.js Phase 8)
 const { HealthMonitor } = require("./lib/health-monitor");
 const { WorkflowEngine } = require("./lib/workflow-engine");
 const { createDispatcher } = require("./lib/dispatch");
@@ -51,7 +50,6 @@ const portAllocator = new PortAllocator();
 const cycleRegistry = new CycleRegistry();
 const tokenPool = new TokenPool();
 const containerManager = new ContainerManager(dockerClient, portAllocator, tokenPool);
-const learningsSync = { cleanup() {} };  // stub — actual sync is in-worker bash
 const healthMonitor = new HealthMonitor(dockerClient, cycleRegistry, portAllocator);
 
 // ══════════════════════════════════════════════════════════════
@@ -700,8 +698,7 @@ app.post("/api/repos/validate", async (req, res) => {
 app.get("/api/repos/list", (req, res) => {
   // Return known repos — can be extended to scan GitHub later
   const knownRepos = [
-    { name: "container-test", fullName: "Jason-CullumICT/container-test", url: "https://github.com/Jason-CullumICT/container-test" },
-    { name: "claude-ai-OS", fullName: "Jason-CullumICT/claude-ai-OS", url: "https://github.com/Jason-CullumICT/claude-ai-OS" },
+    { name: "dev-crew", fullName: "Jason-CullumICT/dev-crew", url: "https://github.com/Jason-CullumICT/dev-crew" },
   ];
   res.json({ data: knownRepos });
 });
@@ -917,7 +914,7 @@ app.get("/", (req, res) => {
     .join("\n");
 
   res.send(`<!DOCTYPE html>
-<html><head><title>claude-ai-OS Pipeline</title>
+<html><head><title>dev-crew Pipeline</title>
 <meta http-equiv="refresh" content="10">
 <style>
   body { font-family: -apple-system, system-ui, sans-serif; background: #0f1117; color: #e2e4f0; padding: 2rem; }
@@ -954,7 +951,7 @@ app.get("/", (req, res) => {
   .submit-form button { background: #6366f1; color: white; border: none; border-radius: 4px; padding: 0.4rem 1rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
   .submit-form button:hover { background: #4f46e5; }
 </style></head><body>
-<h1>claude-ai-OS Pipeline</h1>
+<h1>dev-crew Pipeline</h1>
 <p class="subtitle">Container-based dispatch: Leader -> Parse -> Code -> QA (feedback loops) -> Validate. Auto-refreshes 10s.</p>
 ${engineBanner}
 ${appBanners}
@@ -998,7 +995,7 @@ ${runs.length === 0 ? '<p class="empty">No runs yet.</p>' : `
 // ══════════════════════════════════════════════════════════════
 
 app.listen(config.port, "0.0.0.0", async () => {
-  console.log(`claude-ai-OS orchestrator on :${config.port}`);
+  console.log(`dev-crew orchestrator on :${config.port}`);
   console.log(`  Dashboard: http://localhost:${config.port}`);
   console.log(`  Submit:    POST http://localhost:${config.port}/api/work`);
 
@@ -1024,7 +1021,7 @@ app.listen(config.port, "0.0.0.0", async () => {
 
     // Create workflow engine with dispatch
     const engine = new WorkflowEngine({
-      containerManager, cycleRegistry, learningsSync, dispatch, config,
+      containerManager, cycleRegistry, dispatch, config,
       validateOrCreateRepo,
     });
     setWorkflowEngine(engine);
@@ -1046,14 +1043,12 @@ app.listen(config.port, "0.0.0.0", async () => {
 process.on("SIGTERM", () => {
   console.log("[shutdown] SIGTERM received — stopping health monitor...");
   healthMonitor.stop();
-  learningsSync.cleanup();
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
   console.log("[shutdown] SIGINT received — stopping health monitor...");
   healthMonitor.stop();
-  learningsSync.cleanup();
   process.exit(0);
 });
 

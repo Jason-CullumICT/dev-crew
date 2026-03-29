@@ -139,6 +139,51 @@ class DockerClient {
   async listContainers(filters = {}) {
     return this.docker.listContainers({ all: true, filters });
   }
+
+  /**
+   * Build a Docker image by shelling out to `docker build`.
+   * The orchestrator container has docker.sock mounted but does not contain
+   * the full repo context (templates/ etc.), so we use the /workspace volume
+   * which holds the cloned repo at its root.
+   *
+   * @param {string} dockerfilePath - Path to the Dockerfile, relative to contextPath
+   * @param {string} contextPath - Absolute path to the build context directory
+   * @param {string} tag - Image tag (e.g. "dev-crew-worker:latest")
+   * @returns {Promise<void>} Resolves when build succeeds, throws on failure
+   */
+  async buildImage(dockerfilePath, contextPath, tag) {
+    const { execFile } = require("child_process");
+    const { promisify } = require("util");
+    const execFileAsync = promisify(execFile);
+
+    console.log(`[docker] Building image ${tag} from ${contextPath} (Dockerfile: ${dockerfilePath})`);
+
+    try {
+      const { stdout, stderr } = await execFileAsync(
+        "docker",
+        ["build", "-t", tag, "-f", dockerfilePath, contextPath],
+        { maxBuffer: 50 * 1024 * 1024 } // 50 MB — build output can be large
+      );
+      if (stdout) {
+        for (const line of stdout.split("\n")) {
+          if (line.trim()) console.log(`  [docker build] ${line}`);
+        }
+      }
+      if (stderr) {
+        for (const line of stderr.split("\n")) {
+          if (line.trim()) console.log(`  [docker build] ${line}`);
+        }
+      }
+      console.log(`[docker] Image ${tag} built successfully`);
+    } catch (err) {
+      // execFile rejects with an error that carries stdout/stderr
+      const output = (err.stdout || "") + (err.stderr || "");
+      for (const line of output.split("\n")) {
+        if (line.trim()) console.error(`  [docker build] ${line}`);
+      }
+      throw new Error(`docker build failed for ${tag}: ${err.message}`);
+    }
+  }
 }
 
 module.exports = { DockerClient };

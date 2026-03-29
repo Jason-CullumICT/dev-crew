@@ -19,9 +19,13 @@ class ContainerManager {
       console.log(`[container] Worker image ${config.workerImage} ready`);
       return;
     }
-    console.log(`[container] Worker image not found or rebuild requested — build needed`);
-    // For now, log instruction. Auto-build requires tar context which we add later.
-    console.log(`[container] Run: docker build -t ${config.workerImage} -f Dockerfile.worker .`);
+    console.log(`[container] Worker image not found or rebuild requested — building now`);
+    // Build context is the repo root, available at /workspace inside the orchestrator container.
+    // Dockerfile.worker requires templates/ which is only in the repo root, not in the
+    // orchestrator image itself, so we must use the /workspace volume as the build context.
+    const contextPath = config.workspace || "/workspace";
+    const dockerfilePath = "platform/Dockerfile.worker";
+    await this.docker.buildImage(dockerfilePath, contextPath, config.workerImage);
   }
 
   async _cleanOrphanedWorkers() {
@@ -115,8 +119,8 @@ class ContainerManager {
         `GITHUB_TOKEN=${config.githubToken}`,
         `PROJECT_NAME=${config.projectName}`,
         `RUN_ID=${runId}`,
-        `GIT_AUTHOR_NAME=claude-ai-OS`,
-        `GIT_AUTHOR_EMAIL=pipeline@claude-ai-os.local`,
+        `GIT_AUTHOR_NAME=dev-crew`,
+        `GIT_AUTHOR_EMAIL=pipeline@dev-crew.local`,
       ],
       HostConfig: {
         Binds: [
@@ -235,8 +239,8 @@ class ContainerManager {
         `GITHUB_TOKEN=${config.githubToken}`,
         `PROJECT_NAME=${config.projectName}`,
         `RUN_ID=${runId}`,
-        `GIT_AUTHOR_NAME=claude-ai-OS`,
-        `GIT_AUTHOR_EMAIL=pipeline@claude-ai-os.local`,
+        `GIT_AUTHOR_NAME=dev-crew`,
+        `GIT_AUTHOR_EMAIL=pipeline@dev-crew.local`,
       ],
       HostConfig: {
         Binds: [`${existingVolumeName}:/workspace`],

@@ -329,7 +329,7 @@ export const orchestrator = {
   },
 
   // Verifies: FR-086
-  submitWork(task: string, opts?: { team?: string; repo?: string; repoBranch?: string; images?: File[] }): Promise<{ id: string; status: string; statusUrl: string; ports: any; branch: string }> {
+  submitWork(task: string, opts?: { team?: string; repo?: string; repoBranch?: string; images?: File[]; claudeSessionToken?: string; tokenLabel?: string }): Promise<{ id: string; status: string; statusUrl: string; ports: any; branch: string }> {
     if (opts?.images?.length) {
       const formData = new FormData()
       formData.append('task', task)
@@ -337,6 +337,8 @@ export const orchestrator = {
       if (opts.repo) formData.append('repo', opts.repo)
       if (opts.repoBranch) formData.append('repoBranch', opts.repoBranch)
       opts.images.forEach((f) => formData.append('images', f))
+      if (opts.claudeSessionToken) formData.append("claudeSessionToken", opts.claudeSessionToken)
+      if (opts.tokenLabel) formData.append("tokenLabel", opts.tokenLabel)
       return fetch('/api/orchestrator/api/work', {
         method: 'POST',
         body: formData,
@@ -366,5 +368,35 @@ export const orchestrator = {
 
   stopCycle(id: string): Promise<{ stopped: boolean }> {
     return apiFetch(`/api/orchestrator/api/cycles/${id}/stop`, { method: 'POST' })
+  },
+
+  // Verifies: FR-090
+  retryRun(id: string, opts?: { team?: string }): Promise<{ id: string; status: string }> {
+    return apiFetch('/api/orchestrator/api/runs/' + encodeURIComponent(id) + '/retry', {
+      method: 'POST',
+      body: opts ? JSON.stringify(opts) : undefined,
+    })
+  },
+
+  // Verifies: FR-090
+  cleanupRun(id: string): Promise<{ deleted: boolean }> {
+    return apiFetch(`/api/orchestrator/api/runs/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    })
+  },
+}
+
+// --- Repo Management ---
+
+export const repos = {
+  list(): Promise<{ data: { name: string; fullName: string; url: string }[] }> {
+    return apiFetch("/api/orchestrator/api/repos/list")
+  },
+
+  validate(repo: string): Promise<{ exists: boolean; created?: boolean; repo: string; fullName: string }> {
+    return apiFetch("/api/orchestrator/api/repos/validate", {
+      method: "POST",
+      body: JSON.stringify({ repo }),
+    })
   },
 }

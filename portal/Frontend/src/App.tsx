@@ -8,8 +8,6 @@ import { BugReportsPage } from './pages/BugReportsPage'
 import { OrchestratorCyclesPage } from './pages/OrchestratorCyclesPage'
 import { FeatureBrowserPage } from './pages/FeatureBrowserPage'
 import { LearningsPage } from './pages/LearningsPage'
-import { ApprovalsPage } from './pages/ApprovalsPage'
-import { DevelopmentCyclePage } from './pages/DevelopmentCyclePage'
 
 export default function App() {
   return (
@@ -23,10 +21,6 @@ export default function App() {
           <Route path="/cycle" element={<OrchestratorCyclesPage />} />
           <Route path="/features" element={<FeatureBrowserPage />} />
           <Route path="/learnings" element={<LearningsPage />} />
-          {/* Verifies: FR-028 */}
-          <Route path="/approvals" element={<ApprovalsPage />} />
-          {/* Verifies: FR-027 */}
-          <Route path="/development" element={<DevelopmentCyclePage />} />
         </Route>
       </Routes>
     </BrowserRouter>

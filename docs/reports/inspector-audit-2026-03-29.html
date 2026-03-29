@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspector Audit Report — 2026-03-29</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --muted: #8b949e; --green: #3fb950; --yellow: #d29922; --orange: #db6d28; --red: #f85149; --blue: #58a6ff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; }
+  h1, h2, h3, h4 { color: #f0f6fc; margin-bottom: 0.5rem; }
+  h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-top: 2rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600; font-size: 1.5rem; }
+  .badge-c { background: var(--yellow); color: #000; }
+  .badge-p1 { background: var(--red); color: #fff; font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 4px; }
+  .badge-p2 { background: var(--orange); color: #fff; font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 4px; }
+  .badge-p3 { background: var(--yellow); color: #000; font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 4px; }
+  .badge-p4 { background: var(--muted); color: #000; font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+  th { background: #21262d; }
+  .severity-p1 { color: var(--red); font-weight: 700; }
+  .severity-p2 { color: var(--orange); font-weight: 700; }
+  .severity-p3 { color: var(--yellow); }
+  .severity-p4 { color: var(--muted); }
+  code { background: #21262d; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.9em; }
+  pre { background: #21262d; padding: 1rem; border-radius: 6px; overflow-x: auto; margin: 0.5rem 0; }
+  .bar-container { background: #21262d; border-radius: 4px; height: 20px; width: 100%; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 700; }
+  ul { margin-left: 1.5rem; }
+  .finding { margin-bottom: 1.5rem; }
+  .cross-ref { color: var(--blue); font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================ -->
+<!-- Section 1: Header                                                 -->
+<!-- ================================================================ -->
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+  <span class="badge badge-c">C</span>
+  <div>
+    <h1>Inspector Audit Report</h1>
+    <p style="color: var(--muted);">Branch: <code>master</code> | Date: 2026-03-29 | Mode: Focused post-work audit</p>
+    <p style="color: var(--muted);">Feature: <strong>Include traceability report in PR body when pipeline creates a pull request</strong></p>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 2: Scorecards                                             -->
+<!-- ================================================================ -->
+<h2>2. Scorecards</h2>
+<div class="grid-5">
+  <div class="card stat"><div class="stat-num severity-p1">1</div><div>P1 Critical</div></div>
+  <div class="card stat"><div class="stat-num severity-p2">8</div><div>P2 High</div></div>
+  <div class="card stat"><div class="stat-num severity-p3">12</div><div>P3 Medium</div></div>
+  <div class="card stat"><div class="stat-num severity-p4">14</div><div>P4 Low</div></div>
+  <div class="card stat"><div class="stat-num" style="color: var(--green);">100%</div><div>Spec Coverage</div></div>
+</div>
+<div class="grid-5">
+  <div class="card stat"><div class="stat-num">5/5</div><div>Specialists</div></div>
+  <div class="card stat"><div class="stat-num">0</div><div>Dynamic Tests</div></div>
+  <div class="card stat"><div class="stat-num">31</div><div>Unit Tests Pass</div></div>
+  <div class="card stat"><div class="stat-num">0</div><div>FIXED</div></div>
+  <div class="card stat"><div class="stat-num">35</div><div>Total Findings</div></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 3: Executive Summary                                      -->
+<!-- ================================================================ -->
+<h2>3. Executive Summary</h2>
+<div class="card">
+  <ol>
+    <li><strong>P1 — Feature is dead in production:</strong> Phase 5 of the workflow engine (line 1458) performs a full reassignment of <code>run.results</code>, destroying the traceability data captured in Phase 3.4. Every PR will show "Traceability: not available" regardless of actual coverage. One-line fix required (spread operator).</li>
+    <li><strong>Two pre-existing shell injection vectors flow through new code:</strong> The PR body heredoc (SEC-001) and PR title double-quote escaping (SEC-002) can be exploited via crafted <code>run.task</code> content. These are pre-existing but now carry traceability data through the same vulnerable path.</li>
+    <li><strong>Traceability enforcer regex matches false positives from prose:</strong> <code>FR-XXX</code> and similar template text in requirements files is matched as real FR IDs, inflating gap counts in PR bodies.</li>
+    <li><strong>No unit tests for the data capture pipeline:</strong> Tests cover <code>_createPR</code> in isolation but none exercise the Phase 3.4 &rarr; Phase 5 &rarr; Phase 6.5 sequence, which is why the P1 bug went undetected.</li>
+    <li><strong>File scanner lacks directory exclusions:</strong> The traceability enforcer walks all subdirectories including <code>node_modules/</code>, potentially adding 30-90s of I/O in production containers.</li>
+  </ol>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 4: Scope & Environment                                    -->
+<!-- ================================================================ -->
+<h2>4. Scope &amp; Environment</h2>
+<div class="card">
+  <table>
+    <tr><th>Item</th><th>Value</th></tr>
+    <tr><td>Scope</td><td>Post-work audit of "PR Traceability Report" feature (3 files changed)</td></tr>
+    <tr><td>Files audited</td><td><code>workflow-engine.js</code>, <code>workflow-engine.test.js</code>, <code>traceability-enforcer.py</code></td></tr>
+    <tr><td>Services</td><td>backend: DOWN, frontend: DOWN</td></tr>
+    <tr><td>All specialists</td><td>Static mode (no dynamic testing possible)</td></tr>
+    <tr><td>Tests</td><td>31/31 passing (10 suites)</td></tr>
+    <tr><td>Prior audit</td><td>None (first audit)</td></tr>
+  </table>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 5: Trend                                                  -->
+<!-- ================================================================ -->
+<h2>5. Trend</h2>
+<div class="card">
+  <p>First audit — no baseline. Current grade: <span class="badge badge-c" style="font-size: 1rem;">C</span></p>
+  <p>Grade driven by 1x P1 finding (CHAOS-001: data overwrite). Fixing the P1 alone would elevate to <strong>B</strong> (0 P1, 8 P2 &le; 8 threshold). Fixing the 2 pre-existing SEC P2s (not introduced by this change) would bring P2 count to 6.</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 6: Specialist Reports                                     -->
+<!-- ================================================================ -->
+<h2>6. Specialist Reports</h2>
+<div class="grid-2">
+  <div class="card">
+    <h3>Red-Teamer</h3>
+    <p>Mode: static | Verdict: <strong style="color: var(--red);">FAILED</strong></p>
+    <p>Findings: <span class="badge-p2">P2</span> &times;2 | <span class="badge-p3">P3</span> &times;3 | <span class="badge-p4">P4</span> &times;3</p>
+    <p>Focus: Injection vectors, data integrity, shell command construction</p>
+  </div>
+  <div class="card">
+    <h3>Quality Oracle</h3>
+    <p>Mode: static | Verdict: <strong style="color: var(--yellow);">CONDITIONAL PASS</strong></p>
+    <p>Findings: <span class="badge-p2">P2</span> &times;2 | <span class="badge-p3">P3</span> &times;2 | <span class="badge-p4">P4</span> &times;2</p>
+    <p>Focus: Spec compliance, test coverage, architecture rules</p>
+  </div>
+  <div class="card">
+    <h3>Performance Profiler</h3>
+    <p>Mode: static | Verdict: <strong style="color: var(--blue);">ADVISORY</strong></p>
+    <p>Findings: <span class="badge-p3">P3</span> &times;2 | <span class="badge-p4">P4</span> &times;4</p>
+    <p>Focus: File scan I/O, pipeline latency</p>
+  </div>
+  <div class="card">
+    <h3>Chaos Monkey</h3>
+    <p>Mode: static | Verdict: <strong style="color: var(--red);">FAILED</strong></p>
+    <p>Findings: <span class="badge-p1">P1</span> &times;1 | <span class="badge-p2">P2</span> &times;4 | <span class="badge-p3">P3</span> &times;4 | <span class="badge-p4">P4</span> &times;1</p>
+    <p>Focus: Error handling, data integrity, fault tolerance</p>
+  </div>
+  <div class="card">
+    <h3>Dependency Auditor</h3>
+    <p>Mode: static | Verdict: <strong style="color: var(--green);">PASSED</strong></p>
+    <p>Findings: <span class="badge-p3">P3</span> &times;1 | <span class="badge-p4">P4</span> &times;4</p>
+    <p>NFR-003 compliance: PASS (no new third-party deps)</p>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 7: Re-Verification Summary                                -->
+<!-- ================================================================ -->
+<h2>7. Re-Verification Summary</h2>
+<div class="card">
+  <p>First audit — no prior findings to re-verify. All findings are <strong>NEW</strong>.</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 8: Cross-Reference Map                                    -->
+<!-- ================================================================ -->
+<h2>8. Cross-Reference Map</h2>
+<div class="card">
+  <table>
+    <tr><th>Root Cause</th><th>Affected Findings</th><th>Fix Impact</th></tr>
+    <tr>
+      <td><strong><code>run.results</code> full reassignment at line 1458</strong></td>
+      <td>CHAOS-001 (P1), CHAOS-010 (P4), QA-004 (P3)</td>
+      <td>Use <code>{...run.results, ...}</code> spread. Add integration test covering full pipeline sequence. Fixes the P1 and prevents regression.</td>
+    </tr>
+    <tr>
+      <td><strong>Shell string interpolation of user data</strong></td>
+      <td>SEC-001 (P2), SEC-002 (P2), SEC-004 (P3), SEC-005 (P3)</td>
+      <td>Externalize PR title and body via temp files or base64 encoding. Fixes 2 P2s and hardens against future data flow additions.</td>
+    </tr>
+    <tr>
+      <td><strong><code>2>/dev/null</code> suppressing diagnostics</strong></td>
+      <td>SEC-003 (P3), SEC-006 (P4), CHAOS-006 (P3), CHAOS-004 (P2)</td>
+      <td>Capture stderr to variable/log. Check exit code. Improves debuggability and failure diagnostics for 4 findings.</td>
+    </tr>
+    <tr>
+      <td><strong>Enforcer scans too broad / too narrow</strong></td>
+      <td>QA-001 (P3), QA-002 (P2), PERF-001 (P3), CHAOS-009 (P3)</td>
+      <td>Add directory exclusions (<code>node_modules</code> etc.) and tighten FR-ID regex. Fixes scan performance and false positive issues.</td>
+    </tr>
+    <tr>
+      <td><strong>No input type validation on parsed traceability data</strong></td>
+      <td>SEC-008 (P4), CHAOS-002 (P2), CHAOS-008 (P3)</td>
+      <td>Add <code>Number.isFinite()</code> guards and default values. Prevents NaN display and edge-case label bugs.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 9: P1 Findings                                            -->
+<!-- ================================================================ -->
+<h2>9. P1 Findings</h2>
+
+<div class="card finding">
+  <h3><span class="badge-p1">P1</span> CHAOS-001: Phase 5 <code>run.results</code> reassignment destroys traceability data</h3>
+  <table>
+    <tr><th>File</th><td><code>platform/orchestrator/lib/workflow-engine.js:1458</code></td></tr>
+    <tr><th>Category</th><td>Data Integrity</td></tr>
+    <tr><th>Specialist</th><td>Chaos Monkey</td></tr>
+    <tr><th>Status</th><td>NEW</td></tr>
+  </table>
+  <p><strong>Description:</strong> Phase 3.4 (line 1325) stores traceability results on <code>run.results.traceability</code>. Phase 5 (line 1458) then performs <code>run.results = { leader, implementation, qa, ... }</code> — a full object reassignment that destroys the <code>traceability</code> key. By the time <code>_createPR</code> is called at line 1622, <code>run.results.traceability</code> is <code>undefined</code>.</p>
+  <p><strong>Impact:</strong> The traceability feature is completely non-functional in production. Every PR shows "Traceability: not available" and the <code>traceability-gap</code> label is never applied. The feature's core value proposition is negated.</p>
+  <p><strong>Exploit scenario:</strong> Not a security issue — this is a data integrity bug in the normal execution path.</p>
+  <p><strong>Recommendation:</strong></p>
+  <pre>// Line 1458 — change from:
+run.results = {
+  leader: run.phases.leader.status,
+  implementation: implPassed ? "passed" : "failed",
+  ...
+};
+
+// To:
+run.results = {
+  ...run.results,   // preserve traceability and any earlier data
+  leader: run.phases.leader.status,
+  implementation: implPassed ? "passed" : "failed",
+  ...
+};</pre>
+  <p class="cross-ref">[CROSS-REF: quality-oracle — QA-004, CHAOS-010: test gap masks this bug]</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 10: Risk Matrix                                           -->
+<!-- ================================================================ -->
+<h2>10. Risk Matrix</h2>
+<div class="card">
+  <table>
+    <tr>
+      <th></th>
+      <th>Zero-precondition</th>
+      <th>Authenticated</th>
+      <th>Privileged</th>
+      <th>Admin</th>
+      <th>Physical</th>
+    </tr>
+    <tr>
+      <td class="severity-p1"><strong>P1</strong></td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td class="severity-p2"><strong>P2</strong></td>
+      <td>—</td>
+      <td>SEC-001, SEC-002</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td class="severity-p3"><strong>P3</strong></td>
+      <td>—</td>
+      <td>SEC-004</td>
+      <td>SEC-003, SEC-005</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td class="severity-p4"><strong>P4</strong></td>
+      <td>SEC-007</td>
+      <td>—</td>
+      <td>SEC-008</td>
+      <td>SEC-006</td>
+      <td>—</td>
+    </tr>
+  </table>
+  <p style="color: var(--muted); margin-top: 0.5rem;">Note: CHAOS-001 (P1) is a data-integrity bug, not a security exploit — omitted from the security risk matrix. Non-security findings (QA, PERF, DEP, CHAOS) are categorized by domain, not exploitability.</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 11: Spec Coverage                                         -->
+<!-- ================================================================ -->
+<h2>11. Spec Coverage</h2>
+<div class="card">
+  <p><strong>Feature FRs: 5/5 covered (100%)</strong></p>
+  <div class="bar-container"><div class="bar-fill" style="width: 100%; background: var(--green);"></div></div>
+  <table>
+    <tr><th>FR ID</th><th>Status</th><th>Location</th></tr>
+    <tr><td>FR-TRACE-001</td><td style="color: var(--green);">Covered</td><td><code>tools/traceability-enforcer.py:116-154</code></td></tr>
+    <tr><td>FR-TRACE-002</td><td style="color: var(--green);">Covered</td><td><code>workflow-engine.js:1313,1324</code></td></tr>
+    <tr><td>FR-TRACE-003</td><td style="color: var(--green);">Covered</td><td><code>workflow-engine.js:1313,1324</code></td></tr>
+    <tr><td>FR-TRACE-004</td><td style="color: var(--green);">Covered</td><td><code>workflow-engine.js:405</code></td></tr>
+    <tr><td>FR-TRACE-005</td><td style="color: var(--green);">Covered</td><td><code>workflow-engine.js:455</code></td></tr>
+  </table>
+  <p style="color: var(--muted); margin-top: 0.5rem;"><strong>Note:</strong> The traceability enforcer itself reports 33.3% (3/9) because it only scans <code>Source/</code> and <code>E2E/</code>, missing <code>platform/</code> and <code>tools/</code>. It also matches false-positive IDs (<code>FR-XXX</code>, <code>FR-001</code>-<code>FR-003</code>) from prose text. See QA-001 and QA-002.</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 12: Latency Baselines                                     -->
+<!-- ================================================================ -->
+<h2>12. Latency Baselines</h2>
+<div class="card">
+  <p><em>Static mode — no runtime data available. Estimates from code analysis:</em></p>
+  <table>
+    <tr><th>Component</th><th>Est. Latency (current)</th><th>Est. Latency (with node_modules)</th></tr>
+    <tr><td><code>os.walk</code> traversal</td><td>&lt;50ms</td><td>5-15s</td></tr>
+    <tr><td>File reads + substring guard</td><td>&lt;100ms</td><td style="color: var(--red);">30-90s</td></tr>
+    <tr><td>Regex matching (after guard)</td><td>&lt;5ms</td><td>&lt;5ms</td></tr>
+    <tr><td>JSON serialization</td><td>&lt;1ms</td><td>&lt;1ms</td></tr>
+    <tr><td><code>JSON.parse</code> in workflow-engine</td><td>&lt;1ms</td><td>&lt;1ms</td></tr>
+    <tr><td><strong>Total Phase 3.4</strong></td><td><strong>&lt;200ms</strong></td><td style="color: var(--red);"><strong>35-105s</strong></td></tr>
+  </table>
+  <p style="color: var(--muted);">Budget breach: PERF-001 (no directory exclusion) could cause 35-105s latency in containers with <code>node_modules</code>.</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 13: P2 Findings                                           -->
+<!-- ================================================================ -->
+<h2>13. P2 Findings</h2>
+<div class="card">
+  <table>
+    <tr><th>ID</th><th>Category</th><th>Title</th><th>File</th><th>Status</th></tr>
+    <tr><td class="severity-p2">SEC-001</td><td>Injection</td><td>Heredoc delimiter collision in PR body</td><td><code>workflow-engine.js:466</code></td><td>NEW (pre-existing)</td></tr>
+    <tr><td class="severity-p2">SEC-002</td><td>Injection</td><td>Shell injection via prTitle backticks/$</td><td><code>workflow-engine.js:473</code></td><td>NEW (pre-existing)</td></tr>
+    <tr><td class="severity-p2">QA-002</td><td>Spec Drift</td><td>FR-XXX regex matches prose text as real IDs</td><td><code>traceability-enforcer.py:65</code></td><td>NEW (pre-existing)</td></tr>
+    <tr><td class="severity-p2">QA-003</td><td>Arch Violation</td><td>console.log instead of structured logging</td><td><code>workflow-engine.js:1314</code></td><td>NEW (pre-existing pattern)</td></tr>
+    <tr><td class="severity-p2">CHAOS-002</td><td>Error Handling</td><td>coveragePercent.toFixed(1) crashes on NaN</td><td><code>workflow-engine.js:411</code></td><td>NEW</td></tr>
+    <tr><td class="severity-p2">CHAOS-003</td><td>Fault Tolerance</td><td>Missing Plans/ produces non-JSON stdout</td><td><code>traceability-enforcer.py:31</code></td><td>NEW</td></tr>
+    <tr><td class="severity-p2">CHAOS-004</td><td>Fault Tolerance</td><td>Python3/script missing yields misleading "no output"</td><td><code>workflow-engine.js:1318</code></td><td>NEW</td></tr>
+    <tr><td class="severity-p2">CHAOS-005</td><td>Resilience</td><td>No timeout on traceability enforcer execution</td><td><code>workflow-engine.js:1316</code></td><td>NEW</td></tr>
+  </table>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 14: Fixed Findings                                        -->
+<!-- ================================================================ -->
+<h2>14. Fixed Findings</h2>
+<div class="card" style="border-left: 3px solid var(--green);">
+  <p>None — first audit, no prior findings to resolve.</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 15: Recommendations                                       -->
+<!-- ================================================================ -->
+<h2>15. Recommendations</h2>
+<div class="card">
+  <h3 style="color: var(--red);">Block Deployment</h3>
+  <ul>
+    <li><strong>CHAOS-001:</strong> Add <code>...run.results</code> spread at line 1458 to preserve traceability data through Phase 5. Without this, the entire feature is non-functional.</li>
+  </ul>
+
+  <h3 style="color: var(--orange); margin-top: 1rem;">This Sprint</h3>
+  <ul>
+    <li><strong>CHAOS-002:</strong> Add <code>Number.isFinite()</code> guard on <code>coveragePercent</code> before <code>.toFixed()</code></li>
+    <li><strong>CHAOS-003:</strong> Make traceability-enforcer.py output JSON even on fatal errors (missing Plans/) when <code>--json</code> is set</li>
+    <li><strong>CHAOS-005:</strong> Add timeout to the <code>execInWorker</code> call for the enforcer (e.g., 60s)</li>
+    <li><strong>QA-004:</strong> Add integration test covering Phase 3.4 &rarr; Phase 5 &rarr; _createPR pipeline flow</li>
+    <li><strong>PERF-001:</strong> Add <code>node_modules</code>/<code>dist</code>/<code>build</code> directory exclusions to <code>os.walk</code></li>
+    <li><strong>QA-002:</strong> Tighten FR-ID regex to avoid matching prose text like <code>FR-XXX</code></li>
+  </ul>
+
+  <h3 style="color: var(--yellow); margin-top: 1rem;">Next Sprint</h3>
+  <ul>
+    <li><strong>SEC-001 + SEC-002:</strong> Refactor PR creation to avoid embedding user data in shell strings (pre-existing, not introduced by this change)</li>
+    <li><strong>CHAOS-004 + CHAOS-006:</strong> Capture stderr from enforcer instead of <code>2>/dev/null</code>; check exit code</li>
+    <li><strong>QA-007:</strong> Align spec (FR-TRACE-003 file-read approach) with implementation (direct execution)</li>
+  </ul>
+
+  <h3 style="color: var(--muted); margin-top: 1rem;">Backlog</h3>
+  <ul>
+    <li><strong>QA-003:</strong> Migrate <code>workflow-engine.js</code> to structured logging (pre-existing debt, ~60 call sites)</li>
+    <li><strong>SEC-005:</strong> Use unique temp file paths for PR body (<code>/tmp/pr-body-${run.id}.txt</code>)</li>
+    <li><strong>SEC-007:</strong> Cap max FR IDs processed in enforcer</li>
+    <li><strong>DEP-005:</strong> Pin Python version in Dockerfile for reproducibility</li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+<!-- Section 16: P3/P4 Summary                                         -->
+<!-- ================================================================ -->
+<h2>16. P3/P4 Summary</h2>
+<div class="card">
+  <table>
+    <tr><th>ID</th><th>Sev</th><th>Specialist</th><th>Title</th></tr>
+    <tr><td>SEC-003</td><td class="severity-p3">P3</td><td>Red-Teamer</td><td>JSON.parse with suppressed stderr</td></tr>
+    <tr><td>SEC-004</td><td class="severity-p3">P3</td><td>Red-Teamer</td><td>FR ID interpolation (mitigated by regex)</td></tr>
+    <tr><td>SEC-005</td><td class="severity-p3">P3</td><td>Red-Teamer</td><td>Predictable temp file path</td></tr>
+    <tr><td>QA-001</td><td class="severity-p3">P3</td><td>Quality Oracle</td><td>Enforcer scan scope excludes platform/ and tools/</td></tr>
+    <tr><td>QA-004</td><td class="severity-p3">P3</td><td>Quality Oracle</td><td>No unit tests for Phase 3.4 capture logic</td></tr>
+    <tr><td>QA-007</td><td class="severity-p3">P3</td><td>Quality Oracle</td><td>Minor spec drift: file-read vs direct-execution</td></tr>
+    <tr><td>PERF-001</td><td class="severity-p3">P3</td><td>Perf Profiler</td><td>No node_modules/dist exclusion in file walker</td></tr>
+    <tr><td>PERF-006</td><td class="severity-p3">P3</td><td>Perf Profiler</td><td>JSON.parse lacks size validation</td></tr>
+    <tr><td>CHAOS-006</td><td class="severity-p3">P3</td><td>Chaos Monkey</td><td>2>/dev/null suppresses diagnostic stderr</td></tr>
+    <tr><td>CHAOS-007</td><td class="severity-p3">P3</td><td>Chaos Monkey</td><td>Partial JSON from OOM kill (handled correctly)</td></tr>
+    <tr><td>CHAOS-008</td><td class="severity-p3">P3</td><td>Chaos Monkey</td><td>Float comparison for label may miss edge cases</td></tr>
+    <tr><td>CHAOS-009</td><td class="severity-p3">P3</td><td>Chaos Monkey</td><td>Silent except in enforcer file scanning</td></tr>
+    <tr><td>DEP-005</td><td class="severity-p3">P3</td><td>Dep Auditor</td><td>No pinned Python version in Dockerfile</td></tr>
+    <tr><td>SEC-006</td><td class="severity-p4">P4</td><td>Red-Teamer</td><td>stderr suppression hides errors</td></tr>
+    <tr><td>SEC-007</td><td class="severity-p4">P4</td><td>Red-Teamer</td><td>Unbounded FR ID extraction</td></tr>
+    <tr><td>SEC-008</td><td class="severity-p4">P4</td><td>Red-Teamer</td><td>No type validation on parsed traceability data</td></tr>
+    <tr><td>QA-005</td><td class="severity-p4">P4</td><td>Quality Oracle</td><td>let vs const style (acceptable)</td></tr>
+    <tr><td>QA-006</td><td class="severity-p4">P4</td><td>Quality Oracle</td><td>.toFixed returns string (works correctly)</td></tr>
+    <tr><td>PERF-002</td><td class="severity-p4">P4</td><td>Perf Profiler</td><td>Regex compiled for plain substring matching</td></tr>
+    <tr><td>PERF-003</td><td class="severity-p4">P4</td><td>Perf Profiler</td><td>Entire file loaded into memory</td></tr>
+    <tr><td>PERF-004</td><td class="severity-p4">P4</td><td>Perf Profiler</td><td>Synchronous enforcer blocks pipeline (correct design)</td></tr>
+    <tr><td>PERF-005</td><td class="severity-p4">P4</td><td>Perf Profiler</td><td>PR body construction — no N^2 concern</td></tr>
+    <tr><td>DEP-001</td><td class="severity-p4">P4</td><td>Dep Auditor</td><td>import json — Python stdlib, compliant</td></tr>
+    <tr><td>DEP-002</td><td class="severity-p4">P4</td><td>Dep Auditor</td><td>python3 confirmed in worker container</td></tr>
+    <tr><td>DEP-003</td><td class="severity-p4">P4</td><td>Dep Auditor</td><td>No new npm packages</td></tr>
+    <tr><td>DEP-004</td><td class="severity-p4">P4</td><td>Dep Auditor</td><td>gh CLI pre-existing, unchanged</td></tr>
+    <tr><td>CHAOS-010</td><td class="severity-p4">P4</td><td>Chaos Monkey</td><td>No integration test for full pipeline sequence</td></tr>
+  </table>
+</div>
+
+<hr style="margin-top: 3rem; border-color: var(--border);">
+<p style="color: var(--muted); text-align: center; margin-top: 1rem;">Generated by TheInspector | 2026-03-29 | 5 specialists, static mode</p>
+
+</body>
+</html>

@@ -51,10 +51,10 @@ if [[ -f "$WORKSPACE/Source/Backend/prisma/schema.prisma" ]]; then
   (cd "$WORKSPACE/Source/Backend" && npx prisma generate 2>/dev/null) || true
 fi
 
-# Bootstrap with claude-ai-OS framework if Teams/ doesn't exist
+# Bootstrap with dev-crew framework if Teams/ doesn't exist
 TEMPLATE_DIR="/app/templates"
 if [[ ! -d "$WORKSPACE/Teams" ]]; then
-  echo "No Teams/ directory found — bootstrapping with claude-ai-OS framework..."
+  echo "No Teams/ directory found — bootstrapping with dev-crew framework..."
   echo "[debug] Looking for templates at: $TEMPLATE_DIR"
   echo "[debug] Template dir exists: $([ -d "$TEMPLATE_DIR" ] && echo YES || echo NO)"
   echo "[debug] Template dir contents: $(ls "$TEMPLATE_DIR" 2>/dev/null || echo 'EMPTY/MISSING')"
@@ -100,6 +100,15 @@ if [[ ! -d "$WORKSPACE/Teams" ]]; then
     fi
 
     echo "✓ Framework bootstrapped"
+
+    # Commit and push the scaffolded files
+    cd "$WORKSPACE"
+    git add -A
+    git commit -m "chore: scaffold agent team structure from dev-crew templates" || true
+    if ! git push origin HEAD; then
+      echo "⚠ WARNING: Failed to push scaffold commit — continuing anyway"
+    fi
+    echo "✓ Scaffold committed and pushed"
   else
     echo "⚠ No templates found at $TEMPLATE_DIR/Teams"
     echo "⚠ Mount templates volume or run setup.sh on the repo first"

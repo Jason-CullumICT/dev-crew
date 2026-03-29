@@ -115,8 +115,8 @@ class ContainerManager {
         `GITHUB_TOKEN=${config.githubToken}`,
         `PROJECT_NAME=${config.projectName}`,
         `RUN_ID=${runId}`,
-        `GIT_AUTHOR_NAME=claude-ai-OS`,
-        `GIT_AUTHOR_EMAIL=pipeline@claude-ai-os.local`,
+        `GIT_AUTHOR_NAME=dev-crew`,
+        `GIT_AUTHOR_EMAIL=pipeline@dev-crew.local`,
       ],
       HostConfig: {
         Binds: [
@@ -235,8 +235,8 @@ class ContainerManager {
         `GITHUB_TOKEN=${config.githubToken}`,
         `PROJECT_NAME=${config.projectName}`,
         `RUN_ID=${runId}`,
-        `GIT_AUTHOR_NAME=claude-ai-OS`,
-        `GIT_AUTHOR_EMAIL=pipeline@claude-ai-os.local`,
+        `GIT_AUTHOR_NAME=dev-crew`,
+        `GIT_AUTHOR_EMAIL=pipeline@dev-crew.local`,
       ],
       HostConfig: {
         Binds: [`${existingVolumeName}:/workspace`],

@@ -321,7 +321,7 @@ export const images = {
   },
 }
 
-// --- Orchestrator (claude-ai-OS pipeline) ---
+// --- Orchestrator (dev-crew pipeline) ---
 
 export const orchestrator = {
   health(): Promise<{ status: string; docker: boolean; cycles: any; ports: any }> {

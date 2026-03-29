@@ -1,5 +1,5 @@
 {
-  "name": "claude-ai-os-orchestrator",
+  "name": "dev-crew-orchestrator",
   "version": "1.0.0",
   "description": "Orchestrator for Claude Code agent team pipelines",
   "main": "server.js",

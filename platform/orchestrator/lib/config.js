@@ -27,7 +27,7 @@ const config = {
   diskPressureThreshold: 0.10,
 
   // Worker
-  workerImage: process.env.WORKER_IMAGE || "claude-ai-os-worker:latest",
+  workerImage: process.env.WORKER_IMAGE || "dev-crew-worker:latest",
 
   // Feedback
   maxFeedbackLoops: 2,

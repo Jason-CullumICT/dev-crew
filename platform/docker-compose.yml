@@ -52,6 +52,8 @@ services:
     environment:
       - ORCHESTRATOR_URL=http://orchestrator:8080
       - NODE_ENV=development
+    volumes:
+      - portal-data:/app/Backend/data
     networks:
       - dev-crew-net
     restart: unless-stopped
@@ -70,6 +72,7 @@ services:
 volumes:
   workspace:
   claude-config:
+  portal-data:
 
 networks:
   dev-crew-net:

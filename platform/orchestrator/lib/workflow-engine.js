@@ -45,6 +45,15 @@ class WorkflowEngine {
   }
 
   // ════════════════════════════════════════════════════════════
+  // Helper: resolve the base branch for the given run
+  // Verifies: FR-BASE-BRANCH
+  // ════════════════════════════════════════════════════════════
+
+  _baseBranch(run) {
+    return run.repoBranch || this.config.githubBranch || 'master';
+  }
+
+  // ════════════════════════════════════════════════════════════
   // Helper: read a file from inside a worker container
   // ════════════════════════════════════════════════════════════
 
@@ -440,7 +449,7 @@ ${feedback}`;
     // Try with labels first, fall back without labels if they don't exist
     let prResult = await this.containerManager.execInWorker(
       containerId, "bash",
-      ["-c", `cd /workspace && gh pr create --title "${prTitle.replace(/"/g, '\\"')}" --body-file /tmp/pr-body.txt --base master --head "cycle/${run.id}" --label "${labels}" 2>&1`],
+      ["-c", `cd /workspace && gh pr create --title "${prTitle.replace(/"/g, '\\"')}" --body-file /tmp/pr-body.txt --base ${this._baseBranch(run)} --head "cycle/${run.id}" --label "${labels}" 2>&1`],
       { label: "pr-create" }
     );
 
@@ -448,7 +457,7 @@ ${feedback}`;
       console.warn(`[${run.id}] PR creation with labels failed, retrying without labels...`);
       prResult = await this.containerManager.execInWorker(
         containerId, "bash",
-        ["-c", `cd /workspace && gh pr create --title "${prTitle.replace(/"/g, '\\"')}" --body-file /tmp/pr-body.txt --base master --head "cycle/${run.id}" 2>&1`],
+        ["-c", `cd /workspace && gh pr create --title "${prTitle.replace(/"/g, '\\"')}" --body-file /tmp/pr-body.txt --base ${this._baseBranch(run)} --head "cycle/${run.id}" 2>&1`],
         { label: "pr-create-nolabel" }
       );
     }
@@ -502,7 +511,7 @@ ${feedback}`;
     console.log(`[${run.id}] Getting diff for AI review...`);
     const diffResult = await this.containerManager.execInWorker(
       containerId, "bash",
-      ["-c", `cd /workspace && git diff master...cycle/${run.id} 2>/dev/null | head -c 50000`],
+      ["-c", `cd /workspace && git diff ${this._baseBranch(run)}...cycle/${run.id} 2>/dev/null | head -c 50000`],
       { label: "pr-diff", quiet: true }
     );
 
@@ -643,10 +652,10 @@ ${feedback}`;
         console.log(`[${run.id}] PR #${run.pr.number} merged successfully`);
       } else {
         // Verifies: FR-TMP-010 — merge conflict: try rebase then retry merge
-        console.warn(`[${run.id}] Merge failed, attempting rebase on master...`);
+        console.warn(`[${run.id}] Merge failed, attempting rebase on ${this._baseBranch(run)}...`);
         const rebaseResult = await this.containerManager.execInWorker(
           containerId, "bash",
-          ["-c", `cd /workspace && git fetch origin master && git rebase origin/master 2>&1 && git push origin "cycle/${run.id}" --force 2>&1`],
+          ["-c", `cd /workspace && git fetch origin ${this._baseBranch(run)} && git rebase origin/${this._baseBranch(run)} 2>&1 && git push origin "cycle/${run.id}" --force 2>&1`],
           { label: "pr-rebase" }
         );
 
@@ -868,7 +877,7 @@ ${feedback}`;
           console.warn(`[${run.id}] RETRY: Git repo missing/corrupted — reinitializing`);
           const repoUrl = run.repo || this.config.defaultRepo;
           await this.containerManager.execInWorker(containerId, "bash", ["-c",
-            `cd /workspace && git init && git remote add origin "${repoUrl}" && git fetch origin ${run.repoBranch || "master"} --depth 1 && git reset --soft FETCH_HEAD 2>/dev/null || true`
+            `cd /workspace && git init && git remote add origin "${repoUrl}" && git fetch origin ${this._baseBranch(run)} --depth 1 && git reset --soft FETCH_HEAD 2>/dev/null || true`
           ], { label: "git-repair", quiet: true });
         }
 
@@ -1109,7 +1118,7 @@ ${feedback}`;
             containerId, "bash", ["-c",
               "cd /workspace && " +
               "if git rev-parse --git-dir >/dev/null 2>&1; then " +
-              "  { git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; git diff --name-only $(git merge-base HEAD origin/master 2>/dev/null || echo HEAD~5) HEAD 2>/dev/null; } | sort -u | " +
+              "  { git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; git diff --name-only $(git merge-base HEAD origin/${this._baseBranch(run)} 2>/dev/null || echo HEAD~5) HEAD 2>/dev/null; } | sort -u | " +
               "  grep -iE '^(Source/|src/|backend/|frontend/|lib/|app/|services/|routes/|components/|pages/|docker/orchestrator/|platform/|portal/|Teams/|Specifications/|templates/|tools/|CLAUDE\\.md|docs/)' | head -50; " +
               "else " +
               "  find . -maxdepth 4 -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.md' -o -name '*.sh' 2>/dev/null | " +
@@ -1173,7 +1182,7 @@ ${feedback}`;
             const retryDiff = await this.containerManager.execInWorker(
               containerId, "bash", ["-c",
                 "cd /workspace && " +
-                "{ git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; git diff --name-only $(git merge-base HEAD origin/master 2>/dev/null || echo HEAD~5) HEAD 2>/dev/null; } | sort -u | " +
+                "{ git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; git diff --name-only $(git merge-base HEAD origin/${this._baseBranch(run)} 2>/dev/null || echo HEAD~5) HEAD 2>/dev/null; } | sort -u | " +
                 "grep -iE '^(Source/|src/|backend/|frontend/|lib/|app/|services/|routes/|components/|pages/|docker/orchestrator/|platform/|portal/|Teams/|Specifications/|templates/|tools/|CLAUDE\\.md|docs/)' | head -50"
               ],
               { label: "impl-retry-verify", quiet: true }
@@ -1590,7 +1599,7 @@ ${feedback}`;
       // ── Phase 8: Sync learnings inside worker (has the correct repo) ──
       console.log(`[${run.id}] Syncing learnings...`);
       try {
-        const mainBranch = run.repoBranch || "master";
+        const mainBranch = this._baseBranch(run);
         const syncScript = [
           "cd /workspace",
           "git stash --include-untracked || true",
@@ -1625,7 +1634,7 @@ ${feedback}`;
         if (isPortalRepo) {
           // Verify Source/ files were actually changed before updating portal
           const sourceCheck = await this.containerManager.execInWorker(
-            containerId, "bash", ["-c", `cd /workspace && git diff --name-only ${run.repoBranch || "master"}..HEAD -- Source/`],
+            containerId, "bash", ["-c", `cd /workspace && git diff --name-only ${this._baseBranch(run)}..HEAD -- Source/`],
             { label: "portal-gate", quiet: true }
           );
           const hasSourceChanges = sourceCheck.stdout.trim().length > 0;

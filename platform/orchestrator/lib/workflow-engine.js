@@ -402,6 +402,30 @@ ${feedback}`;
       ? `E2E: ${run.e2e.status} (${run.e2e.passed || 0}/${run.e2e.tests || 0})`
       : "E2E: not run";
 
+    // Verifies: FR-TRACE-004
+    const traceability = run.results?.traceability;
+    let traceSection;
+    if (traceability && traceability.status !== "unavailable") {
+      const covered = traceability.coveredFrs?.length || 0;
+      const total = traceability.totalFrs || 0;
+      const pct = traceability.coveragePercent?.toFixed(1) || "0.0";
+      traceSection = [
+        "",
+        "### Traceability",
+        `- Coverage: ${covered}/${total} FRs (${pct}%)`,
+      ];
+      if (traceability.missingFrs && traceability.missingFrs.length > 0) {
+        traceSection.push("- **Uncovered FRs:**");
+        for (const fr of traceability.missingFrs) {
+          traceSection.push(`  - ${fr}`);
+        }
+      } else {
+        traceSection.push("- All FRs covered");
+      }
+    } else {
+      traceSection = ["", "### Traceability", "- Traceability: not available"];
+    }
+
     const prBody = [
       `## Cycle ${run.id}`,
       "",
@@ -416,6 +440,7 @@ ${feedback}`;
       `- Inspector: ${run.results?.inspector || "unknown"}`,
       `- ${e2eSummary}`,
       `- Feedback loops: ${run.feedbackLoops || 0}`,
+      ...traceSection,
     ].join("\n");
 
     // Determine labels based on risk level
@@ -425,7 +450,12 @@ ${feedback}`;
       medium: "auto-merge,ai-reviewed",
       high: "needs-approval,high-risk",
     };
-    const labels = labelMap[run.riskLevel] || labelMap.medium;
+    let labels = labelMap[run.riskLevel] || labelMap.medium;
+
+    // Verifies: FR-TRACE-005
+    if (traceability && traceability.status !== "unavailable" && traceability.coveragePercent < 100) {
+      labels += ",traceability-gap";
+    }
 
     // Create PR via gh CLI — use temp files to avoid shell injection
     console.log(`[${run.id}] Creating PR: ${prTitle}`);
@@ -1278,6 +1308,37 @@ ${feedback}`;
       }
 
       run.feedbackLoops = feedbackLoops;
+
+      // ── Phase 3.4: Capture traceability results ──
+      // Verifies: FR-TRACE-002, FR-TRACE-003
+      console.log(`[${run.id}] Running traceability enforcer...`);
+      try {
+        const traceResult = await this.containerManager.execInWorker(
+          containerId, "bash",
+          ["-c", "cd /workspace && python3 tools/traceability-enforcer.py --json 2>/dev/null"],
+          { label: "traceability", quiet: true }
+        );
+        if (traceResult.stdout.trim()) {
+          const traceData = JSON.parse(traceResult.stdout.trim());
+          run.results = run.results || {};
+          // Verifies: FR-TRACE-002, FR-TRACE-003
+          run.results.traceability = {
+            status: traceData.status,
+            totalFrs: traceData.total_frs,
+            coveredFrs: traceData.covered_frs,
+            missingFrs: traceData.missing_frs,
+            coveragePercent: traceData.coverage_percent,
+          };
+        } else {
+          run.results = run.results || {};
+          run.results.traceability = { status: "unavailable", reason: "no output" };
+        }
+      } catch (err) {
+        console.warn(`[${run.id}] Traceability capture failed: ${err.message}`);
+        run.results = run.results || {};
+        run.results.traceability = { status: "unavailable", reason: err.message };
+      }
+      saveRunFn(run);
 
       // ── Phase 3.5: Start app BEFORE validation ──
       // Dynamic-first agents (chaos-monkey, performance-profiler, red-teamer)

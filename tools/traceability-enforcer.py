@@ -7,6 +7,7 @@ Usage:
   python3 tools/traceability-enforcer.py --file Plans/my-plan/requirements.md  # target specific file
 """
 import argparse
+import json
 import os
 import re
 import sys
@@ -65,7 +66,7 @@ def extract_fr_ids(req_file):
     return sorted(list(set(pattern.findall(content))))
 
 
-def check_traceability(fr_ids):
+def check_traceability(fr_ids, quiet=False):
     """Checks for '// Verifies: FR-XXX' in Source/ and E2E/ directories."""
     source_dirs = ["Source", "E2E"]
 
@@ -73,7 +74,8 @@ def check_traceability(fr_ids):
     patterns = {fr: re.compile(fr) for fr in fr_ids}
     found_frs = {fr: False for fr in fr_ids}
 
-    print(f"Scanning {len(fr_ids)} requirements across {source_dirs}...")
+    if not quiet:
+        print(f"Scanning {len(fr_ids)} requirements across {source_dirs}...")
 
     for s_dir in source_dirs:
         path = Path(s_dir)
@@ -111,21 +113,46 @@ def main():
         "--file", type=str, default=None,
         help="Direct path to a requirements.md file"
     )
+    # Verifies: FR-TRACE-001
+    parser.add_argument(
+        "--json", action="store_true",
+        help="Output machine-readable JSON instead of human-readable text"
+    )
     args = parser.parse_args()
 
     req_file = get_active_requirements(plan_name=args.plan, file_path=args.file)
     if not req_file:
+        if args.json:  # Verifies: FR-TRACE-001
+            print(json.dumps({"status": "passed", "total_frs": 0, "covered_frs": [], "missing_frs": [], "coverage_percent": 0.0, "requirements_file": ""}))
+            sys.exit(0)
         print("No active requirements file found to enforce.")
         sys.exit(0)
 
-    print(f"Targeting requirements from: {req_file}")
+    if not args.json:  # Verifies: FR-TRACE-001 (NFR-001: preserve text output)
+        print(f"Targeting requirements from: {req_file}")
     fr_ids = extract_fr_ids(req_file)
 
     if not fr_ids:
+        if args.json:  # Verifies: FR-TRACE-001
+            print(json.dumps({"status": "passed", "total_frs": 0, "covered_frs": [], "missing_frs": [], "coverage_percent": 0.0, "requirements_file": str(req_file)}))
+            sys.exit(0)
         print("No FR IDs found in requirements file.")
         sys.exit(0)
 
-    missing = check_traceability(fr_ids)
+    missing = check_traceability(fr_ids, quiet=args.json)
+
+    # Verifies: FR-TRACE-001
+    if args.json:
+        result = {
+            "status": "passed" if not missing else "failed",
+            "total_frs": len(fr_ids),
+            "covered_frs": [fr for fr in fr_ids if fr not in missing],
+            "missing_frs": missing,
+            "coverage_percent": round((len(fr_ids) - len(missing)) / len(fr_ids) * 100, 1) if fr_ids else 0.0,
+            "requirements_file": str(req_file)
+        }
+        print(json.dumps(result))
+        sys.exit(0 if not missing else 1)
 
     if missing:
         print("\n" + "!" * 60)

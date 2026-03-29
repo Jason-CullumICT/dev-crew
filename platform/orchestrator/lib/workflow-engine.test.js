@@ -262,6 +262,177 @@ describe("_createPR (FR-TMP-004)", () => {
   });
 });
 
+// Verifies: FR-TRACE-004
+describe("_createPR traceability section (FR-TRACE-004)", () => {
+  it("includes traceability section with full coverage in PR body", async () => {
+    let capturedBody = "";
+    const deps = createMockDeps({
+      containerManager: {
+        execInWorker: async (_cid, cmd, args, opts) => {
+          if (cmd === "which") return { exitCode: 0, stdout: "/usr/bin/gh\n" };
+          if (opts && opts.label === "pr-body") {
+            capturedBody = args[1]; // the -c argument contains the body
+            return { exitCode: 0, stdout: "" };
+          }
+          if (opts && opts.label === "pr-create") {
+            return { exitCode: 0, stdout: "https://github.com/test/repo/pull/50\n" };
+          }
+          return { exitCode: 0, stdout: "" };
+        },
+      },
+    });
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+    run.riskLevel = "low";
+    run.results = {
+      implementation: "passed",
+      qa: "passed",
+      traceability: {
+        status: "passed",
+        totalFrs: 3,
+        coveredFrs: ["FR-001", "FR-002", "FR-003"],
+        missingFrs: [],
+        coveragePercent: 100.0,
+      },
+    };
+
+    await engine._createPR("mock-ctr", run, () => {});
+    assert.ok(capturedBody.includes("### Traceability"), "should have traceability heading");
+    assert.ok(capturedBody.includes("3/3 FRs (100.0%)"), "should show full coverage");
+    assert.ok(capturedBody.includes("All FRs covered"), "should say all covered");
+  });
+
+  it("lists missing FRs when coverage < 100%", async () => {
+    let capturedBody = "";
+    const deps = createMockDeps({
+      containerManager: {
+        execInWorker: async (_cid, cmd, args, opts) => {
+          if (cmd === "which") return { exitCode: 0, stdout: "/usr/bin/gh\n" };
+          if (opts && opts.label === "pr-body") {
+            capturedBody = args[1];
+            return { exitCode: 0, stdout: "" };
+          }
+          if (opts && opts.label === "pr-create") {
+            return { exitCode: 0, stdout: "https://github.com/test/repo/pull/51\n" };
+          }
+          return { exitCode: 0, stdout: "" };
+        },
+      },
+    });
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+    run.riskLevel = "medium";
+    run.results = {
+      implementation: "passed",
+      qa: "passed",
+      traceability: {
+        status: "failed",
+        totalFrs: 5,
+        coveredFrs: ["FR-001", "FR-002", "FR-003"],
+        missingFrs: ["FR-004", "FR-005"],
+        coveragePercent: 60.0,
+      },
+    };
+
+    await engine._createPR("mock-ctr", run, () => {});
+    assert.ok(capturedBody.includes("3/5 FRs (60.0%)"), "should show partial coverage");
+    assert.ok(capturedBody.includes("FR-004"), "should list missing FR-004");
+    assert.ok(capturedBody.includes("FR-005"), "should list missing FR-005");
+    assert.ok(capturedBody.includes("Uncovered FRs"), "should have uncovered heading");
+  });
+
+  it("shows unavailable when traceability data missing", async () => {
+    let capturedBody = "";
+    const deps = createMockDeps({
+      containerManager: {
+        execInWorker: async (_cid, cmd, args, opts) => {
+          if (cmd === "which") return { exitCode: 0, stdout: "/usr/bin/gh\n" };
+          if (opts && opts.label === "pr-body") {
+            capturedBody = args[1];
+            return { exitCode: 0, stdout: "" };
+          }
+          if (opts && opts.label === "pr-create") {
+            return { exitCode: 0, stdout: "https://github.com/test/repo/pull/52\n" };
+          }
+          return { exitCode: 0, stdout: "" };
+        },
+      },
+    });
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+    run.riskLevel = "low";
+    run.results = { implementation: "passed" };
+
+    await engine._createPR("mock-ctr", run, () => {});
+    assert.ok(capturedBody.includes("Traceability: not available"), "should show unavailable");
+  });
+});
+
+// Verifies: FR-TRACE-005
+describe("_createPR traceability-gap label (FR-TRACE-005)", () => {
+  it("adds traceability-gap label when coverage < 100%", async () => {
+    let createCmd = "";
+    const deps = createMockDeps({
+      containerManager: {
+        execInWorker: async (_cid, cmd, args, opts) => {
+          if (cmd === "which") return { exitCode: 0, stdout: "/usr/bin/gh\n" };
+          if (opts && opts.label === "pr-create") {
+            createCmd = args[1];
+            return { exitCode: 0, stdout: "https://github.com/test/repo/pull/53\n" };
+          }
+          return { exitCode: 0, stdout: "" };
+        },
+      },
+    });
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+    run.riskLevel = "medium";
+    run.results = {
+      traceability: {
+        status: "failed",
+        totalFrs: 5,
+        coveredFrs: ["FR-001"],
+        missingFrs: ["FR-002", "FR-003", "FR-004", "FR-005"],
+        coveragePercent: 20.0,
+      },
+    };
+
+    await engine._createPR("mock-ctr", run, () => {});
+    assert.ok(createCmd.includes("traceability-gap"), "should include traceability-gap label");
+  });
+
+  it("does not add traceability-gap label at 100% coverage", async () => {
+    let createCmd = "";
+    const deps = createMockDeps({
+      containerManager: {
+        execInWorker: async (_cid, cmd, args, opts) => {
+          if (cmd === "which") return { exitCode: 0, stdout: "/usr/bin/gh\n" };
+          if (opts && opts.label === "pr-create") {
+            createCmd = args[1];
+            return { exitCode: 0, stdout: "https://github.com/test/repo/pull/54\n" };
+          }
+          return { exitCode: 0, stdout: "" };
+        },
+      },
+    });
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+    run.riskLevel = "low";
+    run.results = {
+      traceability: {
+        status: "passed",
+        totalFrs: 3,
+        coveredFrs: ["FR-001", "FR-002", "FR-003"],
+        missingFrs: [],
+        coveragePercent: 100.0,
+      },
+    };
+
+    await engine._createPR("mock-ctr", run, () => {});
+    assert.ok(!createCmd.includes("traceability-gap"), "should not include traceability-gap label");
+  });
+});
+
 // Verifies: FR-TMP-005
 describe("_aiReviewPR (FR-TMP-005)", () => {
   it("skips review for low risk", async () => {

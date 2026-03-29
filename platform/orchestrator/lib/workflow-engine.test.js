@@ -60,6 +60,42 @@ function createMockRun() {
 
 // ── Tests ──
 
+// Verifies: FR-CBB-001
+describe("_baseBranch helper (FR-CBB-001)", () => {
+  it("returns run.repoBranch when set", () => {
+    const deps = createMockDeps();
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+    run.repoBranch = "develop";
+    assert.equal(engine._baseBranch(run), "develop");
+  });
+
+  it("falls back to config.githubBranch when run.repoBranch is falsy", () => {
+    const deps = createMockDeps();
+    deps.config.githubBranch = "main";
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+    run.repoBranch = undefined;
+    assert.equal(engine._baseBranch(run), "main");
+  });
+
+  it("falls back to 'master' when both run.repoBranch and config.githubBranch are falsy", () => {
+    const deps = createMockDeps();
+    deps.config.githubBranch = undefined;
+    const engine = new WorkflowEngine(deps);
+    const run = { id: "test" };
+    assert.equal(engine._baseBranch(run), "master");
+  });
+
+  it("handles null/undefined run gracefully", () => {
+    const deps = createMockDeps();
+    deps.config.githubBranch = "main";
+    const engine = new WorkflowEngine(deps);
+    assert.equal(engine._baseBranch(null), "main");
+    assert.equal(engine._baseBranch(undefined), "main");
+  });
+});
+
 // Verifies: FR-TMP-001
 describe("Risk Classification (FR-TMP-001)", () => {
   it("extracts low risk from leader output", () => {

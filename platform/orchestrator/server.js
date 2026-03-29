@@ -41,7 +41,7 @@ const { PortAllocator } = require("./lib/port-allocator");
 const { CycleRegistry } = require("./lib/cycle-registry");
 const { TokenPool } = require("./lib/token-pool");
 const { ContainerManager } = require("./lib/container-manager");
-const { LearningsSync } = require("./lib/learnings-sync");
+// LearningsSync removed — learnings sync runs as in-worker bash script (workflow-engine.js Phase 8)
 const { HealthMonitor } = require("./lib/health-monitor");
 const { WorkflowEngine } = require("./lib/workflow-engine");
 const { createDispatcher } = require("./lib/dispatch");
@@ -51,7 +51,7 @@ const portAllocator = new PortAllocator();
 const cycleRegistry = new CycleRegistry();
 const tokenPool = new TokenPool();
 const containerManager = new ContainerManager(dockerClient, portAllocator, tokenPool);
-const learningsSync = new LearningsSync();
+const learningsSync = { cleanup() {} };  // stub — actual sync is in-worker bash
 const healthMonitor = new HealthMonitor(dockerClient, cycleRegistry, portAllocator);
 
 // ══════════════════════════════════════════════════════════════
@@ -132,7 +132,7 @@ or
 TEAM: TheFixer | REASON: <one sentence>`;
 
   try {
-    const result = await runClaude(routingPrompt, { maxTurns: 1, label: "router", quiet: true });
+    const result = await runClaude(routingPrompt, { maxTurns: 1, label: "router", quiet: true, model: "haiku" });
     const output = result.stdout.trim();
     const match = output.match(/TEAM:\s*(TheATeam|TheFixer)\s*\|\s*REASON:\s*(.+)/i);
 
@@ -530,60 +530,75 @@ app.post("/api/runs/:id/retry", async (req, res) => {
 
   const existingVolume = `workspace-${originalRun.id}`;
 
-  // Create a new run based on the original
+  // Create a new run carrying forward state from the original (checkpoint-resume)
   const run = {
     id: `run-${Date.now()}-${randomUUID().slice(0, 8)}`,
-    status: "team_selecting",
+    status: "resuming",
     task: originalRun.task,
     planFile: originalRun.planFile,
     repo: originalRun.repo,
     repoBranch: originalRun.repoBranch,
-    team: null,
-    teamReason: null,
+    tokenSource: null,
+    tokenLabel: null,
+    team: originalRun.team,
+    teamReason: `Resumed from ${originalRun.id}`,
     attachments: originalRun.attachments || [],
     ports: null,
-    branch: null,
-    results: {},
-    phases: {},
-    feedbackLoops: 0,
-    retryOf: originalRun.id,
+    branch: originalRun.branch,
+    results: { ...originalRun.results },
+    phases: JSON.parse(JSON.stringify(originalRun.phases || {})),
+    feedbackLoops: originalRun.feedbackLoops || 0,
+    resumedFrom: originalRun.id,
+    resumePoint: req.body?.resumeFrom || null,
     reuseVolume: existingVolume,
+    riskLevel: originalRun.riskLevel,
     createdAt: ts(),
     updatedAt: ts(),
   };
   saveRun(run);
 
+  // Calculate which phases will be skipped
+  const phaseOrder = ["leader", "dispatch", "implementation", "app", "qa", "validation", "e2e", "commit", "pr", "learnings"];
+  let skippedPhases = [];
+  if (run.resumePoint) {
+    const resumeIdx = phaseOrder.indexOf(run.resumePoint);
+    skippedPhases = phaseOrder.slice(0, Math.max(0, resumeIdx));
+  } else {
+    for (const phase of phaseOrder) {
+      const matching = Object.entries(run.phases).find(([k]) => k.includes(phase));
+      if (matching && (matching[1].status === "passed" || matching[1].status === "skipped")) {
+        skippedPhases.push(phase);
+      } else {
+        break;
+      }
+    }
+  }
+
   res.status(201).json({
     id: run.id,
-    status: "team_selecting",
-    message: `Retrying failed run ${originalRun.id} with existing volume...`,
+    status: "resuming",
+    message: skippedPhases.length > 0
+      ? `Resuming from ${run.resumePoint || "auto-detect"} — ${skippedPhases.length} phase(s) skippable`
+      : `Retrying ${originalRun.id} from scratch (no completed phases to skip)`,
     statusUrl: `/api/runs/${run.id}`,
-    retryOf: originalRun.id,
+    resumedFrom: originalRun.id,
+    resumePoint: run.resumePoint,
+    skippedPhases,
   });
 
-  // Async: route and execute
+  // Async: execute workflow with carried-forward team
   (async () => {
     try {
-      let team, teamReason;
+      // Allow force-override of team on retry
       const forceTeam = req.body?.team;
       if (forceTeam && ["TheATeam", "TheFixer"].includes(forceTeam)) {
-        team = forceTeam;
-        teamReason = `Forced to ${forceTeam} by retry request`;
-      } else if (originalRun.team) {
-        team = originalRun.team;
-        teamReason = `Same team as original run: ${originalRun.teamReason}`;
-      } else {
-        const selection = await selectTeam(run.task, run.planFile);
-        team = selection.team;
-        teamReason = selection.reason;
+        run.team = forceTeam;
+        run.teamReason = `Forced to ${forceTeam} by retry request`;
       }
 
-      run.team = team;
-      run.teamReason = teamReason;
-      console.log(`[${run.id}] Retry of ${originalRun.id} — Team: ${team}`);
+      console.log(`[${run.id}] Resume of ${originalRun.id} — Team: ${run.team}, resumePoint: ${run.resumePoint || "auto"}`);
       saveRun(run);
 
-      // Retries re-resolve token (per-request token not persisted, falls back to host/env)
       const retryToken = await tokenPool.resolveToken();
       run.tokenSource = retryToken?.source || "none";
       run.tokenLabel = retryToken?.label || "no token";
@@ -591,7 +606,7 @@ app.post("/api/runs/:id/retry", async (req, res) => {
 
       await workflowEngine.executeWorkflow(run, saveRun, retryToken);
     } catch (err) {
-      console.error(`[${run.id}] Retry fatal:`, err);
+      console.error(`[${run.id}] Resume fatal:`, err);
       run.status = "failed";
       run.results = { error: err.message, allPassed: false };
       saveRun(run);

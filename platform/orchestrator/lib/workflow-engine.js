@@ -55,6 +55,98 @@ class WorkflowEngine {
     return result.exitCode === 0 ? result.stdout : null;
   }
 
+  // ════════════════════════════════════════════════════════════
+  // Helper: decide whether a phase should be skipped on resume
+  // ════════════════════════════════════════════════════════════
+
+  _shouldSkipPhase(run, phaseName, phaseKey) {
+    if (!run.resumedFrom) return false;
+
+    // Explicit resume point: skip everything before it
+    if (run.resumePoint) {
+      const phaseOrder = [
+        "leader", "dispatch", "implementation", "app",
+        "qa", "validation", "e2e", "commit", "pr", "learnings"
+      ];
+      const resumeIdx = phaseOrder.indexOf(run.resumePoint);
+      const currentIdx = phaseOrder.indexOf(phaseName);
+      if (currentIdx >= 0 && resumeIdx >= 0 && currentIdx < resumeIdx) return true;
+      return false;
+    }
+
+    // Auto mode: check exact phaseKey first
+    if (phaseKey && run.phases[phaseKey]) {
+      const phase = run.phases[phaseKey];
+      return phase.status === "passed" || phase.status === "skipped";
+    }
+
+    // Scan for dynamic stage keys matching phaseName (e.g. stage_0_implementation)
+    const matchingKeys = Object.keys(run.phases).filter(k =>
+      k.includes(phaseName) && !k.startsWith("feedback_")
+    );
+    return matchingKeys.length > 0 && matchingKeys.every(k =>
+      run.phases[k].status === "passed" || run.phases[k].status === "skipped"
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // Helper: write human-readable progress.md to the plan directory
+  // ════════════════════════════════════════════════════════════
+
+  async _writeProgress(containerId, run) {
+    if (!run.planFile) return;
+
+    const planDir = run.planFile.replace(/\/[^/]+$/, "");
+    const lines = [
+      `# Pipeline Progress: ${run.id}`,
+      "",
+      `**Task:** ${(run.task || "").slice(0, 200)}`,
+      `**Team:** ${run.team} | **Risk:** ${run.riskLevel} | **Branch:** ${run.branch}`,
+      `**Started:** ${run.createdAt} | **Updated:** ${run.updatedAt}`,
+    ];
+
+    if (run.resumedFrom) {
+      lines.push(`**Resumed from:** ${run.resumedFrom}`);
+    }
+
+    lines.push("", "## Phases", "");
+
+    for (const [key, phase] of Object.entries(run.phases)) {
+      if (!phase || typeof phase !== "object") continue;
+      const status = phase.status;
+      const duration =
+        phase.startedAt && phase.completedAt
+          ? Math.round((new Date(phase.completedAt) - new Date(phase.startedAt)) / 1000)
+          : null;
+      const durationStr = duration !== null ? ` (${duration}s)` : "";
+      const label = phase.stageName || key;
+
+      if (status === "passed") {
+        lines.push(`- [x] ${label}${durationStr}`);
+      } else if (status === "skipped") {
+        lines.push(`- [x] ~~${label}~~ (skipped${phase.reason ? ": " + phase.reason : ""})`);
+      } else if (status === "failed") {
+        lines.push(`- [ ] ${label} (FAILED${durationStr})`);
+      } else if (status === "running") {
+        lines.push(`- [ ] ${label} (running...)`);
+      } else {
+        lines.push(`- [ ] ${label}`);
+      }
+    }
+
+    const content = lines.join("\n");
+    try {
+      await this.containerManager.execInWorker(
+        containerId,
+        "bash",
+        ["-c", `mkdir -p /workspace/${planDir} && cat > /workspace/${planDir}/progress.md << 'PROGRESS_EOF'\n${content}\nPROGRESS_EOF`],
+        { label: "write-progress", quiet: true }
+      );
+    } catch (err) {
+      console.warn(`[${run.id}] Failed to write progress: ${err.message}`);
+    }
+  }
+
   async _listWorkerDir(containerId, dir) {
     const result = await this.containerManager.execInWorker(
       containerId, "ls", [dir], { quiet: true }
@@ -682,6 +774,10 @@ ${feedback}`;
 
     let containerId = null;
 
+    // ── Resume detection ──
+    const isResume = !!run.resumedFrom;
+    let reRanUpstream = false;
+
     try {
       // ── Register cycle ──
       this.registry.register(run.id, {
@@ -814,100 +910,128 @@ ${feedback}`;
       }
 
       // ── Phase 1: Team leader produces plan ──
-      run.status = "planning";
-      run.phases = { leader: { status: "running", startedAt: ts() } };
-      saveRunFn(run);
-
-      this.registry.update(run.id, {
-        currentPhase: "leader",
-        phaseStartedAt: ts(),
-      });
-
-      console.log(`[${run.id}] Phase 1: ${run.team} leader planning (in worker)...`);
-      await this.containerManager.refreshCredentials(containerId, credentialsJson);
-
-      // Verifies: FR-TMP-001 — enrich task with risk classification instructions for the leader
+      // Ensure taskWithImages is available for all phases
       const enrichedTask = this.dispatch.enrichTaskForLeader(run.task);
-      // Append image references to task so the leader sees them
       const taskWithImages = enrichedTask + imageContext;
+      let leaderOutput = null;
 
-      const leaderResult = await this.containerManager.execInWorker(
-        containerId,
-        "bash",
-        ["/app/scripts/run-team.sh", run.team, taskWithImages, run.planFile || ""],
-        { label: `${run.team}-leader` }
-      );
-
-      run.phases.leader.status = leaderResult.exitCode === 0 ? "passed" : "failed";
-      run.phases.leader.exitCode = leaderResult.exitCode;
-      run.phases.leader.completedAt = ts();
-      run.phases.leader.outputTail = leaderResult.stdout.slice(-3000);
-      saveRunFn(run);
-
-      if (leaderResult.exitCode !== 0) {
-        console.log(`[${run.id}] Leader failed (exit ${leaderResult.exitCode})`);
-        run.status = "failed";
-        run.results = { leader: "failed", allPassed: false };
-        saveRunFn(run);
-
-        // Teardown on failure
-        await this._teardownOnFailure(run.id, containerId);
-        return;
+      if (isResume && !reRanUpstream && this._shouldSkipPhase(run, "leader", "leader")) {
+        const planCheck = await this._readWorkerFile(containerId, `/workspace/${run.planFile || "CLAUDE.md"}`);
+        if (planCheck !== null) {
+          console.log(`[${run.id}] RESUME: Skipping leader (already passed)`);
+          leaderOutput = run.phases.leader?.outputTail || "";
+          await this._writeProgress(containerId, run);
+        } else {
+          console.log(`[${run.id}] RESUME: Leader artifacts missing — re-running`);
+          reRanUpstream = true;
+        }
       }
 
-      console.log(`[${run.id}] Leader plan complete`);
+      if (!leaderOutput || reRanUpstream) {
+        run.status = "planning";
+        if (!isResume) run.phases = {};
+        run.phases.leader = { status: "running", startedAt: ts() };
+        saveRunFn(run);
 
-      // ── Phase 1b: Extract risk level from leader output ──
-      // Verifies: FR-TMP-001
-      const riskMatch = leaderResult.stdout.match(/RISK_LEVEL:\s*(low|medium|high)/i);
-      run.riskLevel = riskMatch ? riskMatch[1].toLowerCase() : this.config.defaultRiskLevel;
-      console.log(`[${run.id}] Risk level: ${run.riskLevel}`);
-      saveRunFn(run);
+        this.registry.update(run.id, {
+          currentPhase: "leader",
+          phaseStartedAt: ts(),
+        });
+
+        console.log(`[${run.id}] Phase 1: ${run.team} leader planning (in worker)...`);
+        await this.containerManager.refreshCredentials(containerId, credentialsJson);
+
+        const leaderResult = await this.containerManager.execInWorker(
+          containerId,
+          "bash",
+          ["/app/scripts/run-team.sh", run.team, taskWithImages, run.planFile || ""],
+          { label: `${run.team}-leader` }
+        );
+
+        run.phases.leader.status = leaderResult.exitCode === 0 ? "passed" : "failed";
+        run.phases.leader.exitCode = leaderResult.exitCode;
+        run.phases.leader.completedAt = ts();
+        run.phases.leader.outputTail = leaderResult.stdout.slice(-3000);
+        saveRunFn(run);
+        await this._writeProgress(containerId, run);
+
+        if (leaderResult.exitCode !== 0) {
+          console.log(`[${run.id}] Leader failed (exit ${leaderResult.exitCode})`);
+          run.status = "failed";
+          run.results = { leader: "failed", allPassed: false };
+          saveRunFn(run);
+          await this._teardownOnFailure(run.id, containerId);
+          return;
+        }
+
+        leaderOutput = leaderResult.stdout;
+        reRanUpstream = true;
+        console.log(`[${run.id}] Leader plan complete`);
+
+        // Extract risk level
+        const riskMatch = leaderOutput.match(/RISK_LEVEL:\s*(low|medium|high)/i);
+        run.riskLevel = riskMatch ? riskMatch[1].toLowerCase() : this.config.defaultRiskLevel;
+        console.log(`[${run.id}] Risk level: ${run.riskLevel}`);
+        saveRunFn(run);
+      }
 
       // ── Phase 2: Parse dispatch plan ──
-      run.status = "dispatching";
-      saveRunFn(run);
-
-      this.registry.update(run.id, {
-        status: "dispatching",
-        currentPhase: "dispatch",
-        phaseStartedAt: ts(),
-      });
-
-      console.log(`[${run.id}] Phase 2: Parsing dispatch plan...`);
-
       let dispatchPlan;
-      try {
-        // Parse from worker filesystem — reads plan files via docker exec
-        // Verifies: FR-TMP-002 — pass run.id for E2E test path generation
-        dispatchPlan = await this._parseDispatchFromWorker(
-          containerId, leaderResult.stdout, taskWithImages, run.team, run.id
-        );
-        // Inject image context into every agent prompt
-        if (imageContext) {
-          for (const stage of dispatchPlan.stages) {
-            for (const agent of stage.agents) {
-              if (!agent.prompt.includes("Read tool to view")) {
-                agent.prompt += imageContext;
+
+      if (isResume && !reRanUpstream && this._shouldSkipPhase(run, "dispatch", "dispatch")) {
+        if (run.phases.dispatch?.plan?.stages?.length > 0) {
+          console.log(`[${run.id}] RESUME: Skipping dispatch (${run.phases.dispatch.plan.stages.length} stages cached)`);
+          dispatchPlan = run.phases.dispatch.plan;
+          await this._writeProgress(containerId, run);
+        } else {
+          console.log(`[${run.id}] RESUME: Dispatch plan missing — re-running`);
+          reRanUpstream = true;
+        }
+      }
+
+      if (!dispatchPlan) {
+        run.status = "dispatching";
+        saveRunFn(run);
+
+        this.registry.update(run.id, {
+          status: "dispatching",
+          currentPhase: "dispatch",
+          phaseStartedAt: ts(),
+        });
+
+        console.log(`[${run.id}] Phase 2: Parsing dispatch plan...`);
+
+        try {
+          dispatchPlan = await this._parseDispatchFromWorker(
+            containerId, leaderOutput || run.phases.leader?.outputTail || "", taskWithImages, run.team, run.id
+          );
+          if (imageContext) {
+            for (const stage of dispatchPlan.stages) {
+              for (const agent of stage.agents) {
+                if (!agent.prompt.includes("Read tool to view")) {
+                  agent.prompt += imageContext;
+                }
               }
             }
           }
+          console.log(`[${run.id}] Parsed: ${dispatchPlan.stages.length} stages, ${
+            dispatchPlan.stages.reduce((n, s) => n + s.agents.length, 0)
+          } agents`);
+        } catch (err) {
+          console.warn(`[${run.id}] Parse failed (${err.message}), using fallback plan`);
+          dispatchPlan = this.dispatch.buildFallbackPlan(taskWithImages, run.team, leaderOutput || "");
         }
-        console.log(`[${run.id}] Parsed: ${dispatchPlan.stages.length} stages, ${
-          dispatchPlan.stages.reduce((n, s) => n + s.agents.length, 0)
-        } agents`);
-      } catch (err) {
-        console.warn(`[${run.id}] Parse failed (${err.message}), using fallback plan`);
-        dispatchPlan = this.dispatch.buildFallbackPlan(taskWithImages, run.team, leaderResult.stdout);
-      }
 
-      run.phases.dispatch = {
-        plan: dispatchPlan,
-        stageCount: dispatchPlan.stages.length,
-        agentCount: dispatchPlan.stages.reduce((n, s) => n + s.agents.length, 0),
-        parsedAt: ts(),
-      };
-      saveRunFn(run);
+        run.phases.dispatch = {
+          plan: dispatchPlan,
+          stageCount: dispatchPlan.stages.length,
+          agentCount: dispatchPlan.stages.reduce((n, s) => n + s.agents.length, 0),
+          parsedAt: ts(),
+        };
+        saveRunFn(run);
+        await this._writeProgress(containerId, run);
+        reRanUpstream = true;
+      }
 
       // ── Phase 3: Execute stages with feedback loops ──
       let feedbackLoops = 0;
@@ -919,6 +1043,31 @@ ${feedback}`;
         if (!isQA) lastImplStageIdx = i;
 
         const stageKey = `stage_${i}_${stage.name}`;
+
+        // ── Resume skip gate for this stage ──
+        if (isResume && !reRanUpstream && this._shouldSkipPhase(run, isQA ? "qa" : "implementation", stageKey)) {
+          if (!isQA) {
+            // Cheap validation: verify code changes in volume
+            const codeCheck = await this.containerManager.execInWorker(
+              containerId, "bash", ["-c",
+                "cd /workspace && git diff --name-only HEAD~5..HEAD 2>/dev/null | head -5"
+              ], { label: "resume-impl-check", quiet: true }
+            );
+            if (codeCheck.stdout.trim()) {
+              console.log(`[${run.id}] RESUME: Skipping ${stage.name} (code changes verified in volume)`);
+              await this._writeProgress(containerId, run);
+              continue;
+            } else {
+              console.log(`[${run.id}] RESUME: No code in volume for ${stage.name} — re-running`);
+              reRanUpstream = true;
+            }
+          } else {
+            console.log(`[${run.id}] RESUME: Skipping ${stage.name} (previously passed, impl unchanged)`);
+            await this._writeProgress(containerId, run);
+            continue;
+          }
+        }
+
         run.status = isQA ? "qa_running" : "implementing";
         run.phases[stageKey] = {
           status: "running",
@@ -1049,8 +1198,28 @@ ${feedback}`;
             .map((ar) => `-- ${ar.role} (FAILED) --\n${ar.outputTail.slice(-1000)}`)
             .join("\n\n");
 
-          // Re-run implementation with feedback
+          // Re-run implementation with feedback — scope to affected layer when possible
           const implStage = dispatchPlan.stages[lastImplStageIdx];
+
+          // Detect which layer failed from QA output
+          const feedbackText = feedback.toLowerCase();
+          let failedLayer = "unknown";
+          if (/\[frontend\]|frontend-coder|Frontend\//.test(feedback) && !/\[backend\]|backend-coder|Backend\//.test(feedback)) {
+            failedLayer = "frontend";
+          } else if (/\[backend\]|backend-coder|Backend\//.test(feedback) && !/\[frontend\]|frontend-coder|Frontend\//.test(feedback)) {
+            failedLayer = "backend";
+          }
+
+          // Scope to affected agents if layer was identified
+          let scopedStage = implStage;
+          if (failedLayer !== "unknown" && implStage.agents.length > 1) {
+            const scopedAgents = implStage.agents.filter(a => a.role.toLowerCase().includes(failedLayer));
+            if (scopedAgents.length > 0) {
+              scopedStage = { ...implStage, agents: scopedAgents };
+              console.log(`[${run.id}]   Scoped feedback to ${failedLayer} layer (${scopedAgents.length}/${implStage.agents.length} agents)`);
+            }
+          }
+
           const fbImplKey = `feedback_${feedbackLoops}_${implStage.name}`;
           run.status = "implementing";
           run.phases[fbImplKey] = { status: "running", startedAt: ts(), agents: {} };
@@ -1063,7 +1232,7 @@ ${feedback}`;
           });
 
           console.log(`[${run.id}]   Re-running ${implStage.name} with QA feedback...`);
-          const implResult = await this.executeStageInWorker(containerId, implStage, feedback);
+          const implResult = await this.executeStageInWorker(containerId, scopedStage, feedback);
 
           for (const ar of implResult.agentResults) {
             run.phases[fbImplKey].agents[ar.role] = {
@@ -1139,9 +1308,17 @@ ${feedback}`;
       this.registry.update(run.id, { appRunning: !!run.app?.running });
 
       // ── Phase 4: Final validation (smoketest + inspector in parallel, in worker) ──
+      // Conditional Inspector: skip for low-risk TheFixer cycles (pipeline optimisation)
+      const skipInspector = run.riskLevel === "low" && run.team === "TheFixer";
+
       run.status = "validating";
       run.phases.smoketest = { status: "running", startedAt: ts() };
-      run.phases.inspector = { status: "running", startedAt: ts() };
+      if (skipInspector) {
+        run.phases.inspector = { status: "skipped", reason: "low_risk_fixer" };
+        console.log(`[${run.id}] Phase 4: Skipping Inspector (low-risk TheFixer)`);
+      } else {
+        run.phases.inspector = { status: "running", startedAt: ts() };
+      }
       saveRunFn(run);
 
       this.registry.update(run.id, {
@@ -1150,32 +1327,43 @@ ${feedback}`;
         phaseStartedAt: ts(),
       });
 
-      console.log(`[${run.id}] Phase 4: Validation (smoketest + inspector in worker)`);
+      console.log(`[${run.id}] Phase 4: Validation (smoketest${skipInspector ? "" : " + inspector"} in worker)`);
 
-      const [smokeResult, inspectorResult] = await Promise.all([
+      const validationPromises = [
         this.containerManager.execInWorker(
           containerId,
           "bash",
           ["/app/scripts/run-smoketest.sh"],
           { label: "smoketest" }
         ),
-        this.containerManager.execInWorker(
-          containerId,
-          "bash",
-          ["/app/scripts/run-team.sh", "TheInspector", `Post-work audit after ${run.team} completed: ${run.task}`],
-          { label: "inspector" }
-        ),
-      ]);
+      ];
+      if (!skipInspector) {
+        validationPromises.push(
+          this.containerManager.execInWorker(
+            containerId,
+            "bash",
+            ["/app/scripts/run-team.sh", "TheInspector", `Post-work audit after ${run.team} completed: ${run.task}`],
+            { label: "inspector" }
+          )
+        );
+      }
+
+      const validationResults = await Promise.all(validationPromises);
+      const smokeResult = validationResults[0];
+      const inspectorResult = skipInspector ? null : validationResults[1];
 
       run.phases.smoketest.status = smokeResult.exitCode === 0 ? "passed" : "failed";
       run.phases.smoketest.exitCode = smokeResult.exitCode;
       run.phases.smoketest.completedAt = ts();
       run.phases.smoketest.outputTail = smokeResult.stdout.slice(-2000);
 
-      run.phases.inspector.status = inspectorResult.exitCode === 0 ? "passed" : "failed";
-      run.phases.inspector.exitCode = inspectorResult.exitCode;
-      run.phases.inspector.completedAt = ts();
-      run.phases.inspector.outputTail = inspectorResult.stdout.slice(-2000);
+      if (inspectorResult) {
+        run.phases.inspector.status = inspectorResult.exitCode === 0 ? "passed" : "failed";
+        run.phases.inspector.exitCode = inspectorResult.exitCode;
+        run.phases.inspector.completedAt = ts();
+        run.phases.inspector.outputTail = inspectorResult.stdout.slice(-2000);
+      }
+      await this._writeProgress(containerId, run);
 
       // ── Phase 5: Compute final result ──
       const implPassed = Object.keys(run.phases)
@@ -1187,7 +1375,7 @@ ${feedback}`;
         .every((k) => run.phases[k].status === "passed");
 
       const smokePassed = run.phases.smoketest.status === "passed";
-      const inspectorPassed = run.phases.inspector.status === "passed";
+      const inspectorPassed = run.phases.inspector.status === "passed" || run.phases.inspector.status === "skipped";
 
       // Smoketest is advisory when both implementation AND QA passed independently.
       // Rationale: if multiple QA agents verified the code, a smoketest false negative

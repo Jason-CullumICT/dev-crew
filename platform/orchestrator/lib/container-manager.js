@@ -20,10 +20,9 @@ class ContainerManager {
       return;
     }
     console.log(`[container] Worker image not found or rebuild requested — building now`);
-    // Build context is the repo root, available at /workspace inside the orchestrator container.
-    // Dockerfile.worker requires templates/ which is only in the repo root, not in the
-    // orchestrator image itself, so we must use the /workspace volume as the build context.
-    const contextPath = config.workspace || "/workspace";
+    // Build context is /app/worker-build inside the orchestrator container, which contains
+    // Dockerfile.worker, platform/scripts/, and templates/ — copied in at orchestrator build time.
+    const contextPath = "/app/worker-build";
     const dockerfilePath = "platform/Dockerfile.worker";
     await this.docker.buildImage(dockerfilePath, contextPath, config.workerImage);
   }

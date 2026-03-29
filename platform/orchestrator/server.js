@@ -1003,8 +1003,13 @@ app.listen(config.port, "0.0.0.0", async () => {
   await dockerClient.init();
 
   if (dockerClient.available) {
-    // Check worker image
-    await containerManager.ensureWorkerImage();
+    // Check worker image — don't crash if build fails, dashboard should remain accessible
+    try {
+      await containerManager.ensureWorkerImage();
+    } catch (err) {
+      console.error(`[boot] Worker image build failed: ${err.message}`);
+      console.error(`[boot] Pipeline runs will fail until the worker image is available`);
+    }
 
     // Recover state from previous runs
     const activeRuns = listRuns().filter(

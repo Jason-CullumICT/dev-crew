@@ -25,6 +25,11 @@ COPY platform/orchestrator/ ./
 COPY platform/scripts/ /app/scripts/
 RUN chmod +x /app/scripts/*.sh
 
+# Copy worker build context so orchestrator can build the worker image at runtime
+COPY platform/Dockerfile.worker /app/worker-build/platform/Dockerfile.worker
+COPY platform/scripts/ /app/worker-build/platform/scripts/
+COPY templates/ /app/worker-build/templates/
+
 EXPOSE 8080
 
 CMD ["node", "server.js"]

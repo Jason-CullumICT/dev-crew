@@ -141,10 +141,9 @@ class DockerClient {
   }
 
   /**
-   * Build a Docker image by shelling out to `docker build`.
-   * The orchestrator container has docker.sock mounted but does not contain
-   * the full repo context (templates/ etc.), so we use the /workspace volume
-   * which holds the cloned repo at its root.
+   * Build a Docker image using dockerode's buildImage API.
+   * Creates a tar stream of the build context via `tar` CLI (available in
+   * the container), then passes it to the Docker daemon over the socket.
    *
    * @param {string} dockerfilePath - Path to the Dockerfile, relative to contextPath
    * @param {string} contextPath - Absolute path to the build context directory
@@ -152,37 +151,53 @@ class DockerClient {
    * @returns {Promise<void>} Resolves when build succeeds, throws on failure
    */
   async buildImage(dockerfilePath, contextPath, tag) {
-    const { execFile } = require("child_process");
-    const { promisify } = require("util");
-    const execFileAsync = promisify(execFile);
+    const { spawn } = require("child_process");
 
     console.log(`[docker] Building image ${tag} from ${contextPath} (Dockerfile: ${dockerfilePath})`);
 
-    try {
-      const { stdout, stderr } = await execFileAsync(
-        "docker",
-        ["build", "-t", tag, "-f", dockerfilePath, contextPath],
-        { maxBuffer: 50 * 1024 * 1024 } // 50 MB — build output can be large
-      );
-      if (stdout) {
-        for (const line of stdout.split("\n")) {
-          if (line.trim()) console.log(`  [docker build] ${line}`);
+    // Create tar stream of build context using tar CLI
+    const tar = spawn("tar", ["-cf", "-", "-C", contextPath, "."], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    // Pass tar stream to dockerode buildImage
+    const stream = await this.docker.buildImage(tar.stdout, {
+      t: tag,
+      dockerfile: dockerfilePath,
+    });
+
+    // Follow build output and wait for completion
+    await new Promise((resolve, reject) => {
+      let lastError = null;
+      stream.on("data", (chunk) => {
+        try {
+          const lines = chunk.toString().split("\n").filter(Boolean);
+          for (const line of lines) {
+            const json = JSON.parse(line);
+            if (json.stream && json.stream.trim()) {
+              console.log(`  [docker build] ${json.stream.trimEnd()}`);
+            }
+            if (json.error) {
+              lastError = json.error;
+              console.error(`  [docker build] ERROR: ${json.error}`);
+            }
+          }
+        } catch {
+          // Non-JSON output, log as-is
+          const text = chunk.toString().trim();
+          if (text) console.log(`  [docker build] ${text}`);
         }
-      }
-      if (stderr) {
-        for (const line of stderr.split("\n")) {
-          if (line.trim()) console.log(`  [docker build] ${line}`);
+      });
+      stream.on("end", () => {
+        if (lastError) {
+          reject(new Error(`docker build failed for ${tag}: ${lastError}`));
+        } else {
+          console.log(`[docker] Image ${tag} built successfully`);
+          resolve();
         }
-      }
-      console.log(`[docker] Image ${tag} built successfully`);
-    } catch (err) {
-      // execFile rejects with an error that carries stdout/stderr
-      const output = (err.stdout || "") + (err.stderr || "");
-      for (const line of output.split("\n")) {
-        if (line.trim()) console.error(`  [docker build] ${line}`);
-      }
-      throw new Error(`docker build failed for ${tag}: ${err.message}`);
-    }
+      });
+      stream.on("error", (err) => reject(new Error(`docker build stream error: ${err.message}`)));
+    });
   }
 }
 

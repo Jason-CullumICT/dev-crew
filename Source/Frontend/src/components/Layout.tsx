@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { path: '/', label: 'Dashboard' },
   { path: '/work-items', label: 'Work Items' },
   { path: '/work-items/new', label: 'Create Item' },
+  { path: '/debug', label: 'Debug Portal' },
 ];
 
 export const Layout: React.FC = () => {

@@ -4,13 +4,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import Database from 'better-sqlite3';
 import type { BugReport, BugSeverity, BugStatus, WorkItemType, DependencyLink } from '../../../Shared/types';
-import { RESOLVED_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
+import { RESOLVED_STATUSES, HIDDEN_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
 import { DependencyService } from './dependencyService';
 import { AppError } from '../middleware/errorHandler';
 
 // --- Valid enum values (DD-8) ---
 export const VALID_SEVERITIES: BugSeverity[] = ['low', 'medium', 'high', 'critical'];
-export const VALID_BUG_STATUSES: BugStatus[] = ['reported', 'triaged', 'in_development', 'resolved', 'closed', 'pending_dependencies'];
+// Verifies: FR-DUP-01
+export const VALID_BUG_STATUSES: BugStatus[] = ['reported', 'triaged', 'in_development', 'resolved', 'closed', 'pending_dependencies', 'duplicate', 'deprecated'];
 
 // --- Input length limits (DD-11, Security M-04) ---
 export const TITLE_MAX_LENGTH = 200;
@@ -28,6 +29,8 @@ interface BugRow {
   related_work_item_type: string | null;
   related_cycle_id: string | null;
   target_repo: string | null;
+  duplicate_of: string | null;         // Verifies: FR-DUP-02
+  deprecation_reason: string | null;   // Verifies: FR-DUP-02
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +38,12 @@ interface BugRow {
 function mapBugRow(db: Database.Database, row: BugRow): BugReport {
   const depService = new DependencyService(db);
   const id = row.id;
-  
+
+  // Verifies: FR-DUP-03 — Compute duplicated_by from DB
+  const duplicatedByRows = db.prepare(
+    `SELECT id FROM bugs WHERE duplicate_of = ?`
+  ).all(id) as Array<{ id: string }>;
+
   return {
     id,
     title: row.title,
@@ -47,6 +55,9 @@ function mapBugRow(db: Database.Database, row: BugRow): BugReport {
     related_work_item_type: (row.related_work_item_type as WorkItemType) || null, // FR-054
     related_cycle_id: row.related_cycle_id || null,                // FR-054
     target_repo: row.target_repo || null,
+    duplicate_of: row.duplicate_of || null,                        // Verifies: FR-DUP-02
+    deprecation_reason: row.deprecation_reason || null,            // Verifies: FR-DUP-02
+    duplicated_by: duplicatedByRows.map(r => r.id),                // Verifies: FR-DUP-03
     created_at: row.created_at,
     updated_at: row.updated_at,
     blocked_by: depService.getBlockedBy('bug', id),
@@ -71,11 +82,19 @@ function generateBugId(db: Database.Database): string {
 export interface ListBugsOptions {
   status?: string;
   severity?: string;
+  include_hidden?: boolean;  // Verifies: FR-DUP-05
 }
 
+// Verifies: FR-DUP-05
 export function listBugs(db: Database.Database, opts: ListBugsOptions = {}): BugReport[] {
   let query = `SELECT * FROM bugs WHERE 1=1`;
   const params: string[] = [];
+
+  // Verifies: FR-DUP-05 — Exclude hidden statuses by default
+  if (!opts.include_hidden) {
+    query += ` AND status NOT IN (${HIDDEN_STATUSES.map(() => '?').join(', ')})`;
+    params.push(...HIDDEN_STATUSES as unknown as string[]);
+  }
 
   if (opts.status) {
     query += ` AND status = ?`;
@@ -157,6 +176,8 @@ export interface UpdateBugInput {
   severity?: string;
   status?: string;
   source_system?: string;
+  duplicate_of?: string;                      // Verifies: FR-DUP-04
+  deprecation_reason?: string;                // Verifies: FR-DUP-04
   blocked_by?: string[];                      // Verifies: FR-dependency-linking
 }
 
@@ -199,6 +220,44 @@ export function updateBug(db: Database.Database, id: string, input: UpdateBugInp
       throw new AppError(400, `Invalid status. Must be one of: ${VALID_BUG_STATUSES.join(', ')}`);
     }
 
+    // Verifies: FR-DUP-04 — Block transitions OUT of duplicate/deprecated (terminal statuses)
+    if ((bug.status === 'duplicate' || bug.status === 'deprecated') && newStatus !== bug.status) {
+      throw new AppError(400, `Cannot transition from '${bug.status}' to '${newStatus}'. Duplicate/deprecated are terminal statuses`);
+    }
+
+    // Verifies: FR-DUP-04 — Validate duplicate_of when setting status to duplicate
+    if (newStatus === 'duplicate') {
+      if (!input.duplicate_of) {
+        throw new AppError(400, `duplicate_of is required when status is 'duplicate'`);
+      }
+      if (input.duplicate_of === id) {
+        throw new AppError(400, `An item cannot be a duplicate of itself`);
+      }
+      // Verifies: FR-DUP-07 — Validate reference exists
+      const canonical = db.prepare(`SELECT id FROM bugs WHERE id = ?`).get(input.duplicate_of);
+      if (!canonical) {
+        throw new AppError(400, `duplicate_of references non-existent bug: ${input.duplicate_of}`);
+      }
+      updates.push(`duplicate_of = ?`);
+      params.push(input.duplicate_of);
+      // Clear deprecation_reason when marking as duplicate
+      updates.push(`deprecation_reason = ?`);
+      params.push(null);
+    } else if (newStatus === 'deprecated') {
+      // Verifies: FR-DUP-04 — Accept optional deprecation_reason
+      updates.push(`deprecation_reason = ?`);
+      params.push(input.deprecation_reason || null);
+      // Clear duplicate_of when marking as deprecated
+      updates.push(`duplicate_of = ?`);
+      params.push(null);
+    } else {
+      // Transitioning to a non-duplicate/deprecated status: clear both fields
+      updates.push(`duplicate_of = ?`);
+      params.push(null);
+      updates.push(`deprecation_reason = ?`);
+      params.push(null);
+    }
+
     // Verifies: FR-dependency-dispatch-gating — Dispatch gating check
     if (DISPATCH_TRIGGER_STATUSES.includes(newStatus!)) {
       const readiness = depService.isReady('bug', id);
@@ -206,7 +265,7 @@ export function updateBug(db: Database.Database, id: string, input: UpdateBugInp
         newStatus = 'pending_dependencies';
       }
     }
-    
+
     updates.push(`status = ?`);
     params.push(newStatus);
   }
@@ -229,7 +288,7 @@ export function updateBug(db: Database.Database, id: string, input: UpdateBugInp
     db.prepare(`UPDATE bugs SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   }
 
-  // Verifies: FR-dependency-dispatch-gating — Cascade on completion
+  // Verifies: FR-dependency-dispatch-gating, FR-DUP-13 — Cascade on completion
   if (newStatus && RESOLVED_STATUSES.includes(newStatus) && !RESOLVED_STATUSES.includes(bug.status)) {
     depService.onItemCompleted('bug', id);
   }

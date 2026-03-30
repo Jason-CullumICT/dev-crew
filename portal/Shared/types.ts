@@ -3,10 +3,12 @@
 
 // --- Enums / Union Types ---
 
-export type FeatureRequestStatus = 'potential' | 'voting' | 'approved' | 'denied' | 'in_development' | 'completed' | 'pending_dependencies';
+// Verifies: FR-DUP-01
+export type FeatureRequestStatus = 'potential' | 'voting' | 'approved' | 'denied' | 'in_development' | 'completed' | 'pending_dependencies' | 'duplicate' | 'deprecated';
 export type FeatureRequestSource = 'manual' | 'zendesk' | 'competitor_analysis' | 'code_review';
 export type Priority = 'low' | 'medium' | 'high' | 'critical';
-export type BugStatus = 'reported' | 'triaged' | 'in_development' | 'resolved' | 'closed' | 'pending_dependencies';
+// Verifies: FR-DUP-01
+export type BugStatus = 'reported' | 'triaged' | 'in_development' | 'resolved' | 'closed' | 'pending_dependencies' | 'duplicate' | 'deprecated';
 export type BugSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type CycleStatus = 'spec_changes' | 'ticket_breakdown' | 'implementation' | 'review' | 'smoke_test' | 'complete';
 export type TicketStatus = 'pending' | 'in_progress' | 'code_review' | 'testing' | 'security_review' | 'done';
@@ -14,11 +16,19 @@ export type VoteDecision = 'approve' | 'deny';
 export type LearningCategory = 'process' | 'technical' | 'domain';
 export type WorkItemType = 'feature_request' | 'bug';
 
-// Verifies: FR-dependency-dispatch-gating — Statuses that count as "resolved" for dependency checking
+// Verifies: FR-dependency-dispatch-gating, FR-DUP-13 — Statuses that count as "resolved" for dependency checking
 export const RESOLVED_STATUSES: readonly string[] = [
   'completed',
   'resolved',
   'closed',
+  'duplicate',
+  'deprecated',
+] as const;
+
+// Verifies: FR-DUP-05 — Statuses hidden from list endpoints by default
+export const HIDDEN_STATUSES: readonly string[] = [
+  'duplicate',
+  'deprecated',
 ] as const;
 
 // Verifies: FR-dependency-dispatch-gating — Statuses that trigger dispatch gating checks
@@ -79,6 +89,9 @@ export interface FeatureRequest {
   created_at: string;                  // ISO timestamp
   target_repo: string | null;           // Target GitHub repo URL for orchestrator
   updated_at: string;                  // ISO timestamp
+  duplicate_of: string | null;           // Verifies: FR-DUP-02
+  deprecation_reason: string | null;    // Verifies: FR-DUP-02
+  duplicated_by: string[];              // Verifies: FR-DUP-03
   blocked_by?: DependencyLink[];        // Verifies: FR-dependency-linking
   blocks?: DependencyLink[];            // Verifies: FR-dependency-linking
   has_unresolved_blockers?: boolean;    // Verifies: FR-dependency-linking
@@ -104,6 +117,9 @@ export interface BugReport {
   related_work_item_type: WorkItemType | null; // FR-050
   related_cycle_id: string | null;            // FR-050
   target_repo: string | null;           // Target GitHub repo URL for orchestrator
+  duplicate_of: string | null;           // Verifies: FR-DUP-02
+  deprecation_reason: string | null;    // Verifies: FR-DUP-02
+  duplicated_by: string[];              // Verifies: FR-DUP-03
   created_at: string;
   updated_at: string;
   blocked_by?: DependencyLink[];        // Verifies: FR-dependency-linking

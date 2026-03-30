@@ -1,9 +1,11 @@
 // Verifies: FR-026
 // Verifies: FR-068
 // Verifies: FR-085
+// Verifies: FR-DUP-09, FR-DUP-10
 import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import type { BugReport, ImageAttachment } from '../../../../Shared/types'
+import { HIDDEN_STATUSES } from '../../../../Shared/types'
 import { bugs, images, orchestrator, repos } from '../../api/client'
 import { ImageThumbnails } from '../common/ImageThumbnails'
 import { ImageUpload } from '../common/ImageUpload'
@@ -29,12 +31,20 @@ const STATUS_COLORS: Record<string, string> = {
   resolved: 'bg-green-100 text-green-700',
   closed: 'bg-gray-100 text-gray-500',
   pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
+  duplicate: 'bg-purple-100 text-purple-700',      // Verifies: FR-DUP-10
+  deprecated: 'bg-gray-200 text-gray-500',          // Verifies: FR-DUP-10
 }
 
 export function BugDetail({ bug, onUpdate, onClose }: BugDetailProps) {
   const [attachedImages, setAttachedImages] = useState<ImageAttachment[]>([])
   const [error, setError] = useState<string | null>(null)
   const [submittingToOrch, setSubmittingToOrch] = useState(false)
+  // Verifies: FR-DUP-09
+  const [showDuplicateForm, setShowDuplicateForm] = useState(false)
+  const [duplicateOfId, setDuplicateOfId] = useState('')
+  const [showDeprecatedForm, setShowDeprecatedForm] = useState(false)
+  const [deprecationReason, setDeprecationReason] = useState('')
+  const [markingStatus, setMarkingStatus] = useState(false)
   const [selectedRepo, setSelectedRepo] = useState(bug.target_repo || "https://github.com/Jason-CullumICT/dev-crew")
   const [sessionToken, setSessionToken] = useState("")
   const [tokenLabel, setTokenLabel] = useState("")
@@ -117,8 +127,71 @@ Severity: ${bug.severity}`,
     }
   }
 
+  // Verifies: FR-DUP-09
+  const handleMarkDuplicate = async () => {
+    const trimmed = duplicateOfId.trim().toUpperCase()
+    if (!trimmed || !trimmed.startsWith('BUG-')) {
+      setError('Please enter a valid bug ID (e.g. BUG-0003)')
+      return
+    }
+    if (trimmed === bug.id) {
+      setError('A bug cannot be a duplicate of itself')
+      return
+    }
+    setMarkingStatus(true)
+    setError(null)
+    try {
+      const updated = await bugs.update(bug.id, { status: 'duplicate', duplicate_of: trimmed })
+      onUpdate(updated)
+      setShowDuplicateForm(false)
+      setDuplicateOfId('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark as duplicate')
+    } finally {
+      setMarkingStatus(false)
+    }
+  }
+
+  // Verifies: FR-DUP-09
+  const handleMarkDeprecated = async () => {
+    setMarkingStatus(true)
+    setError(null)
+    try {
+      const updated = await bugs.update(bug.id, {
+        status: 'deprecated',
+        deprecation_reason: deprecationReason.trim() || undefined,
+      })
+      onUpdate(updated)
+      setShowDeprecatedForm(false)
+      setDeprecationReason('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark as deprecated')
+    } finally {
+      setMarkingStatus(false)
+    }
+  }
+
+  const isHidden = HIDDEN_STATUSES.includes(bug.status)
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-5">
+      {/* Verifies: FR-DUP-10 — Duplicate banner */}
+      {bug.status === 'duplicate' && bug.duplicate_of && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 text-sm text-purple-800">
+          This bug is a duplicate of{' '}
+          <Link to="/bugs" className="font-semibold underline hover:text-purple-900">
+            {bug.duplicate_of}
+          </Link>
+        </div>
+      )}
+
+      {/* Verifies: FR-DUP-10 — Deprecated banner */}
+      {bug.status === 'deprecated' && (
+        <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-700">
+          This bug is deprecated.{bug.deprecation_reason ? ` Reason: ${bug.deprecation_reason}` : ''}
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <span className="text-xs font-mono text-gray-400">{bug.id}</span>
@@ -263,6 +336,87 @@ Severity: ${bug.severity}`,
           >
             {submittingToOrch ? "Submitting..." : "Submit to Orchestrator"}
           </button>
+        </div>
+      )}
+
+      {/* Verifies: FR-DUP-09 — Mark as Duplicate / Deprecated actions */}
+      {!isHidden && (
+        <div className="border-t border-gray-100 pt-4 space-y-2">
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Disposition</h4>
+          <div className="flex flex-wrap gap-2">
+            {!showDuplicateForm && !showDeprecatedForm && (
+              <>
+                <button
+                  onClick={() => { setShowDuplicateForm(true); setShowDeprecatedForm(false) }}
+                  className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100"
+                >
+                  Mark as Duplicate
+                </button>
+                <button
+                  onClick={() => { setShowDeprecatedForm(true); setShowDuplicateForm(false) }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100"
+                >
+                  Mark as Deprecated
+                </button>
+              </>
+            )}
+          </div>
+
+          {showDuplicateForm && (
+            <div className="border border-purple-200 rounded-lg p-3 bg-purple-50 space-y-2">
+              <label className="text-sm font-medium text-purple-800">Canonical Bug ID</label>
+              <input
+                type="text"
+                value={duplicateOfId}
+                onChange={(e) => setDuplicateOfId(e.target.value)}
+                placeholder="BUG-0003"
+                className="w-full px-3 py-1.5 border border-purple-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleMarkDuplicate}
+                  disabled={markingStatus}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {markingStatus ? 'Saving...' : 'Confirm Duplicate'}
+                </button>
+                <button
+                  onClick={() => { setShowDuplicateForm(false); setDuplicateOfId('') }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showDeprecatedForm && (
+            <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 space-y-2">
+              <label className="text-sm font-medium text-gray-700">Deprecation Reason (optional)</label>
+              <input
+                type="text"
+                value={deprecationReason}
+                onChange={(e) => setDeprecationReason(e.target.value)}
+                placeholder="e.g. Superseded by new auth system"
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleMarkDeprecated}
+                  disabled={markingStatus}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {markingStatus ? 'Saving...' : 'Confirm Deprecated'}
+                </button>
+                <button
+                  onClick={() => { setShowDeprecatedForm(false); setDeprecationReason('') }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

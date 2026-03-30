@@ -229,6 +229,23 @@ export function runMigrations(db: Database.Database): void {
   `);
 
 
+  // --- Verifies: FR-DUP-08 — Add duplicate_of and deprecation_reason columns ---
+  const frColsDup = db.prepare(`PRAGMA table_info(feature_requests)`).all() as Array<{ name: string }>;
+  if (!frColsDup.some((col) => col.name === 'duplicate_of')) {
+    db.exec(`ALTER TABLE feature_requests ADD COLUMN duplicate_of TEXT`);
+  }
+  if (!frColsDup.some((col) => col.name === 'deprecation_reason')) {
+    db.exec(`ALTER TABLE feature_requests ADD COLUMN deprecation_reason TEXT`);
+  }
+
+  const bugColsDup = db.prepare(`PRAGMA table_info(bugs)`).all() as Array<{ name: string }>;
+  if (!bugColsDup.some((col) => col.name === 'duplicate_of')) {
+    db.exec(`ALTER TABLE bugs ADD COLUMN duplicate_of TEXT`);
+  }
+  if (!bugColsDup.some((col) => col.name === 'deprecation_reason')) {
+    db.exec(`ALTER TABLE bugs ADD COLUMN deprecation_reason TEXT`);
+  }
+
   // --- Add target_repo to feature_requests and bugs ---
   const frCols = db.prepare(`PRAGMA table_info(feature_requests)`).all() as Array<{ name: string }>;
   if (!frCols.some((col) => col.name === "target_repo")) {

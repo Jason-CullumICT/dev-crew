@@ -217,7 +217,7 @@ ${feedback}`;
       containerId,
       "claude",
       ["-p", fullPrompt, "--allowedTools", "Bash,Read,Write,Edit,Glob,Grep", "--output-format", "text"],
-      { label: role }
+      { label: role, timeoutMs: this.config.phaseTimeoutMs }
     );
 
     console.log(`    [agent] ${role} done (exit: ${result.exitCode})`);
@@ -454,7 +454,7 @@ if [ "$CONFLICTS" -gt 0 ]; then
   echo "CONFLICTING_FILES=$(echo "$MERGE_OUTPUT" | grep "^+++" | sed 's|^+++ b/||' | head -5 | tr '\\n' ',' || echo 'see-merge-output')"
 fi
       `],
-      { label: "preflight-conflict-check" }
+      { label: "preflight-conflict-check", timeoutMs: 300_000 }
     );
 
     if (conflictCheck.stdout.includes("PREFLIGHT_ERROR=")) {
@@ -809,6 +809,18 @@ fi
 
     let containerId = null;
 
+    // ── Cycle watchdog — safety net if phase timeouts don't catch a hang ──
+    let cycleWatchdogFired = false;
+    const cycleTimer = setTimeout(async () => {
+      cycleWatchdogFired = true;
+      const mins = Math.round(this.config.cycleTimeoutMs / 60000);
+      console.error(`[${run.id}] Cycle watchdog: timed out after ${mins}m — forcing failure`);
+      run.status = "failed";
+      run.results = { ...run.results, error: `Cycle timed out after ${mins}m`, allPassed: false };
+      saveRunFn(run);
+      await this._teardownOnFailure(run.id, containerId).catch(() => {});
+    }, this.config.cycleTimeoutMs);
+
     // ── Resume detection ──
     const isResume = !!run.resumedFrom;
     let reRanUpstream = false;
@@ -897,20 +909,20 @@ fi
         // Check if git repo is intact, reinit if corrupted
         const gitCheck = await this.containerManager.execInWorker(containerId, "bash", ["-c",
           `cd /workspace && git rev-parse --git-dir 2>/dev/null || echo "NOT_A_GIT_REPO"`
-        ], { label: "git-check", quiet: true });
+        ], { label: "git-check", timeoutMs: 300_000, quiet: true });
 
         if (gitCheck.stdout.includes("NOT_A_GIT_REPO")) {
           console.warn(`[${run.id}] RETRY: Git repo missing/corrupted — reinitializing`);
           const repoUrl = run.repo || this.config.githubRepo;
           await this.containerManager.execInWorker(containerId, "bash", ["-c",
             `cd /workspace && git init && git remote add origin "${repoUrl}" && git fetch origin ${this._baseBranch(run)} --depth 1 && git reset --soft FETCH_HEAD 2>/dev/null || true`
-          ], { label: "git-repair", quiet: true });
+          ], { label: "git-repair", timeoutMs: 300_000, quiet: true });
         }
 
         // Refresh git + gh credentials
         await this.containerManager.execInWorker(containerId, "bash", ["-c",
           `cd /workspace && git config user.name "dev-crew" && git config user.email "pipeline@dev-crew.local" && echo "https://$GITHUB_TOKEN@github.com" > ~/.git-credentials && git config --global credential.helper store && (echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null; gh auth setup-git 2>/dev/null) || true`
-        ], { label: "git-auth", quiet: true });
+        ], { label: "git-auth", timeoutMs: 300_000, quiet: true });
       } else {
         console.log(`[${run.id}] Initializing workspace in worker...`);
         await this.containerManager.initWorkspace(containerId, run.id);
@@ -980,7 +992,7 @@ fi
           containerId,
           "bash",
           ["/app/scripts/run-team.sh", run.team, taskWithImages, run.planFile || ""],
-          { label: `${run.team}-leader` }
+          { label: `${run.team}-leader`, timeoutMs: this.config.phaseTimeoutMs }
         );
 
         run.phases.leader.status = leaderResult.exitCode === 0 ? "passed" : "failed";
@@ -1369,7 +1381,7 @@ fi
           containerId,
           "bash",
           ["/app/scripts/run-smoketest.sh"],
-          { label: "smoketest" }
+          { label: "smoketest", timeoutMs: this.config.phaseTimeoutMs }
         ),
       ];
       if (!skipInspector) {
@@ -1378,7 +1390,7 @@ fi
             containerId,
             "bash",
             ["/app/scripts/run-team.sh", "TheInspector", `Post-work audit after ${run.team} completed: ${run.task}`],
-            { label: "inspector" }
+            { label: "inspector", timeoutMs: this.config.phaseTimeoutMs }
           )
         );
       }
@@ -1549,7 +1561,7 @@ fi
       const commitCheck = await this.containerManager.execInWorker(
         containerId, "bash",
         ["-c", `cd /workspace && git log --oneline origin/${this.config.githubBranch}..HEAD 2>/dev/null | wc -l`],
-        { label: "commit-check", quiet: true }
+        { label: "commit-check", timeoutMs: 300_000, quiet: true }
       );
       const localCommitCount = parseInt((commitCheck.stdout || "").trim(), 10) || 0;
 
@@ -1557,7 +1569,7 @@ fi
       const remoteCheck = await this.containerManager.execInWorker(
         containerId, "bash",
         ["-c", `cd /workspace && git fetch origin "cycle/${run.id}" 2>/dev/null && git log --oneline "origin/cycle/${run.id}" --not "origin/${this.config.githubBranch}" 2>/dev/null | wc -l`],
-        { label: "remote-verify", quiet: true }
+        { label: "remote-verify", timeoutMs: 300_000, quiet: true }
       );
       const remoteCommitCount = parseInt((remoteCheck.stdout || "").trim(), 10) || 0;
 
@@ -1652,7 +1664,7 @@ fi
         ].join(" && ");
         const syncResult = await this.containerManager.execInWorker(
           containerId, "bash", ["-c", syncScript],
-          { label: "learnings-sync", quiet: true }
+          { label: "learnings-sync", timeoutMs: 300_000, quiet: true }
         );
         if (syncResult.exitCode === 0) {
           console.log(`[${run.id}] Learnings synced to ${mainBranch}`);
@@ -1717,17 +1729,17 @@ fi
         console.warn(`[${run.id}] Worker cleanup warning: ${cleanupErr.message}`);
       }
 
-      // Clear credentials from memory — token lifecycle ends with the workflow
-      this._activeCredentialsJson = null;
-
     } catch (err) {
-      this._activeCredentialsJson = null; // Clear on error too
-      console.error(`[${run.id}] Workflow error:`, err);
-      run.status = "failed";
-      run.results = { ...run.results, error: err.message, allPassed: false };
-      saveRunFn(run);
-
-      await this._teardownOnFailure(run.id, containerId);
+      if (!cycleWatchdogFired) {
+        console.error(`[${run.id}] Workflow error:`, err);
+        run.status = "failed";
+        run.results = { ...run.results, error: err.message, allPassed: false };
+        saveRunFn(run);
+        await this._teardownOnFailure(run.id, containerId);
+      }
+    } finally {
+      clearTimeout(cycleTimer);
+      this._activeCredentialsJson = null;
     }
   }
 

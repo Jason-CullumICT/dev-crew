@@ -50,8 +50,10 @@ export interface RunTestResults {
 export interface RunPRInfo {
   number: number
   url: string
-  aiReviewVerdict?: string
-  mergeStatus?: string
+  aiReview?: string
+  aiReviewVerdict?: string  // alias — some API versions use this
+  status?: string           // e.g. 'open', 'merged', 'merge-conflict'
+  mergeStatus?: string      // alias — some API versions use this
 }
 
 // Verifies: FR-090

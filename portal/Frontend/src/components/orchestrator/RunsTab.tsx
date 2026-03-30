@@ -187,19 +187,29 @@ export function RunsTab() {
                 </span>
 
                 {/* Status badge — Verifies: FR-091, FR-095 */}
-                <span className="flex items-center gap-1">
-                  {isActive(run.status) && (
+                <span className="flex flex-col gap-0.5">
+                  <span className="flex items-center gap-1">
+                    {isActive(run.status) && (
+                      <span
+                        className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"
+                        data-testid="pulsing-indicator"
+                      />
+                    )}
                     <span
-                      className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"
-                      data-testid="pulsing-indicator"
-                    />
-                  )}
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${RUN_STATUS_COLORS[run.status] ?? 'bg-gray-100 text-gray-600'}`}
-                    data-testid="status-badge"
-                  >
-                    {run.status}
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${RUN_STATUS_COLORS[run.status] ?? 'bg-gray-100 text-gray-600'}`}
+                      data-testid="status-badge"
+                    >
+                      {run.status}
+                    </span>
                   </span>
+                  {(run.pr?.status ?? run.pr?.mergeStatus) === 'merge-conflict' && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700 whitespace-nowrap"
+                      data-testid="merge-conflict-badge"
+                    >
+                      ⚠ merge conflict
+                    </span>
+                  )}
                 </span>
 
                 {/* Team badge — Verifies: FR-091 */}

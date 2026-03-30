@@ -28,6 +28,7 @@ const MERGE_COLORS: Record<string, string> = {
   merged: 'bg-purple-100 text-purple-700',
   open: 'bg-blue-100 text-blue-700',
   closed: 'bg-gray-100 text-gray-600',
+  'merge-conflict': 'bg-orange-100 text-orange-700',
 }
 
 // Verifies: FR-092
@@ -92,6 +93,15 @@ export function RunDetailRow({ run, expanded, onNavigateToRun }: RunDetailRowPro
           {run.pr && (
             <div data-testid="run-detail-pr">
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Pull Request</h4>
+              {/* Merge conflict alert banner */}
+              {(run.pr.status ?? run.pr.mergeStatus) === 'merge-conflict' && (
+                <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-300 rounded text-orange-800 text-xs font-medium" data-testid="pr-merge-conflict-alert">
+                  ⚠ Merge conflict — manual resolution required before this PR can be merged.{' '}
+                  <a href={run.pr.url} target="_blank" rel="noopener noreferrer" className="underline text-orange-700 hover:text-orange-900">
+                    Open PR #{run.pr.number}
+                  </a>
+                </div>
+              )}
               <div className="flex items-center gap-3 text-sm">
                 <a
                   href={run.pr.url}
@@ -102,20 +112,20 @@ export function RunDetailRow({ run, expanded, onNavigateToRun }: RunDetailRowPro
                 >
                   #{run.pr.number}
                 </a>
-                {run.pr.aiReviewVerdict && (
+                {(run.pr.aiReview ?? run.pr.aiReviewVerdict) && (
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${VERDICT_COLORS[run.pr.aiReviewVerdict] ?? 'bg-gray-100 text-gray-600'}`}
+                    className={`text-xs px-2 py-0.5 rounded-full ${VERDICT_COLORS[run.pr.aiReview ?? run.pr.aiReviewVerdict ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
                     data-testid="pr-verdict"
                   >
-                    {run.pr.aiReviewVerdict}
+                    {run.pr.aiReview ?? run.pr.aiReviewVerdict}
                   </span>
                 )}
-                {run.pr.mergeStatus && (
+                {(run.pr.status ?? run.pr.mergeStatus) && (
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${MERGE_COLORS[run.pr.mergeStatus] ?? 'bg-gray-100 text-gray-600'}`}
+                    className={`text-xs px-2 py-0.5 rounded-full ${MERGE_COLORS[run.pr.status ?? run.pr.mergeStatus ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
                     data-testid="pr-merge-status"
                   >
-                    {run.pr.mergeStatus}
+                    {run.pr.status ?? run.pr.mergeStatus}
                   </span>
                 )}
               </div>

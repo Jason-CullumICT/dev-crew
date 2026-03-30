@@ -873,10 +873,14 @@ app.get("/", (req, res) => {
       ? `<span style="color:#f59e0b;font-size:0.75rem"> +${r.feedbackLoops}fb</span>`
       : "";
 
+    const hasMergeConflict = r.pr?.status === "merge-conflict";
+    const prLink = r.pr?.url && r.pr?.number
+      ? ` <a href="${r.pr.url}" target="_blank" style="color:#f97316;font-size:0.75rem" title="Open PR">#${r.pr.number}</a>`
+      : "";
     const resultBadge = r.results?.allPassed === true
       ? '<span style="color:#22c55e;font-weight:700">PASS</span>'
       : r.results?.allPassed === false
-        ? '<span style="color:#ef4444;font-weight:700">FAIL</span>'
+        ? `<span style="color:#ef4444;font-weight:700">FAIL</span>${hasMergeConflict ? ` <span style="color:#f97316;font-weight:700" title="PR has a merge conflict — manual resolution required">⚠ CONFLICT${prLink}</span>` : ""}`
         : "--";
 
     const elapsed = r.updatedAt && r.createdAt

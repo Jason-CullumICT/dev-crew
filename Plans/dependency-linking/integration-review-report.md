@@ -1,6 +1,6 @@
 # Integration Review Report: Dependency Linking in UI/API with Orchestrator Dispatch Gating
 
-**Reviewer**: integration (TheATeam)
+**Reviewer**: traceability-in-prs (TheATeam)
 **Date**: 2026-03-30
 **RISK_LEVEL**: high
 
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The dependency-linking feature is **substantially complete and functional**. All core backend services, routes, database schema, frontend components, and dispatch gating logic are implemented. Backend tests pass (508/508). Frontend has 15 test failures, all **pre-existing** (not introduced by this feature).
+The dependency-linking feature is **substantially complete and functional**. All core backend services, routes, database schema, frontend components, and dispatch gating logic are implemented. Backend tests pass (510/510). Frontend has 12 test failures, all **pre-existing** (not introduced by this feature). The feature branch fixed 3 pre-existing frontend failures.
 
 ---
 
@@ -16,15 +16,15 @@ The dependency-linking feature is **substantially complete and functional**. All
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Dependencies junction table with constraints/indexes | PASS | `schema.ts:210-229` — UNIQUE constraint, CHECK constraints, both indexes |
+| Dependencies junction table with constraints/indexes | PASS | `schema.ts:209-229` — UNIQUE constraint, CHECK constraints, both indexes |
 | Cycle detection (BFS) | PASS | `dependencyService.ts:160-205` — Correct BFS traversal |
-| Self-reference prevention | PASS | `dependencyService.ts:30-31` — Checked in addDependency and setDependencies |
+| Self-reference prevention | PASS | `dependencyService.ts:30-32` — Checked in addDependency and setDependencies |
 | PATCH accepts `blocked_by` array | PASS | Both `bugService.ts:280-282` and `featureRequestService.ts:319-321` |
-| POST dependency endpoints (add/remove) | PASS | `bugs.ts:214-260`, `featureRequests.ts` mirror |
-| GET hydrates `blocked_by`, `blocks`, `has_unresolved_blockers` | PASS | `mapBugRow()` at `bugService.ts:63-65`, `mapFRRow()` in featureRequestService |
-| Ready endpoint returns correct status | PASS | `bugs.ts:262-282`, `featureRequests.ts` mirror |
-| Dispatch gating: approved/in_development → pending_dependencies when blocked | PASS | `bugService.ts:262-268`, `featureRequestService.ts:289-295`, also in `approveFeatureRequest:369-373` |
-| Cascade: completed/resolved/closed → auto-dispatch pending items | PASS | `bugService.ts:292-295`, `featureRequestService.ts:332-334` → `onItemCompleted()` |
+| POST dependency endpoints (add/remove) | PASS | `bugs.ts:217-263`, `featureRequests.ts:296-342` |
+| GET hydrates `blocked_by`, `blocks`, `has_unresolved_blockers` | PASS | `mapBugRow()` at `bugService.ts:63-66`, `mapFRRow()` in featureRequestService |
+| Ready endpoint returns correct status | PASS | `bugs.ts:265-285`, `featureRequests.ts:344-364` |
+| Dispatch gating: approved/in_development -> pending_dependencies when blocked | PASS | `bugService.ts:262-268`, `featureRequestService.ts:289-295`, also in `approveFeatureRequest:369-375` |
+| Cascade: completed/resolved/closed -> auto-dispatch pending items | PASS | `bugService.ts:292-295`, `featureRequestService.ts:331-334` via `onItemCompleted()` |
 | Detail views show DependencySection | PASS | Both `BugDetail.tsx` and `FeatureRequestDetail.tsx` render DependencySection |
 | List views show BlockedBadge | PASS | Both `BugList.tsx` and `FeatureRequestList.tsx` render BlockedBadge |
 | DependencyPicker modal | PASS | `DependencyPicker.tsx` with search, selection, cycle guard, save |
@@ -33,26 +33,28 @@ The dependency-linking feature is **substantially complete and functional**. All
 | Traceability comments | PASS | All new code has `// Verifies: FR-dependency-*` comments |
 | Search endpoint for picker | PASS | `routes/search.ts` mounted at `/api/search`, registered in `index.ts:67` |
 | `pending_dependencies` in status transitions | PASS | `featureRequestService.ts:44` allows transition to `approved`, `duplicate`, `deprecated` |
+| Deletion cascade for dependencies | PASS | `bugService.ts:305`, `featureRequestService.ts:344` clean up orphaned rows |
+| POST create endpoints support blocked_by | PASS | `bugs.ts:49,66-76`, `featureRequests.ts:53,66` extract and pass blocked_by |
+| Shared API types include blocked_by | PASS | `api.ts:38` (UpdateFeatureRequestInput), `api.ts:68` (UpdateBugInput) |
 
 ---
 
 ## Test Results
 
-### Backend: 508/508 PASS
+### Backend: 510/510 PASS
 All 15 test files pass including:
-- `dependencies.test.ts` — Dependency CRUD, cycle detection, readiness, cascade, bulk set
-- `bugs.test.ts` — Dependency endpoints, dispatch gating (lines 601-670)
-- `featureRequests.test.ts` — Dependency endpoints, dispatch gating (lines 876-1029)
+- `dependencies.test.ts` — Dependency CRUD, cycle detection, readiness, cascade, bulk set, deletion cascade
+- Integration tests for bug/FR services with dispatch gating
 
-### Frontend: 188/203 PASS (15 failures — ALL PRE-EXISTING)
+### Frontend: 207/219 PASS (12 failures — ALL PRE-EXISTING)
 Pre-existing failures unrelated to this feature:
 - `OrchestratorCycleCard.test.tsx` — Missing component file (import resolution error)
 - `OrchestratorCycles.test.tsx` — Missing component file (import resolution error)
-- `BugReports.test.tsx` (1) — Create bug argument mismatch (target_repo field)
-- `FeatureRequests.test.tsx` (2) — Missing `repos` mock export
-- `ImageUpload.test.tsx` (4) — Missing `repos` mock export, argument mismatches
+- `ImageUpload.test.tsx` (6) — Missing `repos` mock export, argument mismatches
 - `Learnings.test.tsx` (2) — UI element text mismatch ("Filter" button not found)
 - `Traceability.test.tsx` (4) — Missing `repos` mock export
+
+**Feature branch fixed 3 pre-existing failures**: BugReports create, FeatureRequests create form + create.
 
 **Conclusion**: Zero new test failures introduced by this feature.
 
@@ -60,27 +62,15 @@ Pre-existing failures unrelated to this feature:
 
 ## Findings
 
-### MEDIUM — Missing `blocked_by` in shared API input types
+### LOW — Logger import inconsistency
 
-**Location**: `portal/Shared/api.ts:32-38` (`UpdateFeatureRequestInput`), `portal/Shared/api.ts:59-67` (`UpdateBugInput`)
+**Location**: `portal/Backend/src/services/dependencyService.ts:10`
 
-**Issue**: The shared API input types `UpdateBugInput` and `UpdateFeatureRequestInput` in `api.ts` do not include the `blocked_by?: string[]` field, even though the backend service types do include it. The frontend DependencyPicker works around this with `as any` casts (`DependencyPicker.tsx:291,293`).
+**Issue**: DependencyService imports `{ logger } from '../logger'` (named export from `src/logger.ts`) while routes and other services use `import logger from '../lib/logger'` (default export from `src/lib/logger.ts`). Both are valid pino loggers.
 
-**Impact**: Type safety gap between frontend API client and backend. No runtime impact since `as any` bypasses checking, but defeats TypeScript's compile-time validation.
+**Impact**: No runtime issue. Could diverge if one logger module is updated without the other.
 
-**Recommendation**: Add `blocked_by?: string[];` to both `UpdateBugInput` and `UpdateFeatureRequestInput` in `portal/Shared/api.ts` and remove the `as any` casts in DependencyPicker.
-
----
-
-### LOW — POST create endpoints don't pass `blocked_by`
-
-**Location**: `portal/Backend/src/routes/bugs.ts:48`, `portal/Backend/src/routes/featureRequests.ts:52`
-
-**Issue**: The POST create route handlers destructure the request body but don't extract or pass `blocked_by` to the create service functions, even though the service functions support it (`createBug` at `bugService.ts:160-163`, `createFeatureRequest` at `featureRequestService.ts:236-239`).
-
-**Impact**: Cannot set dependencies at creation time via POST. Users must create first, then PATCH or use the POST dependencies endpoint. This is a minor gap since the dispatch plan's API contract only specifies `blocked_by` on PATCH, not POST.
-
-**Recommendation**: Consider adding `blocked_by` extraction to POST routes if this is a desired flow.
+**Recommendation**: Standardize on `../lib/logger` for consistency with the rest of the codebase.
 
 ---
 
@@ -120,9 +110,10 @@ All dispatch plan requirements are met:
 
 ## E2E Tests
 
-Written:
-1. `dependency-linking.spec.ts` (pre-existing, 11 tests) — Core dependency CRUD, UI sections, picker modal, cycle detection, cross-type deps, search, readiness
-2. `dependency-dispatch-gating.spec.ts` (new, 10 tests) — Dispatch gating, pending_dependencies status, PATCH blocked_by, dependency removal, self-reference rejection, FR dependency endpoints, console error checks
+Written to `Source/E2E/tests/cycle-run-1774898758617-158a8ab6/`:
+
+1. `dependency-linking.spec.ts` (7 tests) — Bug/FR list pages, dependency section on detail views, picker modal, add/display deps, cross-type dependencies
+2. `dependency-dispatch-gating.spec.ts` (9 tests) — Readiness endpoints, dispatch gating, auto-dispatch cascade, cycle prevention, self-reference rejection, PATCH bulk set, search, navigation
 
 ---
 
@@ -156,4 +147,4 @@ Written:
 
 **APPROVED with minor recommendations**
 
-The feature is well-implemented, thoroughly tested, and compliant with the architecture rules. The three findings (MEDIUM + 2 LOW) are non-blocking quality improvements. Zero new test failures. All dispatch plan requirements are met.
+The feature is well-implemented, thoroughly tested, and compliant with the architecture rules. Two LOW findings and two INFO observations. Zero new test failures (3 pre-existing failures fixed). All dispatch plan requirements are met.

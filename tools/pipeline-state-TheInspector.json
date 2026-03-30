@@ -1,0 +1,72 @@
+{
+  "team": "TheInspector",
+  "next_run_number": 2,
+  "runs": {
+    "run-20260330-071418": {
+      "number": 1,
+      "pipeline": {
+        "id": "run-20260330-071418",
+        "status": "complete",
+        "started_at": "2026-03-30T07:14:18Z",
+        "task_title": "Post-work audit: duplicate/deprecated status feature",
+        "completed_at": "2026-03-30T07:24:25Z"
+      },
+      "stages": [],
+      "agents": {
+        "team_leader": {
+          "status": "complete",
+          "started_at": "2026-03-30T07:14:18Z",
+          "name": "Team Leader",
+          "model": "sonnet",
+          "completed_at": "2026-03-30T07:24:25Z",
+          "duration_s": 607,
+          "verdict": "passed",
+          "metrics": {
+            "grade": "D",
+            "p1_total": 4,
+            "p2_total": 13,
+            "p3_total": 16,
+            "p4_total": 8,
+            "total_findings": 41,
+            "spec_coverage_pct": 100
+          }
+        },
+        "dependency_auditor": {
+          "status": "complete",
+          "started_at": "2026-03-30T07:15:26Z",
+          "name": "Dependency Auditor",
+          "model": "haiku",
+          "completed_at": "2026-03-30T07:16:08Z",
+          "duration_s": 42,
+          "verdict": "passed",
+          "metrics": {
+            "cves_critical": 1,
+            "cves_high": 4,
+            "cves_moderate": 11,
+            "outdated_major": 15
+          }
+        },
+        "red_teamer": {
+          "status": "complete",
+          "started_at": "2026-03-30T07:16:00Z",
+          "name": "Red Teamer",
+          "model": "sonnet",
+          "iteration": 1,
+          "metrics": {
+            "findings_in_progress": 5,
+            "findings_total": 4,
+            "p1": 1,
+            "p2": 2,
+            "p3": 1,
+            "p4": 0
+          },
+          "completed_at": "2026-03-30T07:17:03Z",
+          "duration_s": 63,
+          "verdict": "FINDINGS: 4 issues identified (1 P1, 2 P2, 1 P3). No auth/authz on any endpoint is the critical gap."
+        }
+      },
+      "feedback_loops": [],
+      "updated_at": "2026-03-30T07:24:25Z"
+    }
+  }
+}

@@ -26,12 +26,13 @@ const router = Router();
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await withSpan('bugs.list', async (span) => {
-      const { status, severity } = req.query as { status?: string; severity?: string };
+      // Verifies: FR-DUP-05 — Read include_hidden from query param
+      const { status, severity, include_hidden } = req.query as { status?: string; severity?: string; include_hidden?: string };
       span.setAttribute('filter.status', status || '');
       span.setAttribute('filter.severity', severity || '');
 
       const db = getDb();
-      const bugs = listBugs(db, { status, severity });
+      const bugs = listBugs(db, { status, severity, include_hidden: include_hidden === 'true' });
       logger.info('Listed bug reports', { count: bugs.length, status, severity });
       res.json({ data: bugs });
     });
@@ -112,8 +113,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       if (!existing) throw new AppError(404, `Bug ${id} not found`);
 
       // Verifies: FR-dependency-linking — pass blocked_by through to service
-      const { title, description, severity, status, source_system, blocked_by } = req.body;
-      const updated = updateBug(db, id, { title, description, severity, status, source_system, blocked_by });
+      // Verifies: FR-DUP-14 — forward duplicate_of and deprecation_reason to service
+      const { title, description, severity, status, source_system, blocked_by, duplicate_of, deprecation_reason } = req.body;
+      const updated = updateBug(db, id, { title, description, severity, status, source_system, blocked_by, duplicate_of, deprecation_reason });
 
       logger.info('Updated bug report', { id, status: updated.status });
       res.json(updated);

@@ -1,5 +1,31 @@
 # Backend Coder Learnings
 
+## 2026-03-30: Duplicate/Deprecated Status (backend-coder-1)
+
+### Gap analysis pattern
+- Bug service already fully implemented duplicate/deprecated — feature request service was the gap
+- `mapFRRow()` was missing `duplicate_of`, `deprecation_reason`, and `duplicated_by` fields
+- Routes were not forwarding `duplicate_of`/`deprecation_reason` from req.body to services
+
+### Implementation pattern
+- Copy bug service patterns exactly for feature request service — same validation, same field clearing logic
+- `duplicated_by` computed via reverse query: `SELECT id FROM [table] WHERE duplicate_of = ?`
+- Hidden status filtering uses `HIDDEN_STATUSES` constant with `AND status NOT IN (...)` clause
+- `duplicate`/`deprecated` are terminal — STATUS_TRANSITIONS maps them to `[]` (no outgoing transitions)
+- When marking duplicate: clear `deprecation_reason`; when marking deprecated: clear `duplicate_of`
+
+### Testing
+- 19 new tests added across bugs.test.ts and featureRequests.test.ts
+- Tests cover: include_hidden filtering, route forwarding, validation (missing duplicate_of, self-ref, non-existent ref), duplicated_by computation, terminal status blocking
+- All 508 backend tests pass, TypeScript type-check passes
+
+### E2E Test Results
+- 10 of 14 E2E tests pass (all API-only tests)
+- 4 UI-only E2E tests fail because they need a running frontend (Vite dev server) — frontend-coder scope
+- Original E2E failures were `net::ERR_CONNECTION_REFUSED` because no server was running at port 5102
+- Fix: start backend with `PORT=5102` to match `playwright.pipeline.config.ts` baseURL
+- The E2E config at `Source/E2E/playwright.pipeline.config.ts` uses port 5102, not the default 3001
+
 ## 2026-03-25: Tiered Merge Pipeline (backend-coder-2)
 
 ### dispatch.js patterns

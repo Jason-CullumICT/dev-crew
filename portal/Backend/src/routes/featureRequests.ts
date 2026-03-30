@@ -30,12 +30,13 @@ const router = Router();
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await withSpan('featureRequests.list', async (span) => {
-      const { status, source } = req.query as { status?: string; source?: string };
+      // Verifies: FR-DUP-05 — Read include_hidden from query param
+      const { status, source, include_hidden } = req.query as { status?: string; source?: string; include_hidden?: string };
       span.setAttribute('filter.status', status || '');
       span.setAttribute('filter.source', source || '');
 
       const db = getDb();
-      const frs = listFeatureRequests(db, { status, source });
+      const frs = listFeatureRequests(db, { status, source, include_hidden: include_hidden === 'true' });
       logger.info('Listed feature requests', { count: frs.length, status, source });
       res.json({ data: frs });
     });
@@ -103,10 +104,11 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       if (!existing) throw new AppError(404, `Feature request ${id} not found`);
 
       // Verifies: FR-dependency-linking — pass blocked_by through to service
-      const { status, description, priority, blocked_by } = req.body;
+      // Verifies: FR-DUP-14 — forward duplicate_of and deprecation_reason to service
+      const { status, description, priority, blocked_by, duplicate_of, deprecation_reason } = req.body;
       const fromStatus = existing.status;
 
-      const updated = updateFeatureRequest(db, id, { status, description, priority, blocked_by });
+      const updated = updateFeatureRequest(db, id, { status, description, priority, blocked_by, duplicate_of, deprecation_reason });
 
       if (status && status !== fromStatus) {
         featureRequestTransitionsCounter.inc({ from_status: fromStatus, to_status: status });

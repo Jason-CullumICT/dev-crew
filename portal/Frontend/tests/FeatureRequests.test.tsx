@@ -1,5 +1,6 @@
 // Verifies: FR-025
 // Verifies: FR-032
+// Verifies: FR-DUP-11
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
@@ -15,6 +16,19 @@ vi.mock('../src/api/client', () => ({
     vote: vi.fn(),
     approve: vi.fn(),
     deny: vi.fn(),
+    update: vi.fn(),
+  },
+  images: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
+    upload: vi.fn(),
+    delete: vi.fn(),
+  },
+  repos: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
+    validate: vi.fn(),
+  },
+  orchestrator: {
+    submitWork: vi.fn(),
   },
 }))
 
@@ -32,6 +46,10 @@ const mockFRs: FeatureRequest[] = [
     human_approval_comment: null,
     human_approval_approved_at: null,
     duplicate_warning: false,
+    duplicate_of: null,
+    deprecation_reason: null,
+    duplicated_by: [],
+    target_repo: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -55,6 +73,10 @@ const mockFRs: FeatureRequest[] = [
     human_approval_comment: null,
     human_approval_approved_at: null,
     duplicate_warning: false,
+    duplicate_of: null,
+    deprecation_reason: null,
+    duplicated_by: [],
+    target_repo: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -154,6 +176,49 @@ describe('FeatureRequestsPage', () => {
     })
   })
 
+  // Verifies: FR-DUP-11
+  it('renders show hidden toggle checkbox', () => {
+    renderPage()
+    expect(screen.getByLabelText('Show hidden (duplicate/deprecated)')).toBeInTheDocument()
+  })
+
+  // Verifies: FR-DUP-11
+  it('passes include_hidden when toggle is checked', async () => {
+    renderPage()
+    await waitFor(() => {
+      expect(featureRequests.list).toHaveBeenCalledWith({
+        status: undefined,
+        source: undefined,
+        include_hidden: false,
+      })
+    })
+
+    const toggle = screen.getByLabelText('Show hidden (duplicate/deprecated)')
+    fireEvent.click(toggle)
+
+    await waitFor(() => {
+      expect(featureRequests.list).toHaveBeenCalledWith({
+        status: undefined,
+        source: undefined,
+        include_hidden: true,
+      })
+    })
+  })
+
+  // Verifies: FR-DUP-12
+  it('displays duplicated_by badge on canonical items', async () => {
+    const canonicalFR: FeatureRequest = {
+      ...mockFRs[0],
+      id: 'FR-0009',
+      duplicated_by: ['FR-0008', 'FR-0007'],
+    }
+    vi.mocked(featureRequests.list).mockResolvedValue({ data: [canonicalFR] })
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('2 duplicates')).toBeInTheDocument()
+    })
+  })
+
   it('creates a feature request successfully', async () => {
     // Verifies: FR-025
     const newFR: FeatureRequest = {
@@ -167,6 +232,10 @@ describe('FeatureRequestsPage', () => {
       human_approval_comment: null,
       human_approval_approved_at: null,
       duplicate_warning: false,
+      duplicate_of: null,
+      deprecation_reason: null,
+      duplicated_by: [],
+      target_repo: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -187,12 +256,14 @@ describe('FeatureRequestsPage', () => {
     fireEvent.click(screen.getByText('Create Feature Request'))
 
     await waitFor(() => {
-      expect(featureRequests.create).toHaveBeenCalledWith({
-        title: 'New feature',
-        description: 'A brand new feature',
-        source: 'manual',
-        priority: 'medium',
-      })
+      expect(featureRequests.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'New feature',
+          description: 'A brand new feature',
+          source: 'manual',
+          priority: 'medium',
+        })
+      )
     })
   })
 })

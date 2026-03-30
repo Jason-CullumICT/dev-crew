@@ -1,4 +1,5 @@
 // Verifies: FR-026
+// Verifies: FR-DUP-11
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
@@ -10,6 +11,17 @@ vi.mock('../src/api/client', () => ({
   bugs: {
     list: vi.fn(),
     create: vi.fn(),
+  },
+  images: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
+    upload: vi.fn(),
+    delete: vi.fn(),
+  },
+  orchestrator: {
+    submitWork: vi.fn(),
+  },
+  repos: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
   },
 }))
 
@@ -23,6 +35,13 @@ const mockBugs: BugReport[] = [
     severity: 'high',
     status: 'reported',
     source_system: 'production',
+    related_work_item_id: null,
+    related_work_item_type: null,
+    related_cycle_id: null,
+    target_repo: null,
+    duplicate_of: null,
+    deprecation_reason: null,
+    duplicated_by: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -33,6 +52,13 @@ const mockBugs: BugReport[] = [
     severity: 'medium',
     status: 'triaged',
     source_system: 'staging',
+    related_work_item_id: null,
+    related_work_item_type: null,
+    related_cycle_id: null,
+    target_repo: null,
+    duplicate_of: null,
+    deprecation_reason: null,
+    duplicated_by: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -43,6 +69,13 @@ const mockBugs: BugReport[] = [
     severity: 'critical',
     status: 'in_development',
     source_system: 'production',
+    related_work_item_id: null,
+    related_work_item_type: null,
+    related_cycle_id: null,
+    target_repo: null,
+    duplicate_of: null,
+    deprecation_reason: null,
+    duplicated_by: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -130,6 +163,7 @@ describe('BugReportsPage', () => {
       expect(bugs.list).toHaveBeenCalledWith({
         status: undefined,
         severity: 'critical',
+        include_hidden: false,
       })
     })
   })
@@ -155,6 +189,13 @@ describe('BugReportsPage', () => {
       severity: 'medium',
       status: 'reported',
       source_system: '',
+      related_work_item_id: null,
+      related_work_item_type: null,
+      related_cycle_id: null,
+      target_repo: null,
+      duplicate_of: null,
+      deprecation_reason: null,
+      duplicated_by: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -172,12 +213,13 @@ describe('BugReportsPage', () => {
     fireEvent.click(screen.getByText('Report Bug'))
 
     await waitFor(() => {
-      expect(bugs.create).toHaveBeenCalledWith({
-        title: 'New bug',
-        description: 'Something broke',
-        severity: 'medium',
-        source_system: undefined,
-      })
+      expect(bugs.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'New bug',
+          description: 'Something broke',
+          severity: 'medium',
+        })
+      )
     })
   })
 
@@ -196,6 +238,35 @@ describe('BugReportsPage', () => {
     renderPage()
     await waitFor(() => {
       expect(screen.getByText('No bug reports found')).toBeInTheDocument()
+    })
+  })
+
+  // Verifies: FR-DUP-11
+  it('renders show hidden toggle checkbox', () => {
+    renderPage()
+    expect(screen.getByLabelText('Show hidden (duplicate/deprecated)')).toBeInTheDocument()
+  })
+
+  // Verifies: FR-DUP-11
+  it('passes include_hidden when toggle is checked', async () => {
+    renderPage()
+    await waitFor(() => {
+      expect(bugs.list).toHaveBeenCalledWith({
+        status: undefined,
+        severity: undefined,
+        include_hidden: false,
+      })
+    })
+
+    const toggle = screen.getByLabelText('Show hidden (duplicate/deprecated)')
+    fireEvent.click(toggle)
+
+    await waitFor(() => {
+      expect(bugs.list).toHaveBeenCalledWith({
+        status: undefined,
+        severity: undefined,
+        include_hidden: true,
+      })
     })
   })
 })

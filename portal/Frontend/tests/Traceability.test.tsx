@@ -10,6 +10,40 @@ import { TraceabilityReport } from '../src/components/features/TraceabilityRepor
 import { BugDetail } from '../src/components/bugs/BugDetail'
 import type { CycleFeedback, ConsideredFix, BugReport } from '../../Shared/types'
 
+// Mock API client for BugDetail component
+vi.mock('../src/api/client', () => ({
+  bugs: {
+    list: vi.fn(),
+    create: vi.fn(),
+    getById: vi.fn(),
+    update: vi.fn(),
+  },
+  images: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
+    upload: vi.fn(),
+    delete: vi.fn(),
+  },
+  repos: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
+    validate: vi.fn(),
+  },
+  orchestrator: {
+    submitWork: vi.fn(),
+  },
+  cycles: {
+    list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    createTicket: vi.fn(),
+    updateTicket: vi.fn(),
+    completeCycle: vi.fn(),
+  },
+  cycleFeedback: {
+    list: vi.fn(),
+    create: vi.fn(),
+  },
+}))
+
 // --- FeedbackLog Tests ---
 
 const mockFeedback: CycleFeedback[] = [
@@ -236,6 +270,10 @@ const mockBugWithTraceability: BugReport = {
   related_work_item_id: 'FR-0005',
   related_work_item_type: 'feature_request',
   related_cycle_id: 'CYCLE-0003',
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
   created_at: '2026-03-24T12:00:00.000Z',
   updated_at: '2026-03-24T12:00:00.000Z',
 }
@@ -250,6 +288,10 @@ const mockBugWithoutTraceability: BugReport = {
   related_work_item_id: null,
   related_work_item_type: null,
   related_cycle_id: null,
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
   created_at: '2026-03-24T12:00:00.000Z',
   updated_at: '2026-03-24T12:00:00.000Z',
 }
@@ -259,7 +301,7 @@ describe('BugDetail Traceability', () => {
     // Verifies: FR-068
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBugWithTraceability} onClose={vi.fn()} />
+        <BugDetail bug={mockBugWithTraceability} onUpdate={vi.fn()} onClose={vi.fn()} />
       </MemoryRouter>
     )
     expect(screen.getByTestId('bug-traceability')).toBeInTheDocument()
@@ -272,7 +314,7 @@ describe('BugDetail Traceability', () => {
     // Verifies: FR-068
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBugWithTraceability} onClose={vi.fn()} />
+        <BugDetail bug={mockBugWithTraceability} onUpdate={vi.fn()} onClose={vi.fn()} />
       </MemoryRouter>
     )
     expect(screen.getByTestId('related-cycle-link')).toBeInTheDocument()
@@ -283,7 +325,7 @@ describe('BugDetail Traceability', () => {
     // Verifies: FR-068
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBugWithoutTraceability} onClose={vi.fn()} />
+        <BugDetail bug={mockBugWithoutTraceability} onUpdate={vi.fn()} onClose={vi.fn()} />
       </MemoryRouter>
     )
     expect(screen.queryByTestId('bug-traceability')).not.toBeInTheDocument()
@@ -298,7 +340,7 @@ describe('BugDetail Traceability', () => {
     }
     render(
       <MemoryRouter>
-        <BugDetail bug={bugWithBugRef} onClose={vi.fn()} />
+        <BugDetail bug={bugWithBugRef} onUpdate={vi.fn()} onClose={vi.fn()} />
       </MemoryRouter>
     )
     expect(screen.getByText('(Bug)')).toBeInTheDocument()
@@ -310,20 +352,7 @@ describe('BugDetail Traceability', () => {
 // We test the FeedbackLog and team_name badge integration through CycleView
 // by importing the component with mocked API
 
-vi.mock('../src/api/client', () => ({
-  cycles: {
-    list: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    createTicket: vi.fn(),
-    updateTicket: vi.fn(),
-    completeCycle: vi.fn(),
-  },
-  cycleFeedback: {
-    list: vi.fn(),
-    create: vi.fn(),
-  },
-}))
+// Mock already defined at top of file — reuse for CycleView tests
 
 import { CycleView } from '../src/components/cycles/CycleView'
 import type { DevelopmentCycle } from '../../Shared/types'

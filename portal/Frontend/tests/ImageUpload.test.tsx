@@ -216,6 +216,7 @@ vi.mock('../src/api/client', () => ({
     list: vi.fn(),
     create: vi.fn(),
     getById: vi.fn(),
+    update: vi.fn(),
   },
   images: {
     upload: vi.fn(),
@@ -225,9 +226,13 @@ vi.mock('../src/api/client', () => ({
   orchestrator: {
     submitWork: vi.fn(),
   },
+  repos: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
+    validate: vi.fn(),
+  },
 }))
 
-import { featureRequests, bugs, images as imagesApi, orchestrator } from '../src/api/client'
+import { featureRequests, bugs, images as imagesApi, orchestrator, repos } from '../src/api/client'
 import { FeatureRequestForm } from '../src/components/feature-requests/FeatureRequestForm'
 import { BugForm } from '../src/components/bugs/BugForm'
 import { FeatureRequestDetail } from '../src/components/feature-requests/FeatureRequestDetail'
@@ -267,7 +272,8 @@ describe('FeatureRequestForm with image upload', () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Test feature' }),
-        [file]
+        [file],
+        expect.anything()
       )
     })
   })
@@ -278,7 +284,7 @@ describe('BugForm with image upload', () => {
     // Verifies: FR-083
     const onSubmit = vi.fn()
     render(<BugForm onSubmit={onSubmit} onCancel={() => {}} />)
-    expect(screen.getByText('Screenshots')).toBeInTheDocument()
+    expect(screen.getByText('Attachments')).toBeInTheDocument()
     expect(screen.getByTestId('image-upload')).toBeInTheDocument()
   })
 
@@ -303,7 +309,8 @@ describe('BugForm with image upload', () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Test bug' }),
-        [file]
+        [file],
+        expect.anything()
       )
     })
   })
@@ -322,6 +329,10 @@ const mockFR: FeatureRequest = {
   human_approval_comment: null,
   human_approval_approved_at: null,
   duplicate_warning: false,
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -332,6 +343,7 @@ describe('FeatureRequestDetail with images', () => {
     vi.mocked(imagesApi.list).mockResolvedValue({ data: mockImages })
     vi.mocked(imagesApi.upload).mockResolvedValue({ data: [] })
     vi.mocked(imagesApi.delete).mockResolvedValue(undefined)
+    vi.mocked(repos.list).mockResolvedValue({ data: [] })
     vi.mocked(orchestrator.submitWork).mockResolvedValue({
       id: 'run-1', status: 'queued', statusUrl: '/status', ports: {}, branch: 'main'
     })
@@ -435,6 +447,10 @@ const mockBug: BugReport = {
   related_work_item_id: null,
   related_work_item_type: null,
   related_cycle_id: null,
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -445,13 +461,14 @@ describe('BugDetail with images', () => {
     vi.mocked(imagesApi.list).mockResolvedValue({ data: mockImages })
     vi.mocked(imagesApi.upload).mockResolvedValue({ data: [] })
     vi.mocked(imagesApi.delete).mockResolvedValue(undefined)
+    vi.mocked(repos.list).mockResolvedValue({ data: [] })
   })
 
   it('fetches and displays images for the bug report', async () => {
     // Verifies: FR-085
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBug} onClose={() => {}} />
+        <BugDetail bug={mockBug} onUpdate={() => {}} onClose={() => {}} />
       </MemoryRouter>
     )
 
@@ -460,7 +477,7 @@ describe('BugDetail with images', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText('Screenshots (2)')).toBeInTheDocument()
+      expect(screen.getByText('Attachments (2)')).toBeInTheDocument()
     })
   })
 
@@ -468,7 +485,7 @@ describe('BugDetail with images', () => {
     // Verifies: FR-085
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBug} onClose={() => {}} />
+        <BugDetail bug={mockBug} onUpdate={() => {}} onClose={() => {}} />
       </MemoryRouter>
     )
 
@@ -479,12 +496,12 @@ describe('BugDetail with images', () => {
     // Verifies: FR-085
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBug} onClose={() => {}} />
+        <BugDetail bug={mockBug} onUpdate={() => {}} onClose={() => {}} />
       </MemoryRouter>
     )
 
     await waitFor(() => {
-      expect(screen.getByText('Screenshots (2)')).toBeInTheDocument()
+      expect(screen.getByText('Attachments (2)')).toBeInTheDocument()
     })
 
     fireEvent.click(screen.getByTestId('delete-image-IMG-0001'))

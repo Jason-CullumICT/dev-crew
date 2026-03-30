@@ -531,3 +531,124 @@ describe('Bug input length validation (DD-11, M-04)', () => {
     expect(bug.description).toHaveLength(DESCRIPTION_MAX_LENGTH);
   });
 });
+
+// --- FR-DUP: Duplicate/Deprecated status tests ---
+describe('FR-DUP: Bug duplicate/deprecated via API', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  // Verifies: FR-DUP-05
+  it('GET /api/bugs should exclude duplicate/deprecated by default', async () => {
+    const bug1 = createBug(db, { title: 'Active Bug', description: 'desc', severity: 'low' });
+    const bug2 = createBug(db, { title: 'Dup Bug', description: 'desc', severity: 'low' });
+    updateBug(db, bug2.id, { status: 'duplicate', duplicate_of: bug1.id });
+
+    const app = createApp();
+    const res = await supertest(app).get('/api/bugs');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(bug1.id);
+  });
+
+  // Verifies: FR-DUP-05
+  it('GET /api/bugs?include_hidden=true should return all items', async () => {
+    const bug1 = createBug(db, { title: 'Active Bug', description: 'desc', severity: 'low' });
+    const bug2 = createBug(db, { title: 'Dup Bug', description: 'desc', severity: 'low' });
+    updateBug(db, bug2.id, { status: 'duplicate', duplicate_of: bug1.id });
+
+    const app = createApp();
+    const res = await supertest(app).get('/api/bugs?include_hidden=true');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+  });
+
+  // Verifies: FR-DUP-14
+  it('PATCH /api/bugs/:id should forward duplicate_of to service', async () => {
+    const bug1 = createBug(db, { title: 'Canonical', description: 'desc', severity: 'low' });
+    const bug2 = createBug(db, { title: 'Duplicate', description: 'desc', severity: 'low' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/bugs/${bug2.id}`)
+      .send({ status: 'duplicate', duplicate_of: bug1.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('duplicate');
+    expect(res.body.duplicate_of).toBe(bug1.id);
+  });
+
+  // Verifies: FR-DUP-14
+  it('PATCH /api/bugs/:id should forward deprecation_reason to service', async () => {
+    const bug = createBug(db, { title: 'Old Bug', description: 'desc', severity: 'low' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/bugs/${bug.id}`)
+      .send({ status: 'deprecated', deprecation_reason: 'No longer relevant' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('deprecated');
+    expect(res.body.deprecation_reason).toBe('No longer relevant');
+  });
+
+  // Verifies: FR-DUP-04
+  it('PATCH should return 400 when duplicate_of is missing for duplicate status', async () => {
+    const bug = createBug(db, { title: 'Bug', description: 'desc', severity: 'low' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/bugs/${bug.id}`)
+      .send({ status: 'duplicate' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('duplicate_of is required');
+  });
+
+  // Verifies: FR-DUP-04
+  it('PATCH should return 400 for self-reference duplicate_of', async () => {
+    const bug = createBug(db, { title: 'Bug', description: 'desc', severity: 'low' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/bugs/${bug.id}`)
+      .send({ status: 'duplicate', duplicate_of: bug.id });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('cannot be a duplicate of itself');
+  });
+
+  // Verifies: FR-DUP-03
+  it('canonical bug should show duplicated_by', async () => {
+    const canonical = createBug(db, { title: 'Canonical', description: 'desc', severity: 'low' });
+    const dup = createBug(db, { title: 'Dup', description: 'desc', severity: 'low' });
+    updateBug(db, dup.id, { status: 'duplicate', duplicate_of: canonical.id });
+
+    const app = createApp();
+    const res = await supertest(app).get(`/api/bugs/${canonical.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.duplicated_by).toContain(dup.id);
+  });
+
+  // Verifies: FR-DUP-04
+  it('should block transitions out of duplicate status', async () => {
+    const bug1 = createBug(db, { title: 'Canonical', description: 'desc', severity: 'low' });
+    const bug2 = createBug(db, { title: 'Dup', description: 'desc', severity: 'low' });
+    updateBug(db, bug2.id, { status: 'duplicate', duplicate_of: bug1.id });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/bugs/${bug2.id}`)
+      .send({ status: 'reported' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('terminal statuses');
+  });
+});

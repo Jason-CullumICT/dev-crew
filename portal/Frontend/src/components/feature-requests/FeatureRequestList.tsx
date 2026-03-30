@@ -1,6 +1,8 @@
 // Verifies: FR-025
+// Verifies: FR-DUP-11, FR-DUP-12
 import React from 'react'
 import type { FeatureRequest } from '../../../../Shared/types'
+import { HIDDEN_STATUSES } from '../../../../Shared/types'
 import { BlockedBadge } from '../shared/BlockedBadge'
 
 interface FeatureRequestListProps {
@@ -16,6 +18,8 @@ const STATUS_COLORS: Record<string, string> = {
   in_development: 'bg-amber-100 text-amber-700',
   completed: 'bg-green-100 text-green-700',
   pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
+  duplicate: 'bg-purple-100 text-purple-700',      // Verifies: FR-DUP-11
+  deprecated: 'bg-gray-200 text-gray-500',          // Verifies: FR-DUP-11
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -44,12 +48,18 @@ export function FeatureRequestList({ items, onSelect }: FeatureRequestListProps)
         <button
           key={fr.id}
           onClick={() => onSelect(fr)}
-          className="w-full text-left bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all"
+          className={`w-full text-left bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all ${HIDDEN_STATUSES.includes(fr.status) ? 'opacity-60' : ''}`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-mono text-gray-400">{fr.id}</span>
+                {/* Verifies: FR-DUP-12 — Duplicate count badge on canonical items */}
+                {fr.duplicated_by && fr.duplicated_by.length > 0 && (
+                  <span className="text-xs bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-medium">
+                    {fr.duplicated_by.length} duplicate{fr.duplicated_by.length > 1 ? 's' : ''}
+                  </span>
+                )}
                 {fr.duplicate_warning && (
                   <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
                     ⚠ Duplicate

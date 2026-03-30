@@ -859,3 +859,162 @@ describe('FR ID generation after delete (DD-10)', () => {
   });
 });
 
+// --- FR-DUP: Duplicate/Deprecated status for feature requests ---
+describe('FR-DUP: Feature request duplicate/deprecated via API', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  // Verifies: FR-DUP-05
+  it('GET /api/feature-requests should exclude duplicate/deprecated by default', async () => {
+    const fr1 = createFeatureRequest(db, { title: 'Active FR', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Dup FR', description: 'desc' });
+    updateFeatureRequest(db, fr2.id, { status: 'duplicate', duplicate_of: fr1.id });
+
+    const app = createApp();
+    const res = await supertest(app).get('/api/feature-requests');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(fr1.id);
+  });
+
+  // Verifies: FR-DUP-05
+  it('GET /api/feature-requests?include_hidden=true should return all items', async () => {
+    const fr1 = createFeatureRequest(db, { title: 'Active FR', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Dup FR', description: 'desc' });
+    updateFeatureRequest(db, fr2.id, { status: 'duplicate', duplicate_of: fr1.id });
+
+    const app = createApp();
+    const res = await supertest(app).get('/api/feature-requests?include_hidden=true');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+  });
+
+  // Verifies: FR-DUP-14
+  it('PATCH should forward duplicate_of to service', async () => {
+    const fr1 = createFeatureRequest(db, { title: 'Canonical', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Duplicate', description: 'desc' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/feature-requests/${fr2.id}`)
+      .send({ status: 'duplicate', duplicate_of: fr1.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('duplicate');
+    expect(res.body.duplicate_of).toBe(fr1.id);
+  });
+
+  // Verifies: FR-DUP-14
+  it('PATCH should forward deprecation_reason to service', async () => {
+    const fr = createFeatureRequest(db, { title: 'Old FR', description: 'desc' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/feature-requests/${fr.id}`)
+      .send({ status: 'deprecated', deprecation_reason: 'Superseded by newer FR' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('deprecated');
+    expect(res.body.deprecation_reason).toBe('Superseded by newer FR');
+  });
+
+  // Verifies: FR-DUP-04
+  it('PATCH should return 400 when duplicate_of is missing for duplicate status', async () => {
+    const fr = createFeatureRequest(db, { title: 'FR', description: 'desc' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/feature-requests/${fr.id}`)
+      .send({ status: 'duplicate' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('duplicate_of is required');
+  });
+
+  // Verifies: FR-DUP-04
+  it('PATCH should return 400 for self-reference duplicate_of', async () => {
+    const fr = createFeatureRequest(db, { title: 'FR', description: 'desc' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/feature-requests/${fr.id}`)
+      .send({ status: 'duplicate', duplicate_of: fr.id });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('cannot be a duplicate of itself');
+  });
+
+  // Verifies: FR-DUP-07
+  it('PATCH should return 400 for non-existent duplicate_of reference', async () => {
+    const fr = createFeatureRequest(db, { title: 'FR', description: 'desc' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/feature-requests/${fr.id}`)
+      .send({ status: 'duplicate', duplicate_of: 'FR-9999' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('non-existent feature request');
+  });
+
+  // Verifies: FR-DUP-03
+  it('canonical FR should show duplicated_by', async () => {
+    const canonical = createFeatureRequest(db, { title: 'Canonical', description: 'desc' });
+    const dup = createFeatureRequest(db, { title: 'Dup', description: 'desc' });
+    updateFeatureRequest(db, dup.id, { status: 'duplicate', duplicate_of: canonical.id });
+
+    const app = createApp();
+    const res = await supertest(app).get(`/api/feature-requests/${canonical.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.duplicated_by).toContain(dup.id);
+  });
+
+  // Verifies: FR-DUP-04
+  it('should block transitions out of duplicate status (terminal)', async () => {
+    const fr1 = createFeatureRequest(db, { title: 'Canonical', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Dup', description: 'desc' });
+    updateFeatureRequest(db, fr2.id, { status: 'duplicate', duplicate_of: fr1.id });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/feature-requests/${fr2.id}`)
+      .send({ status: 'potential' });
+
+    expect(res.status).toBe(400);
+  });
+
+  // Verifies: FR-DUP-04
+  it('should block transitions out of deprecated status (terminal)', async () => {
+    const fr = createFeatureRequest(db, { title: 'Old FR', description: 'desc' });
+    updateFeatureRequest(db, fr.id, { status: 'deprecated', deprecation_reason: 'old' });
+
+    const app = createApp();
+    const res = await supertest(app)
+      .patch(`/api/feature-requests/${fr.id}`)
+      .send({ status: 'potential' });
+
+    expect(res.status).toBe(400);
+  });
+
+  // Verifies: FR-DUP-06
+  it('GET /api/feature-requests/:id should return item regardless of hidden status', async () => {
+    const fr1 = createFeatureRequest(db, { title: 'Canonical', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Deprecated FR', description: 'desc' });
+    updateFeatureRequest(db, fr2.id, { status: 'deprecated', deprecation_reason: 'outdated' });
+
+    const app = createApp();
+    const res = await supertest(app).get(`/api/feature-requests/${fr2.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('deprecated');
+    expect(res.body.deprecation_reason).toBe('outdated');
+  });
+});
+

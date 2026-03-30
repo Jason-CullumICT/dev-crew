@@ -1,0 +1,196 @@
+{
+  "audit_date": "2026-03-30",
+  "run_id": "run-20260330-071418",
+  "grade": "D",
+  "total_findings": 41,
+  "summary": {
+    "p1": 4,
+    "p2": 13,
+    "p3": 16,
+    "p4": 8
+  },
+  "findings": [
+    {
+      "id": "RED-001",
+      "severity": "P1",
+      "category": "auth-bypass",
+      "title": "No authentication on any API endpoint",
+      "file": "portal/Backend/src/index.ts",
+      "source": "red-teamer",
+      "status": "NEW",
+      "priority": "block-deployment",
+      "recommendation": "Add authentication middleware before all API routes"
+    },
+    {
+      "id": "PERF-001",
+      "severity": "P1",
+      "category": "n-plus-1",
+      "title": "N+1 queries on list endpoints (4 extra per row)",
+      "files": ["portal/Backend/src/services/bugService.ts", "portal/Backend/src/services/featureRequestService.ts"],
+      "source": "performance-profiler",
+      "status": "NEW",
+      "priority": "block-deployment",
+      "recommendation": "Replace per-row queries with batch IN(...) queries"
+    },
+    {
+      "id": "PERF-002",
+      "severity": "P1",
+      "category": "missing-index",
+      "title": "Missing database indexes on status, duplicate_of, and filter columns",
+      "file": "portal/Backend/src/database/schema.ts",
+      "source": "performance-profiler",
+      "status": "NEW",
+      "priority": "block-deployment",
+      "recommendation": "Add CREATE INDEX IF NOT EXISTS for status, duplicate_of, source, severity, votes FK"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "Handlebars critical CVE (CVSS 9.8)",
+      "package": "handlebars@4.7.8",
+      "file": "Source/Backend/package-lock.json",
+      "source": "dependency-auditor",
+      "status": "NEW",
+      "priority": "block-deployment",
+      "recommendation": "Upgrade handlebars to >=4.7.9"
+    },
+    {
+      "id": "RED-002",
+      "severity": "P2",
+      "category": "auth-bypass",
+      "title": "include_hidden caller-controlled with no authorization gate",
+      "files": ["portal/Backend/src/routes/bugs.ts", "portal/Backend/src/routes/featureRequests.ts"],
+      "source": "red-teamer",
+      "status": "NEW",
+      "priority": "block-deployment",
+      "cross_ref": ["RED-001"]
+    },
+    {
+      "id": "RED-003",
+      "severity": "P2",
+      "category": "injection",
+      "title": "deprecation_reason has no max length validation",
+      "files": ["portal/Backend/src/services/bugService.ts", "portal/Backend/src/services/featureRequestService.ts"],
+      "source": "red-teamer",
+      "status": "NEW",
+      "priority": "block-deployment"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "STATUS_OPTIONS dropdowns missing duplicate/deprecated entries",
+      "files": ["portal/Frontend/src/pages/BugReportsPage.tsx", "portal/Frontend/src/pages/FeatureRequestsPage.tsx"],
+      "source": "quality-oracle",
+      "status": "NEW",
+      "priority": "this-sprint",
+      "cross_ref": ["CHAOS-007"]
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "bugService.ts has no STATUS_TRANSITIONS map",
+      "file": "portal/Backend/src/services/bugService.ts",
+      "source": "quality-oracle",
+      "status": "NEW",
+      "priority": "this-sprint",
+      "cross_ref": ["CHAOS-001"]
+    },
+    {
+      "id": "PERF-003",
+      "severity": "P2",
+      "category": "unbounded",
+      "title": "List endpoints have no pagination",
+      "files": ["portal/Backend/src/services/bugService.ts", "portal/Backend/src/services/featureRequestService.ts"],
+      "source": "performance-profiler",
+      "status": "NEW",
+      "priority": "this-sprint"
+    },
+    {
+      "id": "PERF-004",
+      "severity": "P2",
+      "category": "algorithmic",
+      "title": "O(n) Jaccard scan on every FR creation",
+      "file": "portal/Backend/src/services/featureRequestService.ts",
+      "source": "performance-profiler",
+      "status": "NEW",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "PERF-005",
+      "severity": "P2",
+      "category": "unbounded",
+      "title": "Dashboard activity loads all rows from 6 tables before in-memory sort",
+      "file": "portal/Backend/src/services/dashboardService.ts",
+      "source": "performance-profiler",
+      "status": "NEW",
+      "priority": "backlog"
+    },
+    {
+      "id": "CHAOS-001",
+      "severity": "P2",
+      "category": "state-invariant",
+      "title": "Bug status transitions have no guard table",
+      "file": "portal/Backend/src/services/bugService.ts",
+      "source": "chaos-monkey",
+      "status": "NEW",
+      "priority": "this-sprint",
+      "cross_ref": ["QO-004"]
+    },
+    {
+      "id": "CHAOS-002",
+      "severity": "P2",
+      "category": "state-invariant",
+      "title": "Chain-of-duplicates not blocked — duplicate can point to another duplicate",
+      "files": ["portal/Backend/src/services/featureRequestService.ts", "portal/Backend/src/services/bugService.ts"],
+      "source": "chaos-monkey",
+      "status": "NEW",
+      "priority": "this-sprint",
+      "cross_ref": ["RED-004"]
+    },
+    {
+      "id": "CHAOS-003",
+      "severity": "P2",
+      "category": "concurrency",
+      "title": "Race condition on concurrent duplicate/deprecated marking",
+      "files": ["portal/Backend/src/services/featureRequestService.ts", "portal/Backend/src/services/bugService.ts"],
+      "source": "chaos-monkey",
+      "status": "NEW",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "path-to-regexp ReDoS (CVSS 7.5)",
+      "package": "path-to-regexp",
+      "file": "portal/Backend/package-lock.json",
+      "source": "dependency-auditor",
+      "status": "NEW",
+      "priority": "this-sprint"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "picomatch ReDoS (CVSS 7.5)",
+      "package": "picomatch",
+      "file": "portal/Frontend/package-lock.json",
+      "source": "dependency-auditor",
+      "status": "NEW",
+      "priority": "this-sprint"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "supply-chain",
+      "title": "Missing dependencies in platform/orchestrator (npm install needed)",
+      "file": "platform/orchestrator/package.json",
+      "source": "dependency-auditor",
+      "status": "NEW",
+      "priority": "backlog"
+    }
+  ]
+}

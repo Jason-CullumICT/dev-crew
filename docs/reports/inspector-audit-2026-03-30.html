@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspector Audit Report — 2026-03-30</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --muted: #8b949e; --green: #3fb950; --yellow: #d29922; --orange: #db6d28; --red: #f85149; --blue: #58a6ff; --purple: #bc8cff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; }
+  h1, h2, h3, h4 { color: #f0f6fc; margin-bottom: 0.5rem; }
+  h1 { font-size: 1.8rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.4rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  h3 { font-size: 1.1rem; margin-top: 1rem; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .badge { display: inline-block; padding: 0.5rem 1.5rem; border-radius: 8px; font-size: 2rem; font-weight: bold; color: #fff; }
+  .badge-D { background: var(--orange); }
+  .badge-A { background: var(--green); }
+  .badge-B { background: var(--blue); }
+  .badge-C { background: var(--yellow); }
+  .badge-F { background: var(--red); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin: 0.75rem 0; }
+  .card-p1 { border-left: 4px solid var(--red); }
+  .card-p2 { border-left: 4px solid var(--orange); }
+  .card-p3 { border-left: 4px solid var(--yellow); }
+  .card-p4 { border-left: 4px solid var(--muted); }
+  .card-fixed { border-left: 4px solid var(--green); background: #0d1f0d; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+  .tag-p1 { background: #f8514933; color: var(--red); }
+  .tag-p2 { background: #db6d2833; color: var(--orange); }
+  .tag-p3 { background: #d2992233; color: var(--yellow); }
+  .tag-p4 { background: #8b949e33; color: var(--muted); }
+  .tag-new { background: #58a6ff33; color: var(--blue); }
+  .tag-fixed { background: #3fb95033; color: var(--green); }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.9rem; }
+  th, td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); text-align: left; }
+  th { background: #21262d; color: #f0f6fc; }
+  tr:nth-child(even) { background: #161b2280; }
+  code { background: #21262d; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; color: var(--blue); }
+  .scorecards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .scorecard { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; text-align: center; }
+  .scorecard .number { font-size: 2rem; font-weight: bold; }
+  .scorecard .label { font-size: 0.8rem; color: var(--muted); }
+  .risk-matrix { display: grid; grid-template-columns: auto repeat(5, 1fr); gap: 0; }
+  .risk-cell { padding: 0.5rem; border: 1px solid var(--border); text-align: center; font-size: 0.8rem; min-height: 3rem; }
+  .risk-header { background: #21262d; font-weight: bold; }
+  .risk-hot { background: #f8514933; }
+  .risk-warm { background: #db6d2833; }
+  .risk-cool { background: #d2992233; }
+  .progress-bar { width: 100%; height: 24px; background: #21262d; border-radius: 4px; overflow: hidden; margin: 0.25rem 0; }
+  .progress-fill { height: 100%; background: var(--green); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #fff; }
+  .specialist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  ul { padding-left: 1.5rem; }
+  li { margin-bottom: 0.25rem; }
+  .cross-ref-table td:first-child { font-weight: bold; color: var(--purple); }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- SECTION 1: HEADER                                            -->
+<!-- ============================================================ -->
+<h1>
+  <span class="badge badge-D">D</span>
+  Inspector Audit Report
+</h1>
+<table>
+  <tr><th>Date</th><td>2026-03-30</td></tr>
+  <tr><th>Branch</th><td>master</td></tr>
+  <tr><th>Scope</th><td>Post-work audit: duplicate/deprecated status feature (TheATeam)</td></tr>
+  <tr><th>Mode</th><td>Static only (all services DOWN)</td></tr>
+  <tr><th>Run ID</th><td>run-20260330-071418</td></tr>
+  <tr><th>Prior Audit</th><td>None (first audit)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: SCORECARDS                                        -->
+<!-- ============================================================ -->
+<h2>2. Scorecards</h2>
+<div class="scorecards">
+  <div class="scorecard"><div class="number" style="color:var(--red)">4</div><div class="label">P1 Critical</div></div>
+  <div class="scorecard"><div class="number" style="color:var(--orange)">13</div><div class="label">P2 High</div></div>
+  <div class="scorecard"><div class="number" style="color:var(--yellow)">16</div><div class="label">P3 Medium</div></div>
+  <div class="scorecard"><div class="number" style="color:var(--muted)">8</div><div class="label">P4 Low</div></div>
+  <div class="scorecard"><div class="number" style="color:var(--green)">100%</div><div class="label">Spec Coverage</div></div>
+  <div class="scorecard"><div class="number">0</div><div class="label">Dynamic Tests</div></div>
+  <div class="scorecard"><div class="number">0</div><div class="label">Fixed (vs prior)</div></div>
+  <div class="scorecard"><div class="number">41</div><div class="label">Total Findings</div></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: EXECUTIVE SUMMARY                                 -->
+<!-- ============================================================ -->
+<h2>3. Executive Summary</h2>
+<div class="card">
+<p>The duplicate/deprecated status feature is <strong>functionally complete</strong> &mdash; all 13 spec requirements are implemented. However, the audit reveals <strong>4 critical (P1) findings</strong> that prevent an A/B/C grade:</p>
+<ol>
+  <li><strong>No authentication on any API endpoint</strong> (RED-001) &mdash; any anonymous caller can mark items as duplicate/deprecated, delete records, or approve features. This is the single highest-impact finding and pre-dates the current feature.</li>
+  <li><strong>N+1 query pattern on list endpoints</strong> (PERF-001) &mdash; the new <code>duplicated_by</code> computation fires a SQL query per row, adding to 3 existing per-row queries. A 100-item list triggers 401 SQL statements.</li>
+  <li><strong>Missing database indexes</strong> (PERF-002) &mdash; no index on <code>status</code>, <code>duplicate_of</code>, or other frequently filtered columns. Every list query is a full table scan.</li>
+  <li><strong>Handlebars critical CVE</strong> (DEP-001) &mdash; transitive dependency with CVSS 9.8 JavaScript injection vulnerability.</li>
+</ol>
+<p><strong>Operator action required:</strong> Items 1-3 should block production deployment. Item 4 is a transitive dep in the test toolchain, lower urgency but still critical by CVE score.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 4: SCOPE & ENVIRONMENT                               -->
+<!-- ============================================================ -->
+<h2>4. Scope &amp; Environment</h2>
+<div class="card">
+<table>
+  <tr><th>What was audited</th><td>12 modified files in portal/Backend and portal/Frontend implementing the duplicate/deprecated status feature</td></tr>
+  <tr><th>Services tested</th><td>None (all services DOWN &mdash; static analysis only)</td></tr>
+  <tr><th>Specialists</th><td>5: red-teamer, quality-oracle, performance-profiler, chaos-monkey, dependency-auditor</td></tr>
+  <tr><th>Data caveats</th><td>No dynamic verification possible. Latency baselines not measurable. Performance findings based on code-path analysis only.</td></tr>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: TREND                                             -->
+<!-- ============================================================ -->
+<h2>5. Trend</h2>
+<div class="card">
+  <p><strong>First audit &mdash; no baseline.</strong> All findings are tagged <span class="tag tag-new">NEW</span>. Future audits will compare against this report.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 6: SPECIALIST REPORTS                                -->
+<!-- ============================================================ -->
+<h2>6. Specialist Reports</h2>
+<div class="specialist-grid">
+  <div class="card">
+    <h3>Red Teamer</h3>
+    <p><strong>Mode:</strong> Static</p>
+    <p><strong>Verdict:</strong> <span style="color:var(--red)">FAIL</span></p>
+    <p>P1: 1 &middot; P2: 2 &middot; P3: 1 &middot; P4: 0</p>
+    <p><em>No auth on any endpoint is the top finding.</em></p>
+  </div>
+  <div class="card">
+    <h3>Quality Oracle</h3>
+    <p><strong>Mode:</strong> Static</p>
+    <p><strong>Verdict:</strong> <span style="color:var(--yellow)">WARN</span></p>
+    <p>P1: 0 &middot; P2: 2 &middot; P3: 4 &middot; P4: 1</p>
+    <p><em>Spec coverage 100%. Ghost FR ID and missing status options.</em></p>
+  </div>
+  <div class="card">
+    <h3>Performance Profiler</h3>
+    <p><strong>Mode:</strong> Static</p>
+    <p><strong>Verdict:</strong> <span style="color:var(--red)">FAIL</span></p>
+    <p>P1: 2 &middot; P2: 3 &middot; P3: 0 &middot; P4: 0</p>
+    <p><em>N+1 queries and missing indexes are critical.</em></p>
+  </div>
+  <div class="card">
+    <h3>Chaos Monkey</h3>
+    <p><strong>Mode:</strong> Static</p>
+    <p><strong>Verdict:</strong> <span style="color:var(--orange)">WARN</span></p>
+    <p>P1: 0 &middot; P2: 3 &middot; P3: 5 &middot; P4: 1</p>
+    <p><em>State invariant gaps and race conditions in new feature.</em></p>
+  </div>
+  <div class="card">
+    <h3>Dependency Auditor</h3>
+    <p><strong>Mode:</strong> Static</p>
+    <p><strong>Verdict:</strong> <span style="color:var(--red)">FAIL</span></p>
+    <p>P1: 1 &middot; P2: 3 &middot; P3: 8 &middot; P4: 4</p>
+    <p><em>Handlebars critical CVE. Major version gaps in toolchain.</em></p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 7: RE-VERIFICATION SUMMARY                           -->
+<!-- ============================================================ -->
+<h2>7. Re-Verification Summary</h2>
+<div class="card">
+  <p>First audit &mdash; no prior findings to re-verify. All 41 findings are <span class="tag tag-new">NEW</span>.</p>
+  <table>
+    <tr><th>Status</th><th>Count</th></tr>
+    <tr><td><span class="tag tag-fixed">FIXED</span></td><td>0</td></tr>
+    <tr><td>STILL OPEN</td><td>0</td></tr>
+    <tr><td>REGRESSED</td><td>0</td></tr>
+    <tr><td><span class="tag tag-new">NEW</span></td><td>41</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 8: CROSS-REFERENCE MAP                               -->
+<!-- ============================================================ -->
+<h2>8. Cross-Reference Map</h2>
+<p>Root causes that span multiple specialists. Fixing one root cause resolves findings from 2+ specialists.</p>
+<table class="cross-ref-table">
+  <tr><th>Root Cause</th><th>Affected Findings</th><th>Fix Impact</th></tr>
+  <tr>
+    <td>Bug service has no STATUS_TRANSITIONS map</td>
+    <td>QO-004, CHAOS-001</td>
+    <td>Add STATUS_TRANSITIONS to bugService.ts &mdash; resolves 2 findings</td>
+  </tr>
+  <tr>
+    <td>Duplicate-of-duplicate chains not blocked</td>
+    <td>RED-004, CHAOS-002, CHAOS-008</td>
+    <td>Add canonical-status check in duplicate_of validation &mdash; resolves 3 findings</td>
+  </tr>
+  <tr>
+    <td>Banner links to list page, not canonical item</td>
+    <td>QO-005, CHAOS-006</td>
+    <td>Fix Link target in BugDetail.tsx and FeatureRequestDetail.tsx &mdash; resolves 2 findings</td>
+  </tr>
+  <tr>
+    <td>STATUS_OPTIONS missing duplicate/deprecated</td>
+    <td>QO-002, CHAOS-007</td>
+    <td>Add entries to both page STATUS_OPTIONS arrays &mdash; resolves 2 findings</td>
+  </tr>
+  <tr>
+    <td>include_hidden + status filter contradiction</td>
+    <td>RED-002, CHAOS-005</td>
+    <td>Auto-enable include_hidden when hidden status explicitly requested &mdash; resolves 2 findings</td>
+  </tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- SECTION 9: P1 FINDINGS                                       -->
+<!-- ============================================================ -->
+<h2>9. P1 Findings</h2>
+
+<div class="card card-p1">
+  <h3><span class="tag tag-p1">P1</span> <span class="tag tag-new">NEW</span> RED-001: No Authentication on Any API Endpoint</h3>
+  <p><strong>File:</strong> <code>portal/Backend/src/index.ts:26-67</code></p>
+  <p><strong>Category:</strong> auth-bypass</p>
+  <p><strong>Exploit scenario:</strong></p>
+  <ol>
+    <li>Attacker sends <code>PATCH /api/bugs/BUG-0001 {"status": "deprecated"}</code> with no credentials</li>
+    <li>No auth middleware exists &mdash; request flows directly to route handler</li>
+    <li>Handler calls service, status is changed. Any item can be hidden by any anonymous caller.</li>
+  </ol>
+  <p><strong>Impact:</strong> Full unauthenticated write access to all mutating endpoints. Any caller can hide items, delete records, approve features.</p>
+  <p><strong>Recommendation:</strong> Register JWT/session auth middleware before all API routes in <code>index.ts</code>. All mutating endpoints (PATCH, POST, DELETE) must require authentication.</p>
+</div>
+
+<div class="card card-p1">
+  <h3><span class="tag tag-p1">P1</span> <span class="tag tag-new">NEW</span> PERF-001: N+1 Queries on List Endpoints (4 extra per row)</h3>
+  <p><strong>Files:</strong> <code>bugService.ts:38-66</code>, <code>featureRequestService.ts:109-139</code></p>
+  <p><strong>Category:</strong> n-plus-1</p>
+  <p><strong>Detail:</strong> <code>mapBugRow()</code> and <code>mapFRRow()</code> fire 4 SQL queries per row: duplicated_by lookup, getBlockedBy, getBlocks, hasUnresolvedBlockers. 100 items = 401 SQL statements. The <code>duplicated_by</code> sub-query was introduced by this feature.</p>
+  <p><strong>Recommendation:</strong> Replace per-row queries with batch queries using <code>IN (...)</code> clauses. Reduces from O(4N) to O(3) total SQL statements.</p>
+</div>
+
+<div class="card card-p1">
+  <h3><span class="tag tag-p1">P1</span> <span class="tag tag-new">NEW</span> PERF-002: Missing Database Indexes on Status, duplicate_of, and Filter Columns</h3>
+  <p><strong>File:</strong> <code>portal/Backend/src/database/schema.ts</code></p>
+  <p><strong>Category:</strong> missing-index</p>
+  <p><strong>Detail:</strong> No index on <code>status</code> (used in every list WHERE), <code>duplicate_of</code> (queried per row for duplicated_by), <code>source</code>, <code>severity</code>, or <code>votes.feature_request_id</code>. Every filter and sub-query triggers a full table scan.</p>
+  <p><strong>Recommendation:</strong> Add idempotent <code>CREATE INDEX IF NOT EXISTS</code> for: idx_feature_requests_status, idx_bugs_status, idx_feature_requests_duplicate_of, idx_bugs_duplicate_of, idx_votes_fr_id, idx_feature_requests_source, idx_bugs_severity.</p>
+</div>
+
+<div class="card card-p1">
+  <h3><span class="tag tag-p1">P1</span> <span class="tag tag-new">NEW</span> DEP-001: Handlebars Critical CVE (CVSS 9.8)</h3>
+  <p><strong>Package:</strong> <code>handlebars@4.7.8</code> (transitive via jest/babel)</p>
+  <p><strong>File:</strong> <code>Source/Backend/package-lock.json</code></p>
+  <p><strong>Category:</strong> CVE</p>
+  <p><strong>Detail:</strong> 8 vulnerabilities including GHSA-2w6w-674q-4c4q (CVSS 9.8, JavaScript Injection via AST Type Confusion). Exploitable if handlebars precompiler is used in build pipeline.</p>
+  <p><strong>Recommendation:</strong> Upgrade handlebars to >=4.7.9. Check transitive dependency path through jest/babel.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 10: RISK MATRIX                                      -->
+<!-- ============================================================ -->
+<h2>10. Risk Matrix</h2>
+<table>
+  <tr>
+    <th></th>
+    <th>Zero-precondition</th>
+    <th>Authenticated</th>
+    <th>Privileged</th>
+    <th>Admin</th>
+    <th>Physical</th>
+  </tr>
+  <tr>
+    <th>P1</th>
+    <td style="background:#f8514933"><strong>RED-001</strong><br>PERF-001, PERF-002</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>P2</th>
+    <td style="background:#db6d2833">RED-002, RED-003<br>DEP-002, DEP-004</td>
+    <td style="background:#db6d2833">QO-002, QO-004<br>CHAOS-001, CHAOS-002<br>CHAOS-003</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>P3</th>
+    <td style="background:#d2992233">RED-004, DEP-003<br>DEP-005</td>
+    <td style="background:#d2992233">CHAOS-004, CHAOS-005<br>CHAOS-006, CHAOS-007</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>P4</th>
+    <td></td>
+    <td style="background:#8b949e33">CHAOS-009</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+<p><em>Note: Since no auth exists (RED-001), all findings are effectively zero-precondition. The "Authenticated" column assumes auth is implemented as recommended.</em></p>
+
+<!-- ============================================================ -->
+<!-- SECTION 11: SPEC COVERAGE                                    -->
+<!-- ============================================================ -->
+<h2>11. Spec Coverage</h2>
+<div class="card">
+  <h3>Overall: 100% Implemented (85% Traced)</h3>
+  <div class="progress-bar"><div class="progress-fill" style="width:100%">100% Implemented</div></div>
+  <p>13/13 requirements in <code>Plans/duplicate-deprecated-status/requirements.md</code> have corresponding implementation.</p>
+  <div class="progress-bar"><div class="progress-fill" style="width:85%;background:var(--blue)">85% Test Traced</div></div>
+  <p>8/13 requirements have direct test traceability (<code>// Verifies: FR-DUP-XXX</code>).</p>
+
+  <h3 style="margin-top:1rem">Top Untraced Requirements</h3>
+  <table>
+    <tr><th>FR ID</th><th>Description</th><th>Status</th></tr>
+    <tr><td>FR-DUP-01</td><td>Status union types</td><td>Implemented, no test trace (type-level)</td></tr>
+    <tr><td>FR-DUP-02</td><td>New fields on entities</td><td>Implemented, tested implicitly, not tagged</td></tr>
+    <tr><td>FR-DUP-08</td><td>Schema migration</td><td>Implemented, no migration test</td></tr>
+    <tr><td>FR-DUP-09</td><td>UI action buttons</td><td>Implemented, no frontend test</td></tr>
+    <tr><td>FR-DUP-10</td><td>UI banners</td><td>Implemented, no frontend test</td></tr>
+    <tr><td>FR-DUP-13</td><td>RESOLVED_STATUSES integration</td><td>Implemented, no test trace</td></tr>
+  </table>
+  <p style="margin-top:0.5rem"><strong>Ghost ID:</strong> <code>FR-DUP-14</code> referenced in 6 places but does not exist in any spec.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 12: LATENCY BASELINES                                -->
+<!-- ============================================================ -->
+<h2>12. Latency Baselines</h2>
+<div class="card">
+  <p><strong>No dynamic profiling available.</strong> All services were DOWN during this audit. No p50/p95/p99 measurements collected.</p>
+  <table>
+    <tr><th>Endpoint</th><th>p50</th><th>p95</th><th>p99</th><th>Budget (p95)</th><th>Status</th></tr>
+    <tr><td>GET /api/bugs</td><td>N/A</td><td>N/A</td><td>N/A</td><td>500ms</td><td>Not measured</td></tr>
+    <tr><td>GET /api/feature-requests</td><td>N/A</td><td>N/A</td><td>N/A</td><td>500ms</td><td>Not measured</td></tr>
+    <tr><td>PATCH /api/bugs/:id</td><td>N/A</td><td>N/A</td><td>N/A</td><td>200ms</td><td>Not measured</td></tr>
+    <tr><td>PATCH /api/feature-requests/:id</td><td>N/A</td><td>N/A</td><td>N/A</td><td>200ms</td><td>Not measured</td></tr>
+  </table>
+  <p><strong>Static analysis warning:</strong> PERF-001 (N+1 queries) and PERF-002 (missing indexes) are very likely to cause p95 budget breaches on list endpoints with &gt;50 items. Dynamic verification recommended as priority follow-up.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 13: P2 FINDINGS                                      -->
+<!-- ============================================================ -->
+<h2>13. P2 Findings</h2>
+<table>
+  <tr><th>ID</th><th>Category</th><th>Title</th><th>File</th><th>Status</th></tr>
+  <tr><td>RED-002</td><td>auth-bypass</td><td>include_hidden caller-controlled, no authorization gate</td><td>bugs.ts:30, featureRequests.ts:34</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>RED-003</td><td>injection</td><td>deprecation_reason has no max length validation</td><td>bugService.ts:246, featureRequestService.ts:316</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>QO-002</td><td>spec-drift</td><td>STATUS_OPTIONS dropdowns missing duplicate/deprecated</td><td>BugReportsPage.tsx:12, FeatureRequestsPage.tsx:12</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>QO-004</td><td>arch-violation</td><td>bugService.ts has no STATUS_TRANSITIONS map</td><td>bugService.ts</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>PERF-003</td><td>unbounded</td><td>List endpoints have no pagination</td><td>bugService.ts:89, featureRequestService.ts:162</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>PERF-004</td><td>algorithmic</td><td>O(n) Jaccard scan on every FR creation</td><td>featureRequestService.ts:223</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>PERF-005</td><td>unbounded</td><td>Dashboard activity loads all rows from 6 tables</td><td>dashboardService.ts:106</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>CHAOS-001</td><td>state-invariant</td><td>Bug status transitions unguarded (no transition map)</td><td>bugService.ts:217</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>CHAOS-002</td><td>state-invariant</td><td>Chain-of-duplicates not blocked</td><td>featureRequestService.ts:307, bugService.ts:237</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>CHAOS-003</td><td>concurrency</td><td>Race condition on concurrent duplicate marking</td><td>featureRequestService.ts:269, bugService.ts:184</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>DEP-002</td><td>CVE</td><td>path-to-regexp ReDoS (CVSS 7.5)</td><td>portal/Backend/package-lock.json</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>DEP-004</td><td>CVE</td><td>picomatch ReDoS (CVSS 7.5)</td><td>portal/Frontend/package-lock.json</td><td><span class="tag tag-new">NEW</span></td></tr>
+  <tr><td>DEP-012</td><td>supply-chain</td><td>Missing deps in platform/orchestrator (npm install needed)</td><td>platform/orchestrator/package.json</td><td><span class="tag tag-new">NEW</span></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- SECTION 14: FIXED FINDINGS                                   -->
+<!-- ============================================================ -->
+<h2>14. Fixed Findings</h2>
+<div class="card card-fixed">
+  <p>None &mdash; first audit, no prior findings to compare against.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 15: RECOMMENDATIONS                                  -->
+<!-- ============================================================ -->
+<h2>15. Recommendations</h2>
+
+<h3 style="color:var(--red)">Block Deployment (4 items)</h3>
+<table>
+  <tr><th>#</th><th>Action</th><th>Findings Resolved</th></tr>
+  <tr><td>1</td><td>Add authentication middleware to <code>index.ts</code> before all API routes</td><td>RED-001, RED-002</td></tr>
+  <tr><td>2</td><td>Replace per-row SQL queries in mapBugRow/mapFRRow with batch <code>IN (...)</code> queries</td><td>PERF-001</td></tr>
+  <tr><td>3</td><td>Add database indexes on status, duplicate_of, source, severity, votes FK</td><td>PERF-002</td></tr>
+  <tr><td>4</td><td>Add max-length validation for deprecation_reason (match DESCRIPTION_MAX_LENGTH pattern)</td><td>RED-003</td></tr>
+</table>
+
+<h3 style="color:var(--orange)">This Sprint (9 items)</h3>
+<table>
+  <tr><th>#</th><th>Action</th><th>Findings Resolved</th></tr>
+  <tr><td>5</td><td>Add STATUS_TRANSITIONS map to bugService.ts (mirror featureRequestService pattern)</td><td>QO-004, CHAOS-001</td></tr>
+  <tr><td>6</td><td>Add canonical-status check: reject duplicate_of pointing to another duplicate item</td><td>RED-004, CHAOS-002, CHAOS-008</td></tr>
+  <tr><td>7</td><td>Add duplicate/deprecated to STATUS_OPTIONS in both page components</td><td>QO-002, CHAOS-007</td></tr>
+  <tr><td>8</td><td>Fix banner Link targets to deep-link to canonical item</td><td>QO-005, CHAOS-006</td></tr>
+  <tr><td>9</td><td>Add pagination (LIMIT/OFFSET) to list endpoints</td><td>PERF-003</td></tr>
+  <tr><td>10</td><td>Detect and return 400 when status=duplicate with include_hidden=false</td><td>CHAOS-005</td></tr>
+  <tr><td>11</td><td>Handle deprecation_reason update on already-deprecated items</td><td>CHAOS-004</td></tr>
+  <tr><td>12</td><td>Upgrade handlebars >=4.7.9 (transitive via jest/babel)</td><td>DEP-001</td></tr>
+  <tr><td>13</td><td>Upgrade path-to-regexp and picomatch via express/vite upgrades</td><td>DEP-002, DEP-004</td></tr>
+</table>
+
+<h3 style="color:var(--yellow)">Next Sprint (5 items)</h3>
+<table>
+  <tr><th>#</th><th>Action</th><th>Findings Resolved</th></tr>
+  <tr><td>14</td><td>Fix ghost FR-DUP-14 references (replace with FR-DUP-04)</td><td>QO-001</td></tr>
+  <tr><td>15</td><td>Add test traceability for FR-DUP-01/02/08/09/10/13</td><td>QO-003, QO-007</td></tr>
+  <tr><td>16</td><td>Mark FR-0008 as duplicate of FR-0009 (post-deploy data task)</td><td>QO-006</td></tr>
+  <tr><td>17</td><td>Wrap read-validate-write in transactions or add optimistic locking</td><td>CHAOS-003</td></tr>
+  <tr><td>18</td><td>Cap Jaccard similarity scan with LIMIT + recency filter</td><td>PERF-004</td></tr>
+</table>
+
+<h3 style="color:var(--muted)">Backlog (8 items)</h3>
+<table>
+  <tr><th>#</th><th>Action</th><th>Findings Resolved</th></tr>
+  <tr><td>19</td><td>Push dashboard activity sort+limit to SQL (UNION ALL approach)</td><td>PERF-005</td></tr>
+  <tr><td>20</td><td>Clarify cross-type duplicate_of error message</td><td>CHAOS-009</td></tr>
+  <tr><td>21</td><td>Run npm install in platform/orchestrator</td><td>DEP-012</td></tr>
+  <tr><td>22</td><td>Upgrade OpenTelemetry, React, Vite, Vitest to latest major versions</td><td>DEP-006-009</td></tr>
+  <tr><td>23</td><td>Standardize pino and testing-library versions across projects</td><td>DEP-015, DEP-016</td></tr>
+  <tr><td>24</td><td>Evaluate Express v5 migration</td><td>DEP-011</td></tr>
+  <tr><td>25</td><td>Evaluate TypeScript v6 migration</td><td>DEP-010</td></tr>
+  <tr><td>26</td><td>Monitor supply chain: postinstall scripts, transitive dep count</td><td>DEP-013, DEP-014</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- SECTION 16: P3/P4 SUMMARY                                    -->
+<!-- ============================================================ -->
+<h2>16. P3/P4 Summary</h2>
+
+<h3>P3 Findings (16)</h3>
+<table>
+  <tr><th>ID</th><th>Category</th><th>Title</th></tr>
+  <tr><td>RED-004</td><td>domain-specific</td><td>Multi-hop circular duplicate chains possible</td></tr>
+  <tr><td>QO-001</td><td>spec-drift</td><td>Ghost FR-DUP-14 referenced in 6 places</td></tr>
+  <tr><td>QO-003</td><td>untested</td><td>FR-DUP-13 has no test coverage</td></tr>
+  <tr><td>QO-005</td><td>spec-drift</td><td>Duplicate banner links to list page, not canonical item</td></tr>
+  <tr><td>QO-006</td><td>spec-drift</td><td>FR-0008 not marked as duplicate of FR-0009</td></tr>
+  <tr><td>CHAOS-004</td><td>error-handling</td><td>deprecation_reason silently ignored without status</td></tr>
+  <tr><td>CHAOS-005</td><td>error-handling</td><td>include_hidden=false + status=duplicate = silent empty result</td></tr>
+  <tr><td>CHAOS-006</td><td>graceful-degradation</td><td>Duplicate banner links to list page</td></tr>
+  <tr><td>CHAOS-007</td><td>graceful-degradation</td><td>Status filter dropdown missing duplicate/deprecated</td></tr>
+  <tr><td>CHAOS-008</td><td>error-handling</td><td>No test for chain-of-duplicates prevention</td></tr>
+  <tr><td>DEP-003</td><td>CVE</td><td>esbuild CORS bypass (dev-only)</td></tr>
+  <tr><td>DEP-005</td><td>CVE</td><td>brace-expansion DoS</td></tr>
+  <tr><td>DEP-006</td><td>outdated</td><td>OpenTelemetry packages 30+ minor versions behind</td></tr>
+  <tr><td>DEP-007</td><td>outdated</td><td>React/React-DOM v18 (v19 available)</td></tr>
+  <tr><td>DEP-008</td><td>outdated</td><td>Vite v5 (v8 available)</td></tr>
+  <tr><td>DEP-009</td><td>outdated</td><td>Vitest v1-2 (v4 available)</td></tr>
+</table>
+
+<h3>P4 Findings (8)</h3>
+<table>
+  <tr><th>ID</th><th>Category</th><th>Title</th></tr>
+  <tr><td>QO-007</td><td>untested</td><td>Test traceability gaps for FR-DUP-01/02/08/09/10</td></tr>
+  <tr><td>CHAOS-009</td><td>state-invariant</td><td>Ambiguous cross-type duplicate_of error message</td></tr>
+  <tr><td>DEP-010</td><td>outdated</td><td>TypeScript v5 (v6 available)</td></tr>
+  <tr><td>DEP-011</td><td>outdated</td><td>Express v4 (v5 available)</td></tr>
+  <tr><td>DEP-013</td><td>supply-chain</td><td>Build tool postinstall scripts (esbuild, protobufjs)</td></tr>
+  <tr><td>DEP-014</td><td>supply-chain</td><td>High transitive dependency count (577 max)</td></tr>
+  <tr><td>DEP-015</td><td>version-mismatch</td><td>Pino v8 vs v10 across projects</td></tr>
+  <tr><td>DEP-016</td><td>version-mismatch</td><td>@testing-library/react v14 vs v16</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- FOOTER                                                       -->
+<!-- ============================================================ -->
+<hr style="margin-top: 2rem; border-color: var(--border);">
+<p style="color: var(--muted); font-size: 0.8rem; margin-top: 1rem;">
+  Generated by TheInspector &middot; Run ID: run-20260330-071418 &middot; 2026-03-30 &middot; All specialists: static mode
+</p>
+
+</div>
+</body>
+</html>

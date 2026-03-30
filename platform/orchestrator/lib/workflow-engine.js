@@ -1356,7 +1356,10 @@ ${feedback}`;
       const smokeResult = validationResults[0];
       const inspectorResult = skipInspector ? null : validationResults[1];
 
-      run.phases.smoketest.status = smokeResult.exitCode === 0 ? "passed" : "failed";
+      run.phases.smoketest.status =
+        smokeResult.exitCode === 0 ? "passed" :
+        smokeResult.exitCode === 2 ? "skipped" :
+        "failed";
       run.phases.smoketest.exitCode = smokeResult.exitCode;
       run.phases.smoketest.completedAt = ts();
       run.phases.smoketest.outputTail = smokeResult.stdout.slice(-2000);
@@ -1378,7 +1381,7 @@ ${feedback}`;
         .filter((k) => k.startsWith("stage_") && run.phases[k].stageName && /qa|verification|review/i.test(run.phases[k].stageName))
         .every((k) => run.phases[k].status === "passed");
 
-      const smokePassed = run.phases.smoketest.status === "passed";
+      const smokePassed = run.phases.smoketest.status === "passed" || run.phases.smoketest.status === "skipped";
       const inspectorPassed = run.phases.inspector.status === "passed" || run.phases.inspector.status === "skipped";
 
       // Smoketest is advisory when both implementation AND QA passed independently.

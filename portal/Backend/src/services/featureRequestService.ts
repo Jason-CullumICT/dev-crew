@@ -12,7 +12,7 @@ import type {
   VoteDecision,
   DependencyLink,
 } from '../../../Shared/types';
-import { RESOLVED_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
+import { RESOLVED_STATUSES, HIDDEN_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
 import { DependencyService } from './dependencyService';
 import { simulateVoting, buildVoteRecords, VoteSimulatorOptions } from './votingService';
 import { AppError } from '../middleware/errorHandler';
@@ -20,7 +20,8 @@ import { AppError } from '../middleware/errorHandler';
 // --- Valid enum values (DD-8) ---
 export const VALID_SOURCES: FeatureRequestSource[] = ['manual', 'zendesk', 'competitor_analysis', 'code_review'];
 export const VALID_PRIORITIES: Priority[] = ['low', 'medium', 'high', 'critical'];
-export const VALID_STATUSES: FeatureRequestStatus[] = ['potential', 'voting', 'approved', 'denied', 'in_development', 'completed', 'pending_dependencies'];
+// Verifies: FR-DUP-01
+export const VALID_STATUSES: FeatureRequestStatus[] = ['potential', 'voting', 'approved', 'denied', 'in_development', 'completed', 'pending_dependencies', 'duplicate', 'deprecated'];
 
 // --- Input length limits (Security M-04) ---
 export const TITLE_MAX_LENGTH = 200;
@@ -32,14 +33,17 @@ export const DESCRIPTION_MAX_LENGTH = 10000;
 // voting → denied (via deny endpoint)
 // approved → in_development
 // in_development → completed
+// Verifies: FR-DUP-04 — duplicate/deprecated allowed from any status (terminal dispositions)
 const STATUS_TRANSITIONS: Record<FeatureRequestStatus, FeatureRequestStatus[]> = {
-  potential: ['voting'],
-  voting: ['approved', 'denied'],
-  approved: ['in_development'],
-  in_development: ['completed'],
-  denied: [],
-  completed: [],
-  pending_dependencies: ['approved'], // Verifies: FR-dependency-dispatch-gating
+  potential: ['voting', 'duplicate', 'deprecated'],
+  voting: ['approved', 'denied', 'duplicate', 'deprecated'],
+  approved: ['in_development', 'duplicate', 'deprecated'],
+  in_development: ['completed', 'duplicate', 'deprecated'],
+  denied: ['duplicate', 'deprecated'],
+  completed: ['duplicate', 'deprecated'],
+  pending_dependencies: ['approved', 'duplicate', 'deprecated'], // Verifies: FR-dependency-dispatch-gating
+  duplicate: [],     // Verifies: FR-DUP-04 — terminal status
+  deprecated: [],    // Verifies: FR-DUP-04 — terminal status
 };
 
 // --- ID generation ---
@@ -88,6 +92,8 @@ interface FRRow {
   duplicate_warning: number;
   created_at: string;
   target_repo: string | null;
+  duplicate_of: string | null;         // Verifies: FR-DUP-02
+  deprecation_reason: string | null;   // Verifies: FR-DUP-02
   updated_at: string;
 }
 
@@ -104,6 +110,11 @@ function mapFRRow(db: Database.Database, row: FRRow, votes: Vote[]): FeatureRequ
   const depService = new DependencyService(db);
   const id = row.id;
 
+  // Verifies: FR-DUP-03 — Compute duplicated_by from DB
+  const duplicatedByRows = db.prepare(
+    `SELECT id FROM feature_requests WHERE duplicate_of = ?`
+  ).all(id) as Array<{ id: string }>;
+
   return {
     id,
     title: row.title,
@@ -118,6 +129,9 @@ function mapFRRow(db: Database.Database, row: FRRow, votes: Vote[]): FeatureRequ
     target_repo: row.target_repo || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    duplicate_of: row.duplicate_of || null,                        // Verifies: FR-DUP-02
+    deprecation_reason: row.deprecation_reason || null,            // Verifies: FR-DUP-02
+    duplicated_by: duplicatedByRows.map(r => r.id),                // Verifies: FR-DUP-03
     blocked_by: depService.getBlockedBy('feature_request', id),
     blocks: depService.getBlocks('feature_request', id),
     has_unresolved_blockers: depService.hasUnresolvedBlockers('feature_request', id),
@@ -141,6 +155,7 @@ function getVotesForFR(db: Database.Database, frId: string): Vote[] {
 export interface ListFeatureRequestsOptions {
   status?: string;
   source?: string;
+  include_hidden?: boolean;  // Verifies: FR-DUP-05
 }
 
 export function listFeatureRequests(
@@ -149,6 +164,12 @@ export function listFeatureRequests(
 ): FeatureRequest[] {
   let query = `SELECT * FROM feature_requests WHERE 1=1`;
   const params: string[] = [];
+
+  // Verifies: FR-DUP-05 — Exclude hidden statuses by default
+  if (!opts.include_hidden) {
+    query += ` AND status NOT IN (${HIDDEN_STATUSES.map(() => '?').join(', ')})`;
+    params.push(...HIDDEN_STATUSES as unknown as string[]);
+  }
 
   if (opts.status) {
     query += ` AND status = ?`;
@@ -210,18 +231,19 @@ export function createFeatureRequest(
   const id = generateFRId(db);
   const now = new Date().toISOString();
 
-  // Handle dependencies if provided
-  const depService = new DependencyService(db);
-  if (input.blocked_by && input.blocked_by.length > 0) {
-    depService.setDependencies('feature_request', id, input.blocked_by);
-  }
-
+  // Verifies: FR-dependency-linking — INSERT first so setDependencies can verify item exists
   db.prepare(`
     INSERT INTO feature_requests
       (id, title, description, source, status, priority, human_approval_comment,
        human_approval_approved_at, duplicate_warning, target_repo, created_at, updated_at)
     VALUES (?, ?, ?, ?, 'potential', ?, NULL, NULL, ?, ?, ?, ?)
   `).run(id, title, description, source, priority, duplicateWarning ? 1 : 0, input.target_repo || null, now, now);
+
+  // Verifies: FR-dependency-linking — Handle dependencies after INSERT
+  if (input.blocked_by && input.blocked_by.length > 0) {
+    const depService = new DependencyService(db);
+    depService.setDependencies('feature_request', id, input.blocked_by);
+  }
 
   return getFeatureRequestById(db, id)!;
 }
@@ -239,6 +261,8 @@ export interface UpdateFeatureRequestInput {
   status?: string;
   description?: string;
   priority?: string;
+  duplicate_of?: string;                      // Verifies: FR-DUP-04
+  deprecation_reason?: string;                // Verifies: FR-DUP-04
   blocked_by?: string[];                      // Verifies: FR-dependency-linking
 }
 
@@ -269,6 +293,39 @@ export function updateFeatureRequest(
         400,
         `Invalid status transition: ${currentStatus} → ${newStatus}. Allowed: ${allowedTransitions.join(', ') || 'none'}`
       );
+    }
+
+    // Verifies: FR-DUP-04 — Validate duplicate_of when setting status to duplicate
+    if (newStatus === 'duplicate') {
+      if (!input.duplicate_of) {
+        throw new AppError(400, `duplicate_of is required when status is 'duplicate'`);
+      }
+      if (input.duplicate_of === id) {
+        throw new AppError(400, `An item cannot be a duplicate of itself`);
+      }
+      // Verifies: FR-DUP-07 — Validate reference exists
+      const canonical = db.prepare(`SELECT id FROM feature_requests WHERE id = ?`).get(input.duplicate_of);
+      if (!canonical) {
+        throw new AppError(400, `duplicate_of references non-existent feature request: ${input.duplicate_of}`);
+      }
+      updates.push(`duplicate_of = ?`);
+      params.push(input.duplicate_of);
+      // Clear deprecation_reason when marking as duplicate
+      updates.push(`deprecation_reason = ?`);
+      params.push(null);
+    } else if (newStatus === 'deprecated') {
+      // Verifies: FR-DUP-04 — Accept optional deprecation_reason
+      updates.push(`deprecation_reason = ?`);
+      params.push(input.deprecation_reason || null);
+      // Clear duplicate_of when marking as deprecated
+      updates.push(`duplicate_of = ?`);
+      params.push(null);
+    } else {
+      // Transitioning to a non-duplicate/deprecated status: clear both fields
+      updates.push(`duplicate_of = ?`);
+      params.push(null);
+      updates.push(`deprecation_reason = ?`);
+      params.push(null);
     }
 
     // Verifies: FR-dependency-dispatch-gating — Dispatch gating check

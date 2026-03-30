@@ -1,6 +1,8 @@
 // Verifies: FR-026
+// Verifies: FR-DUP-11, FR-DUP-12
 import React from 'react'
 import type { BugReport } from '../../../../Shared/types'
+import { HIDDEN_STATUSES } from '../../../../Shared/types'
 import { BlockedBadge } from '../shared/BlockedBadge'
 
 interface BugListProps {
@@ -25,6 +27,8 @@ const STATUS_COLORS: Record<string, string> = {
   resolved: 'bg-green-100 text-green-700',
   closed: 'bg-gray-100 text-gray-500',
   pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
+  duplicate: 'bg-purple-100 text-purple-700',      // Verifies: FR-DUP-11
+  deprecated: 'bg-gray-200 text-gray-500',          // Verifies: FR-DUP-11
 }
 
 export function BugList({ items, onSelect, selectable, selectedIds, onToggleSelect }: BugListProps) {
@@ -55,11 +59,19 @@ export function BugList({ items, onSelect, selectable, selectedIds, onToggleSele
           )}
           <button
             onClick={() => onSelect(bug)}
-            className={`flex-1 text-left bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-all ${selectable && selectedIds?.has(bug.id) ? "border-blue-500 ring-1 ring-blue-500" : "border-gray-200"}`}
+            className={`flex-1 text-left bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-all ${selectable && selectedIds?.has(bug.id) ? "border-blue-500 ring-1 ring-blue-500" : "border-gray-200"} ${HIDDEN_STATUSES.includes(bug.status) ? "opacity-60" : ""}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <span className="text-xs font-mono text-gray-400">{bug.id}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-gray-400">{bug.id}</span>
+                  {/* Verifies: FR-DUP-12 — Duplicate count badge on canonical items */}
+                  {bug.duplicated_by && bug.duplicated_by.length > 0 && (
+                    <span className="text-xs bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-medium">
+                      {bug.duplicated_by.length} duplicate{bug.duplicated_by.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
                 <h4 className="text-base font-semibold text-gray-900 truncate mt-0.5">{bug.title}</h4>
                 <p className="text-sm text-gray-500 mt-0.5 truncate">{bug.description}</p>
               </div>

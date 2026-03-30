@@ -70,11 +70,13 @@ async function apiFetch<T>(
 
 // --- Feature Requests ---
 
+// Verifies: FR-DUP-11
 export const featureRequests = {
-  list(params?: { status?: string; source?: string }): Promise<{ data: FeatureRequest[] }> {
+  list(params?: { status?: string; source?: string; include_hidden?: boolean }): Promise<{ data: FeatureRequest[] }> {
     const query = new URLSearchParams()
     if (params?.status) query.set('status', params.status)
     if (params?.source) query.set('source', params.source)
+    if (params?.include_hidden) query.set('include_hidden', 'true')
     const qs = query.toString()
     return apiFetch(`/api/feature-requests${qs ? `?${qs}` : ''}`)
   },
@@ -137,11 +139,13 @@ export const featureRequests = {
 
 // --- Bug Reports ---
 
+// Verifies: FR-DUP-11
 export const bugs = {
-  list(params?: { status?: string; severity?: string }): Promise<{ data: BugReport[] }> {
+  list(params?: { status?: string; severity?: string; include_hidden?: boolean }): Promise<{ data: BugReport[] }> {
     const query = new URLSearchParams()
     if (params?.status) query.set('status', params.status)
     if (params?.severity) query.set('severity', params.severity)
+    if (params?.include_hidden) query.set('include_hidden', 'true')
     const qs = query.toString()
     return apiFetch(`/api/bugs${qs ? `?${qs}` : ''}`)
   },
@@ -189,14 +193,13 @@ export const bugs = {
 
 // --- General ---
 
+// Verifies: FR-0001 — General search across bugs and feature requests
 export const general = {
-  async searchItems(query: string): Promise<any[]> {
-    const [b, f] = await Promise.all([
-      bugs.list({ status: query }), // Note: this is a placeholder; real search would be different
-      featureRequests.list({ status: query }),
-    ])
-    // Filter locally if needed or adjust API
-    return [...b.data, ...f.data]
+  async searchItems(query: string): Promise<Array<BugReport | FeatureRequest>> {
+    const result = await apiFetch<{ data: Array<BugReport | FeatureRequest> }>(
+      `/api/search?q=${encodeURIComponent(query)}`
+    )
+    return result.data
   }
 }
 

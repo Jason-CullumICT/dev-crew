@@ -16,6 +16,8 @@ import {
 } from '../services/featureRequestService';
 import { uploadImagesService, listImages, deleteImage } from '../services/imageService';
 import { uploadImages as uploadMiddleware } from '../middleware/upload';
+import { DependencyService, DependencyError } from '../services/dependencyService';
+import { DependencyActionRequest, parseItemId } from '../../../Shared/types';
 import { AppError } from '../middleware/errorHandler';
 import { featureRequestTransitionsCounter, aiVotingCounter } from '../middleware/metrics';
 import { withSpan } from '../lib/tracing';
@@ -28,12 +30,13 @@ const router = Router();
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await withSpan('featureRequests.list', async (span) => {
-      const { status, source } = req.query as { status?: string; source?: string };
+      // Verifies: FR-DUP-05 — Read include_hidden query param
+      const { status, source, include_hidden } = req.query as { status?: string; source?: string; include_hidden?: string };
       span.setAttribute('filter.status', status || '');
       span.setAttribute('filter.source', source || '');
 
       const db = getDb();
-      const frs = listFeatureRequests(db, { status, source });
+      const frs = listFeatureRequests(db, { status, source, include_hidden: include_hidden === 'true' });
       logger.info('Listed feature requests', { count: frs.length, status, source });
       res.json({ data: frs });
     });
@@ -100,10 +103,11 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       const existing = getFeatureRequestById(db, id);
       if (!existing) throw new AppError(404, `Feature request ${id} not found`);
 
-      const { status, description, priority } = req.body;
+      // Verifies: FR-dependency-linking, FR-DUP-04 — pass blocked_by, duplicate_of, deprecation_reason through to service
+      const { status, description, priority, blocked_by, duplicate_of, deprecation_reason } = req.body;
       const fromStatus = existing.status;
 
-      const updated = updateFeatureRequest(db, id, { status, description, priority });
+      const updated = updateFeatureRequest(db, id, { status, description, priority, blocked_by, duplicate_of, deprecation_reason });
 
       if (status && status !== fromStatus) {
         featureRequestTransitionsCounter.inc({ from_status: fromStatus, to_status: status });
@@ -283,6 +287,76 @@ router.delete('/:id/images/:imageId', async (req: Request, res: Response, next: 
     const { imageId } = req.params;
     deleteImage(getDb(), imageId);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/feature-requests/:id/dependencies
+// Verifies: FR-dependency-linking
+router.post('/:id/dependencies', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('featureRequests.dependencies', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('fr.id', id);
+
+      const db = getDb();
+      const fr = getFeatureRequestById(db, id);
+      if (!fr) throw new AppError(404, `Feature request ${id} not found`);
+
+      const { action, blocker_id } = req.body as DependencyActionRequest;
+
+      if (action !== 'add' && action !== 'remove') {
+        throw new AppError(400, 'action must be "add" or "remove"');
+      }
+      if (!blocker_id || typeof blocker_id !== 'string') {
+        throw new AppError(400, 'blocker_id is required');
+      }
+
+      const parsed = parseItemId(blocker_id);
+      if (!parsed) {
+        throw new AppError(400, `Invalid blocker_id format: ${blocker_id}. Must be BUG-XXXX or FR-XXXX`);
+      }
+
+      const depService = new DependencyService(db);
+
+      if (action === 'add') {
+        depService.addDependency('feature_request', id, parsed.type, parsed.id);
+        logger.info('Dependency added to feature request', { frId: id, blockerId: parsed.id });
+      } else {
+        depService.removeDependency('feature_request', id, parsed.type, parsed.id);
+        logger.info('Dependency removed from feature request', { frId: id, blockerId: parsed.id });
+      }
+
+      const updated = getFeatureRequestById(db, id)!;
+      res.json(updated);
+    });
+  } catch (err) {
+    if (err instanceof DependencyError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+// GET /api/feature-requests/:id/ready
+// Verifies: FR-dependency-ready-check
+router.get('/:id/ready', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('featureRequests.ready', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('fr.id', id);
+
+      const db = getDb();
+      const fr = getFeatureRequestById(db, id);
+      if (!fr) throw new AppError(404, `Feature request ${id} not found`);
+
+      const depService = new DependencyService(db);
+      const readiness = depService.isReady('feature_request', id);
+      logger.info('Feature request readiness checked', { frId: id, ready: readiness.ready });
+      res.json(readiness);
+    });
   } catch (err) {
     next(err);
   }

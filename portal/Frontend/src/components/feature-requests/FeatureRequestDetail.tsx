@@ -1,8 +1,11 @@
 // Verifies: FR-025
 // Verifies: FR-084
 // Verifies: FR-087
+// Verifies: FR-DUP-09, FR-DUP-10
 import React, { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import type { FeatureRequest, ImageAttachment } from '../../../../Shared/types'
+import { HIDDEN_STATUSES } from '../../../../Shared/types'
 import { VoteResults } from './VoteResults'
 import { featureRequests, images, orchestrator, repos } from '../../api/client'
 import { ImageThumbnails } from '../common/ImageThumbnails'
@@ -23,6 +26,8 @@ const STATUS_COLORS: Record<string, string> = {
   in_development: 'bg-amber-100 text-amber-700',
   completed: 'bg-green-100 text-green-700',
   pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
+  duplicate: 'bg-purple-100 text-purple-700',      // Verifies: FR-DUP-10
+  deprecated: 'bg-gray-200 text-gray-500',          // Verifies: FR-DUP-10
 }
 
 export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDetailProps) {
@@ -32,6 +37,12 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
   const [error, setError] = useState<string | null>(null)
   const [attachedImages, setAttachedImages] = useState<ImageAttachment[]>([])
   const [submittingToOrch, setSubmittingToOrch] = useState(false)
+  // Verifies: FR-DUP-09
+  const [showDuplicateForm, setShowDuplicateForm] = useState(false)
+  const [duplicateOfId, setDuplicateOfId] = useState('')
+  const [showDeprecatedForm, setShowDeprecatedForm] = useState(false)
+  const [deprecationReason, setDeprecationReason] = useState('')
+  const [markingStatus, setMarkingStatus] = useState(false)
   const [selectedRepo, setSelectedRepo] = useState(fr.target_repo || "https://github.com/Jason-CullumICT/dev-crew")
   const [sessionToken, setSessionToken] = useState("")
   const [tokenLabel, setTokenLabel] = useState("")
@@ -158,12 +169,74 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
     }
   }
 
+  // Verifies: FR-DUP-09
+  const handleMarkDuplicate = async () => {
+    const trimmed = duplicateOfId.trim().toUpperCase()
+    if (!trimmed || !trimmed.startsWith('FR-')) {
+      setError('Please enter a valid feature request ID (e.g. FR-0008)')
+      return
+    }
+    if (trimmed === fr.id) {
+      setError('An item cannot be a duplicate of itself')
+      return
+    }
+    setMarkingStatus(true)
+    setError(null)
+    try {
+      const updated = await featureRequests.update(fr.id, { status: 'duplicate', duplicate_of: trimmed })
+      onUpdate(updated)
+      setShowDuplicateForm(false)
+      setDuplicateOfId('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark as duplicate')
+    } finally {
+      setMarkingStatus(false)
+    }
+  }
+
+  // Verifies: FR-DUP-09
+  const handleMarkDeprecated = async () => {
+    setMarkingStatus(true)
+    setError(null)
+    try {
+      const updated = await featureRequests.update(fr.id, {
+        status: 'deprecated',
+        deprecation_reason: deprecationReason.trim() || undefined,
+      })
+      onUpdate(updated)
+      setShowDeprecatedForm(false)
+      setDeprecationReason('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark as deprecated')
+    } finally {
+      setMarkingStatus(false)
+    }
+  }
+
+  const isHidden = HIDDEN_STATUSES.includes(fr.status)
   const canVote = fr.status === 'potential'
   const canApprove = fr.status === 'voting'
   const canDeny = fr.status === 'potential' || fr.status === 'voting'
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-5">
+      {/* Verifies: FR-DUP-10 — Duplicate banner */}
+      {fr.status === 'duplicate' && fr.duplicate_of && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 text-sm text-purple-800">
+          This feature request is a duplicate of{' '}
+          <Link to="/feature-requests" className="font-semibold underline hover:text-purple-900">
+            {fr.duplicate_of}
+          </Link>
+        </div>
+      )}
+
+      {/* Verifies: FR-DUP-10 — Deprecated banner */}
+      {fr.status === 'deprecated' && (
+        <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-700">
+          This feature request is deprecated.{fr.deprecation_reason ? ` Reason: ${fr.deprecation_reason}` : ''}
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

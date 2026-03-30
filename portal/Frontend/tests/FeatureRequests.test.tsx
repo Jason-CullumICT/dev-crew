@@ -15,13 +15,26 @@ vi.mock('../src/api/client', () => ({
     vote: vi.fn(),
     approve: vi.fn(),
     deny: vi.fn(),
+    update: vi.fn(),
   },
+  images: { list: vi.fn().mockResolvedValue({ data: [] }), upload: vi.fn(), delete: vi.fn() },
+  orchestrator: { submitWork: vi.fn() },
+  repos: { list: vi.fn().mockResolvedValue({ data: [] }) },
+  general: { searchItems: vi.fn() },
 }))
 
 import { featureRequests } from '../src/api/client'
 
+const frDefaults = {
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [] as string[],
+}
+
 const mockFRs: FeatureRequest[] = [
   {
+    ...frDefaults,
     id: 'FR-0001',
     title: 'Dark mode support',
     description: 'Add dark mode to the application',
@@ -36,6 +49,7 @@ const mockFRs: FeatureRequest[] = [
     updated_at: new Date().toISOString(),
   },
   {
+    ...frDefaults,
     id: 'FR-0002',
     title: 'Export to CSV',
     description: 'Allow exporting data to CSV format',
@@ -157,6 +171,7 @@ describe('FeatureRequestsPage', () => {
   it('creates a feature request successfully', async () => {
     // Verifies: FR-025
     const newFR: FeatureRequest = {
+      ...frDefaults,
       id: 'FR-0010',
       title: 'New feature',
       description: 'A brand new feature',
@@ -187,12 +202,12 @@ describe('FeatureRequestsPage', () => {
     fireEvent.click(screen.getByText('Create Feature Request'))
 
     await waitFor(() => {
-      expect(featureRequests.create).toHaveBeenCalledWith({
+      expect(featureRequests.create).toHaveBeenCalledWith(expect.objectContaining({
         title: 'New feature',
         description: 'A brand new feature',
         source: 'manual',
         priority: 'medium',
-      })
+      }))
     })
   })
 })

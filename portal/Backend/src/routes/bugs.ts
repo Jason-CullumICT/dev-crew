@@ -13,6 +13,8 @@ import {
 } from '../services/bugService';
 import { uploadImagesService, listImages, deleteImage } from '../services/imageService';
 import { uploadImages as uploadMiddleware } from '../middleware/upload';
+import { DependencyService, DependencyError } from '../services/dependencyService';
+import { DependencyActionRequest, parseItemId } from '../../../Shared/types';
 import { AppError } from '../middleware/errorHandler';
 import { withSpan } from '../lib/tracing';
 import logger from '../lib/logger';
@@ -24,12 +26,13 @@ const router = Router();
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await withSpan('bugs.list', async (span) => {
-      const { status, severity } = req.query as { status?: string; severity?: string };
+      // Verifies: FR-DUP-05 — Read include_hidden query param
+      const { status, severity, include_hidden } = req.query as { status?: string; severity?: string; include_hidden?: string };
       span.setAttribute('filter.status', status || '');
       span.setAttribute('filter.severity', severity || '');
 
       const db = getDb();
-      const bugs = listBugs(db, { status, severity });
+      const bugs = listBugs(db, { status, severity, include_hidden: include_hidden === 'true' });
       logger.info('Listed bug reports', { count: bugs.length, status, severity });
       res.json({ data: bugs });
     });
@@ -109,8 +112,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       const existing = getBugById(db, id);
       if (!existing) throw new AppError(404, `Bug ${id} not found`);
 
-      const { title, description, severity, status, source_system } = req.body;
-      const updated = updateBug(db, id, { title, description, severity, status, source_system });
+      // Verifies: FR-dependency-linking, FR-DUP-04 — pass blocked_by, duplicate_of, deprecation_reason through to service
+      const { title, description, severity, status, source_system, blocked_by, duplicate_of, deprecation_reason } = req.body;
+      const updated = updateBug(db, id, { title, description, severity, status, source_system, blocked_by, duplicate_of, deprecation_reason });
 
       logger.info('Updated bug report', { id, status: updated.status });
       res.json(updated);
@@ -203,6 +207,76 @@ router.delete('/:id/images/:imageId', async (req: Request, res: Response, next: 
     const { imageId } = req.params;
     deleteImage(getDb(), imageId);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/bugs/:id/dependencies
+// Verifies: FR-dependency-linking
+router.post('/:id/dependencies', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('bugs.dependencies', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('bug.id', id);
+
+      const db = getDb();
+      const bug = getBugById(db, id);
+      if (!bug) throw new AppError(404, `Bug ${id} not found`);
+
+      const { action, blocker_id } = req.body as DependencyActionRequest;
+
+      if (action !== 'add' && action !== 'remove') {
+        throw new AppError(400, 'action must be "add" or "remove"');
+      }
+      if (!blocker_id || typeof blocker_id !== 'string') {
+        throw new AppError(400, 'blocker_id is required');
+      }
+
+      const parsed = parseItemId(blocker_id);
+      if (!parsed) {
+        throw new AppError(400, `Invalid blocker_id format: ${blocker_id}. Must be BUG-XXXX or FR-XXXX`);
+      }
+
+      const depService = new DependencyService(db);
+
+      if (action === 'add') {
+        depService.addDependency('bug', id, parsed.type, parsed.id);
+        logger.info('Dependency added to bug', { bugId: id, blockerId: parsed.id });
+      } else {
+        depService.removeDependency('bug', id, parsed.type, parsed.id);
+        logger.info('Dependency removed from bug', { bugId: id, blockerId: parsed.id });
+      }
+
+      const updated = getBugById(db, id)!;
+      res.json(updated);
+    });
+  } catch (err) {
+    if (err instanceof DependencyError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+// GET /api/bugs/:id/ready
+// Verifies: FR-dependency-ready-check
+router.get('/:id/ready', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('bugs.ready', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('bug.id', id);
+
+      const db = getDb();
+      const bug = getBugById(db, id);
+      if (!bug) throw new AppError(404, `Bug ${id} not found`);
+
+      const depService = new DependencyService(db);
+      const readiness = depService.isReady('bug', id);
+      logger.info('Bug readiness checked', { bugId: id, ready: readiness.ready });
+      res.json(readiness);
+    });
   } catch (err) {
     next(err);
   }

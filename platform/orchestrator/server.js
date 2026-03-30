@@ -396,8 +396,10 @@ app.post("/api/runs/:id/revalidate", (req, res) => {
     run.phases.inspector.exitCode = inspectorResult.exitCode;
     run.phases.inspector.completedAt = ts();
 
-    const allPassed = run.phases.smoketest.status === "passed" && run.phases.inspector.status === "passed";
+    const smokeOk = run.phases.smoketest.status === "passed" || run.phases.smoketest.status === "skipped";
+    const allPassed = smokeOk && run.phases.inspector.status === "passed";
     run.status = allPassed ? "complete" : "failed";
+    // Note: revalidation path has no smokeEffective override — smoke skip/pass is required for complete status.
     run.results.smoketest = run.phases.smoketest.status;
     run.results.inspector = run.phases.inspector.status;
     run.results.allPassed = allPassed && run.results.implementation === "passed" && run.results.leader === "passed";

@@ -59,3 +59,14 @@
 - Tests for dispatch gating need to create items with `blocked_by` on create, then test status transitions
 - For FR dispatch gating tests, must walk the full status transition chain: potential → voting → approved (gated) since FR has strict transition rules
 - Cross-type dependencies (bug blocked by FR, FR blocked by bug) work and are important to test
+
+## 2026-03-30: Duplicate/Deprecated Tagging (backend-coder-1)
+
+### Already-implemented code
+- The dependency-linking cycle (commit de058016) already fully implemented all backend gaps for duplicate/deprecated tagging: route handlers pass `duplicate_of`/`deprecation_reason`, FR service has full validation, both list endpoints support `include_hidden`, and comprehensive tests exist at `portal/Backend/tests/duplicate-deprecated.test.ts`
+- When a dispatch plan identifies gaps, always verify current code state before implementing — prior cycles may have closed them
+
+### FR service duplicate/deprecated patterns
+- Bug service uses an explicit terminal-status guard (`if bug.status === 'duplicate' || bug.status === 'deprecated'`) while FR service relies on STATUS_TRANSITIONS map having empty arrays for terminal statuses — both approaches work
+- `duplicate_of` validation queries same-type table only (bugs→bugs, FRs→FRs) — cross-type duplicates are not in scope
+- Both services clear the opposite field when setting duplicate/deprecated (e.g., clear `deprecation_reason` when marking as duplicate)

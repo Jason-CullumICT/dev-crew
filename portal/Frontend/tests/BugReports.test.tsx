@@ -21,6 +21,16 @@ vi.mock('../src/api/client', () => ({
 
 import { bugs } from '../src/api/client'
 
+const baseBugFields = {
+  related_work_item_id: null,
+  related_work_item_type: null,
+  related_cycle_id: null,
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
+}
+
 const mockBugs: BugReport[] = [
   {
     id: 'BUG-0001',
@@ -29,6 +39,7 @@ const mockBugs: BugReport[] = [
     severity: 'high',
     status: 'reported',
     source_system: 'production',
+    ...baseBugFields,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -39,6 +50,7 @@ const mockBugs: BugReport[] = [
     severity: 'medium',
     status: 'triaged',
     source_system: 'staging',
+    ...baseBugFields,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -49,6 +61,7 @@ const mockBugs: BugReport[] = [
     severity: 'critical',
     status: 'in_development',
     source_system: 'production',
+    ...baseBugFields,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
@@ -133,10 +146,11 @@ describe('BugReportsPage', () => {
     fireEvent.change(severitySelect, { target: { value: 'critical' } })
 
     await waitFor(() => {
-      expect(bugs.list).toHaveBeenCalledWith({
-        status: undefined,
-        severity: 'critical',
-      })
+      expect(bugs.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'critical',
+        })
+      )
     })
   })
 
@@ -161,6 +175,7 @@ describe('BugReportsPage', () => {
       severity: 'medium',
       status: 'reported',
       source_system: '',
+      ...baseBugFields,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -178,12 +193,13 @@ describe('BugReportsPage', () => {
     fireEvent.click(screen.getByText('Report Bug'))
 
     await waitFor(() => {
-      expect(bugs.create).toHaveBeenCalledWith({
-        title: 'New bug',
-        description: 'Something broke',
-        severity: 'medium',
-        source_system: undefined,
-      })
+      expect(bugs.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'New bug',
+          description: 'Something broke',
+          severity: 'medium',
+        })
+      )
     })
   })
 

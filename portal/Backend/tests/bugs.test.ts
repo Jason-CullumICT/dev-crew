@@ -1,5 +1,5 @@
-// Verifies: FR-013, FR-031
-// Tests for Bug Report APIs.
+// Verifies: FR-013, FR-031, FR-dependency-linking, FR-dependency-dispatch-gating
+// Tests for Bug Report APIs including dependency endpoints, dispatch gating, and cascade.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
@@ -18,6 +18,7 @@ import {
   TITLE_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
 } from '../src/services/bugService';
+import { createFeatureRequest } from '../src/services/featureRequestService';
 
 function createTestDb(): Database.Database {
   const db = new Database(':memory:');
@@ -529,5 +530,153 @@ describe('Bug input length validation (DD-11, M-04)', () => {
     });
     expect(bug.title).toHaveLength(TITLE_MAX_LENGTH);
     expect(bug.description).toHaveLength(DESCRIPTION_MAX_LENGTH);
+  });
+});
+
+// --- FR-dependency-linking: Bug dependency hydration ---
+describe('FR-dependency-linking: Bug dependency hydration', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('should hydrate blocked_by, blocks, has_unresolved_blockers on GET /api/bugs/:id', async () => {
+    // Verifies: FR-dependency-linking
+    const bug1 = createBug(db, { title: 'Blocked Bug', description: 'desc', severity: 'high' });
+    const bug2 = createBug(db, { title: 'Blocker Bug', description: 'desc', severity: 'medium' });
+
+    const app = createApp();
+    await supertest(app)
+      .post(`/api/bugs/${bug1.id}/dependencies`)
+      .send({ action: 'add', blocker_id: bug2.id });
+
+    const res = await supertest(app).get(`/api/bugs/${bug1.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.blocked_by).toHaveLength(1);
+    expect(res.body.blocked_by[0].item_id).toBe(bug2.id);
+    expect(res.body.blocks).toHaveLength(0);
+    expect(res.body.has_unresolved_blockers).toBe(true);
+  });
+
+  it('should hydrate blocks on the blocker item', async () => {
+    // Verifies: FR-dependency-linking
+    const bug1 = createBug(db, { title: 'Blocked', description: 'desc', severity: 'high' });
+    const bug2 = createBug(db, { title: 'Blocker', description: 'desc', severity: 'medium' });
+
+    const app = createApp();
+    await supertest(app)
+      .post(`/api/bugs/${bug1.id}/dependencies`)
+      .send({ action: 'add', blocker_id: bug2.id });
+
+    const res = await supertest(app).get(`/api/bugs/${bug2.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.blocks).toHaveLength(1);
+    expect(res.body.blocks[0].item_id).toBe(bug1.id);
+  });
+
+  it('should hydrate has_unresolved_blockers on list endpoint', async () => {
+    // Verifies: FR-dependency-linking
+    const bug1 = createBug(db, { title: 'Blocked', description: 'desc', severity: 'high' });
+    const bug2 = createBug(db, { title: 'Blocker', description: 'desc', severity: 'medium' });
+
+    const app = createApp();
+    await supertest(app)
+      .post(`/api/bugs/${bug1.id}/dependencies`)
+      .send({ action: 'add', blocker_id: bug2.id });
+
+    const res = await supertest(app).get('/api/bugs');
+    expect(res.status).toBe(200);
+    const blocked = res.body.data.find((b: any) => b.id === bug1.id);
+    expect(blocked.has_unresolved_blockers).toBe(true);
+    const blocker = res.body.data.find((b: any) => b.id === bug2.id);
+    expect(blocker.has_unresolved_blockers).toBe(false);
+  });
+
+  it('should accept blocked_by on create', () => {
+    // Verifies: FR-dependency-linking
+    const blocker = createBug(db, { title: 'Blocker', description: 'desc', severity: 'medium' });
+    const bug = createBug(db, { title: 'Blocked', description: 'desc', severity: 'high', blocked_by: [blocker.id] });
+
+    expect(bug.blocked_by).toHaveLength(1);
+    expect(bug.blocked_by![0].item_id).toBe(blocker.id);
+    expect(bug.has_unresolved_blockers).toBe(true);
+  });
+
+  it('should accept cross-type blocked_by (bug blocked by FR)', () => {
+    // Verifies: FR-dependency-linking
+    const fr = createFeatureRequest(db, { title: 'Feature', description: 'desc' });
+    const bug = createBug(db, { title: 'Blocked', description: 'desc', severity: 'high', blocked_by: [fr.id] });
+
+    expect(bug.blocked_by).toHaveLength(1);
+    expect(bug.blocked_by![0].item_id).toBe(fr.id);
+    expect(bug.blocked_by![0].item_type).toBe('feature_request');
+  });
+});
+
+// --- FR-dependency-dispatch-gating: Bug dispatch gating ---
+describe('FR-dependency-dispatch-gating: Bug dispatch gating', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('should gate status to pending_dependencies when transitioning to in_development with unresolved blockers', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const blocker = createBug(db, { title: 'Blocker', description: 'desc', severity: 'medium' });
+    const bug = createBug(db, { title: 'Blocked', description: 'desc', severity: 'high', blocked_by: [blocker.id] });
+
+    const updated = updateBug(db, bug.id, { status: 'in_development' });
+    expect(updated.status).toBe('pending_dependencies');
+  });
+
+  it('should allow status transition when no blockers exist', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const bug = createBug(db, { title: 'Free Bug', description: 'desc', severity: 'high' });
+    const updated = updateBug(db, bug.id, { status: 'in_development' });
+    expect(updated.status).toBe('in_development');
+  });
+
+  it('should cascade auto-dispatch when blocker resolves', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const blocker = createBug(db, { title: 'Blocker', description: 'desc', severity: 'medium' });
+    const bug = createBug(db, { title: 'Blocked', description: 'desc', severity: 'high', blocked_by: [blocker.id] });
+
+    // Gate to pending_dependencies
+    updateBug(db, bug.id, { status: 'in_development' });
+    expect(getBugById(db, bug.id)!.status).toBe('pending_dependencies');
+
+    // Resolve blocker — should cascade
+    updateBug(db, blocker.id, { status: 'resolved' });
+    expect(getBugById(db, bug.id)!.status).toBe('approved');
+  });
+
+  it('should not cascade if blocker is not fully resolved', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const blocker1 = createBug(db, { title: 'Blocker 1', description: 'desc', severity: 'medium' });
+    const blocker2 = createBug(db, { title: 'Blocker 2', description: 'desc', severity: 'low' });
+    const bug = createBug(db, { title: 'Blocked', description: 'desc', severity: 'high', blocked_by: [blocker1.id, blocker2.id] });
+
+    updateBug(db, bug.id, { status: 'in_development' });
+    expect(getBugById(db, bug.id)!.status).toBe('pending_dependencies');
+
+    // Resolve only one blocker
+    updateBug(db, blocker1.id, { status: 'resolved' });
+    expect(getBugById(db, bug.id)!.status).toBe('pending_dependencies');
+
+    // Resolve second blocker — now should cascade
+    updateBug(db, blocker2.id, { status: 'resolved' });
+    expect(getBugById(db, bug.id)!.status).toBe('approved');
   });
 });

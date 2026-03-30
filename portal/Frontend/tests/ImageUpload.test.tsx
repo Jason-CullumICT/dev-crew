@@ -225,6 +225,9 @@ vi.mock('../src/api/client', () => ({
   orchestrator: {
     submitWork: vi.fn(),
   },
+  repos: {
+    list: vi.fn().mockResolvedValue({ data: [] }),
+  },
 }))
 
 import { featureRequests, bugs, images as imagesApi, orchestrator } from '../src/api/client'
@@ -322,6 +325,10 @@ const mockFR: FeatureRequest = {
   human_approval_comment: null,
   human_approval_approved_at: null,
   duplicate_warning: false,
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -435,6 +442,10 @@ const mockBug: BugReport = {
   related_work_item_id: null,
   related_work_item_type: null,
   related_cycle_id: null,
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -451,7 +462,7 @@ describe('BugDetail with images', () => {
     // Verifies: FR-085
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBug} onClose={() => {}} />
+        <BugDetail bug={mockBug} onUpdate={() => {}} onClose={() => {}} />
       </MemoryRouter>
     )
 
@@ -468,7 +479,7 @@ describe('BugDetail with images', () => {
     // Verifies: FR-085
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBug} onClose={() => {}} />
+        <BugDetail bug={mockBug} onUpdate={() => {}} onClose={() => {}} />
       </MemoryRouter>
     )
 
@@ -479,7 +490,7 @@ describe('BugDetail with images', () => {
     // Verifies: FR-085
     render(
       <MemoryRouter>
-        <BugDetail bug={mockBug} onClose={() => {}} />
+        <BugDetail bug={mockBug} onUpdate={() => {}} onClose={() => {}} />
       </MemoryRouter>
     )
 

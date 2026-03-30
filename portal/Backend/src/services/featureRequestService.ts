@@ -110,6 +110,11 @@ function mapFRRow(db: Database.Database, row: FRRow, votes: Vote[]): FeatureRequ
   const depService = new DependencyService(db);
   const id = row.id;
 
+  // Verifies: FR-DUP-03 — Compute duplicated_by from DB
+  const duplicatedByRows = db.prepare(
+    `SELECT id FROM feature_requests WHERE duplicate_of = ?`
+  ).all(id) as Array<{ id: string }>;
+
   return {
     id,
     title: row.title,
@@ -124,6 +129,9 @@ function mapFRRow(db: Database.Database, row: FRRow, votes: Vote[]): FeatureRequ
     target_repo: row.target_repo || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    duplicate_of: row.duplicate_of || null,                        // Verifies: FR-DUP-02
+    deprecation_reason: row.deprecation_reason || null,            // Verifies: FR-DUP-02
+    duplicated_by: duplicatedByRows.map(r => r.id),                // Verifies: FR-DUP-03
     blocked_by: depService.getBlockedBy('feature_request', id),
     blocks: depService.getBlocks('feature_request', id),
     has_unresolved_blockers: depService.hasUnresolvedBlockers('feature_request', id),
@@ -216,18 +224,19 @@ export function createFeatureRequest(
   const id = generateFRId(db);
   const now = new Date().toISOString();
 
-  // Handle dependencies if provided
-  const depService = new DependencyService(db);
-  if (input.blocked_by && input.blocked_by.length > 0) {
-    depService.setDependencies('feature_request', id, input.blocked_by);
-  }
-
+  // Verifies: FR-dependency-linking — INSERT first so setDependencies can verify item exists
   db.prepare(`
     INSERT INTO feature_requests
       (id, title, description, source, status, priority, human_approval_comment,
        human_approval_approved_at, duplicate_warning, target_repo, created_at, updated_at)
     VALUES (?, ?, ?, ?, 'potential', ?, NULL, NULL, ?, ?, ?, ?)
   `).run(id, title, description, source, priority, duplicateWarning ? 1 : 0, input.target_repo || null, now, now);
+
+  // Verifies: FR-dependency-linking — Handle dependencies after INSERT
+  if (input.blocked_by && input.blocked_by.length > 0) {
+    const depService = new DependencyService(db);
+    depService.setDependencies('feature_request', id, input.blocked_by);
+  }
 
   return getFeatureRequestById(db, id)!;
 }

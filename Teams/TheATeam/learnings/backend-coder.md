@@ -44,3 +44,18 @@
 ### Interface contract with backend-coder-2
 - `_parseDispatchFromWorker()` now passes `run.id` to dispatch calls per the 5th param contract
 - `enrichTaskForLeader()` is called by coder-2's dispatch.js changes — workflow engine passes raw task
+
+## 2026-03-30: Dependency Linking (backend-coder-2)
+
+### Dependency ordering bug
+- `createBug` and `createFeatureRequest` had dependencies set via `setDependencies()` BEFORE the INSERT into the DB. Since `setDependencies()` calls `verifyItemExists()`, this would fail with a 404. Fixed by moving INSERT before dependency setup.
+
+### Service layer patterns
+- `mapBugRow` and `mapFRRow` hydrate dependency fields (blocked_by, blocks, has_unresolved_blockers) on every read — the DependencyService is instantiated per call
+- Dispatch gating is done in the update service methods, not in route handlers — keeps route handlers thin
+- Cascade on completion uses `onItemCompleted()` which checks all items blocked by the completing item and auto-dispatches any in `pending_dependencies` status
+
+### Testing patterns
+- Tests for dispatch gating need to create items with `blocked_by` on create, then test status transitions
+- For FR dispatch gating tests, must walk the full status transition chain: potential → voting → approved (gated) since FR has strict transition rules
+- Cross-type dependencies (bug blocked by FR, FR blocked by bug) work and are important to test

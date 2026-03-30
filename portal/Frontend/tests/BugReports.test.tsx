@@ -6,11 +6,17 @@ import { MemoryRouter } from 'react-router-dom'
 import { BugReportsPage } from '../src/pages/BugReportsPage'
 import type { BugReport } from '../../Shared/types'
 
+// Verifies: FR-dependency-list-ui
 vi.mock('../src/api/client', () => ({
   bugs: {
     list: vi.fn(),
     create: vi.fn(),
+    getById: vi.fn(),
+    update: vi.fn(),
   },
+  images: { list: vi.fn().mockResolvedValue({ data: [] }), upload: vi.fn(), delete: vi.fn() },
+  orchestrator: { submitWork: vi.fn() },
+  repos: { list: vi.fn().mockResolvedValue({ data: [] }) },
 }))
 
 import { bugs } from '../src/api/client'

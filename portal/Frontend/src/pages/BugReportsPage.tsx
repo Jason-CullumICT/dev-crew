@@ -1,4 +1,5 @@
 // Verifies: FR-026
+// Verifies: FR-DUP-11
 import React, { useState, useCallback } from 'react'
 import { Header } from '../components/layout/Header'
 import { BugList } from '../components/bugs/BugList'
@@ -32,16 +33,19 @@ export function BugReportsPage() {
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [batchSubmitting, setBatchSubmitting] = useState(false)
+  // Verifies: FR-DUP-11
+  const [showHidden, setShowHidden] = useState(false)
 
   const fetchFn = useCallback(
     () => bugs.list({
       status: statusFilter || undefined,
       severity: severityFilter || undefined,
+      include_hidden: showHidden || undefined,
     }),
-    [statusFilter, severityFilter]
+    [statusFilter, severityFilter, showHidden]
   )
 
-  const { data, loading, error, refetch } = useApi(fetchFn, [statusFilter, severityFilter])
+  const { data, loading, error, refetch } = useApi(fetchFn, [statusFilter, severityFilter, showHidden])
 
   // Verifies: FR-083
   const handleCreate = async (input: Parameters<typeof bugs.create>[0], imageFiles: File[], targetRepo?: string) => {
@@ -144,6 +148,11 @@ export function BugReportsPage() {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+          {/* Verifies: FR-DUP-11 — Show hidden toggle */}
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+            Show hidden (duplicate/deprecated)
+          </label>
         </div>
 
         {/* Create Form */}

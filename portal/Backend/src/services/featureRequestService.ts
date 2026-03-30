@@ -155,6 +155,7 @@ function getVotesForFR(db: Database.Database, frId: string): Vote[] {
 export interface ListFeatureRequestsOptions {
   status?: string;
   source?: string;
+  include_hidden?: boolean;  // Verifies: FR-DUP-05
 }
 
 export function listFeatureRequests(
@@ -163,6 +164,12 @@ export function listFeatureRequests(
 ): FeatureRequest[] {
   let query = `SELECT * FROM feature_requests WHERE 1=1`;
   const params: string[] = [];
+
+  // Verifies: FR-DUP-05 — Exclude hidden statuses by default
+  if (!opts.include_hidden) {
+    query += ` AND status NOT IN (${HIDDEN_STATUSES.map(() => '?').join(', ')})`;
+    params.push(...HIDDEN_STATUSES as unknown as string[]);
+  }
 
   if (opts.status) {
     query += ` AND status = ?`;
@@ -254,6 +261,8 @@ export interface UpdateFeatureRequestInput {
   status?: string;
   description?: string;
   priority?: string;
+  duplicate_of?: string;                      // Verifies: FR-DUP-04
+  deprecation_reason?: string;                // Verifies: FR-DUP-04
   blocked_by?: string[];                      // Verifies: FR-dependency-linking
 }
 
@@ -284,6 +293,39 @@ export function updateFeatureRequest(
         400,
         `Invalid status transition: ${currentStatus} → ${newStatus}. Allowed: ${allowedTransitions.join(', ') || 'none'}`
       );
+    }
+
+    // Verifies: FR-DUP-04 — Validate duplicate_of when setting status to duplicate
+    if (newStatus === 'duplicate') {
+      if (!input.duplicate_of) {
+        throw new AppError(400, `duplicate_of is required when status is 'duplicate'`);
+      }
+      if (input.duplicate_of === id) {
+        throw new AppError(400, `An item cannot be a duplicate of itself`);
+      }
+      // Verifies: FR-DUP-07 — Validate reference exists
+      const canonical = db.prepare(`SELECT id FROM feature_requests WHERE id = ?`).get(input.duplicate_of);
+      if (!canonical) {
+        throw new AppError(400, `duplicate_of references non-existent feature request: ${input.duplicate_of}`);
+      }
+      updates.push(`duplicate_of = ?`);
+      params.push(input.duplicate_of);
+      // Clear deprecation_reason when marking as duplicate
+      updates.push(`deprecation_reason = ?`);
+      params.push(null);
+    } else if (newStatus === 'deprecated') {
+      // Verifies: FR-DUP-04 — Accept optional deprecation_reason
+      updates.push(`deprecation_reason = ?`);
+      params.push(input.deprecation_reason || null);
+      // Clear duplicate_of when marking as deprecated
+      updates.push(`duplicate_of = ?`);
+      params.push(null);
+    } else {
+      // Transitioning to a non-duplicate/deprecated status: clear both fields
+      updates.push(`duplicate_of = ?`);
+      params.push(null);
+      updates.push(`deprecation_reason = ?`);
+      params.push(null);
     }
 
     // Verifies: FR-dependency-dispatch-gating — Dispatch gating check

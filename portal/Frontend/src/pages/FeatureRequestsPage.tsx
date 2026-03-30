@@ -1,4 +1,5 @@
 // Verifies: FR-025
+// Verifies: FR-DUP-11
 import React, { useState, useCallback } from 'react'
 import { Header } from '../components/layout/Header'
 import { FeatureRequestList } from '../components/feature-requests/FeatureRequestList'
@@ -31,16 +32,19 @@ export function FeatureRequestsPage() {
   const [sourceFilter, setSourceFilter] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [selectedFR, setSelectedFR] = useState<FeatureRequest | null>(null)
+  // Verifies: FR-DUP-11
+  const [showHidden, setShowHidden] = useState(false)
 
   const fetchFn = useCallback(
     () => featureRequests.list({
       status: statusFilter || undefined,
       source: sourceFilter || undefined,
+      include_hidden: showHidden || undefined,
     }),
-    [statusFilter, sourceFilter]
+    [statusFilter, sourceFilter, showHidden]
   )
 
-  const { data, loading, error, refetch } = useApi(fetchFn, [statusFilter, sourceFilter])
+  const { data, loading, error, refetch } = useApi(fetchFn, [statusFilter, sourceFilter, showHidden])
 
   // Verifies: FR-082
   const handleCreate = async (input: Parameters<typeof featureRequests.create>[0], imageFiles: File[], targetRepo?: string) => {
@@ -93,6 +97,11 @@ export function FeatureRequestsPage() {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+          {/* Verifies: FR-DUP-11 — Show hidden toggle */}
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+            Show hidden (duplicate/deprecated)
+          </label>
         </div>
 
         {/* Create Form */}

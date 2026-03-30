@@ -167,7 +167,7 @@ If any gate fails: fix it, re-run the full gate sequence, then mark done.
 | `Source/Backend/` | backend-coder | Routes, services, database, tests |
 | `Source/Frontend/` | frontend-coder | Components, hooks, pages, tests |
 | `Source/Shared/` | api-contract | Shared types -- backend-coder may update if no api-contract agent in pipeline |
-| `platform/orchestrator/` | backend-coder | Orchestrator server and lib |
+| `platform/` | **solo-session only** | **PIPELINE AGENTS MUST NOT TOUCH THIS DIRECTORY.** Orchestrator infrastructure (Docker, server, scripts, lib). Changes require a solo session. Deleting or modifying these files breaks the pipeline itself. |
 | `portal/` | frontend-coder | Debug portal UI |
 | `Specifications/` | requirements-reviewer | Domain truth documents |
 | `templates/` | solo-session | Clean scaffold -- no team pipeline needed |
@@ -179,7 +179,7 @@ If any gate fails: fix it, re-run the full gate sequence, then mark done.
 
 **Team rules** (when running as part of any agent team):
 1. **Read `CLAUDE.md` in full** before starting any task
-2. **Stay in your module** -- do not edit files outside your assigned scope
+2. **Stay in your module** -- do not edit files outside your assigned scope. Never touch `platform/` — it is the infrastructure that runs you. Modifying or deleting it breaks the pipeline for everyone.
 3. **Run verification gates** before reporting completion -- all gates must pass with zero new failures
 4. **Share findings** via `agent.md` when you discover something that affects other agents
 5. **Do not suppress test output** or use `--passWithNoTests` or equivalent flags

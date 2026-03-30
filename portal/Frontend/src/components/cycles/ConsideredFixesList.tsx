@@ -1,6 +1,6 @@
 // Verifies: FR-066
 import React from 'react'
-import type { ConsideredFix } from '../../../../../Shared/types'
+import type { ConsideredFix } from '../../../../Shared/types'
 
 interface ConsideredFixesListProps {
   fixes: ConsideredFix[] | null

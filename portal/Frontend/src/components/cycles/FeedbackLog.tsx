@@ -1,6 +1,6 @@
 // Verifies: FR-064
 import React, { useState } from 'react'
-import type { CycleFeedback, CycleFeedbackType } from '../../../../../Shared/types'
+import type { CycleFeedback, CycleFeedbackType } from '../../../../Shared/types'
 
 interface FeedbackLogProps {
   feedback: CycleFeedback[]

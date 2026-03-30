@@ -50,6 +50,14 @@ export interface RemoveDependencyRequest {
 
 export type DependencyActionRequest = AddDependencyRequest | RemoveDependencyRequest;
 
+export function parseItemId(id: string): { type: DependencyItemType; id: string } | null {
+  if (!id) return null;
+  const upper = id.toUpperCase();
+  if (upper.startsWith('BUG-')) return { type: 'bug', id: upper };
+  if (upper.startsWith('FR-')) return { type: 'feature_request', id: upper };
+  return null;
+}
+
 export interface ReadyResponse {
   ready: boolean;
   unresolved_blockers: DependencyLink[];

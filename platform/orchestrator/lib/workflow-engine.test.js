@@ -361,6 +361,8 @@ describe("_autoMerge (FR-TMP-006)", () => {
     await engine._autoMerge("mock-ctr", run, () => {});
     assert.equal(run.pr.status, "merged");
     assert.ok(mergeCalledWith);
+    assert.ok(mergeCalledWith[1].includes("--merge"), "should use merge commit, not squash");
+    assert.ok(!mergeCalledWith[1].includes("--squash"), "squash must not be used");
   });
 
   it("auto-merges medium risk with APPROVE", async () => {
@@ -423,8 +425,7 @@ describe("_autoMerge (FR-TMP-006)", () => {
     const deps = createMockDeps({
       containerManager: {
         execInWorker: async (_cid, cmd, args, opts) => {
-          if (opts && (opts.label === "pr-merge" || opts.label === "pr-merge-retry")) return { exitCode: 1, stdout: "merge conflict" };
-          if (opts && opts.label === "pr-rebase") return { exitCode: 1, stdout: "rebase conflict" };
+          if (opts && opts.label === "pr-merge") return { exitCode: 1, stdout: "merge conflict" };
           return { exitCode: 0, stdout: "" };
         },
       },

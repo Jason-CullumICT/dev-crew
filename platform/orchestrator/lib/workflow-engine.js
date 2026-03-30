@@ -1580,12 +1580,12 @@ ${feedback}`;
           `if ! git diff --cached --quiet 2>/dev/null; then git commit -m "chore: pre-learnings-sync commit on cycle/${run.id}"; fi`,
           // Switch to main and pull latest
           `git checkout ${mainBranch}`,
-          `git pull origin ${mainBranch}`,
+          `git pull origin ${mainBranch} || (git checkout cycle/${run.id} && false)`,
           // Cherry-pick only the learning files from the cycle branch
           `git checkout cycle/${run.id} -- Teams/*/learnings/*.md Teams/TheATeam/*.md Teams/TheFixer/*.md Teams/TheInspector/*.md Teams/Shared/*.md 2>/dev/null || echo "[learnings] No team files to sync"`,
           `git checkout cycle/${run.id} -- CLAUDE.md 2>/dev/null || echo "[learnings] No CLAUDE.md changes"`,
           "git add -A",
-          `if ! git diff --cached --quiet 2>/dev/null; then git commit -m "chore: sync learnings from cycle/${run.id}" && git push origin ${mainBranch}; else echo "[learnings] Nothing to commit"; fi`,
+          `if ! git diff --cached --quiet 2>/dev/null; then git commit -m "chore: sync learnings from cycle/${run.id}" && git push origin ${mainBranch} || echo "[learnings] Push failed, will retry next cycle"; fi`,
           // Return to the cycle branch
           `git checkout cycle/${run.id}`,
         ].join(" && ");

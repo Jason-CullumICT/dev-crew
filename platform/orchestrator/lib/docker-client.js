@@ -53,24 +53,44 @@ class DockerClient {
     }
   }
 
-  async execInContainer(containerId, cmd, args = [], { label, quiet, env } = {}) {
+  async execInContainer(containerId, cmd, args = [], { label, quiet, env, timeoutMs } = {}) {
     const container = this.docker.getContainer(containerId);
     const tag = label || cmd;
 
-    const exec = await container.exec({
+    const dockerExec = await container.exec({
       Cmd: [cmd, ...args],
       AttachStdout: true,
       AttachStderr: true,
       Env: env || [],
     });
 
-    const stream = await exec.start({ hijack: true, stdin: false });
+    const stream = await dockerExec.start({ hijack: true, stdin: false });
 
     return new Promise((resolve, reject) => {
       let stdout = "";
       let stderr = "";
       const stdoutStream = new PassThrough();
       const stderrStream = new PassThrough();
+
+      let settled = false;
+      let timer = null;
+      function settle(value) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      }
+
+      if (timeoutMs) {
+        timer = setTimeout(() => {
+          settle({
+            exitCode: 124,
+            stdout,
+            stderr: stderr + `
+[timeout] exec '${cmd}' exceeded ${timeoutMs}ms`,
+          });
+        }, timeoutMs);
+      }
 
       this.docker.modem.demuxStream(stream, stdoutStream, stderrStream);
 
@@ -96,14 +116,17 @@ class DockerClient {
 
       stream.on("end", async () => {
         try {
-          const inspect = await exec.inspect();
-          resolve({ exitCode: inspect.ExitCode, stdout, stderr });
+          const inspect = await dockerExec.inspect();
+          settle({ exitCode: inspect.ExitCode, stdout, stderr });
         } catch (err) {
-          resolve({ exitCode: 1, stdout, stderr: stderr + err.message });
+          settle({ exitCode: 1, stdout, stderr: stderr + err.message });
         }
       });
 
-      stream.on("error", reject);
+      stream.on("error", (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
     });
   }
 

@@ -220,6 +220,23 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-5">
+      {/* Verifies: FR-DUP-10 — Duplicate banner */}
+      {fr.status === 'duplicate' && fr.duplicate_of && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 text-sm text-purple-800">
+          This feature request is a duplicate of{' '}
+          <Link to="/feature-requests" className="font-semibold underline hover:text-purple-900">
+            {fr.duplicate_of}
+          </Link>
+        </div>
+      )}
+
+      {/* Verifies: FR-DUP-10 — Deprecated banner */}
+      {fr.status === 'deprecated' && (
+        <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-700">
+          This feature request is deprecated.{fr.deprecation_reason ? ` Reason: ${fr.deprecation_reason}` : ''}
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

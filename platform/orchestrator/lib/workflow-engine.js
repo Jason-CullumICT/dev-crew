@@ -435,41 +435,51 @@ ${feedback}`;
     console.log(`[${run.id}] Pre-flight conflict check against ${baseBranch}...`);
     const conflictCheck = await this.containerManager.execInWorker(
       containerId, "bash",
-      ["-c", [
-        "cd /workspace",
-        `git fetch origin ${baseBranch}`,
-        `BASE=$(git merge-base HEAD origin/${baseBranch})`,
-        // merge-tree outputs conflict markers if conflicts exist
-        `CONFLICTS=$(git merge-tree "$BASE" HEAD origin/${baseBranch} 2>&1 | grep -c "^<<<<<<" || true)`,
-        `echo "CONFLICT_COUNT=$CONFLICTS"`,
-        `if [ "$CONFLICTS" -gt 0 ]; then`,
-        `  echo "CONFLICTING_FILES=$(git merge-tree "$BASE" HEAD origin/${baseBranch} 2>&1 | grep "^changed in both" | awk '{print $NF}' | tr '\\n' ',')";`,
-        `fi`,
-      ].join(" && ")],
+      ["-c", `
+cd /workspace
+git fetch origin ${baseBranch} 2>&1
+if [ $? -ne 0 ]; then
+  echo "PREFLIGHT_ERROR=fetch_failed"
+  exit 0
+fi
+BASE=$(git merge-base HEAD origin/${baseBranch})
+MERGE_OUTPUT=$(git merge-tree "$BASE" HEAD origin/${baseBranch} 2>&1)
+CONFLICTS=$(echo "$MERGE_OUTPUT" | grep -c "^<<<<<<<" || true)
+echo "CONFLICT_COUNT=$CONFLICTS"
+if [ "$CONFLICTS" -gt 0 ]; then
+  echo "CONFLICTING_FILES=$(echo "$MERGE_OUTPUT" | grep -o '[^[:space:]]\\+\\ (versions\\ [0-9]\\+,[0-9]\\+,[0-9]\\+\\ of\\ [^)]*' | head -5 | tr '\\n' ',' || echo 'see-merge-output')"
+fi
+      `],
       { label: "preflight-conflict-check" }
     );
 
-    const conflictCountMatch = conflictCheck.stdout.match(/CONFLICT_COUNT=(\d+)/);
-    const conflictCount = conflictCountMatch ? parseInt(conflictCountMatch[1], 10) : 0;
+    if (conflictCheck.stdout.includes("PREFLIGHT_ERROR=fetch_failed")) {
+      console.warn(`[${run.id}] Pre-flight: git fetch failed, skipping conflict check`);
+      // Fall through to PR creation — don't block on fetch failures
+    } else {
+      const conflictCountMatch = conflictCheck.stdout.match(/CONFLICT_COUNT=(\d+)/);
+      const conflictCount = conflictCountMatch ? parseInt(conflictCountMatch[1], 10) : 0;
 
-    if (conflictCount > 0) {
-      const filesMatch = conflictCheck.stdout.match(/CONFLICTING_FILES=([^\n]*)/);
-      const conflictFiles = filesMatch ? filesMatch[1] : "unknown";
-      console.warn(`[${run.id}] Pre-flight: ${conflictCount} conflict(s) detected in files: ${conflictFiles}`);
-      run.pr = {
-        status: "needs-manual-resolution",
-        reason: `${conflictCount} merge conflict(s) detected against ${baseBranch} before PR creation. Conflicting files: ${conflictFiles}`,
-      };
-      saveRunFn(run);
-      // Label the branch for visibility
-      await this.containerManager.execInWorker(
-        containerId, "bash",
-        ["-c", `cd /workspace && git notes add -m "merge-conflicts-detected: ${conflictFiles}" HEAD 2>/dev/null || true`],
-        { label: "conflict-note", quiet: true }
-      );
-      return;
+      if (conflictCount > 0) {
+        const filesMatch = conflictCheck.stdout.match(/CONFLICTING_FILES=([^\n]*)/);
+        const conflictFiles = filesMatch ? filesMatch[1].trim() : "unknown";
+        console.warn(`[${run.id}] Pre-flight: ${conflictCount} conflict(s) detected. Files: ${conflictFiles}`);
+        run.pr = {
+          status: "needs-manual-resolution",
+          reason: `${conflictCount} merge conflict(s) detected against ${baseBranch} before PR creation. Files: ${conflictFiles}`,
+        };
+        saveRunFn(run);
+        // Write conflict note to temp file to avoid shell injection
+        const noteMsg = `merge-conflicts-detected: ${conflictCount} conflict(s). Files: ${conflictFiles}`;
+        await this.containerManager.execInWorker(
+          containerId, "bash",
+          ["-c", `printf '%s' ${JSON.stringify(noteMsg)} > /tmp/conflict-note.txt && git -C /workspace notes add -F /tmp/conflict-note.txt HEAD 2>/dev/null || true`],
+          { label: "conflict-note", quiet: true }
+        );
+        return;
+      }
+      console.log(`[${run.id}] Pre-flight: no conflicts detected, proceeding to PR creation`);
     }
-    console.log(`[${run.id}] Pre-flight: no conflicts detected, proceeding to PR creation`);
 
     // Create PR via gh CLI — use temp files to avoid shell injection
     console.log(`[${run.id}] Creating PR: ${prTitle}`);

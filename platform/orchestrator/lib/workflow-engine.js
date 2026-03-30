@@ -634,10 +634,14 @@ ${feedback}`;
     }
 
     if (shouldMerge) {
-      console.log(`[${run.id}] Auto-merging PR #${run.pr.number} (${riskLevel} risk)...`);
+      // Merge commit strategy — no rebase, no force-push, ever.
+      // Pre-flight conflict detection in _createPR already prevents conflicts
+      // from reaching this point. If a conflict somehow appears at merge time,
+      // we halt and label explicitly rather than destroying history.
+      console.log(`[${run.id}] Auto-merging PR #${run.pr.number} (${riskLevel} risk, merge commit)...`);
       const mergeResult = await this.containerManager.execInWorker(
         containerId, "bash",
-        ["-c", `cd /workspace && gh pr merge ${run.pr.number} --squash --delete-branch 2>&1`],
+        ["-c", `cd /workspace && gh pr merge ${run.pr.number} --merge --delete-branch 2>&1`],
         { label: "pr-merge" }
       );
 
@@ -645,43 +649,14 @@ ${feedback}`;
         run.pr.status = "merged";
         console.log(`[${run.id}] PR #${run.pr.number} merged successfully`);
       } else {
-        // Verifies: FR-TMP-010 — merge conflict: try rebase then retry merge
-        const baseBranch = this._baseBranch(run);
-        console.warn(`[${run.id}] Merge failed, attempting rebase on ${baseBranch}...`);
-        const rebaseResult = await this.containerManager.execInWorker(
+        // Merge failed — surface explicitly with diagnostic. No rebase, no force-push.
+        console.warn(`[${run.id}] Merge failed (exit ${mergeResult.exitCode}): ${mergeResult.stdout.slice(-500)}`);
+        run.pr.status = "merge-conflict";
+        await this.containerManager.execInWorker(
           containerId, "bash",
-          ["-c", `cd /workspace && git fetch origin ${baseBranch} && git rebase origin/${baseBranch} 2>&1 && git push origin "cycle/${run.id}" --force 2>&1`],
-          { label: "pr-rebase" }
+          ["-c", `cd /workspace && gh pr edit ${run.pr.number} --add-label "merge-conflict" 2>&1 || true`],
+          { label: "pr-label", quiet: true }
         );
-
-        if (rebaseResult.exitCode === 0) {
-          console.log(`[${run.id}] Rebase succeeded, retrying merge...`);
-          const retryMerge = await this.containerManager.execInWorker(
-            containerId, "bash",
-            ["-c", `cd /workspace && gh pr merge ${run.pr.number} --squash --delete-branch 2>&1`],
-            { label: "pr-merge-retry" }
-          );
-          if (retryMerge.exitCode === 0) {
-            run.pr.status = "merged";
-            console.log(`[${run.id}] PR #${run.pr.number} merged after rebase`);
-          } else {
-            console.warn(`[${run.id}] Merge still failed after rebase: ${retryMerge.stdout.slice(-500)}`);
-            run.pr.status = "merge-conflict";
-            await this.containerManager.execInWorker(
-              containerId, "bash",
-              ["-c", `cd /workspace && gh pr edit ${run.pr.number} --add-label "merge-conflict" 2>&1 || true`],
-              { label: "pr-label", quiet: true }
-            );
-          }
-        } else {
-          console.warn(`[${run.id}] Rebase failed: ${rebaseResult.stdout.slice(-500)}`);
-          run.pr.status = "merge-conflict";
-          await this.containerManager.execInWorker(
-            containerId, "bash",
-            ["-c", `cd /workspace && git rebase --abort 2>/dev/null; gh pr edit ${run.pr.number} --add-label "merge-conflict" 2>&1 || true`],
-            { label: "pr-label", quiet: true }
-          );
-        }
       }
     } else {
       run.pr.status = newStatus;

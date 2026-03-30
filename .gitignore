@@ -6,3 +6,4 @@ dist/
 test-results/
 *.db-shm
 *.db-wal
+.worktrees/

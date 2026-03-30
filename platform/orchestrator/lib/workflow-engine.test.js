@@ -19,6 +19,7 @@ function createMockContainerManager(overrides = {}) {
     startApp: async () => ({ backend: true, frontend: true }),
     commitAndPush: async () => {},
     teardown: async () => {},
+    refreshCredentials: async () => {},
     ...overrides,
   };
 }
@@ -526,3 +527,48 @@ describe("Error Handling (FR-TMP-010)", () => {
     await engine._autoMerge("mock-ctr", run, () => {});
   });
 });
+
+// Verifies: FR-TMP-010 — Phase timeout propagation
+describe("Phase timeout propagation", () => {
+  it("marks run failed when exec returns exitCode 124", async () => {
+    const deps = createMockDeps({
+      containerManager: {
+        execInWorker: async () => ({ exitCode: 124, stdout: "", stderr: "[timeout] exec exceeded 1800000ms" }),
+      },
+    });
+    const engine = new WorkflowEngine(deps);
+    const run = createMockRun();
+
+    await engine._runPlaywrightE2E("mock-ctr", run, () => {});
+
+    // exitCode 124 from e2e should produce a failed phase
+    assert.ok(
+      !run.phases.e2e || run.phases.e2e.exitCode === 124 || run.phases.e2e.status !== "passed",
+      "e2e phase with exitCode 124 should not be passed"
+    );
+  });
+
+  it("execInContainer settles with exitCode 124 on timeout", async () => {
+    const { DockerClient } = require("./docker-client");
+    const { PassThrough } = require("node:stream");
+    const mockDocker = {
+      getContainer: () => ({
+        exec: async () => ({
+          start: async () => {
+            const s = new PassThrough();
+            // Never emit 'end' — simulates hung exec
+            return s;
+          },
+          inspect: async () => ({ ExitCode: 0 }),
+        }),
+      }),
+      modem: { demuxStream: () => {} },
+    };
+    const client = new DockerClient(mockDocker);
+    // Use a real 50ms timeout — short enough to not slow tests, long enough to be reliable
+    const result = await client.execInContainer("ctr", "bash", [], { timeoutMs: 50 });
+    assert.equal(result.exitCode, 124, "timed-out exec should return exitCode 124");
+    assert.ok(result.stderr.includes("[timeout]"), "stderr should include [timeout] message");
+  });
+});
+

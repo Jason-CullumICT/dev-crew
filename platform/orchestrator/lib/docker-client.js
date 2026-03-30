@@ -2,8 +2,12 @@ const Docker = require("dockerode");
 const { PassThrough } = require("stream");
 
 class DockerClient {
-  constructor(socketPath = "/var/run/docker.sock") {
-    this.docker = new Docker({ socketPath });
+  constructor(socketPathOrDocker = "/var/run/docker.sock") {
+    if (typeof socketPathOrDocker === 'object') {
+      this.docker = socketPathOrDocker;
+    } else {
+      this.docker = new Docker({ socketPath: socketPathOrDocker });
+    }
     this.available = false;
   }
 

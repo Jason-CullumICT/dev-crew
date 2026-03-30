@@ -12,7 +12,7 @@ import type {
   VoteDecision,
   DependencyLink,
 } from '../../../Shared/types';
-import { RESOLVED_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
+import { RESOLVED_STATUSES, HIDDEN_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
 import { DependencyService } from './dependencyService';
 import { simulateVoting, buildVoteRecords, VoteSimulatorOptions } from './votingService';
 import { AppError } from '../middleware/errorHandler';
@@ -20,7 +20,8 @@ import { AppError } from '../middleware/errorHandler';
 // --- Valid enum values (DD-8) ---
 export const VALID_SOURCES: FeatureRequestSource[] = ['manual', 'zendesk', 'competitor_analysis', 'code_review'];
 export const VALID_PRIORITIES: Priority[] = ['low', 'medium', 'high', 'critical'];
-export const VALID_STATUSES: FeatureRequestStatus[] = ['potential', 'voting', 'approved', 'denied', 'in_development', 'completed', 'pending_dependencies'];
+// Verifies: FR-DUP-01
+export const VALID_STATUSES: FeatureRequestStatus[] = ['potential', 'voting', 'approved', 'denied', 'in_development', 'completed', 'pending_dependencies', 'duplicate', 'deprecated'];
 
 // --- Input length limits (Security M-04) ---
 export const TITLE_MAX_LENGTH = 200;
@@ -32,14 +33,17 @@ export const DESCRIPTION_MAX_LENGTH = 10000;
 // voting → denied (via deny endpoint)
 // approved → in_development
 // in_development → completed
+// Verifies: FR-DUP-04 — duplicate/deprecated allowed from any status (terminal dispositions)
 const STATUS_TRANSITIONS: Record<FeatureRequestStatus, FeatureRequestStatus[]> = {
-  potential: ['voting'],
-  voting: ['approved', 'denied'],
-  approved: ['in_development'],
-  in_development: ['completed'],
-  denied: [],
-  completed: [],
-  pending_dependencies: ['approved'], // Verifies: FR-dependency-dispatch-gating
+  potential: ['voting', 'duplicate', 'deprecated'],
+  voting: ['approved', 'denied', 'duplicate', 'deprecated'],
+  approved: ['in_development', 'duplicate', 'deprecated'],
+  in_development: ['completed', 'duplicate', 'deprecated'],
+  denied: ['duplicate', 'deprecated'],
+  completed: ['duplicate', 'deprecated'],
+  pending_dependencies: ['approved', 'duplicate', 'deprecated'], // Verifies: FR-dependency-dispatch-gating
+  duplicate: [],     // Verifies: FR-DUP-04 — terminal status
+  deprecated: [],    // Verifies: FR-DUP-04 — terminal status
 };
 
 // --- ID generation ---
@@ -88,6 +92,8 @@ interface FRRow {
   duplicate_warning: number;
   created_at: string;
   target_repo: string | null;
+  duplicate_of: string | null;         // Verifies: FR-DUP-02
+  deprecation_reason: string | null;   // Verifies: FR-DUP-02
   updated_at: string;
 }
 

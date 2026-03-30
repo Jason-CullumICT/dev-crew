@@ -33,6 +33,8 @@ export interface UpdateFeatureRequestInput {
   status?: string;
   description?: string;
   priority?: string;
+  duplicate_of?: string;          // Verifies: FR-DUP-04 — Required when status='duplicate'
+  deprecation_reason?: string;    // Verifies: FR-DUP-04 — Optional when status='deprecated'
 }
 
 export interface DenyFeatureRequestInput {
@@ -60,6 +62,8 @@ export interface UpdateBugInput {
   severity?: string;
   status?: string;
   source_system?: string;
+  duplicate_of?: string;          // Verifies: FR-DUP-04 — Required when status='duplicate'
+  deprecation_reason?: string;    // Verifies: FR-DUP-04 — Optional when status='deprecated'
 }
 
 // --- Development Cycles ---

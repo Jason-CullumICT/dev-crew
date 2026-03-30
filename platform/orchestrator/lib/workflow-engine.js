@@ -1405,7 +1405,9 @@ ${feedback}`;
         leader: run.phases.leader.status,
         implementation: implPassed ? "passed" : "failed",
         qa: qaPassed ? "passed" : "failed",
-        smoketest: smokePassed ? "passed" : (smokeEffective ? "overridden" : "failed"),
+        smoketest: run.phases.smoketest.status === "passed" ? "passed" :
+                   run.phases.smoketest.status === "skipped" ? "skipped" :
+                   (smokeEffective ? "overridden" : "failed"),
         inspector: run.phases.inspector.status,
         feedbackLoops,
         allPassed,

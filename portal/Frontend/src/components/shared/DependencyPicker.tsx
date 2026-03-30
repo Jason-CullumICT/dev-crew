@@ -1,7 +1,7 @@
 // Verifies: FR-0001 — DependencyPicker modal component
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { DependencyLink, DependencyItemType, Bug, FeatureRequest } from '../../../../Shared/types';
-import { searchItems, setDependencies } from '../../../../Shared/api';
+import type { DependencyLink, DependencyItemType, BugReport, FeatureRequest } from '../../../../Shared/types';
+import { general, bugs, featureRequests } from '../../api/client';
 
 export interface DependencyPickerProps {
   /** Type of the item being edited */
@@ -16,15 +16,15 @@ export interface DependencyPickerProps {
   onSave: () => void;
 }
 
-function getItemId(item: Bug | FeatureRequest): string {
+function getItemId(item: BugReport | FeatureRequest): string {
   return item.id;
 }
 
-function getItemType(item: Bug | FeatureRequest): DependencyItemType {
+function getItemType(item: BugReport | FeatureRequest): DependencyItemType {
   return item.id.startsWith('BUG-') ? 'bug' : 'feature_request';
 }
 
-function getTypeBadgeLabel(item: Bug | FeatureRequest): string {
+function getTypeBadgeLabel(item: BugReport | FeatureRequest): string {
   return item.id.startsWith('BUG-') ? 'Bug' : 'FR';
 }
 
@@ -198,7 +198,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
   onSave,
 }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Array<Bug | FeatureRequest>>([]);
+  const [results, setResults] = useState<Array<BugReport | FeatureRequest>>([]);
   const [selected, setSelected] = useState<DependencyLink[]>(() => [...currentBlockedBy]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -226,7 +226,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
       setLoading(true);
       setError(null);
       try {
-        const items = await searchItems(query.trim());
+        const items = await general.searchItems(query.trim());
         // Filter out the current item itself
         const filtered = items.filter((item) => getItemId(item) !== itemId);
         setResults(filtered);
@@ -246,7 +246,7 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
   }, [query, itemId]);
 
   const handleSelect = useCallback(
-    (item: Bug | FeatureRequest) => {
+    (item: BugReport | FeatureRequest) => {
       const candidateId = getItemId(item);
       const candidateType = getItemType(item);
 
@@ -285,8 +285,13 @@ export const DependencyPicker: React.FC<DependencyPickerProps> = ({
     setSaving(true);
     setError(null);
     try {
+      // Verifies: FR-0001 — Save dependencies via PATCH with blocked_by array
       const blockerIds = selected.map((s) => s.item_id);
-      await setDependencies(itemType, itemId, blockerIds);
+      if (itemType === 'bug') {
+        await bugs.update(itemId, { blocked_by: blockerIds } as any);
+      } else {
+        await featureRequests.update(itemId, { blocked_by: blockerIds } as any);
+      }
       onSave();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save dependencies');

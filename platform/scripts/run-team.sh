@@ -114,9 +114,8 @@ echo ""
 OUTPUT=$(claude -p "$PROMPT" \
   --allowedTools "$TOOLS" \
   --output-format text \
-  2>&1) || true
-
-EXIT_CODE=${PIPESTATUS[0]:-$?}
+  2>&1)
+EXIT_CODE=$?
 
 # Output whatever claude produced (including errors)
 echo "$OUTPUT"

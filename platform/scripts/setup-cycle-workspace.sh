@@ -20,6 +20,22 @@ mkdir -p ~/.git-credentials 2>/dev/null && rmdir ~/.git-credentials 2>/dev/null 
 echo "$CLONE_URL" > ~/.git-credentials
 git config --global credential.helper store
 
+# ── Git retry helper ─────────────────────────────────────────────────────────
+git_retry() {
+  local attempt=1 max=3 delay=5
+  until "$@"; do
+    if [ "$attempt" -ge "$max" ]; then
+      echo "[git] '$*' failed after $max attempts -- giving up" >&2
+      return 1
+    fi
+    echo "[git] attempt $attempt failed, retrying in ${delay}s..." >&2
+    sleep "$delay"
+    delay=$((delay * 2))
+    attempt=$((attempt + 1))
+  done
+}
+
+
 # ── GitHub CLI auth (for PR creation and auto-merge) ────────────────────────
 if command -v gh &>/dev/null && [ -n "$GITHUB_TOKEN" ]; then
   echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null || true
@@ -30,7 +46,7 @@ fi
 # ── Clone if workspace is empty ──────────────────────────────────────────────
 if [ ! -d "$WORKSPACE/.git" ]; then
   echo "[setup] Cloning $GITHUB_BRANCH into $WORKSPACE..."
-  git clone --branch "$GITHUB_BRANCH" --single-branch "$CLONE_URL" "$WORKSPACE"
+  git_retry git clone --branch "$GITHUB_BRANCH" --single-branch "$CLONE_URL" "$WORKSPACE"
 fi
 
 cd "$WORKSPACE"
@@ -80,7 +96,7 @@ echo "[setup] Creating branch cycle/$RUN_ID..."
 git checkout -b "cycle/$RUN_ID"
 
 # ── Push branch ──────────────────────────────────────────────────────────────
-git push -u origin "cycle/$RUN_ID"
+git_retry git push -u origin "cycle/$RUN_ID"
 
 # ── Install npm dependencies ────────────────────────────────────────────────
 for dir in Source/Backend Source/Frontend Source/E2E .; do

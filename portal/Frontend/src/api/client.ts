@@ -189,14 +189,13 @@ export const bugs = {
 
 // --- General ---
 
+// Verifies: FR-0001 — General search across bugs and feature requests
 export const general = {
-  async searchItems(query: string): Promise<any[]> {
-    const [b, f] = await Promise.all([
-      bugs.list({ status: query }), // Note: this is a placeholder; real search would be different
-      featureRequests.list({ status: query }),
-    ])
-    // Filter locally if needed or adjust API
-    return [...b.data, ...f.data]
+  async searchItems(query: string): Promise<Array<BugReport | FeatureRequest>> {
+    const result = await apiFetch<{ data: Array<BugReport | FeatureRequest> }>(
+      `/api/search?q=${encodeURIComponent(query)}`
+    )
+    return result.data
   }
 }
 

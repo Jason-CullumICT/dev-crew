@@ -17,6 +17,7 @@ import dashboardRouter from './routes/dashboard';
 import learningsRouter from './routes/learnings';
 import featuresRouter from './routes/features';
 import pipelineRunsRouter, { getCyclePipelineHandler } from './routes/pipelines';
+import searchRouter from './routes/search';  // Verifies: FR-dependency-linking
 import logger from './lib/logger';
 
 // Initialize OpenTelemetry tracing (FR-021)
@@ -63,6 +64,7 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/learnings', learningsRouter);
 app.use('/api/features', featuresRouter);
 app.use('/api/pipeline-runs', pipelineRunsRouter);
+app.use('/api/search', searchRouter);  // Verifies: FR-dependency-linking
 
 // Orchestrator proxy — forwards requests to the dev-crew orchestrator
 // Allows the feature portal to submit work and monitor cycles

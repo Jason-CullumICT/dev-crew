@@ -59,3 +59,20 @@
 - Tests for dispatch gating need to create items with `blocked_by` on create, then test status transitions
 - For FR dispatch gating tests, must walk the full status transition chain: potential → voting → approved (gated) since FR has strict transition rules
 - Cross-type dependencies (bug blocked by FR, FR blocked by bug) work and are important to test
+
+## 2026-03-30: Dependency Linking Verification (backend-coder-1)
+
+### Seed script patterns
+- `seedKnownDependencies()` in `portal/Backend/src/database/seed-dependencies.ts` gracefully handles missing items (404) by skipping
+- `addDependency()` uses INSERT OR IGNORE so seeding is idempotent — no errors on duplicate runs
+- Seed script is a pure function taking a db handle, not tied to HTTP context — can be called from startup or tests
+
+### VotingService test control
+- `VoteSimulatorOptions.random` accepts `() => number` — use `{ random: () => 0.01 }` to force all agents to approve (value < approveThreshold)
+- There is no `fixedOutcome` option — must use the injectable random function
+
+### Dispatch gating verification
+- Bug dispatch gating triggers on `in_development` status (no approval step for bugs)
+- FR dispatch gating triggers on both `approved` and `in_development` (via DISPATCH_TRIGGER_STATUSES)
+- FR approval through `approveFeatureRequest()` also checks dispatch gating — gated FRs go to `pending_dependencies`
+- `RESOLVED_STATUSES` includes `duplicate` and `deprecated` (added by FR-DUP), so those also trigger cascade

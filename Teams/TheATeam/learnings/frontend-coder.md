@@ -1,5 +1,13 @@
 # Frontend Coder Learnings
 
+## Dependency Linking UI Verification (2026-03-30)
+
+- All dependency UI components (DependencySection, BlockedBadge, DependencyPicker) were already implemented at HEAD and correctly integrated into BugDetail, BugList, FeatureRequestDetail, FeatureRequestList
+- Test fixtures in 8 test files needed updating to add missing type properties: `target_repo`, `duplicate_of`, `deprecation_reason`, `duplicated_by` for FeatureRequest/BugReport; `pending_dependencies`/`duplicate`/`deprecated` for status Records; `work_item_ref`/`issue_description`/`considered_fixes` for Ticket; `feedback`/`team_name` for DevelopmentCycle; `cycle_id`/`traceability_report` for Feature
+- Vitest 1.6.1 with duplicate `vi.mock()` calls for the same module: only the LAST hoisted mock wins. The Traceability test had two `vi.mock('../src/api/client')` calls — the second (for CycleView, without `repos`) overwrote the first (for BugDetail, with `repos`). Fix: merge into one mock
+- Three orchestrator component stubs (CycleCard, CycleLogStream, CompletedCyclesSection) were missing — created minimal implementations to pass type-checking. The page-level integration tests for OrchestratorCyclesPage still fail because the page uses a different API shape than the tests expect
+- Pre-existing test failures in ImageUpload.test.tsx (form label changes), Learnings.test.tsx (filter label changes), OrchestratorCycles.test.tsx (page API mismatch) are NOT related to dependency linking
+
 ## Duplicate/Deprecated Tagging (2026-03-30)
 
 - `HIDDEN_STATUSES` is exported from `portal/Shared/types.ts` and used in both BugList and FeatureRequestList for opacity styling

@@ -10,14 +10,26 @@ import { TraceabilityReport } from '../src/components/features/TraceabilityRepor
 import { BugDetail } from '../src/components/bugs/BugDetail'
 import type { CycleFeedback, ConsideredFix, BugReport } from '../../Shared/types'
 
-// Verifies: FR-dependency-detail-ui — Mock API client used by BugDetail
+// Verifies: FR-dependency-detail-ui — Mock API client used by BugDetail and CycleView
 vi.mock('../src/api/client', () => ({
   bugs: { getById: vi.fn(), update: vi.fn(), list: vi.fn() },
   images: { list: vi.fn().mockResolvedValue({ data: [] }), upload: vi.fn(), delete: vi.fn() },
   orchestrator: { submitWork: vi.fn() },
-  repos: { list: vi.fn().mockResolvedValue({ data: [] }) },
+  repos: { list: vi.fn().mockResolvedValue({ data: [] }), validate: vi.fn() },
   featureRequests: { getById: vi.fn(), update: vi.fn() },
   general: { searchItems: vi.fn() },
+  cycles: {
+    list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    createTicket: vi.fn(),
+    updateTicket: vi.fn(),
+    completeCycle: vi.fn(),
+  },
+  cycleFeedback: {
+    list: vi.fn(),
+    create: vi.fn(),
+  },
 }))
 
 // --- FeedbackLog Tests ---
@@ -328,20 +340,7 @@ describe('BugDetail Traceability', () => {
 // We test the FeedbackLog and team_name badge integration through CycleView
 // by importing the component with mocked API
 
-vi.mock('../src/api/client', () => ({
-  cycles: {
-    list: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    createTicket: vi.fn(),
-    updateTicket: vi.fn(),
-    completeCycle: vi.fn(),
-  },
-  cycleFeedback: {
-    list: vi.fn(),
-    create: vi.fn(),
-  },
-}))
+// Second vi.mock for the same module removed — merged into the first vi.mock above
 
 import { CycleView } from '../src/components/cycles/CycleView'
 import type { DevelopmentCycle } from '../../Shared/types'

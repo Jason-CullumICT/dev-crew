@@ -34,3 +34,11 @@ export const cycleDetectionEvents = new Counter({
   labelNames: ['result'] as const, // 'clean', 'cycle_detected'
   registers: [registry],
 });
+
+// Verifies: FR-0008 — Duplicate/deprecated status operations
+export const duplicateDeprecatedOperations = new Counter({
+  name: 'portal_duplicate_deprecated_operations_total',
+  help: 'Total duplicate/deprecated status transition operations',
+  labelNames: ['operation', 'item_type'] as const, // operation: 'mark_duplicate', 'mark_deprecated', 'restore'
+  registers: [registry],
+});

@@ -1,6 +1,8 @@
 // Verifies: FR-0001 — Bug list view with BlockedBadge integration
-import React, { useEffect, useState } from 'react';
+// Verifies: FR-0008 — Hidden item filtering, dimmed rows, duplicate count badge
+import React, { useEffect, useState, useCallback } from 'react';
 import type { Bug } from '../../../../Shared/types';
+import { HIDDEN_STATUSES } from '../../../../Shared/types';
 import { getBugs } from '../../../../Shared/api';
 import { BlockedBadge } from '../shared/BlockedBadge';
 
@@ -72,6 +74,26 @@ const styles = {
     fontSize: '11px',
     fontWeight: 600,
   },
+  // Verifies: FR-0008 — Toggle and badge styles
+  toggleBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '12px',
+    fontSize: '13px',
+    color: '#6b7280',
+  } as React.CSSProperties,
+  duplicateCountBadge: {
+    display: 'inline-block',
+    padding: '1px 6px',
+    backgroundColor: '#dbeafe',
+    border: '1px solid #93c5fd',
+    borderRadius: '10px',
+    fontSize: '10px',
+    fontWeight: 600,
+    color: '#1d4ed8',
+    marginLeft: '4px',
+  } as React.CSSProperties,
 };
 
 function getSeverityStyle(severity: string): React.CSSProperties {
@@ -88,23 +110,31 @@ function getSeverityStyle(severity: string): React.CSSProperties {
 }
 
 // Verifies: FR-0001
+// Verifies: FR-0008 — List view with hidden item toggle
 export const BugList: React.FC = () => {
   const [bugs, setBugs] = useState<Bug[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Verifies: FR-0008 — Show hidden toggle state
+  const [showHidden, setShowHidden] = useState(false);
+
+  const loadBugs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Verifies: FR-0008 — Pass include_hidden to API
+      const response = await getBugs({ include_hidden: showHidden });
+      setBugs(response.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load bugs');
+    } finally {
+      setLoading(false);
+    }
+  }, [showHidden]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const response = await getBugs();
-        setBugs(response.data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load bugs');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    loadBugs();
+  }, [loadBugs]);
 
   if (loading) {
     return <div style={styles.loading}>Loading bugs...</div>;
@@ -121,6 +151,20 @@ export const BugList: React.FC = () => {
   return (
     <div style={styles.container} data-testid="bug-list">
       <h2 style={styles.header}>Bugs</h2>
+
+      {/* Verifies: FR-0008 — Toggle to show hidden (duplicate/deprecated) items */}
+      <div style={styles.toggleBar}>
+        <label>
+          <input
+            type="checkbox"
+            checked={showHidden}
+            onChange={(e) => setShowHidden(e.target.checked)}
+            data-testid="show-hidden-toggle"
+          />{' '}
+          Show hidden (duplicate/deprecated)
+        </label>
+      </div>
+
       <table style={styles.table}>
         <thead>
           <tr>
@@ -131,28 +175,39 @@ export const BugList: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {bugs.map((bug) => (
-            <tr key={bug.id} data-testid={`bug-row-${bug.id}`}>
-              <td style={styles.td}>
-                <a href={`/bugs/${bug.id}`} style={styles.idCell}>
-                  {bug.id}
-                </a>
-              </td>
-              <td style={styles.td}>{bug.title}</td>
-              <td style={styles.td}>
-                <span style={{ ...styles.severityBadge, ...getSeverityStyle(bug.severity) }}>
-                  {bug.severity}
-                </span>
-              </td>
-              <td style={styles.td}>
-                {/* Verifies: FR-0001 — BlockedBadge integration in list view */}
-                <span style={styles.statusCell}>
-                  <span>{bug.status}</span>
-                  <BlockedBadge hasUnresolvedBlockers={bug.has_unresolved_blockers} status={bug.status} />
-                </span>
-              </td>
-            </tr>
-          ))}
+          {bugs.map((bug) => {
+            // Verifies: FR-0008 — Dimmed row styling for hidden items
+            const isHidden = HIDDEN_STATUSES.includes(bug.status);
+            const rowStyle = isHidden ? { opacity: 0.5 } : {};
+            return (
+              <tr key={bug.id} data-testid={`bug-row-${bug.id}`} style={rowStyle}>
+                <td style={styles.td}>
+                  <a href={`/bugs/${bug.id}`} style={styles.idCell}>
+                    {bug.id}
+                  </a>
+                </td>
+                <td style={styles.td}>{bug.title}</td>
+                <td style={styles.td}>
+                  <span style={{ ...styles.severityBadge, ...getSeverityStyle(bug.severity) }}>
+                    {bug.severity}
+                  </span>
+                </td>
+                <td style={styles.td}>
+                  {/* Verifies: FR-0001 — BlockedBadge integration in list view */}
+                  <span style={styles.statusCell}>
+                    <span>{bug.status}</span>
+                    <BlockedBadge hasUnresolvedBlockers={bug.has_unresolved_blockers} status={bug.status} />
+                    {/* Verifies: FR-0008 — Duplicate count badge on canonical items */}
+                    {bug.duplicated_by && bug.duplicated_by.length > 0 && (
+                      <span style={styles.duplicateCountBadge} data-testid={`dup-count-${bug.id}`}>
+                        {bug.duplicated_by.length} duplicate{bug.duplicated_by.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

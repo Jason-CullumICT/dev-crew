@@ -10,7 +10,9 @@ export type BugStatus =
   | 'in_development'
   | 'resolved'
   | 'closed'
-  | 'pending_dependencies';
+  | 'pending_dependencies'
+  | 'duplicate'    // Verifies: FR-0008
+  | 'deprecated';  // Verifies: FR-0008
 
 export type FeatureRequestStatus =
   | 'submitted'
@@ -19,7 +21,12 @@ export type FeatureRequestStatus =
   | 'in_development'
   | 'completed'
   | 'closed'
-  | 'pending_dependencies';
+  | 'pending_dependencies'
+  | 'duplicate'    // Verifies: FR-0008
+  | 'deprecated';  // Verifies: FR-0008
+
+// Verifies: FR-0008 — Statuses that are hidden from list views by default
+export const HIDDEN_STATUSES: readonly string[] = ['duplicate', 'deprecated'] as const;
 
 // Verifies: FR-dependency-dispatch-gating — Statuses that count as "resolved" for dependency checking
 export const RESOLVED_STATUSES: readonly string[] = [
@@ -75,6 +82,9 @@ export interface Bug {
   blocked_by: DependencyLink[];
   blocks: DependencyLink[];
   has_unresolved_blockers: boolean;
+  duplicate_of?: string | null;       // Verifies: FR-0008 — ID of canonical item
+  deprecation_reason?: string | null; // Verifies: FR-0008 — reason text
+  duplicated_by: string[];            // Verifies: FR-0008 — IDs of duplicates pointing here
 }
 
 export interface FeatureRequest {
@@ -88,6 +98,9 @@ export interface FeatureRequest {
   blocked_by: DependencyLink[];
   blocks: DependencyLink[];
   has_unresolved_blockers: boolean;
+  duplicate_of?: string | null;       // Verifies: FR-0008 — ID of canonical item
+  deprecation_reason?: string | null; // Verifies: FR-0008 — reason text
+  duplicated_by: string[];            // Verifies: FR-0008 — IDs of duplicates pointing here
 }
 
 // --- API Response Wrappers ---
@@ -99,6 +112,18 @@ export interface ListResponse<T> {
 export interface ErrorResponse {
   error: string;
   details?: string;
+}
+
+// --- Duplicate / Deprecated Input Types --- // Verifies: FR-0008
+
+export interface MarkDuplicateInput {
+  status: 'duplicate';
+  duplicate_of: string;
+}
+
+export interface MarkDeprecatedInput {
+  status: 'deprecated';
+  deprecation_reason?: string;
 }
 
 // --- Helper to parse item ID into type + id ---

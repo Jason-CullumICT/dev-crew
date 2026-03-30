@@ -25,8 +25,10 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
 // --- Bug endpoints ---
 
-export async function getBugs(): Promise<ListResponse<Bug>> {
-  return request<ListResponse<Bug>>('/bugs');
+// Verifies: FR-0008 — accept include_hidden param to show duplicate/deprecated items
+export async function getBugs(options?: { include_hidden?: boolean }): Promise<ListResponse<Bug>> {
+  const params = options?.include_hidden ? '?include_hidden=true' : '';
+  return request<ListResponse<Bug>>(`/bugs${params}`);
 }
 
 export async function getBug(id: string): Promise<Bug> {
@@ -42,8 +44,10 @@ export async function updateBug(id: string, data: Partial<Bug>): Promise<Bug> {
 
 // --- Feature Request endpoints ---
 
-export async function getFeatureRequests(): Promise<ListResponse<FeatureRequest>> {
-  return request<ListResponse<FeatureRequest>>('/feature-requests');
+// Verifies: FR-0008 — accept include_hidden param to show duplicate/deprecated items
+export async function getFeatureRequests(options?: { include_hidden?: boolean }): Promise<ListResponse<FeatureRequest>> {
+  const params = options?.include_hidden ? '?include_hidden=true' : '';
+  return request<ListResponse<FeatureRequest>>(`/feature-requests${params}`);
 }
 
 export async function getFeatureRequest(id: string): Promise<FeatureRequest> {
@@ -109,6 +113,26 @@ export async function checkReady(
 ): Promise<ReadyResponse> {
   const route = itemTypeToRoute(itemType);
   return request<ReadyResponse>(`/${route}/${encodeURIComponent(itemId)}/ready`);
+}
+
+// --- Duplicate / Deprecated convenience functions --- // Verifies: FR-0008
+
+/** Mark an item as a duplicate of another canonical item */
+export async function markAsDuplicate(itemType: DependencyItemType, id: string, duplicateOf: string): Promise<Bug | FeatureRequest> {
+  const route = itemTypeToRoute(itemType);
+  return request<Bug | FeatureRequest>(`/${route}/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'duplicate', duplicate_of: duplicateOf }),
+  });
+}
+
+/** Mark an item as deprecated with an optional reason */
+export async function markAsDeprecated(itemType: DependencyItemType, id: string, reason?: string): Promise<Bug | FeatureRequest> {
+  const route = itemTypeToRoute(itemType);
+  return request<Bug | FeatureRequest>(`/${route}/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'deprecated', deprecation_reason: reason }),
+  });
 }
 
 // --- Search (used by DependencyPicker) ---

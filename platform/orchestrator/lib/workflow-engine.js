@@ -444,18 +444,23 @@ if [ $? -ne 0 ]; then
 fi
 BASE=$(git merge-base HEAD origin/${baseBranch})
 MERGE_OUTPUT=$(git merge-tree "$BASE" HEAD origin/${baseBranch} 2>&1)
+if [ -z "$MERGE_OUTPUT" ]; then
+  echo "PREFLIGHT_ERROR=merge_tree_failed"
+  exit 0
+fi
 CONFLICTS=$(echo "$MERGE_OUTPUT" | grep -c "^<<<<<<<" || true)
 echo "CONFLICT_COUNT=$CONFLICTS"
 if [ "$CONFLICTS" -gt 0 ]; then
-  echo "CONFLICTING_FILES=$(echo "$MERGE_OUTPUT" | grep -o '[^[:space:]]\\+\\ (versions\\ [0-9]\\+,[0-9]\\+,[0-9]\\+\\ of\\ [^)]*' | head -5 | tr '\\n' ',' || echo 'see-merge-output')"
+  echo "CONFLICTING_FILES=$(echo "$MERGE_OUTPUT" | grep "^+++" | sed 's|^+++ b/||' | head -5 | tr '\\n' ',' || echo 'see-merge-output')"
 fi
       `],
       { label: "preflight-conflict-check" }
     );
 
-    if (conflictCheck.stdout.includes("PREFLIGHT_ERROR=fetch_failed")) {
-      console.warn(`[${run.id}] Pre-flight: git fetch failed, skipping conflict check`);
-      // Fall through to PR creation — don't block on fetch failures
+    if (conflictCheck.stdout.includes("PREFLIGHT_ERROR=")) {
+      const errType = conflictCheck.stdout.match(/PREFLIGHT_ERROR=([^\n]+)/)?.[1] || "unknown";
+      console.warn(`[${run.id}] Pre-flight: check skipped (${errType}), proceeding to PR creation`);
+      // Fall through to PR creation — don't block on pre-flight failures
     } else {
       const conflictCountMatch = conflictCheck.stdout.match(/CONFLICT_COUNT=(\d+)/);
       const conflictCount = conflictCountMatch ? parseInt(conflictCountMatch[1], 10) : 0;
@@ -473,7 +478,7 @@ fi
         const noteMsg = `merge-conflicts-detected: ${conflictCount} conflict(s). Files: ${conflictFiles}`;
         await this.containerManager.execInWorker(
           containerId, "bash",
-          ["-c", `printf '%s' ${JSON.stringify(noteMsg)} > /tmp/conflict-note.txt && git -C /workspace notes add -F /tmp/conflict-note.txt HEAD 2>/dev/null || true`],
+          ["-c", `printf '%s' ${JSON.stringify(noteMsg)} > /tmp/conflict-note-${run.id}.txt && git -C /workspace notes add -F /tmp/conflict-note-${run.id}.txt HEAD 2>/dev/null || true`],
           { label: "conflict-note", quiet: true }
         );
         return;

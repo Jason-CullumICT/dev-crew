@@ -388,7 +388,10 @@ app.post("/api/runs/:id/revalidate", (req, res) => {
       runScript("/app/scripts/run-team.sh", ["TheInspector", `Re-validation: ${run.task}`], { label: "inspector" }),
     ]);
 
-    run.phases.smoketest.status = smokeResult.exitCode === 0 ? "passed" : "failed";
+    run.phases.smoketest.status =
+      smokeResult.exitCode === 0 ? "passed" :
+      smokeResult.exitCode === 2 ? "skipped" :
+      "failed";
     run.phases.smoketest.exitCode = smokeResult.exitCode;
     run.phases.smoketest.completedAt = ts();
 

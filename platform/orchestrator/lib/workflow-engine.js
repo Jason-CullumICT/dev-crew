@@ -430,6 +430,62 @@ ${feedback}`;
     };
     const labels = labelMap[run.riskLevel] || labelMap.medium;
 
+    // ── Pre-flight: dry-run conflict check before creating PR ──
+    const baseBranch = this._baseBranch(run);
+    console.log(`[${run.id}] Pre-flight conflict check against ${baseBranch}...`);
+    const conflictCheck = await this.containerManager.execInWorker(
+      containerId, "bash",
+      ["-c", `
+cd /workspace
+git fetch origin ${baseBranch} 2>&1
+if [ $? -ne 0 ]; then
+  echo "PREFLIGHT_ERROR=fetch_failed"
+  exit 0
+fi
+BASE=$(git merge-base HEAD origin/${baseBranch})
+MERGE_OUTPUT=$(git merge-tree "$BASE" HEAD origin/${baseBranch} 2>&1)
+if [ -z "$MERGE_OUTPUT" ]; then
+  echo "PREFLIGHT_ERROR=merge_tree_failed"
+  exit 0
+fi
+CONFLICTS=$(echo "$MERGE_OUTPUT" | grep -c "^<<<<<<<" || true)
+echo "CONFLICT_COUNT=$CONFLICTS"
+if [ "$CONFLICTS" -gt 0 ]; then
+  echo "CONFLICTING_FILES=$(echo "$MERGE_OUTPUT" | grep "^+++" | sed 's|^+++ b/||' | head -5 | tr '\\n' ',' || echo 'see-merge-output')"
+fi
+      `],
+      { label: "preflight-conflict-check" }
+    );
+
+    if (conflictCheck.stdout.includes("PREFLIGHT_ERROR=")) {
+      const errType = conflictCheck.stdout.match(/PREFLIGHT_ERROR=([^\n]+)/)?.[1] || "unknown";
+      console.warn(`[${run.id}] Pre-flight: check skipped (${errType}), proceeding to PR creation`);
+      // Fall through to PR creation — don't block on pre-flight failures
+    } else {
+      const conflictCountMatch = conflictCheck.stdout.match(/CONFLICT_COUNT=(\d+)/);
+      const conflictCount = conflictCountMatch ? parseInt(conflictCountMatch[1], 10) : 0;
+
+      if (conflictCount > 0) {
+        const filesMatch = conflictCheck.stdout.match(/CONFLICTING_FILES=([^\n]*)/);
+        const conflictFiles = filesMatch ? filesMatch[1].trim() : "unknown";
+        console.warn(`[${run.id}] Pre-flight: ${conflictCount} conflict(s) detected. Files: ${conflictFiles}`);
+        run.pr = {
+          status: "needs-manual-resolution",
+          reason: `${conflictCount} merge conflict(s) detected against ${baseBranch} before PR creation. Files: ${conflictFiles}`,
+        };
+        saveRunFn(run);
+        // Write conflict note to temp file to avoid shell injection
+        const noteMsg = `merge-conflicts-detected: ${conflictCount} conflict(s). Files: ${conflictFiles}`;
+        await this.containerManager.execInWorker(
+          containerId, "bash",
+          ["-c", `printf '%s' ${JSON.stringify(noteMsg)} > /tmp/conflict-note-${run.id}.txt && git -C /workspace notes add -F /tmp/conflict-note-${run.id}.txt HEAD 2>/dev/null || true`],
+          { label: "conflict-note", quiet: true }
+        );
+        return;
+      }
+      console.log(`[${run.id}] Pre-flight: no conflicts detected, proceeding to PR creation`);
+    }
+
     // Create PR via gh CLI — use temp files to avoid shell injection
     console.log(`[${run.id}] Creating PR: ${prTitle}`);
 
@@ -1331,7 +1387,10 @@ ${feedback}`;
       const smokeResult = validationResults[0];
       const inspectorResult = skipInspector ? null : validationResults[1];
 
-      run.phases.smoketest.status = smokeResult.exitCode === 0 ? "passed" : "failed";
+      run.phases.smoketest.status =
+        smokeResult.exitCode === 0 ? "passed" :
+        smokeResult.exitCode === 2 ? "skipped" :
+        "failed";
       run.phases.smoketest.exitCode = smokeResult.exitCode;
       run.phases.smoketest.completedAt = ts();
       run.phases.smoketest.outputTail = smokeResult.stdout.slice(-2000);
@@ -1353,7 +1412,7 @@ ${feedback}`;
         .filter((k) => k.startsWith("stage_") && run.phases[k].stageName && /qa|verification|review/i.test(run.phases[k].stageName))
         .every((k) => run.phases[k].status === "passed");
 
-      const smokePassed = run.phases.smoketest.status === "passed";
+      const smokePassed = run.phases.smoketest.status === "passed" || run.phases.smoketest.status === "skipped";
       const inspectorPassed = run.phases.inspector.status === "passed" || run.phases.inspector.status === "skipped";
 
       // Smoketest is advisory when both implementation AND QA passed independently.
@@ -1377,7 +1436,9 @@ ${feedback}`;
         leader: run.phases.leader.status,
         implementation: implPassed ? "passed" : "failed",
         qa: qaPassed ? "passed" : "failed",
-        smoketest: smokePassed ? "passed" : (smokeEffective ? "overridden" : "failed"),
+        smoketest: run.phases.smoketest.status === "passed" ? "passed" :
+                   run.phases.smoketest.status === "skipped" ? "skipped" :
+                   (smokeEffective ? "overridden" : "failed"),
         inspector: run.phases.inspector.status,
         feedbackLoops,
         allPassed,

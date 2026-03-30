@@ -1,4 +1,4 @@
-// Verifies: FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-021, FR-031
+// Verifies: FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-021, FR-031, FR-dependency-linking, FR-dependency-dispatch-gating
 // Comprehensive tests for Feature Request APIs and supporting infrastructure.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -20,6 +20,7 @@ import {
   TITLE_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
 } from '../src/services/featureRequestService';
+import { createBug, updateBug } from '../src/services/bugService';
 import { simulateVoting, buildVoteRecords } from '../src/services/votingService';
 
 // --- Test helpers ---
@@ -856,6 +857,182 @@ describe('FR ID generation after delete (DD-10)', () => {
     expect(fr4.id).not.toBe(fr1.id);
     expect(fr4.id).not.toBe(fr3.id);
     expect(fr4.id).toMatch(/^FR-\d{4}$/);
+  });
+});
+
+// --- FR-dependency-linking: Feature request dependency hydration ---
+describe('FR-dependency-linking: Feature request dependency hydration', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('should hydrate blocked_by, blocks, has_unresolved_blockers on GET /api/feature-requests/:id', async () => {
+    // Verifies: FR-dependency-linking
+    const fr1 = createFeatureRequest(db, { title: 'Blocked FR', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Blocker FR', description: 'desc' });
+
+    const app = createApp();
+    await supertest(app)
+      .post(`/api/feature-requests/${fr1.id}/dependencies`)
+      .send({ action: 'add', blocker_id: fr2.id });
+
+    const res = await supertest(app).get(`/api/feature-requests/${fr1.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.blocked_by).toHaveLength(1);
+    expect(res.body.blocked_by[0].item_id).toBe(fr2.id);
+    expect(res.body.blocks).toHaveLength(0);
+    expect(res.body.has_unresolved_blockers).toBe(true);
+  });
+
+  it('should hydrate blocks on the blocker item', async () => {
+    // Verifies: FR-dependency-linking
+    const fr1 = createFeatureRequest(db, { title: 'Blocked', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Blocker', description: 'desc' });
+
+    const app = createApp();
+    await supertest(app)
+      .post(`/api/feature-requests/${fr1.id}/dependencies`)
+      .send({ action: 'add', blocker_id: fr2.id });
+
+    const res = await supertest(app).get(`/api/feature-requests/${fr2.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.blocks).toHaveLength(1);
+    expect(res.body.blocks[0].item_id).toBe(fr1.id);
+  });
+
+  it('should hydrate has_unresolved_blockers on list endpoint', async () => {
+    // Verifies: FR-dependency-linking
+    const fr1 = createFeatureRequest(db, { title: 'Blocked FR', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'Blocker FR', description: 'desc' });
+
+    const app = createApp();
+    await supertest(app)
+      .post(`/api/feature-requests/${fr1.id}/dependencies`)
+      .send({ action: 'add', blocker_id: fr2.id });
+
+    const res = await supertest(app).get('/api/feature-requests');
+    expect(res.status).toBe(200);
+    const blocked = res.body.data.find((f: any) => f.id === fr1.id);
+    expect(blocked.has_unresolved_blockers).toBe(true);
+    const blocker = res.body.data.find((f: any) => f.id === fr2.id);
+    expect(blocker.has_unresolved_blockers).toBe(false);
+  });
+
+  it('should accept blocked_by on create', () => {
+    // Verifies: FR-dependency-linking
+    const blocker = createFeatureRequest(db, { title: 'Blocker', description: 'desc' });
+    const fr = createFeatureRequest(db, { title: 'Blocked', description: 'desc', blocked_by: [blocker.id] });
+
+    expect(fr.blocked_by).toHaveLength(1);
+    expect(fr.blocked_by![0].item_id).toBe(blocker.id);
+    expect(fr.has_unresolved_blockers).toBe(true);
+  });
+
+  it('should accept cross-type blocked_by (FR blocked by bug)', () => {
+    // Verifies: FR-dependency-linking
+    const bug = createBug(db, { title: 'Blocking Bug', description: 'desc', severity: 'high' });
+    const fr = createFeatureRequest(db, { title: 'Blocked FR', description: 'desc', blocked_by: [bug.id] });
+
+    expect(fr.blocked_by).toHaveLength(1);
+    expect(fr.blocked_by![0].item_id).toBe(bug.id);
+    expect(fr.blocked_by![0].item_type).toBe('bug');
+  });
+});
+
+// --- FR-dependency-dispatch-gating: Feature request dispatch gating ---
+describe('FR-dependency-dispatch-gating: Feature request dispatch gating', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('should gate status to pending_dependencies when transitioning to approved with unresolved blockers', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const blocker = createFeatureRequest(db, { title: 'Blocker', description: 'desc' });
+    const fr = createFeatureRequest(db, { title: 'Blocked', description: 'desc', blocked_by: [blocker.id] });
+
+    // potential → voting → approved (gated)
+    updateFeatureRequest(db, fr.id, { status: 'voting' });
+    const updated = updateFeatureRequest(db, fr.id, { status: 'approved' });
+    expect(updated.status).toBe('pending_dependencies');
+  });
+
+  it('should allow status transition when no blockers exist', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const fr = createFeatureRequest(db, { title: 'Free FR', description: 'desc' });
+    updateFeatureRequest(db, fr.id, { status: 'voting' });
+    const updated = updateFeatureRequest(db, fr.id, { status: 'approved' });
+    expect(updated.status).toBe('approved');
+  });
+
+  it('should cascade auto-dispatch when blocker completes', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const blocker = createFeatureRequest(db, { title: 'Blocker', description: 'desc' });
+    const fr = createFeatureRequest(db, { title: 'Blocked', description: 'desc', blocked_by: [blocker.id] });
+
+    // Gate to pending_dependencies
+    updateFeatureRequest(db, fr.id, { status: 'voting' });
+    updateFeatureRequest(db, fr.id, { status: 'approved' });
+    expect(getFeatureRequestById(db, fr.id)!.status).toBe('pending_dependencies');
+
+    // Complete blocker path: potential → voting → approved → in_development → completed
+    updateFeatureRequest(db, blocker.id, { status: 'voting' });
+    updateFeatureRequest(db, blocker.id, { status: 'approved' });
+    updateFeatureRequest(db, blocker.id, { status: 'in_development' });
+    updateFeatureRequest(db, blocker.id, { status: 'completed' });
+
+    // Blocked FR should auto-dispatch to approved
+    expect(getFeatureRequestById(db, fr.id)!.status).toBe('approved');
+  });
+
+  it('should cascade when cross-type blocker (bug) resolves', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const bug = createBug(db, { title: 'Blocking Bug', description: 'desc', severity: 'high' });
+    const fr = createFeatureRequest(db, { title: 'Blocked FR', description: 'desc', blocked_by: [bug.id] });
+
+    // Gate FR to pending_dependencies
+    updateFeatureRequest(db, fr.id, { status: 'voting' });
+    updateFeatureRequest(db, fr.id, { status: 'approved' });
+    expect(getFeatureRequestById(db, fr.id)!.status).toBe('pending_dependencies');
+
+    // Resolve bug — should cascade to FR
+    updateBug(db, bug.id, { status: 'resolved' });
+    expect(getFeatureRequestById(db, fr.id)!.status).toBe('approved');
+  });
+
+  it('should not cascade when only some blockers resolve', () => {
+    // Verifies: FR-dependency-dispatch-gating
+    const blocker1 = createFeatureRequest(db, { title: 'Blocker 1', description: 'desc' });
+    const blocker2 = createBug(db, { title: 'Blocker 2', description: 'desc', severity: 'low' });
+    const fr = createFeatureRequest(db, { title: 'Blocked', description: 'desc', blocked_by: [blocker1.id, blocker2.id] });
+
+    updateFeatureRequest(db, fr.id, { status: 'voting' });
+    updateFeatureRequest(db, fr.id, { status: 'approved' });
+    expect(getFeatureRequestById(db, fr.id)!.status).toBe('pending_dependencies');
+
+    // Resolve only bug blocker
+    updateBug(db, blocker2.id, { status: 'resolved' });
+    expect(getFeatureRequestById(db, fr.id)!.status).toBe('pending_dependencies');
+
+    // Resolve FR blocker
+    updateFeatureRequest(db, blocker1.id, { status: 'voting' });
+    updateFeatureRequest(db, blocker1.id, { status: 'approved' });
+    updateFeatureRequest(db, blocker1.id, { status: 'in_development' });
+    updateFeatureRequest(db, blocker1.id, { status: 'completed' });
+    expect(getFeatureRequestById(db, fr.id)!.status).toBe('approved');
   });
 });
 

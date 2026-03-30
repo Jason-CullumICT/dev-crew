@@ -142,13 +142,8 @@ export function createBug(db: Database.Database, input: CreateBugInput): BugRepo
   const id = generateBugId(db);
   const now = new Date().toISOString();
 
-  // Handle dependencies if provided
-  const depService = new DependencyService(db);
-  if (input.blocked_by && input.blocked_by.length > 0) {
-    depService.setDependencies('bug', id, input.blocked_by);
-  }
-
   // FR-054: Accept and persist related work item fields (DD-18: all nullable)
+  // Verifies: FR-dependency-linking — INSERT first so setDependencies can verify item exists
   db.prepare(`
     INSERT INTO bugs (id, title, description, severity, status, source_system, related_work_item_id, related_work_item_type, related_cycle_id, target_repo, created_at, updated_at)
     VALUES (?, ?, ?, ?, 'reported', ?, ?, ?, ?, ?, ?, ?)
@@ -160,6 +155,12 @@ export function createBug(db: Database.Database, input: CreateBugInput): BugRepo
     input.target_repo || null,
     now, now
   );
+
+  // Verifies: FR-dependency-linking — Handle dependencies after INSERT
+  if (input.blocked_by && input.blocked_by.length > 0) {
+    const depService = new DependencyService(db);
+    depService.setDependencies('bug', id, input.blocked_by);
+  }
 
   return getBugById(db, id)!;
 }

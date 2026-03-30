@@ -39,6 +39,9 @@ const mockSummary = {
     denied: 0,
     in_development: 1,
     completed: 5,
+    pending_dependencies: 0,
+    duplicate: 0,
+    deprecated: 0,
   },
   bugs: {
     by_status: {
@@ -47,6 +50,9 @@ const mockSummary = {
       in_development: 1,
       resolved: 3,
       closed: 0,
+      pending_dependencies: 0,
+      duplicate: 0,
+      deprecated: 0,
     },
     by_severity: { low: 2, medium: 2, high: 2, critical: 2 },
   },

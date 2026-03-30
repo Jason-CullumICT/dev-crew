@@ -31,6 +31,9 @@ const mockSummary: DashboardSummary = {
     denied: 1,
     in_development: 1,
     completed: 5,
+    pending_dependencies: 0,
+    duplicate: 0,
+    deprecated: 0,
   },
   bugs: {
     by_status: {
@@ -39,6 +42,9 @@ const mockSummary: DashboardSummary = {
       in_development: 0,
       resolved: 3,
       closed: 1,
+      pending_dependencies: 0,
+      duplicate: 0,
+      deprecated: 0,
     },
     by_severity: {
       low: 2,

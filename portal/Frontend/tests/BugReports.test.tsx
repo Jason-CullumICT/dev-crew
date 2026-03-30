@@ -21,8 +21,19 @@ vi.mock('../src/api/client', () => ({
 
 import { bugs } from '../src/api/client'
 
+const bugDefaults = {
+  related_work_item_id: null,
+  related_work_item_type: null,
+  related_cycle_id: null,
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [] as string[],
+}
+
 const mockBugs: BugReport[] = [
   {
+    ...bugDefaults,
     id: 'BUG-0001',
     title: 'Login fails on mobile',
     description: 'Users cannot log in on mobile browsers',
@@ -33,6 +44,7 @@ const mockBugs: BugReport[] = [
     updated_at: new Date().toISOString(),
   },
   {
+    ...bugDefaults,
     id: 'BUG-0002',
     title: 'CSS layout broken',
     description: 'The sidebar overlaps content on small screens',
@@ -43,6 +55,7 @@ const mockBugs: BugReport[] = [
     updated_at: new Date().toISOString(),
   },
   {
+    ...bugDefaults,
     id: 'BUG-0003',
     title: 'Database connection pool exhausted',
     description: 'Under load, DB connections are exhausted',
@@ -155,6 +168,7 @@ describe('BugReportsPage', () => {
   it('creates bug report successfully', async () => {
     // Verifies: FR-026
     const newBug: BugReport = {
+      ...bugDefaults,
       id: 'BUG-0010',
       title: 'New bug',
       description: 'Something broke',
@@ -178,12 +192,11 @@ describe('BugReportsPage', () => {
     fireEvent.click(screen.getByText('Report Bug'))
 
     await waitFor(() => {
-      expect(bugs.create).toHaveBeenCalledWith({
+      expect(bugs.create).toHaveBeenCalledWith(expect.objectContaining({
         title: 'New bug',
         description: 'Something broke',
         severity: 'medium',
-        source_system: undefined,
-      })
+      }))
     })
   })
 

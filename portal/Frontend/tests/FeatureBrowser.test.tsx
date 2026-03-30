@@ -20,6 +20,8 @@ const mockFeatures: Feature[] = [
     title: 'Dark Mode',
     description: 'Full dark mode support across all pages',
     source_work_item_id: 'FR-0001',
+    cycle_id: null,
+    traceability_report: null,
     created_at: new Date().toISOString(),
   },
   {
@@ -27,6 +29,8 @@ const mockFeatures: Feature[] = [
     title: 'CSV Export',
     description: 'Export data tables to CSV format',
     source_work_item_id: 'FR-0002',
+    cycle_id: null,
+    traceability_report: null,
     created_at: new Date().toISOString(),
   },
   {
@@ -34,6 +38,8 @@ const mockFeatures: Feature[] = [
     title: 'Push Notifications',
     description: 'Real-time push notifications for events',
     source_work_item_id: 'FR-0003',
+    cycle_id: null,
+    traceability_report: null,
     created_at: new Date().toISOString(),
   },
 ]

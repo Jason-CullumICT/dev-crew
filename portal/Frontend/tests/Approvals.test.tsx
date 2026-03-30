@@ -56,6 +56,10 @@ const mockVotingFRs: FeatureRequest[] = [
     duplicate_warning: false,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    target_repo: null,
+    duplicate_of: null,
+    deprecation_reason: null,
+    duplicated_by: [],
   },
 ]
 
@@ -97,6 +101,10 @@ const mockMajorityDenyFR: FeatureRequest = {
   duplicate_warning: false,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
+  target_repo: null,
+  duplicate_of: null,
+  deprecation_reason: null,
+  duplicated_by: [],
 }
 
 function renderPage() {

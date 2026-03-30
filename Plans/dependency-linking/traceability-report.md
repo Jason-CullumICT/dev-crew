@@ -2,7 +2,7 @@
 
 **Role**: traceability
 **Team**: TheATeam
-**Date**: 2026-03-30
+**Date**: 2026-03-30 (updated)
 **RISK_LEVEL**: high
 
 > Schema migration (new junction table), 15+ files across backend/frontend/shared, new endpoints, new status type, cascade logic
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-The dependency-linking feature is **fully implemented** across all layers (Shared types, Backend service/routes/metrics, Frontend components/API client). Backend tests pass completely (508/508). Frontend dependency-specific tests pass completely. Pre-existing frontend test failures (15 tests across 7 files) are caused by a missing `repos` mock — these failures are **not introduced by the dependency linking feature** (verified: no working tree changes vs HEAD, meaning the current code is exactly what was committed).
+The dependency-linking feature is **fully implemented** across all layers (Shared types, Backend service/routes/metrics, Frontend components/API client). Backend tests pass completely (536/536). Frontend dependency-specific tests pass completely (DependencyPicker 14/14). Pre-existing frontend test failures (21 tests across 4 files: ImageUpload, Learnings, OrchestratorCycleCard, OrchestratorCycles) are caused by a missing `repos` mock — these failures are **not introduced by the dependency linking feature** (verified: no working tree changes vs HEAD, meaning the current code is exactly what was committed).
 
 ---
 
@@ -33,7 +33,7 @@ The dependency-linking feature is **fully implemented** across all layers (Share
 | 12 | DependencyPicker allows search/select | PASS | DependencyPicker.tsx with 300ms debounced search, client-side cycle guard |
 | 13 | Structured logging and Prometheus metrics | PASS | 4 metrics in `metrics.ts`, structured pino logging in service and routes |
 | 14 | Traceability comments (`// Verifies: FR-*`) | PARTIAL | See finding T-001 |
-| 15 | All tests pass with zero new failures | PASS | Backend 508/508; Frontend: 0 new failures from dependency linking |
+| 15 | All tests pass with zero new failures | PASS | Backend 536/536; Frontend: 0 new failures from dependency linking |
 
 ---
 
@@ -55,6 +55,13 @@ The dependency-linking feature is **fully implemented** across all layers (Share
 ---
 
 ## Findings
+
+### T-000: Missing `blocked_by` in shared API input types
+**Severity**: MEDIUM
+**Files**: `portal/Shared/api.ts` (lines 32-38 and 59-67)
+**Detail**: `UpdateFeatureRequestInput` and `UpdateBugInput` interfaces do not include `blocked_by?: string[]`. The PATCH route handlers and service layer accept and process `blocked_by` from the request body, but the shared TypeScript types don't declare it. This is a type safety gap — the field works at runtime because Express doesn't enforce input types, but TypeScript consumers of these types won't know `blocked_by` is a valid field.
+
+**Recommendation**: Add `blocked_by?: string[];` to both `UpdateFeatureRequestInput` and `UpdateBugInput` in `portal/Shared/api.ts`.
 
 ### T-001: Incorrect FR references in frontend shared components
 **Severity**: MEDIUM
@@ -137,18 +144,18 @@ The `repos` API object was added to `client.ts` but test mocks were never update
 
 | Suite | Total | Passed | Failed | New Failures |
 |-------|-------|--------|--------|:------------:|
-| Backend (vitest) | 508 | 508 | 0 | 0 |
-| Frontend (vitest) | 203 | 188 | 15 | 0 (all pre-existing) |
-| E2E (Playwright) | 10 | — | — | Written, not executed |
+| Backend (vitest) | 536 | 536 | 0 | 0 |
+| Frontend (vitest) | 265 | 244 | 21 | 0 (all pre-existing) |
+| E2E (Playwright) | 13 | — | — | Written, not executed |
 
 **Backend gate: PASS**
-**Frontend gate: PASS (zero new failures; 15 pre-existing from missing repos mock)**
+**Frontend gate: PASS (zero new failures; 21 pre-existing from missing repos mock in ImageUpload, Learnings, OrchestratorCycleCard, OrchestratorCycles)**
 
 ---
 
 ## E2E Tests Written
 
-File: `Source/E2E/tests/cycle-run-1774854066710-53b751f9/dependency-linking.spec.ts`
+### Cycle 1: `Source/E2E/tests/cycle-run-1774854066710-53b751f9/dependency-linking.spec.ts`
 
 10 test cases covering:
 1. Bug list page with blocked badges
@@ -162,12 +169,20 @@ File: `Source/E2E/tests/cycle-run-1774854066710-53b751f9/dependency-linking.spec
 9. Circular dependency prevention via API
 10. Cross-type dependencies (bug blocked by FR)
 
+### Cycle 2: `Source/E2E/tests/cycle-run-1774902237885-128d4928/dependency-linking.spec.ts`
+
+13 test cases covering all of the above plus:
+11. Search endpoint results for dependency picker
+12. Dispatch gating: pending_dependencies when dispatching with unresolved blockers
+13. Cascade auto-dispatch: blocker resolution triggers auto-dispatch of pending items
+
 ---
 
 ## Recommendations
 
 | Priority | Action | Finding |
 |----------|--------|---------|
+| MEDIUM | Add `blocked_by?: string[]` to `UpdateFeatureRequestInput` and `UpdateBugInput` in `Shared/api.ts` | T-000 |
 | MEDIUM | Update frontend traceability comments from `FR-0001` to `FR-dependency-*` | T-001 |
 | MEDIUM | Add dependency cleanup on item deletion | T-003 |
 | LOW | Fix `repos` mock in frontend tests (pre-existing, not blocking) | T-002 |

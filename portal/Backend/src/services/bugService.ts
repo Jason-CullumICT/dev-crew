@@ -1,7 +1,7 @@
 // Verifies: FR-dependency-linking — Bug service with dependency-aware status transitions
 import Database from 'better-sqlite3';
-import type { Bug, BugStatus, DependencyItemType } from '../../Shared/types';
-import { RESOLVED_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../Shared/types';
+import type { Bug, BugStatus, DependencyItemType } from '../../../Shared/types';
+import { RESOLVED_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
 import { DependencyService } from './dependencyService';
 import { logger } from '../logger';
 import { dispatchGatingEvents } from '../metrics';

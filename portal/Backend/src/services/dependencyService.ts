@@ -6,7 +6,7 @@ import {
   ReadyResponse,
   RESOLVED_STATUSES,
   parseItemId,
-} from '../../Shared/types';
+} from '../../../Shared/types';
 import { logger } from '../logger';
 import {
   dependencyOperations,

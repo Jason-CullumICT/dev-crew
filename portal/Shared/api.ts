@@ -17,10 +17,10 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error || `Request failed: ${response.status}`);
   }
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 // --- Bug endpoints ---

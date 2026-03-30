@@ -1,6 +1,7 @@
 // Verifies: FR-026
 import React from 'react'
 import type { BugReport } from '../../../../Shared/types'
+import { BlockedBadge } from '../shared/BlockedBadge'
 
 interface BugListProps {
   items: BugReport[]
@@ -23,6 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
   in_development: 'bg-amber-100 text-amber-700',
   resolved: 'bg-green-100 text-green-700',
   closed: 'bg-gray-100 text-gray-500',
+  pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
 }
 
 export function BugList({ items, onSelect, selectable, selectedIds, onToggleSelect }: BugListProps) {
@@ -70,11 +72,12 @@ export function BugList({ items, onSelect, selectable, selectedIds, onToggleSele
                   {bug.severity}
                 </span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
+                  className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${
                     STATUS_COLORS[bug.status] ?? "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {bug.status.replace("_", " ")}
+                  <BlockedBadge hasUnresolvedBlockers={bug.has_unresolved_blockers ?? false} status={bug.status} />
                 </span>
               </div>
             </div>

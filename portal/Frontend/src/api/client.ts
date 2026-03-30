@@ -115,6 +115,24 @@ export const featureRequests = {
       body: JSON.stringify(input),
     })
   },
+
+  addDependency(id: string, blockerId: string): Promise<void> {
+    return apiFetch(`/api/feature-requests/${id}/dependencies`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', blocker_id: blockerId }),
+    })
+  },
+
+  removeDependency(id: string, blockerId: string): Promise<void> {
+    return apiFetch(`/api/feature-requests/${id}/dependencies`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'remove', blocker_id: blockerId }),
+    })
+  },
+
+  checkReady(id: string): Promise<{ ready: boolean; unresolved_blockers: any[] }> {
+    return apiFetch(`/api/feature-requests/${id}/ready`)
+  },
 }
 
 // --- Bug Reports ---
@@ -149,6 +167,37 @@ export const bugs = {
   delete(id: string): Promise<void> {
     return apiFetch(`/api/bugs/${id}`, { method: 'DELETE' })
   },
+
+  addDependency(id: string, blockerId: string): Promise<void> {
+    return apiFetch(`/api/bugs/${id}/dependencies`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', blocker_id: blockerId }),
+    })
+  },
+
+  removeDependency(id: string, blockerId: string): Promise<void> {
+    return apiFetch(`/api/bugs/${id}/dependencies`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'remove', blocker_id: blockerId }),
+    })
+  },
+
+  checkReady(id: string): Promise<{ ready: boolean; unresolved_blockers: any[] }> {
+    return apiFetch(`/api/bugs/${id}/ready`)
+  },
+}
+
+// --- General ---
+
+export const general = {
+  async searchItems(query: string): Promise<any[]> {
+    const [b, f] = await Promise.all([
+      bugs.list({ status: query }), // Note: this is a placeholder; real search would be different
+      featureRequests.list({ status: query }),
+    ])
+    // Filter locally if needed or adjust API
+    return [...b.data, ...f.data]
+  }
 }
 
 // --- Development Cycles ---

@@ -7,6 +7,7 @@ import { VoteResults } from './VoteResults'
 import { featureRequests, images, orchestrator, repos } from '../../api/client'
 import { ImageThumbnails } from '../common/ImageThumbnails'
 import { ImageUpload } from '../common/ImageUpload'
+import { DependencySection } from '../shared/DependencySection'
 
 interface FeatureRequestDetailProps {
   fr: FeatureRequest
@@ -21,6 +22,7 @@ const STATUS_COLORS: Record<string, string> = {
   denied: 'bg-red-100 text-red-700',
   in_development: 'bg-amber-100 text-amber-700',
   completed: 'bg-green-100 text-green-700',
+  pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
 }
 
 export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDetailProps) {
@@ -197,6 +199,23 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
           Description
         </h4>
         <p className="text-sm text-gray-700 whitespace-pre-wrap">{fr.description}</p>
+      </div>
+
+      <div className="border-t border-gray-100 pt-4">
+        <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+          Dependencies
+        </h4>
+        <DependencySection
+          blockedBy={fr.blocked_by ?? []}
+          blocks={fr.blocks ?? []}
+          itemType="feature_request"
+          itemId={fr.id}
+          editable={true}
+          status={fr.status}
+          onDependenciesChanged={() => {
+            featureRequests.getById(fr.id).then(onUpdate)
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">

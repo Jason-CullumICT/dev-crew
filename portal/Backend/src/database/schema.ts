@@ -205,6 +205,29 @@ export function runMigrations(db: Database.Database): void {
       ON image_attachments(entity_id, entity_type);
   `);
 
+  // --- Dependency linking tables (FR-dependency-linking) ---
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS dependencies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      blocked_item_type TEXT NOT NULL CHECK(blocked_item_type IN ('bug', 'feature_request')),
+      blocked_item_id TEXT NOT NULL,
+      blocker_item_type TEXT NOT NULL CHECK(blocker_item_type IN ('bug', 'feature_request')),
+      blocker_item_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(blocked_item_type, blocked_item_id, blocker_item_type, blocker_item_id)
+    );
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_dependencies_blocked
+      ON dependencies(blocked_item_type, blocked_item_id);
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_dependencies_blocker
+      ON dependencies(blocker_item_type, blocker_item_id);
+  `);
+
 
   // --- Add target_repo to feature_requests and bugs ---
   const frCols = db.prepare(`PRAGMA table_info(feature_requests)`).all() as Array<{ name: string }>;

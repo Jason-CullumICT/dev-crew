@@ -10,14 +10,17 @@ import type {
   Priority,
   Vote,
   VoteDecision,
+  DependencyLink,
 } from '../../../Shared/types';
+import { RESOLVED_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
+import { DependencyService } from './dependencyService';
 import { simulateVoting, buildVoteRecords, VoteSimulatorOptions } from './votingService';
 import { AppError } from '../middleware/errorHandler';
 
 // --- Valid enum values (DD-8) ---
 export const VALID_SOURCES: FeatureRequestSource[] = ['manual', 'zendesk', 'competitor_analysis', 'code_review'];
 export const VALID_PRIORITIES: Priority[] = ['low', 'medium', 'high', 'critical'];
-export const VALID_STATUSES: FeatureRequestStatus[] = ['potential', 'voting', 'approved', 'denied', 'in_development', 'completed'];
+export const VALID_STATUSES: FeatureRequestStatus[] = ['potential', 'voting', 'approved', 'denied', 'in_development', 'completed', 'pending_dependencies'];
 
 // --- Input length limits (Security M-04) ---
 export const TITLE_MAX_LENGTH = 200;
@@ -36,6 +39,7 @@ const STATUS_TRANSITIONS: Record<FeatureRequestStatus, FeatureRequestStatus[]> =
   in_development: ['completed'],
   denied: [],
   completed: [],
+  pending_dependencies: ['approved'], // Verifies: FR-dependency-dispatch-gating
 };
 
 // --- ID generation ---
@@ -96,9 +100,12 @@ interface VoteRow {
   created_at: string;
 }
 
-function mapFRRow(row: FRRow, votes: Vote[]): FeatureRequest {
+function mapFRRow(db: Database.Database, row: FRRow, votes: Vote[]): FeatureRequest {
+  const depService = new DependencyService(db);
+  const id = row.id;
+
   return {
-    id: row.id,
+    id,
     title: row.title,
     description: row.description,
     source: row.source as FeatureRequestSource,
@@ -111,6 +118,9 @@ function mapFRRow(row: FRRow, votes: Vote[]): FeatureRequest {
     target_repo: row.target_repo || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    blocked_by: depService.getBlockedBy('feature_request', id),
+    blocks: depService.getBlocks('feature_request', id),
+    has_unresolved_blockers: depService.hasUnresolvedBlockers('feature_request', id),
   };
 }
 
@@ -151,7 +161,7 @@ export function listFeatureRequests(
 
   query += ` ORDER BY created_at DESC`;
   const rows = db.prepare(query).all(...params) as FRRow[];
-  return rows.map((row) => mapFRRow(row, getVotesForFR(db, row.id)));
+  return rows.map((row) => mapFRRow(db, row, getVotesForFR(db, row.id)));
 }
 
 export interface CreateFeatureRequestInput {
@@ -160,6 +170,7 @@ export interface CreateFeatureRequestInput {
   source?: string;
   priority?: string;
   target_repo?: string;
+  blocked_by?: string[];                      // Verifies: FR-dependency-linking
 }
 
 export function createFeatureRequest(
@@ -199,6 +210,12 @@ export function createFeatureRequest(
   const id = generateFRId(db);
   const now = new Date().toISOString();
 
+  // Handle dependencies if provided
+  const depService = new DependencyService(db);
+  if (input.blocked_by && input.blocked_by.length > 0) {
+    depService.setDependencies('feature_request', id, input.blocked_by);
+  }
+
   db.prepare(`
     INSERT INTO feature_requests
       (id, title, description, source, status, priority, human_approval_comment,
@@ -215,13 +232,14 @@ export function getFeatureRequestById(
 ): FeatureRequest | null {
   const row = db.prepare(`SELECT * FROM feature_requests WHERE id = ?`).get(id) as FRRow | undefined;
   if (!row) return null;
-  return mapFRRow(row, getVotesForFR(db, row.id));
+  return mapFRRow(db, row, getVotesForFR(db, row.id));
 }
 
 export interface UpdateFeatureRequestInput {
   status?: string;
   description?: string;
   priority?: string;
+  blocked_by?: string[];                      // Verifies: FR-dependency-linking
 }
 
 export function updateFeatureRequest(
@@ -232,12 +250,14 @@ export function updateFeatureRequest(
   const fr = getFeatureRequestById(db, id);
   if (!fr) throw new AppError(404, `Feature request ${id} not found`);
 
+  const depService = new DependencyService(db);
   const updates: string[] = [];
   const params: unknown[] = [];
 
+  let newStatus = input.status as FeatureRequestStatus | undefined;
   if (input.status !== undefined) {
     const currentStatus = fr.status;
-    const newStatus = input.status as FeatureRequestStatus;
+    newStatus = input.status as FeatureRequestStatus;
 
     if (!VALID_STATUSES.includes(newStatus)) {
       throw new AppError(400, `Invalid status: ${input.status}`);
@@ -249,6 +269,14 @@ export function updateFeatureRequest(
         400,
         `Invalid status transition: ${currentStatus} → ${newStatus}. Allowed: ${allowedTransitions.join(', ') || 'none'}`
       );
+    }
+
+    // Verifies: FR-dependency-dispatch-gating — Dispatch gating check
+    if (DISPATCH_TRIGGER_STATUSES.includes(newStatus)) {
+      const readiness = depService.isReady('feature_request', id);
+      if (!readiness.ready) {
+        newStatus = 'pending_dependencies';
+      }
     }
 
     updates.push(`status = ?`);
@@ -272,15 +300,23 @@ export function updateFeatureRequest(
     params.push(priority);
   }
 
-  if (updates.length === 0) {
-    return fr;
+  // Handle dependencies bulk set
+  if (input.blocked_by !== undefined) {
+    depService.setDependencies('feature_request', id, input.blocked_by);
   }
 
-  updates.push(`updated_at = ?`);
-  params.push(new Date().toISOString());
-  params.push(id);
+  if (updates.length > 0) {
+    updates.push(`updated_at = ?`);
+    params.push(new Date().toISOString());
+    params.push(id);
 
-  db.prepare(`UPDATE feature_requests SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+    db.prepare(`UPDATE feature_requests SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+  }
+
+  // Verifies: FR-dependency-dispatch-gating — Cascade on completion
+  if (newStatus && RESOLVED_STATUSES.includes(newStatus) && !RESOLVED_STATUSES.includes(fr.status)) {
+    depService.onItemCompleted('feature_request', id);
+  }
 
   return getFeatureRequestById(db, id)!;
 }
@@ -312,12 +348,21 @@ export function approveFeatureRequest(db: Database.Database, id: string): Featur
     throw new AppError(409, `Cannot approve: majority vote is not 'approve'. Approve: ${approveCount}, Deny: ${denyCount}`);
   }
 
+  const depService = new DependencyService(db);
+  let newStatus: FeatureRequestStatus = 'approved';
+
+  // Verifies: FR-dependency-dispatch-gating — Dispatch gating check
+  const readiness = depService.isReady('feature_request', id);
+  if (!readiness.ready) {
+    newStatus = 'pending_dependencies';
+  }
+
   const now = new Date().toISOString();
   db.prepare(`
     UPDATE feature_requests
-    SET status = 'approved', human_approval_approved_at = ?, updated_at = ?
+    SET status = ?, human_approval_approved_at = ?, updated_at = ?
     WHERE id = ?
-  `).run(now, now, id);
+  `).run(newStatus, now, now, id);
 
   return getFeatureRequestById(db, id)!;
 }

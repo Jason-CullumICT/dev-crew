@@ -3,12 +3,14 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import Database from 'better-sqlite3';
-import type { BugReport, BugSeverity, BugStatus, WorkItemType } from '../../../Shared/types';
+import type { BugReport, BugSeverity, BugStatus, WorkItemType, DependencyLink } from '../../../Shared/types';
+import { RESOLVED_STATUSES, DISPATCH_TRIGGER_STATUSES } from '../../../Shared/types';
+import { DependencyService } from './dependencyService';
 import { AppError } from '../middleware/errorHandler';
 
 // --- Valid enum values (DD-8) ---
 export const VALID_SEVERITIES: BugSeverity[] = ['low', 'medium', 'high', 'critical'];
-export const VALID_BUG_STATUSES: BugStatus[] = ['reported', 'triaged', 'in_development', 'resolved', 'closed'];
+export const VALID_BUG_STATUSES: BugStatus[] = ['reported', 'triaged', 'in_development', 'resolved', 'closed', 'pending_dependencies'];
 
 // --- Input length limits (DD-11, Security M-04) ---
 export const TITLE_MAX_LENGTH = 200;
@@ -30,9 +32,12 @@ interface BugRow {
   updated_at: string;
 }
 
-function mapBugRow(row: BugRow): BugReport {
+function mapBugRow(db: Database.Database, row: BugRow): BugReport {
+  const depService = new DependencyService(db);
+  const id = row.id;
+  
   return {
-    id: row.id,
+    id,
     title: row.title,
     description: row.description,
     severity: row.severity as BugSeverity,
@@ -44,6 +49,9 @@ function mapBugRow(row: BugRow): BugReport {
     target_repo: row.target_repo || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    blocked_by: depService.getBlockedBy('bug', id),
+    blocks: depService.getBlocks('bug', id),
+    has_unresolved_blockers: depService.hasUnresolvedBlockers('bug', id),
   };
 }
 
@@ -80,7 +88,7 @@ export function listBugs(db: Database.Database, opts: ListBugsOptions = {}): Bug
 
   query += ` ORDER BY created_at DESC`;
   const rows = db.prepare(query).all(...params) as BugRow[];
-  return rows.map(mapBugRow);
+  return rows.map(row => mapBugRow(db, row));
 }
 
 export interface CreateBugInput {
@@ -92,6 +100,7 @@ export interface CreateBugInput {
   related_work_item_type?: string;           // FR-054
   related_cycle_id?: string;                 // FR-054
   target_repo?: string;
+  blocked_by?: string[];                      // Verifies: FR-dependency-linking
 }
 
 export function createBug(db: Database.Database, input: CreateBugInput): BugReport {
@@ -114,6 +123,12 @@ export function createBug(db: Database.Database, input: CreateBugInput): BugRepo
   const id = generateBugId(db);
   const now = new Date().toISOString();
 
+  // Handle dependencies if provided
+  const depService = new DependencyService(db);
+  if (input.blocked_by && input.blocked_by.length > 0) {
+    depService.setDependencies('bug', id, input.blocked_by);
+  }
+
   // FR-054: Accept and persist related work item fields (DD-18: all nullable)
   db.prepare(`
     INSERT INTO bugs (id, title, description, severity, status, source_system, related_work_item_id, related_work_item_type, related_cycle_id, target_repo, created_at, updated_at)
@@ -133,7 +148,7 @@ export function createBug(db: Database.Database, input: CreateBugInput): BugRepo
 export function getBugById(db: Database.Database, id: string): BugReport | null {
   const row = db.prepare(`SELECT * FROM bugs WHERE id = ?`).get(id) as BugRow | undefined;
   if (!row) return null;
-  return mapBugRow(row);
+  return mapBugRow(db, row);
 }
 
 export interface UpdateBugInput {
@@ -142,12 +157,14 @@ export interface UpdateBugInput {
   severity?: string;
   status?: string;
   source_system?: string;
+  blocked_by?: string[];                      // Verifies: FR-dependency-linking
 }
 
 export function updateBug(db: Database.Database, id: string, input: UpdateBugInput): BugReport {
   const bug = getBugById(db, id);
   if (!bug) throw new AppError(404, `Bug ${id} not found`);
 
+  const depService = new DependencyService(db);
   const updates: string[] = [];
   const params: unknown[] = [];
 
@@ -176,13 +193,22 @@ export function updateBug(db: Database.Database, id: string, input: UpdateBugInp
     params.push(severity);
   }
 
+  let newStatus = input.status as BugStatus | undefined;
   if (input.status !== undefined) {
-    const status = input.status as BugStatus;
-    if (!VALID_BUG_STATUSES.includes(status)) {
+    if (!VALID_BUG_STATUSES.includes(newStatus!)) {
       throw new AppError(400, `Invalid status. Must be one of: ${VALID_BUG_STATUSES.join(', ')}`);
     }
+
+    // Verifies: FR-dependency-dispatch-gating — Dispatch gating check
+    if (DISPATCH_TRIGGER_STATUSES.includes(newStatus!)) {
+      const readiness = depService.isReady('bug', id);
+      if (!readiness.ready) {
+        newStatus = 'pending_dependencies';
+      }
+    }
+    
     updates.push(`status = ?`);
-    params.push(status);
+    params.push(newStatus);
   }
 
   if (input.source_system !== undefined) {
@@ -190,15 +216,23 @@ export function updateBug(db: Database.Database, id: string, input: UpdateBugInp
     params.push(input.source_system);
   }
 
-  if (updates.length === 0) {
-    return bug;
+  // Handle dependencies bulk set
+  if (input.blocked_by !== undefined) {
+    depService.setDependencies('bug', id, input.blocked_by);
   }
 
-  updates.push(`updated_at = ?`);
-  params.push(new Date().toISOString());
-  params.push(id);
+  if (updates.length > 0) {
+    updates.push(`updated_at = ?`);
+    params.push(new Date().toISOString());
+    params.push(id);
 
-  db.prepare(`UPDATE bugs SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+    db.prepare(`UPDATE bugs SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+  }
+
+  // Verifies: FR-dependency-dispatch-gating — Cascade on completion
+  if (newStatus && RESOLVED_STATUSES.includes(newStatus) && !RESOLVED_STATUSES.includes(bug.status)) {
+    depService.onItemCompleted('bug', id);
+  }
 
   return getBugById(db, id)!;
 }

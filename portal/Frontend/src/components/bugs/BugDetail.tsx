@@ -7,9 +7,11 @@ import type { BugReport, ImageAttachment } from '../../../../Shared/types'
 import { bugs, images, orchestrator, repos } from '../../api/client'
 import { ImageThumbnails } from '../common/ImageThumbnails'
 import { ImageUpload } from '../common/ImageUpload'
+import { DependencySection } from '../shared/DependencySection'
 
 interface BugDetailProps {
   bug: BugReport
+  onUpdate: (bug: BugReport) => void
   onClose: () => void
 }
 
@@ -26,9 +28,10 @@ const STATUS_COLORS: Record<string, string> = {
   in_development: 'bg-amber-100 text-amber-700',
   resolved: 'bg-green-100 text-green-700',
   closed: 'bg-gray-100 text-gray-500',
+  pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
 }
 
-export function BugDetail({ bug, onClose }: BugDetailProps) {
+export function BugDetail({ bug, onUpdate, onClose }: BugDetailProps) {
   const [attachedImages, setAttachedImages] = useState<ImageAttachment[]>([])
   const [error, setError] = useState<string | null>(null)
   const [submittingToOrch, setSubmittingToOrch] = useState(false)
@@ -144,6 +147,23 @@ Severity: ${bug.severity}`,
           Description
         </h4>
         <p className="text-sm text-gray-700 whitespace-pre-wrap">{bug.description}</p>
+      </div>
+
+      <div className="border-t border-gray-100 pt-4">
+        <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+          Dependencies
+        </h4>
+        <DependencySection
+          blockedBy={bug.blocked_by ?? []}
+          blocks={bug.blocks ?? []}
+          itemType="bug"
+          itemId={bug.id}
+          editable={true}
+          status={bug.status}
+          onDependenciesChanged={() => {
+            bugs.getById(bug.id).then(onUpdate)
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">

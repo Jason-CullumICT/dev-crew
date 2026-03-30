@@ -1,6 +1,7 @@
 // Verifies: FR-025
 import React from 'react'
 import type { FeatureRequest } from '../../../../Shared/types'
+import { BlockedBadge } from '../shared/BlockedBadge'
 
 interface FeatureRequestListProps {
   items: FeatureRequest[]
@@ -14,6 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
   denied: 'bg-red-100 text-red-700',
   in_development: 'bg-amber-100 text-amber-700',
   completed: 'bg-green-100 text-green-700',
+  pending_dependencies: 'bg-amber-50 text-amber-600 border border-amber-200',
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -59,11 +61,12 @@ export function FeatureRequestList({ items, onSelect }: FeatureRequestListProps)
             </div>
             <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
               <span
-                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${
                   STATUS_COLORS[fr.status] ?? 'bg-gray-100 text-gray-600'
                 }`}
               >
                 {fr.status.replace('_', ' ')}
+                <BlockedBadge hasUnresolvedBlockers={fr.has_unresolved_blockers ?? false} status={fr.status} />
               </span>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${

@@ -3,16 +3,57 @@
 
 // --- Enums / Union Types ---
 
-export type FeatureRequestStatus = 'potential' | 'voting' | 'approved' | 'denied' | 'in_development' | 'completed';
+export type FeatureRequestStatus = 'potential' | 'voting' | 'approved' | 'denied' | 'in_development' | 'completed' | 'pending_dependencies';
 export type FeatureRequestSource = 'manual' | 'zendesk' | 'competitor_analysis' | 'code_review';
 export type Priority = 'low' | 'medium' | 'high' | 'critical';
-export type BugStatus = 'reported' | 'triaged' | 'in_development' | 'resolved' | 'closed';
+export type BugStatus = 'reported' | 'triaged' | 'in_development' | 'resolved' | 'closed' | 'pending_dependencies';
 export type BugSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type CycleStatus = 'spec_changes' | 'ticket_breakdown' | 'implementation' | 'review' | 'smoke_test' | 'complete';
 export type TicketStatus = 'pending' | 'in_progress' | 'code_review' | 'testing' | 'security_review' | 'done';
 export type VoteDecision = 'approve' | 'deny';
 export type LearningCategory = 'process' | 'technical' | 'domain';
 export type WorkItemType = 'feature_request' | 'bug';
+
+// Verifies: FR-dependency-dispatch-gating — Statuses that count as "resolved" for dependency checking
+export const RESOLVED_STATUSES: readonly string[] = [
+  'completed',
+  'resolved',
+  'closed',
+] as const;
+
+// Verifies: FR-dependency-dispatch-gating — Statuses that trigger dispatch gating checks
+export const DISPATCH_TRIGGER_STATUSES: readonly string[] = [
+  'approved',
+  'in_development',
+] as const;
+
+// --- Dependency Types ---
+
+export type DependencyItemType = 'bug' | 'feature_request';
+
+export interface DependencyLink {
+  item_type: DependencyItemType;
+  item_id: string;
+  title: string;
+  status: string;
+}
+
+export interface AddDependencyRequest {
+  action: 'add';
+  blocker_id: string;
+}
+
+export interface RemoveDependencyRequest {
+  action: 'remove';
+  blocker_id: string;
+}
+
+export type DependencyActionRequest = AddDependencyRequest | RemoveDependencyRequest;
+
+export interface ReadyResponse {
+  ready: boolean;
+  unresolved_blockers: DependencyLink[];
+}
 
 // --- Domain Entities ---
 
@@ -30,6 +71,9 @@ export interface FeatureRequest {
   created_at: string;                  // ISO timestamp
   target_repo: string | null;           // Target GitHub repo URL for orchestrator
   updated_at: string;                  // ISO timestamp
+  blocked_by?: DependencyLink[];        // Verifies: FR-dependency-linking
+  blocks?: DependencyLink[];            // Verifies: FR-dependency-linking
+  has_unresolved_blockers?: boolean;    // Verifies: FR-dependency-linking
 }
 
 export interface Vote {
@@ -54,6 +98,9 @@ export interface BugReport {
   target_repo: string | null;           // Target GitHub repo URL for orchestrator
   created_at: string;
   updated_at: string;
+  blocked_by?: DependencyLink[];        // Verifies: FR-dependency-linking
+  blocks?: DependencyLink[];            // Verifies: FR-dependency-linking
+  has_unresolved_blockers?: boolean;    // Verifies: FR-dependency-linking
 }
 
 export interface DevelopmentCycle {

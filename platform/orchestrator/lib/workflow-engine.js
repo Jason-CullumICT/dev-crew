@@ -561,7 +561,7 @@ fi
     console.log(`[${run.id}] Getting diff for AI review...`);
     const diffResult = await this.containerManager.execInWorker(
       containerId, "bash",
-      ["-c", `cd /workspace && git diff ${this._baseBranch(run)}...cycle/${run.id} 2>/dev/null | head -c 50000`],
+      ["-c", `cd /workspace && git diff -U1 ${this._baseBranch(run)}...cycle/${run.id} -- . ':(exclude)*package-lock.json' ':(exclude)*yarn.lock' ':(exclude)*.lock' ':(exclude)dist/*' ':(exclude)*.min.js' ':(exclude)*.min.css' 2>/dev/null | head -c 50000`],
       { label: "pr-diff", quiet: true }
     );
 

@@ -108,7 +108,7 @@ function createDispatcher(runClaudeFn, workspace) {
     const prompt = `Extract agent role names from this dispatch plan. Return ONLY JSON.
 
 """
-${dispatchContent.slice(0, 12000)}
+${dispatchContent.slice(-2000)}
 """
 
 {"implementation": ["role-name-1", "role-name-2"], "qa": ["role-name-1"]}`;
@@ -192,14 +192,7 @@ Use @playwright/test. Each test file should:
 4. Click through the primary user flow for the feature
 5. Verify no console errors during navigation
 
-Test template:
-import { test, expect } from '@playwright/test';
-test.describe('Feature: {name}', () => {
-  test('should render the main page', async ({ page }) => {
-    await page.goto('/{route}');
-    await expect(page.getByRole('heading', { name: '{heading}' })).toBeVisible();
-  });
-});`;
+Use the Playwright test template at `templates/playwright-e2e.spec.ts` as the baseline for your E2E tests.`;
       }
     }
 

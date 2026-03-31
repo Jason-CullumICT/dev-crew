@@ -414,7 +414,7 @@ wait
         `git push origin "HEAD:cycle/${runId}"; ` +
         `else echo "No unpushed commits"; fi`
       ],
-      { label: "git", quiet: true }
+      { label: "git", quiet: true, timeoutMs: 300_000 }
     );
     return result;
   }

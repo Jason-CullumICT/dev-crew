@@ -172,7 +172,7 @@ ${dispatchContent.slice(0, 12000)}
       p += `QA rules:
 - Review the implementation against specifications and contracts
 - Run all tests and verification gates
-- Run python3 tools/traceability-enforcer.py if available
+- Run python3 tools/traceability-enforcer.py --json if available (store output for PR traceability section)
 - Check for security issues, architecture violations, and missing traceability
 - Write your report to ${planCtx.planDir || "Plans"}/
 - Do NOT edit Source/ files — report issues only
@@ -323,4 +323,23 @@ Include in your output: RISK_LEVEL: low|medium|high`;
   };
 }
 
-module.exports = { createDispatcher };
+// Verifies: FR-PTR-002 — Parse traceability enforcer JSON output into run object shape
+function parseTraceabilityOutput(stdout) {
+  if (!stdout || typeof stdout !== "string" || stdout.trim().length === 0) {
+    return { status: "ERROR", error: "Empty or missing traceability output" };
+  }
+  try {
+    const raw = JSON.parse(stdout.trim());
+    return {
+      totalFrs: raw.total_frs ?? 0,
+      coveredFrs: raw.covered_frs ?? 0,
+      missingFrs: Array.isArray(raw.missing_frs) ? raw.missing_frs : [],
+      coveragePct: raw.coverage_pct ?? 0,
+      status: raw.status === "PASS" || raw.status === "FAIL" ? raw.status : "ERROR",
+    };
+  } catch (err) {
+    return { status: "ERROR", error: `Failed to parse traceability JSON: ${err.message}` };
+  }
+}
+
+module.exports = { createDispatcher, parseTraceabilityOutput };

@@ -1,10 +1,10 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
-  testDir: "./tests/cycle-run-1774659927912-8dd3ac77",
+  testDir: "./tests/cycle-run-1774914318587-220f1fa4",
   timeout: 30000,
   retries: 1,
   use: {
-    baseURL: "http://localhost:5105",
+    baseURL: "http://localhost:5101",
     headless: true,
   },
 });

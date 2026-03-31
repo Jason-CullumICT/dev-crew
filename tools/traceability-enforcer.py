@@ -7,26 +7,32 @@ Usage:
   python3 tools/traceability-enforcer.py --file Plans/my-plan/requirements.md  # target specific file
 """
 import argparse
+import json
 import os
 import re
 import sys
 from pathlib import Path
 
 
-def get_active_requirements(plan_name=None, file_path=None):
+def get_active_requirements(plan_name=None, file_path=None, json_mode=False):
     """Finds the requirements.md file to enforce.
 
     Priority: --file > --plan > most-recently-modified fallback.
+    When json_mode=True, returns None instead of sys.exit on errors.
     """
     if file_path:
         p = Path(file_path)
         if not p.exists():
+            if json_mode:
+                return None
             print(f"Error: Specified file not found: {file_path}")
             sys.exit(1)
         return p
 
     plans_dir = Path("Plans")
     if not plans_dir.exists():
+        if json_mode:
+            return None
         print("Error: Plans/ directory not found.")
         sys.exit(1)
 
@@ -40,6 +46,8 @@ def get_active_requirements(plan_name=None, file_path=None):
                 if plan_name.lower() in str(f.parent).lower()
             ]
         if not candidates:
+            if json_mode:
+                return None
             print(f"Error: No requirements.md found for plan '{plan_name}'.")
             print(f"Available plans: {', '.join(d.name for d in plans_dir.iterdir() if d.is_dir())}")
             sys.exit(1)
@@ -65,7 +73,7 @@ def extract_fr_ids(req_file):
     return sorted(list(set(pattern.findall(content))))
 
 
-def check_traceability(fr_ids):
+def check_traceability(fr_ids, quiet=False):
     """Checks for '// Verifies: FR-XXX' in Source/ and E2E/ directories."""
     source_dirs = ["Source", "E2E"]
 
@@ -73,7 +81,8 @@ def check_traceability(fr_ids):
     patterns = {fr: re.compile(fr) for fr in fr_ids}
     found_frs = {fr: False for fr in fr_ids}
 
-    print(f"Scanning {len(fr_ids)} requirements across {source_dirs}...")
+    if not quiet:
+        print(f"Scanning {len(fr_ids)} requirements across {source_dirs}...")
 
     for s_dir in source_dirs:
         path = Path(s_dir)
@@ -111,21 +120,52 @@ def main():
         "--file", type=str, default=None,
         help="Direct path to a requirements.md file"
     )
+    # Verifies: FR-PTR-001
+    parser.add_argument(
+        "--json", action="store_true", default=False,
+        help="Output machine-readable JSON instead of human-readable text"
+    )
     args = parser.parse_args()
 
-    req_file = get_active_requirements(plan_name=args.plan, file_path=args.file)
+    req_file = get_active_requirements(plan_name=args.plan, file_path=args.file, json_mode=args.json)
+
+    # Verifies: FR-PTR-001 — edge case: no plan file or no FRs
     if not req_file:
+        if args.json:
+            print(json.dumps({"plan_file": None, "total_frs": 0, "covered_frs": 0, "missing_frs": [], "coverage_pct": 100.0, "status": "PASS"}))
+            sys.exit(0)
         print("No active requirements file found to enforce.")
         sys.exit(0)
 
-    print(f"Targeting requirements from: {req_file}")
     fr_ids = extract_fr_ids(req_file)
 
     if not fr_ids:
+        if args.json:
+            print(json.dumps({"plan_file": str(req_file), "total_frs": 0, "covered_frs": 0, "missing_frs": [], "coverage_pct": 100.0, "status": "PASS"}))
+            sys.exit(0)
+        print(f"Targeting requirements from: {req_file}")
         print("No FR IDs found in requirements file.")
         sys.exit(0)
 
-    missing = check_traceability(fr_ids)
+    missing = check_traceability(fr_ids, quiet=args.json)
+    covered = len(fr_ids) - len(missing)
+    coverage_pct = round((covered / len(fr_ids)) * 100, 1) if fr_ids else 100.0
+    status = "PASS" if not missing else "FAIL"
+
+    # Verifies: FR-PTR-001 — JSON output mode
+    if args.json:
+        result = {
+            "plan_file": str(req_file),
+            "total_frs": len(fr_ids),
+            "covered_frs": covered,
+            "missing_frs": missing,
+            "coverage_pct": coverage_pct,
+            "status": status,
+        }
+        print(json.dumps(result))
+        sys.exit(0 if status == "PASS" else 1)
+
+    print(f"Targeting requirements from: {req_file}")
 
     if missing:
         print("\n" + "!" * 60)

@@ -1637,7 +1637,11 @@ fi
         const syncScript = [
           "cd /workspace",
           // Commit any pending cycle-branch changes so the working tree is clean
+          // Protect platform/ before staging — restore any agent modifications
+          "git restore platform/ 2>/dev/null || true",
+          "git clean -fd platform/ 2>/dev/null || true",
           "git add -A",
+          "git restore --staged platform/ 2>/dev/null || true",
           `if ! git diff --cached --quiet 2>/dev/null; then git commit -m "chore: pre-learnings-sync commit on cycle/${run.id}"; fi`,
           // Switch to main and pull latest
           `git checkout ${mainBranch}`,

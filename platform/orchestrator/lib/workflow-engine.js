@@ -1737,6 +1737,7 @@ fi
       this._activeCredentialsJson = null;
 
     } catch (err) {
+      clearTimeout(cycleTimer);
       if (!cycleWatchdogFired) {
         this._activeCredentialsJson = null; // Clear on error too
         console.error(`[${run.id}] Workflow error:`, err);

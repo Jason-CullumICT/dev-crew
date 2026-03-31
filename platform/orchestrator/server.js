@@ -527,8 +527,8 @@ app.post("/api/runs/:id/retry", async (req, res) => {
 
   const originalRun = loadRun(req.params.id);
   if (!originalRun) return res.status(404).json({ error: "Run not found" });
-  if (!["failed"].includes(originalRun.status)) {
-    return res.status(409).json({ error: "Only failed runs can be retried" });
+  if (!["failed", "complete"].includes(originalRun.status)) {
+    return res.status(409).json({ error: "Only failed or completed runs can be retried" });
   }
 
   const existingVolume = `workspace-${originalRun.id}`;

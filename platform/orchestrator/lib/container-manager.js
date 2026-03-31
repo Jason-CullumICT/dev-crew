@@ -398,7 +398,13 @@ wait
         `cd /workspace && ` +
         `git rm -r --cached .playwright/ 2>/dev/null || true && ` +
         `git reset HEAD -- '*.db-shm' '*.db-wal' 2>/dev/null || true && ` +
+        // Protect platform/ from agent modifications — restore any deletions or changes
+        // before staging. Agents must not touch pipeline infrastructure.
+        `git restore platform/ 2>/dev/null || true && ` +
+        `git clean -fd platform/ 2>/dev/null || true && ` +
         `git add -A && ` +
+        // Unstage any remaining platform/ changes that slipped through
+        `git restore --staged platform/ 2>/dev/null || true && ` +
         // Commit if there are staged changes
         `if ! git diff --cached --quiet 2>/dev/null; then ` +
         `git commit -m "${safeMsg}"; fi && ` +

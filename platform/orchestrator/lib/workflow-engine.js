@@ -1548,7 +1548,7 @@ fi
       // Verify commits actually reached the remote
       const commitCheck = await this.containerManager.execInWorker(
         containerId, "bash",
-        ["-c", `cd /workspace && git log --oneline origin/${this.config.githubBranch}..HEAD 2>/dev/null | wc -l`],
+        ["-c", `cd /workspace && git log --oneline origin/${this._baseBranch(run)}..HEAD 2>/dev/null | wc -l`],
         { label: "commit-check", quiet: true }
       );
       const localCommitCount = parseInt((commitCheck.stdout || "").trim(), 10) || 0;
@@ -1556,7 +1556,7 @@ fi
       // Double-check: verify remote branch has the commits (not just local)
       const remoteCheck = await this.containerManager.execInWorker(
         containerId, "bash",
-        ["-c", `cd /workspace && git fetch origin "cycle/${run.id}" 2>/dev/null && git log --oneline "origin/cycle/${run.id}" --not "origin/${this.config.githubBranch}" 2>/dev/null | wc -l`],
+        ["-c", `cd /workspace && git fetch origin "cycle/${run.id}" 2>/dev/null && git log --oneline "origin/cycle/${run.id}" --not "origin/${this._baseBranch(run)}" 2>/dev/null | wc -l`],
         { label: "remote-verify", quiet: true }
       );
       const remoteCommitCount = parseInt((remoteCheck.stdout || "").trim(), 10) || 0;

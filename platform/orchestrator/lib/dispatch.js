@@ -192,7 +192,7 @@ Use @playwright/test. Each test file should:
 4. Click through the primary user flow for the feature
 5. Verify no console errors during navigation
 
-Use the Playwright test template at `templates/playwright-e2e.spec.ts` as the baseline for your E2E tests.`;
+Use the Playwright test template at templates/playwright-e2e.spec.ts as the baseline for your E2E tests.`;
       }
     }
 

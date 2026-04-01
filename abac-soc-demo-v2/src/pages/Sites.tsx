@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, X, MapPin, Clock, Shield } from 'lucide-react';
 import { useStore } from '../store/store';
 import type { Site, SiteStatus, Zone, ZoneType, ZoneStatus } from '../types';
+import AttributeEditor from '../components/AttributeEditor';
 
 const SITE_STATUSES: SiteStatus[] = ['Armed', 'Disarmed', 'PartialArm', 'Alarm', 'Lockdown'];
 const ZONE_TYPES: ZoneType[] = ['Perimeter', 'Interior', 'Secure', 'Public', 'Emergency'];
@@ -41,12 +42,14 @@ interface SiteFormState {
   address: string;
   timezone: string;
   status: SiteStatus;
+  customAttributes: Record<string, string>;
 }
 
 interface ZoneFormState {
   name: string;
   type: ZoneType;
   status: ZoneStatus;
+  customAttributes: Record<string, string>;
 }
 
 const emptySiteForm = (): SiteFormState => ({
@@ -54,12 +57,14 @@ const emptySiteForm = (): SiteFormState => ({
   address: '',
   timezone: 'America/New_York',
   status: 'Disarmed',
+  customAttributes: {},
 });
 
 const emptyZoneForm = (): ZoneFormState => ({
   name: '',
   type: 'Perimeter',
   status: 'Disarmed',
+  customAttributes: {},
 });
 
 type SiteModalMode = { kind: 'add' } | { kind: 'edit'; site: Site };
@@ -97,14 +102,14 @@ export default function Sites() {
   }
 
   function openEditSite(site: Site) {
-    setSiteForm({ name: site.name, address: site.address, timezone: site.timezone, status: site.status });
+    setSiteForm({ name: site.name, address: site.address, timezone: site.timezone, status: site.status, customAttributes: site.customAttributes ?? {} });
     setSiteModal({ kind: 'edit', site });
   }
 
   function handleSiteSubmit() {
     if (!siteForm.name.trim()) return;
     if (siteModal?.kind === 'add') {
-      addSite({ id: uuidv4(), ...siteForm, assignedManagerIds: [], zones: [] });
+      addSite({ id: uuidv4(), ...siteForm, assignedManagerIds: [], zones: [], customAttributes: siteForm.customAttributes });
     } else if (siteModal?.kind === 'edit') {
       updateSite({ ...siteModal.site, ...siteForm });
     }
@@ -122,14 +127,14 @@ export default function Sites() {
   }
 
   function openEditZone(zone: Zone) {
-    setZoneForm({ name: zone.name, type: zone.type, status: zone.status });
+    setZoneForm({ name: zone.name, type: zone.type, status: zone.status, customAttributes: zone.customAttributes ?? {} });
     setZoneModal({ kind: 'edit', zone });
   }
 
   function handleZoneSubmit() {
     if (!zoneForm.name.trim()) return;
     if (zoneModal?.kind === 'add') {
-      addZone({ id: uuidv4(), siteId: zoneModal.siteId, ...zoneForm, doorIds: [] });
+      addZone({ id: uuidv4(), siteId: zoneModal.siteId, ...zoneForm, doorIds: [], customAttributes: zoneForm.customAttributes });
     } else if (zoneModal?.kind === 'edit') {
       updateZone({ ...zoneModal.zone, ...zoneForm });
     }
@@ -344,6 +349,13 @@ export default function Sites() {
                   ))}
                 </select>
               </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-300">Custom Attributes</label>
+                <AttributeEditor
+                  attributes={siteForm.customAttributes ?? {}}
+                  onChange={(customAttributes) => setSiteForm((f) => ({ ...f, customAttributes }))}
+                />
+              </div>
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
               <button
@@ -413,6 +425,13 @@ export default function Sites() {
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-300">Custom Attributes</label>
+                <AttributeEditor
+                  attributes={zoneForm.customAttributes ?? {}}
+                  onChange={(customAttributes) => setZoneForm((f) => ({ ...f, customAttributes }))}
+                />
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">

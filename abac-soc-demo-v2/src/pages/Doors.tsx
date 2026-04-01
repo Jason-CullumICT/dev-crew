@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
 import type { Door, LockState } from '../types';
+import AttributeEditor from '../components/AttributeEditor';
 
 const LOCK_STATE_OPTIONS: LockState[] = ['Locked', 'Unlocked', 'Forced', 'Held'];
 
@@ -27,6 +28,7 @@ interface FormState {
   zoneId: string;
   controllerId: string;
   lockState: LockState;
+  customAttributes: Record<string, string>;
 }
 
 const emptyForm: FormState = {
@@ -37,6 +39,7 @@ const emptyForm: FormState = {
   zoneId: '',
   controllerId: '',
   lockState: 'Locked',
+  customAttributes: {},
 };
 
 export default function Doors() {
@@ -92,6 +95,7 @@ export default function Doors() {
       zoneId: door.zoneId,
       controllerId: door.controllerId,
       lockState: door.lockState,
+      customAttributes: door.customAttributes ?? {},
     });
     setEditingId(door.id);
     setModalOpen(true);
@@ -119,6 +123,7 @@ export default function Doors() {
         zoneId: form.zoneId,
         controllerId: form.controllerId,
         lockState: form.lockState,
+        customAttributes: form.customAttributes,
       });
     } else {
       addDoor({
@@ -130,6 +135,7 @@ export default function Doors() {
         zoneId: form.zoneId,
         controllerId: form.controllerId,
         lockState: form.lockState,
+        customAttributes: form.customAttributes,
       });
     }
     closeModal();
@@ -382,6 +388,14 @@ export default function Doors() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-300">Custom Attributes</label>
+                <AttributeEditor
+                  attributes={form.customAttributes ?? {}}
+                  onChange={(customAttributes) => setForm((f) => ({ ...f, customAttributes }))}
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">

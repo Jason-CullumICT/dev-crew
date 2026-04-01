@@ -3,12 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChevronDown, ChevronRight, Pencil, Trash2, Plus, X, DoorOpen, Cpu } from 'lucide-react';
 import { useStore } from '../store/store';
 import type { Controller } from '../types';
+import AttributeEditor from '../components/AttributeEditor';
 
 interface FormState {
   name: string;
   location: string;
   siteId: string;
   doorIds: string[];
+  customAttributes: Record<string, string>;
 }
 
 const EMPTY_FORM: FormState = {
@@ -16,6 +18,7 @@ const EMPTY_FORM: FormState = {
   location: '',
   siteId: '',
   doorIds: [],
+  customAttributes: {},
 };
 
 export default function Controllers() {
@@ -74,6 +77,7 @@ export default function Controllers() {
       location: controller.location,
       siteId: controller.siteId,
       doorIds: [...controller.doorIds],
+      customAttributes: controller.customAttributes ?? {},
     });
     setModalOpen(true);
   }
@@ -111,6 +115,7 @@ export default function Controllers() {
         location: form.location.trim(),
         siteId: form.siteId,
         doorIds: form.doorIds,
+        customAttributes: form.customAttributes,
       });
     } else {
       addController({
@@ -119,6 +124,7 @@ export default function Controllers() {
         location: form.location.trim(),
         siteId: form.siteId,
         doorIds: form.doorIds,
+        customAttributes: form.customAttributes,
       });
     }
     closeModal();
@@ -378,6 +384,15 @@ export default function Controllers() {
                     {form.doorIds.length} door{form.doorIds.length !== 1 ? 's' : ''} selected
                   </p>
                 )}
+              </div>
+
+              {/* Custom Attributes */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-300">Custom Attributes</label>
+                <AttributeEditor
+                  attributes={form.customAttributes ?? {}}
+                  onChange={(customAttributes) => setForm((prev) => ({ ...prev, customAttributes }))}
+                />
               </div>
 
               {/* Form actions */}

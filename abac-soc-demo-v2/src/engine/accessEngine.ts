@@ -14,6 +14,7 @@ export interface EvalContext {
   site?: Site;
   controller?: Controller;
   store: StoreSnapshot;
+  _visitedGroups?: Set<string>;  // internal recursion guard
 }
 
 // ── Attribute resolution ──────────────────────────────────────────────────────
@@ -125,7 +126,12 @@ export function isEntityInGroup(
   entityType: GroupMember['entityType'],
   group: Group,
   ctx: EvalContext,
+  visitedGroupIds: Set<string> = new Set(),
 ): boolean {
+  if (visitedGroupIds.has(group.id)) return false;
+  const visited = new Set(visitedGroupIds);
+  visited.add(group.id);
+
   const { membershipType, targetEntityType } = group;
 
   // Explicit membership
@@ -137,7 +143,7 @@ export function isEntityInGroup(
 
   // Dynamic membership (not supported for targetEntityType 'any')
   if ((membershipType === 'dynamic' || membershipType === 'hybrid') && targetEntityType !== 'any') {
-    const entityCtx = buildEntityCtx(entityType, entityId, ctx);
+    const entityCtx = buildEntityCtx(entityType, entityId, { ...ctx, _visitedGroups: visited });
     if (evaluateRuleSet(group.membershipRules, group.membershipLogic, entityCtx)) {
       return true;
     }
@@ -149,8 +155,14 @@ export function isEntityInGroup(
 // ── Rule evaluation ───────────────────────────────────────────────────────────
 
 function compareValues(left: string, op: Operator, right: string | string[]): boolean {
-  if (op === '==') return left === right;
-  if (op === '!=') return left !== right;
+  if (op === '==') {
+    const r = Array.isArray(right) ? right[0] ?? '' : right;
+    return left === r;
+  }
+  if (op === '!=') {
+    const r = Array.isArray(right) ? right[0] ?? '' : right;
+    return left !== r;
+  }
   if (op === 'IN') {
     const arr = Array.isArray(right) ? right : right.split(',').map(s => s.trim());
     return arr.includes(left);
@@ -189,7 +201,7 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): RuleResult {
     const entityId = getEntityIdFromCtx(leftSide, ctx);
     let inGroup = false;
     if (group && entityId) {
-      inGroup = isEntityInGroup(entityId, leftSide, group, ctx);
+      inGroup = isEntityInGroup(entityId, leftSide, group, ctx, ctx._visitedGroups ?? new Set());
     }
     const passed = operator === 'IN' ? inGroup : !inGroup;
     return {
@@ -241,11 +253,7 @@ function getEffectiveGrantIds(user: User, groups: Group[], ctx: EvalContext): Se
   for (const group of groups) {
     if (group.inheritedPermissions.length === 0) continue;
     // Check if user is a member (explicit or dynamic)
-    const isMember =
-      group.members.some(m => m.entityType === 'user' && m.entityId === user.id) ||
-      ((group.membershipType === 'dynamic' || group.membershipType === 'hybrid') &&
-        group.targetEntityType !== 'any' &&
-        evaluateRuleSet(group.membershipRules, group.membershipLogic, ctx));
+    const isMember = isEntityInGroup(user.id, 'user', group, ctx);
     if (isMember) {
       for (const gid of group.inheritedPermissions) ids.add(gid);
     }

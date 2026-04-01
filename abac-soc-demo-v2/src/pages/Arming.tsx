@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
 import { hasPermission } from '../engine/accessEngine';
+import type { EvalContext } from '../engine/accessEngine';
 import type { SiteStatus, ZoneStatus, ZoneType } from '../types';
 
 function siteStatusBadge(status: SiteStatus) {
@@ -42,6 +43,8 @@ export default function Arming() {
   const users = useStore((s) => s.users);
   const groups = useStore((s) => s.groups);
   const grants = useStore((s) => s.grants);
+  const doors = useStore((s) => s.doors);
+  const controllers = useStore((s) => s.controllers);
   const updateSite = useStore((s) => s.updateSite);
   const updateZone = useStore((s) => s.updateZone);
   const addArmingLog = useStore((s) => s.addArmingLog);
@@ -51,9 +54,19 @@ export default function Arming() {
   const selectedSite = sites.find((s) => s.id === selectedSiteId) ?? null;
   const siteZones = zones.filter((z) => z.siteId === selectedSiteId);
 
-  const authorizedUsers = users.filter((u) =>
-    hasPermission(u, groups, grants, 'arm', selectedSiteId)
-  );
+  const storeSnapshot = {
+    allUsers: users,
+    allDoors: doors,
+    allZones: zones,
+    allSites: sites,
+    allControllers: controllers,
+    allGroups: groups,
+  };
+
+  const authorizedUsers = users.filter((u) => {
+    const ctx: EvalContext = { user: u, store: storeSnapshot };
+    return hasPermission(u, groups, grants, 'arm', ctx, selectedSiteId);
+  });
 
   const actingUser = users[0] ?? null;
 

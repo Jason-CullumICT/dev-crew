@@ -1,9 +1,6 @@
 export type ClearanceLevel = 'Unclassified' | 'Confidential' | 'Secret' | 'TopSecret';
 export const CLEARANCE_RANK: Record<ClearanceLevel, number> = {
-  Unclassified: 0,
-  Confidential: 1,
-  Secret: 2,
-  TopSecret: 3,
+  Unclassified: 0, Confidential: 1, Secret: 2, TopSecret: 3,
 };
 
 export type UserStatus = 'Active' | 'Suspended' | 'Pending';
@@ -17,29 +14,32 @@ export interface User {
   clearanceLevel: ClearanceLevel;
   status: UserStatus;
   customAttributes: Record<string, string>;
-  grantedPermissions: string[]; // grant IDs
+  grantedPermissions: string[];
   groupIds: string[];
+}
+
+export interface GroupMember {
+  entityType: 'user' | 'door' | 'zone' | 'site' | 'controller';
+  entityId: string;
 }
 
 export interface Group {
   id: string;
   name: string;
   description: string;
-  memberUserIds: string[];
-  inheritedPermissions: string[]; // grant IDs
+  members: GroupMember[];
+  membershipRules: Rule[];
+  membershipLogic: 'AND' | 'OR';
+  membershipType: 'explicit' | 'dynamic' | 'hybrid';
+  targetEntityType: 'user' | 'door' | 'zone' | 'site' | 'controller' | 'any';
+  inheritedPermissions: string[];
 }
 
 export type GrantScope = 'global' | 'site' | 'zone';
 
 export type ActionType =
-  | 'arm'
-  | 'disarm'
-  | 'unlock'
-  | 'lockdown'
-  | 'view_logs'
-  | 'manage_users'
-  | 'manage_tasks'
-  | 'override';
+  | 'arm' | 'disarm' | 'unlock' | 'lockdown'
+  | 'view_logs' | 'manage_users' | 'manage_tasks' | 'override';
 
 export interface Grant {
   id: string;
@@ -59,7 +59,8 @@ export interface Site {
   timezone: string;
   status: SiteStatus;
   assignedManagerIds: string[];
-  zones: string[]; // zone IDs
+  zones: string[];
+  customAttributes: Record<string, string>;
 }
 
 export type ZoneType = 'Perimeter' | 'Interior' | 'Secure' | 'Public' | 'Emergency';
@@ -73,6 +74,7 @@ export interface Zone {
   status: ZoneStatus;
   doorIds: string[];
   cameraIds?: string[];
+  customAttributes: Record<string, string>;
 }
 
 export type LockState = 'Locked' | 'Unlocked' | 'Forced' | 'Held';
@@ -86,6 +88,7 @@ export interface Door {
   controllerId: string;
   description: string;
   lockState: LockState;
+  customAttributes: Record<string, string>;
 }
 
 export interface Controller {
@@ -94,15 +97,16 @@ export interface Controller {
   location: string;
   siteId: string;
   doorIds: string[];
+  customAttributes: Record<string, string>;
 }
 
 export type Operator = '==' | '!=' | '>=' | '<=' | 'IN' | 'NOT IN';
 
 export interface Rule {
   id: string;
-  attribute: string;
+  leftSide: string;
   operator: Operator;
-  value: string | string[];
+  rightSide: string | string[];
 }
 
 export interface Policy {
@@ -140,11 +144,21 @@ export interface Task {
   notes: TaskNote[];
 }
 
+export interface RuleResult {
+  ruleId: string;
+  leftSide: string;
+  operator: Operator;
+  rightSide: string | string[];
+  leftResolved: string;
+  rightResolved: string;
+  passed: boolean;
+}
+
 export interface PolicyResult {
   policyId: string;
   policyName: string;
   passed: boolean;
-  ruleResults: { ruleId: string; attribute: string; operator: Operator; value: string | string[]; actual: string; passed: boolean }[];
+  ruleResults: RuleResult[];
 }
 
 export interface AccessResult {
@@ -163,4 +177,13 @@ export interface ArmingLog {
   action: string;
   siteName: string;
   result: 'Success' | 'Denied';
+}
+
+export interface StoreSnapshot {
+  allUsers: User[];
+  allDoors: Door[];
+  allZones: Zone[];
+  allSites: Site[];
+  allControllers: Controller[];
+  allGroups: Group[];
 }

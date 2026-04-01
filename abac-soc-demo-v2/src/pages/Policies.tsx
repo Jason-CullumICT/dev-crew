@@ -1,22 +1,14 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
-import type { Policy, Rule, Operator } from '../types';
-
-const OPERATORS: Operator[] = ['==', '!=', '>=', '<=', 'IN', 'NOT IN'];
-
-interface RuleDraft {
-  id: string;
-  attribute: string;
-  operator: Operator;
-  value: string;
-}
+import type { Policy, Rule } from '../types';
+import RuleBuilder from '../components/RuleBuilder';
 
 interface PolicyDraft {
   name: string;
   description: string;
   logicalOperator: 'AND' | 'OR';
-  rules: RuleDraft[];
+  rules: Rule[];
   doorIds: string[];
 }
 
@@ -32,12 +24,7 @@ const policyToDraft = (policy: Policy): PolicyDraft => ({
   name: policy.name,
   description: policy.description,
   logicalOperator: policy.logicalOperator,
-  rules: policy.rules.map((r) => ({
-    id: r.id,
-    attribute: r.attribute,
-    operator: r.operator,
-    value: Array.isArray(r.value) ? r.value.join(', ') : r.value,
-  })),
+  rules: policy.rules.map((r) => ({ ...r })),
   doorIds: [...policy.doorIds],
 });
 
@@ -85,21 +72,13 @@ export default function Policies() {
   };
 
   const saveDraft = () => {
-    const rules: Rule[] = draft.rules.map((r) => {
-      let value: string | string[] = r.value;
-      if (r.operator === 'IN' || r.operator === 'NOT IN') {
-        value = r.value.split(',').map((v) => v.trim()).filter(Boolean);
-      }
-      return { id: r.id, attribute: r.attribute, operator: r.operator, value };
-    });
-
     if (editingId) {
       updatePolicy({
         id: editingId,
         name: draft.name,
         description: draft.description,
         logicalOperator: draft.logicalOperator,
-        rules,
+        rules: draft.rules,
         doorIds: draft.doorIds,
       });
     } else {
@@ -108,29 +87,11 @@ export default function Policies() {
         name: draft.name,
         description: draft.description,
         logicalOperator: draft.logicalOperator,
-        rules,
+        rules: draft.rules,
         doorIds: draft.doorIds,
       });
     }
     closeModal();
-  };
-
-  const addRule = () => {
-    setDraft((d) => ({
-      ...d,
-      rules: [...d.rules, { id: uuidv4(), attribute: '', operator: '==', value: '' }],
-    }));
-  };
-
-  const updateRule = (ruleId: string, field: keyof RuleDraft, value: string) => {
-    setDraft((d) => ({
-      ...d,
-      rules: d.rules.map((r) => (r.id === ruleId ? { ...r, [field]: value } : r)),
-    }));
-  };
-
-  const removeRule = (ruleId: string) => {
-    setDraft((d) => ({ ...d, rules: d.rules.filter((r) => r.id !== ruleId) }));
   };
 
   const toggleDoorId = (doorId: string) => {
@@ -244,10 +205,10 @@ export default function Policies() {
                               )}
                               {idx === 0 && <span className="w-8" />}
                               <span className="inline-flex items-center gap-1.5 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm font-mono">
-                                <span className="text-cyan-400">{rule.attribute}</span>
+                                <span className="text-cyan-400">{rule.leftSide}</span>
                                 <span className="text-yellow-400">{rule.operator}</span>
                                 <span className="text-green-400">
-                                  {Array.isArray(rule.value) ? rule.value.join(', ') : rule.value}
+                                  {Array.isArray(rule.rightSide) ? rule.rightSide.join(', ') : rule.rightSide}
                                 </span>
                               </span>
                             </div>
@@ -383,62 +344,11 @@ export default function Policies() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-gray-400">Rules</label>
-                  <button
-                    onClick={addRule}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
-                  >
-                    + Add Rule
-                  </button>
-                </div>
-                {draft.rules.length === 0 && (
-                  <p className="text-xs text-gray-600 italic">No rules added yet.</p>
-                )}
-                <div className="space-y-2">
-                  {draft.rules.map((rule) => {
-                    const isMultiValue = rule.operator === 'IN' || rule.operator === 'NOT IN';
-                    return (
-                      <div
-                        key={rule.id}
-                        className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg p-2"
-                      >
-                        <input
-                          type="text"
-                          value={rule.attribute}
-                          onChange={(e) => updateRule(rule.id, 'attribute', e.target.value)}
-                          placeholder="attribute"
-                          className="flex-1 min-w-0 bg-gray-700 border border-gray-600 text-white placeholder-gray-500 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
-                        />
-                        <select
-                          value={rule.operator}
-                          onChange={(e) => updateRule(rule.id, 'operator', e.target.value as Operator)}
-                          className="bg-gray-700 border border-gray-600 text-white rounded px-2 py-1.5 text-xs focus:outline-none focus:border-indigo-500 shrink-0"
-                        >
-                          {OPERATORS.map((op) => (
-                            <option key={op} value={op}>
-                              {op}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="text"
-                          value={rule.value}
-                          onChange={(e) => updateRule(rule.id, 'value', e.target.value)}
-                          placeholder={isMultiValue ? 'comma-separated values' : 'value'}
-                          className="flex-1 min-w-0 bg-gray-700 border border-gray-600 text-white placeholder-gray-500 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
-                        />
-                        <button
-                          onClick={() => removeRule(rule.id)}
-                          className="text-gray-500 hover:text-red-400 text-sm leading-none shrink-0 px-1"
-                          title="Remove rule"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                <label className="block text-xs font-medium text-gray-400 mb-2">Rules</label>
+                <RuleBuilder
+                  rules={draft.rules}
+                  onChange={(rules) => setDraft((d) => ({ ...d, rules }))}
+                />
               </div>
 
               <div>

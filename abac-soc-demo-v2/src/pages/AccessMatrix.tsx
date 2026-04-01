@@ -1,8 +1,8 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useStore } from '../store/store';
 import { evaluateAccess } from '../engine/accessEngine';
-import type { User, Door, AccessResult, PolicyResult } from '../types';
+import type { User, Door, AccessResult, PolicyResult, StoreSnapshot } from '../types';
 
 interface ModalState {
   user: User;
@@ -41,22 +41,22 @@ function PolicyResultRow({ pr }: { pr: PolicyResult }) {
           <table className="w-full text-xs text-gray-300">
             <thead>
               <tr className="text-gray-500 border-b border-gray-700">
-                <th className="text-left py-1 pr-2">Attribute</th>
+                <th className="text-left py-1 pr-2">Left Side</th>
                 <th className="text-left py-1 pr-2">Operator</th>
-                <th className="text-left py-1 pr-2">Expected</th>
-                <th className="text-left py-1 pr-2">Actual</th>
+                <th className="text-left py-1 pr-2">Right Side</th>
+                <th className="text-left py-1 pr-2">Resolved</th>
                 <th className="text-left py-1">Result</th>
               </tr>
             </thead>
             <tbody>
               {pr.ruleResults.map((r) => (
                 <tr key={r.ruleId} className="border-b border-gray-800 last:border-0">
-                  <td className="py-1 pr-2 font-mono">{r.attribute}</td>
+                  <td className="py-1 pr-2 font-mono">{r.leftSide}</td>
                   <td className="py-1 pr-2 font-mono">{r.operator}</td>
                   <td className="py-1 pr-2 font-mono">
-                    {Array.isArray(r.value) ? r.value.join(', ') : r.value}
+                    {Array.isArray(r.rightSide) ? r.rightSide.join(', ') : r.rightSide}
                   </td>
-                  <td className="py-1 pr-2 font-mono">{r.actual}</td>
+                  <td className="py-1 pr-2 font-mono">{r.leftResolved}</td>
                   <td className="py-1">
                     <span
                       className={`font-bold ${r.passed ? 'text-green-400' : 'text-red-400'}`}
@@ -174,6 +174,9 @@ export default function AccessMatrix() {
   const policies = useStore((s) => s.policies);
   const groups = useStore((s) => s.groups);
   const grants = useStore((s) => s.grants);
+  const sites = useStore((s) => s.sites);
+  const zones = useStore((s) => s.zones);
+  const controllers = useStore((s) => s.controllers);
 
   const parentRef = useRef<HTMLDivElement>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -195,11 +198,38 @@ export default function AccessMatrix() {
 
   const handleCellClick = useCallback(
     (user: User, door: Door) => {
-      const result = evaluateAccess(user, door, policies, groups, grants);
+      const store: StoreSnapshot = {
+        allUsers: users,
+        allDoors: doors,
+        allZones: zones,
+        allSites: sites,
+        allControllers: controllers,
+        allGroups: groups,
+      };
+      const result = evaluateAccess(user, door, policies, groups, grants, store);
       setModal({ user, door, result });
     },
-    [policies, groups, grants],
+    [users, doors, zones, sites, controllers, policies, groups, grants],
   );
+
+  const resultGrid = useMemo(() => {
+    const store: StoreSnapshot = {
+      allUsers: users,
+      allDoors: doors,
+      allZones: zones,
+      allSites: sites,
+      allControllers: controllers,
+      allGroups: groups,
+    };
+    const map = new Map<string, boolean>();
+    for (const user of users) {
+      for (const door of doors) {
+        const result = evaluateAccess(user, door, policies, groups, grants, store);
+        map.set(`${user.id}:${door.id}`, result.overallGranted);
+      }
+    }
+    return map;
+  }, [users, doors, zones, sites, controllers, groups, policies, grants]);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const virtualColumns = columnVirtualizer.getVirtualItems();
@@ -318,8 +348,7 @@ export default function AccessMatrix() {
                   >
                     {virtualColumns.map((vc) => {
                       const door = doors[vc.index];
-                      const result = evaluateAccess(user, door, policies, groups, grants);
-                      const granted = result.overallGranted;
+                      const granted = resultGrid.get(`${user.id}:${door.id}`) ?? false;
                       return (
                         <div
                           key={vc.key}

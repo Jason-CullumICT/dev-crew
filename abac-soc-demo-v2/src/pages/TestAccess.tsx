@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useStore } from '../store/store';
-import type { AccessResult, Door } from '../types';
+import type { AccessResult, Door, StoreSnapshot } from '../types';
 import { evaluateAccess } from '../engine/accessEngine';
 
 export default function TestAccess() {
-  const { users, doors, policies, groups, grants, sites } = useStore((s) => ({
-    users: s.users,
-    doors: s.doors,
-    policies: s.policies,
-    groups: s.groups,
-    grants: s.grants,
-    sites: s.sites,
-  }));
+  const users = useStore((s) => s.users);
+  const doors = useStore((s) => s.doors);
+  const policies = useStore((s) => s.policies);
+  const groups = useStore((s) => s.groups);
+  const grants = useStore((s) => s.grants);
+  const sites = useStore((s) => s.sites);
+  const zones = useStore((s) => s.zones);
+  const controllers = useStore((s) => s.controllers);
 
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedDoorId, setSelectedDoorId] = useState<string>('');
@@ -28,7 +28,15 @@ export default function TestAccess() {
 
   function handleEvaluate() {
     if (!selectedUser || !selectedDoor) return;
-    const accessResult = evaluateAccess(selectedUser, selectedDoor, policies, groups, grants);
+    const store: StoreSnapshot = {
+      allUsers: users,
+      allDoors: doors,
+      allZones: zones,
+      allSites: sites,
+      allControllers: controllers,
+      allGroups: groups,
+    };
+    const accessResult = evaluateAccess(selectedUser, selectedDoor, policies, groups, grants, store);
     setResult(accessResult);
     setEvaluated(true);
   }
@@ -152,28 +160,30 @@ export default function TestAccess() {
                       )}
                     </div>
                     <div className="divide-y divide-slate-700">
-                      {pr.ruleResults.map((rr) => {
-                        const displayValue = Array.isArray(rr.value)
-                          ? rr.value.join(', ')
-                          : rr.value;
-                        return (
-                          <div key={rr.ruleId} className="px-4 py-2 flex flex-wrap items-center gap-2 text-sm">
-                            <span className="font-mono text-slate-300">
-                              {rr.attribute}{' '}
-                              <span className="text-blue-400">{rr.operator}</span>{' '}
-                              <span className="text-amber-300">{displayValue}</span>
+                      {pr.ruleResults.map((rr) => (
+                        <div key={rr.ruleId} className="px-4 py-2 flex flex-wrap items-center gap-2 text-sm">
+                          <span className="font-mono text-slate-300">
+                            {rr.leftSide}{' '}
+                            <span className="text-blue-400">{rr.operator}</span>{' '}
+                            <span className="text-amber-300">
+                              {Array.isArray(rr.rightSide) ? rr.rightSide.join(', ') : rr.rightSide}
                             </span>
-                            <span className="text-slate-500">→</span>
-                            <span className="font-mono text-slate-400">actual: <span className="text-slate-200">{rr.actual}</span></span>
-                            <span className="text-slate-500">→</span>
-                            {rr.passed ? (
-                              <span className="text-xs font-bold text-green-300">PASS</span>
-                            ) : (
-                              <span className="text-xs font-bold text-red-300">FAIL</span>
+                          </span>
+                          <span className="text-slate-500">→</span>
+                          <span className="font-mono text-slate-400">
+                            resolved: <span className="text-slate-200">{rr.leftResolved}</span>
+                            {rr.rightResolved !== (Array.isArray(rr.rightSide) ? rr.rightSide.join(', ') : rr.rightSide) && (
+                              <span className="text-slate-400"> vs <span className="text-slate-200">{rr.rightResolved}</span></span>
                             )}
-                          </div>
-                        );
-                      })}
+                          </span>
+                          <span className="text-slate-500">→</span>
+                          {rr.passed ? (
+                            <span className="text-xs font-bold text-green-300">PASS</span>
+                          ) : (
+                            <span className="text-xs font-bold text-red-300">FAIL</span>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

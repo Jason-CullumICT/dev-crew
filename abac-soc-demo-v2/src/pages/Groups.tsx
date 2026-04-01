@@ -190,6 +190,9 @@ export default function Groups() {
     oldMembers: GroupMember[],
     newMembers: GroupMember[],
   ) {
+    // Read live state at call time, not stale render-closure value
+    const liveUsers = useStore.getState().users;
+
     const oldUserIds = oldMembers
       .filter((m) => m.entityType === 'user')
       .map((m) => m.entityId);
@@ -201,14 +204,14 @@ export default function Groups() {
     const removed = oldUserIds.filter((id) => !newUserIds.includes(id));
 
     added.forEach((userId) => {
-      const user = users.find((u) => u.id === userId);
+      const user = liveUsers.find((u) => u.id === userId);
       if (user && !user.groupIds.includes(groupId)) {
         updateUser({ ...user, groupIds: [...user.groupIds, groupId] });
       }
     });
 
     removed.forEach((userId) => {
-      const user = users.find((u) => u.id === userId);
+      const user = liveUsers.find((u) => u.id === userId);
       if (user) {
         updateUser({
           ...user,
@@ -388,8 +391,8 @@ export default function Groups() {
                       <p className="text-gray-600 text-sm">No members</p>
                     ) : (
                       <ul className="space-y-2">
-                        {group.members.map((m, i) => (
-                          <li key={i} className="flex items-center gap-2">
+                        {group.members.map((m) => (
+                          <li key={`${m.entityType}-${m.entityId}`} className="flex items-center gap-2">
                             <span
                               className={`text-xs px-1.5 py-0.5 rounded font-mono shrink-0 ${
                                 TARGET_ENTITY_COLORS[

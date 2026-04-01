@@ -6,27 +6,27 @@ export function generateTestData() {
   // ── Sites ──
   const s1 = uuidv4(), s2 = uuidv4(), s3 = uuidv4(), s4 = uuidv4(), s5 = uuidv4();
   const sites: Site[] = [
-    { id: s1, name: 'HQ Office', address: '1 Corporate Drive, Auckland', timezone: 'Pacific/Auckland', status: 'Armed', assignedManagerIds: [], zones: [] },
-    { id: s2, name: 'Regional Office', address: '45 Regional Blvd, Wellington', timezone: 'Pacific/Auckland', status: 'Armed', assignedManagerIds: [], zones: [] },
-    { id: s3, name: 'Data Centre Alpha', address: '99 Server Lane, Christchurch', timezone: 'Pacific/Auckland', status: 'Disarmed', assignedManagerIds: [], zones: [] },
-    { id: s4, name: 'Central Warehouse', address: '200 Industrial Way, Hamilton', timezone: 'Pacific/Auckland', status: 'Disarmed', assignedManagerIds: [], zones: [] },
-    { id: s5, name: 'Executive Suite', address: '10 Boardroom St, Auckland', timezone: 'Pacific/Auckland', status: 'Disarmed', assignedManagerIds: [], zones: [] },
+    { id: s1, name: 'HQ Office', address: '1 Corporate Drive, Auckland', timezone: 'Pacific/Auckland', status: 'Armed', assignedManagerIds: [], zones: [], customAttributes: { operationalStatus: 'Active' } },
+    { id: s2, name: 'Regional Office', address: '45 Regional Blvd, Wellington', timezone: 'Pacific/Auckland', status: 'Armed', assignedManagerIds: [], zones: [], customAttributes: {} },
+    { id: s3, name: 'Data Centre Alpha', address: '99 Server Lane, Christchurch', timezone: 'Pacific/Auckland', status: 'Disarmed', assignedManagerIds: [], zones: [], customAttributes: {} },
+    { id: s4, name: 'Central Warehouse', address: '200 Industrial Way, Hamilton', timezone: 'Pacific/Auckland', status: 'Disarmed', assignedManagerIds: [], zones: [], customAttributes: {} },
+    { id: s5, name: 'Executive Suite', address: '10 Boardroom St, Auckland', timezone: 'Pacific/Auckland', status: 'Disarmed', assignedManagerIds: [], zones: [], customAttributes: {} },
   ];
 
   // ── Zones ──
   const zones: Zone[] = [];
-  function zone(siteId: string, name: string, type: Zone['type'], status: Zone['status']): Zone {
-    const z: Zone = { id: uuidv4(), siteId, name, type, status, doorIds: [] };
+  function zone(siteId: string, name: string, type: Zone['type'], status: Zone['status'], customAttributes: Record<string, string> = {}): Zone {
+    const z: Zone = { id: uuidv4(), siteId, name, type, status, doorIds: [], customAttributes };
     zones.push(z);
     return z;
   }
-  const z_hq_peri = zone(s1, 'HQ Perimeter', 'Perimeter', 'Armed');
-  const z_hq_int  = zone(s1, 'HQ Interior', 'Interior', 'Armed');
-  const z_hq_sec  = zone(s1, 'HQ Secure Lab', 'Secure', 'Armed');
+  const z_hq_peri  = zone(s1, 'HQ Perimeter', 'Perimeter', 'Armed');
+  const z_hq_int   = zone(s1, 'HQ Interior', 'Interior', 'Armed');
+  const z_hq_sec   = zone(s1, 'HQ Secure Lab', 'Secure', 'Armed', { classification: 'Secure' });
   const z_reg_peri = zone(s2, 'Regional Perimeter', 'Perimeter', 'Armed');
   const z_reg_int  = zone(s2, 'Regional Interior', 'Interior', 'Disarmed');
-  const z_reg_pub  = zone(s2, 'Regional Lobby', 'Public', 'Disarmed');
-  const z_dc_sec   = zone(s3, 'DC Secure Zone', 'Secure', 'Armed');
+  const z_reg_pub  = zone(s2, 'Regional Lobby', 'Public', 'Disarmed', { classification: 'Standard' });
+  const z_dc_sec   = zone(s3, 'DC Secure Zone', 'Secure', 'Armed', { classification: 'Secure' });
   const z_dc_int   = zone(s3, 'DC Operations', 'Interior', 'Disarmed');
   const z_dc_emg   = zone(s3, 'DC Emergency', 'Emergency', 'Disarmed');
   const z_wh_peri  = zone(s4, 'Warehouse Perimeter', 'Perimeter', 'Disarmed');
@@ -35,37 +35,45 @@ export function generateTestData() {
   const z_ex_pub   = zone(s5, 'Executive Lobby', 'Public', 'Disarmed');
 
   // ── Controllers ──
-  const ctrl1: Controller = { id: uuidv4(), name: 'HQ-CTRL-01', location: 'HQ Server Room', siteId: s1, doorIds: [] };
-  const ctrl2: Controller = { id: uuidv4(), name: 'DC-CTRL-01', location: 'DC Control Room', siteId: s3, doorIds: [] };
-  const ctrl3: Controller = { id: uuidv4(), name: 'REG-CTRL-01', location: 'Regional IT Closet', siteId: s2, doorIds: [] };
+  const ctrl1: Controller = { id: uuidv4(), name: 'HQ-CTRL-01', location: 'HQ Server Room', siteId: s1, doorIds: [], customAttributes: {} };
+  const ctrl2: Controller = { id: uuidv4(), name: 'DC-CTRL-01', location: 'DC Control Room', siteId: s3, doorIds: [], customAttributes: {} };
+  const ctrl3: Controller = { id: uuidv4(), name: 'REG-CTRL-01', location: 'Regional IT Closet', siteId: s2, doorIds: [], customAttributes: {} };
   const controllers: Controller[] = [ctrl1, ctrl2, ctrl3];
 
   // ── Doors ──
-  function door(name: string, location: string, siteId: string, zoneId: string, controllerId: string, lockState: Door['lockState'] = 'Locked'): Door {
-    const d: Door = { id: uuidv4(), name, location, siteId, zoneId, controllerId, description: `${name} access point`, lockState };
+  function door(
+    name: string,
+    location: string,
+    siteId: string,
+    zoneId: string,
+    controllerId: string,
+    lockState: Door['lockState'] = 'Locked',
+    customAttributes: Record<string, string> = {},
+  ): Door {
+    const d: Door = { id: uuidv4(), name, location, siteId, zoneId, controllerId, description: `${name} access point`, lockState, customAttributes };
     ctrl1.doorIds = ctrl1.siteId === siteId ? [...ctrl1.doorIds, d.id] : ctrl1.doorIds;
     ctrl2.doorIds = ctrl2.siteId === siteId ? [...ctrl2.doorIds, d.id] : ctrl2.doorIds;
     ctrl3.doorIds = ctrl3.siteId === siteId ? [...ctrl3.doorIds, d.id] : ctrl3.doorIds;
     return d;
   }
-  const d1  = door('HQ Main Entrance', 'Ground Floor', s1, z_hq_peri.id, ctrl1.id, 'Locked');
-  const d2  = door('HQ Side Gate', 'Car Park', s1, z_hq_peri.id, ctrl1.id, 'Locked');
-  const d3  = door('HQ Lab Door', 'Level 3', s1, z_hq_sec.id, ctrl1.id, 'Locked');
-  const d4  = door('HQ Server Room', 'Basement', s1, z_hq_int.id, ctrl1.id, 'Locked');
-  const d5  = door('Regional Front Door', 'Ground Floor', s2, z_reg_peri.id, ctrl3.id, 'Unlocked');
-  const d6  = door('Regional Meeting Rooms', 'Level 2', s2, z_reg_int.id, ctrl3.id, 'Locked');
-  const d7  = door('DC Primary Access', 'Entry Lobby', s3, z_dc_sec.id, ctrl2.id, 'Locked');
-  const d8  = door('DC Operations Room', 'Level 1', s3, z_dc_int.id, ctrl2.id, 'Locked');
-  const d9  = door('DC Emergency Exit', 'East Wing', s3, z_dc_emg.id, ctrl2.id, 'Locked');
-  const d10 = door('Warehouse Gate A', 'North Entry', s4, z_wh_peri.id, ctrl1.id, 'Unlocked');
-  const d11 = door('Warehouse Floor Access', 'Loading Bay', s4, z_wh_int.id, ctrl1.id, 'Locked');
-  const d12 = door('Executive Suite Entry', 'Level 20', s5, z_ex_sec.id, ctrl1.id, 'Locked');
+  const d1  = door('HQ Main Entrance',       'Ground Floor',  s1, z_hq_peri.id, ctrl1.id, 'Locked',    { securityLevel: 'High' });
+  const d2  = door('HQ Side Gate',           'Car Park',      s1, z_hq_peri.id, ctrl1.id, 'Locked',    { securityLevel: 'Low' });
+  const d3  = door('HQ Lab Door',            'Level 3',       s1, z_hq_sec.id,  ctrl1.id, 'Locked',    { securityLevel: 'High', requiredClearance: 'Secret' });
+  const d4  = door('HQ Server Room',         'Basement',      s1, z_hq_int.id,  ctrl1.id, 'Locked',    { securityLevel: 'High', requiredClearance: 'TopSecret' });
+  const d5  = door('Regional Front Door',    'Ground Floor',  s2, z_reg_peri.id, ctrl3.id, 'Unlocked', {});
+  const d6  = door('Regional Meeting Rooms', 'Level 2',       s2, z_reg_int.id,  ctrl3.id, 'Locked',   {});
+  const d7  = door('DC Primary Access',      'Entry Lobby',   s3, z_dc_sec.id,  ctrl2.id, 'Locked',    { securityLevel: 'High', requiredClearance: 'Secret' });
+  const d8  = door('DC Operations Room',     'Level 1',       s3, z_dc_int.id,  ctrl2.id, 'Locked',    { securityLevel: 'Low' });
+  const d9  = door('DC Emergency Exit',      'East Wing',     s3, z_dc_emg.id,  ctrl2.id, 'Locked',    {});
+  const d10 = door('Warehouse Gate A',       'North Entry',   s4, z_wh_peri.id, ctrl1.id, 'Unlocked',  {});
+  const d11 = door('Warehouse Floor Access', 'Loading Bay',   s4, z_wh_int.id,  ctrl1.id, 'Locked',    {});
+  const d12 = door('Executive Suite Entry',  'Level 20',      s5, z_ex_sec.id,  ctrl1.id, 'Locked',    { securityLevel: 'High', requiredClearance: 'TopSecret' });
   const doors: Door[] = [d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12];
 
   // Assign doors to zones
-  z_hq_peri.doorIds = [d1.id, d2.id];
-  z_hq_sec.doorIds  = [d3.id];
-  z_hq_int.doorIds  = [d4.id];
+  z_hq_peri.doorIds  = [d1.id, d2.id];
+  z_hq_sec.doorIds   = [d3.id];
+  z_hq_int.doorIds   = [d4.id];
   z_reg_peri.doorIds = [d5.id];
   z_reg_int.doorIds  = [d6.id];
   z_dc_sec.doorIds   = [d7.id];
@@ -94,13 +102,120 @@ export function generateTestData() {
   const grants: Grant[] = [g1, g2, g3, g4, g5, g6, g7, g8];
 
   // ── Groups ──
-  const grp_exec: Group   = { id: uuidv4(), name: 'Executives', description: 'Executive leadership team', memberUserIds: [], inheritedPermissions: [g1.id] };
-  const grp_sec: Group    = { id: uuidv4(), name: 'Senior Security', description: 'Senior security officers', memberUserIds: [], inheritedPermissions: [g3.id, g4.id, g5.id, g6.id, g7.id] };
-  const grp_ops: Group    = { id: uuidv4(), name: 'Operations Team', description: 'General operations staff', memberUserIds: [], inheritedPermissions: [g2.id, g8.id] };
-  const grp_eng: Group    = { id: uuidv4(), name: 'Engineering Lead', description: 'Engineering department leads', memberUserIds: [], inheritedPermissions: [g4.id, g5.id] };
-  const grp_fac: Group    = { id: uuidv4(), name: 'Facilities', description: 'Facilities management', memberUserIds: [], inheritedPermissions: [g3.id, g7.id] };
-  const grp_ro: Group     = { id: uuidv4(), name: 'Read-Only', description: 'Audit/read-only access', memberUserIds: [], inheritedPermissions: [g2.id] };
-  const groups: Group[] = [grp_exec, grp_sec, grp_ops, grp_eng, grp_fac, grp_ro];
+  // Executives — explicit
+  const grp_exec: Group = {
+    id: uuidv4(),
+    name: 'Executives',
+    description: 'Executive leadership team',
+    members: [],
+    membershipRules: [],
+    membershipLogic: 'AND' as const,
+    membershipType: 'explicit' as const,
+    targetEntityType: 'user' as const,
+    inheritedPermissions: [g1.id],
+  };
+
+  // Senior Security — dynamic: department == Security AND status == Active
+  const grp_sec: Group = {
+    id: uuidv4(),
+    name: 'Senior Security',
+    description: 'Senior security officers',
+    members: [],
+    membershipRules: [
+      { id: 'mr-sec-1', leftSide: 'user.department', operator: '==', rightSide: 'Security' },
+      { id: 'mr-sec-2', leftSide: 'user.status',     operator: '==', rightSide: 'Active' },
+    ],
+    membershipLogic: 'AND' as const,
+    membershipType: 'dynamic' as const,
+    targetEntityType: 'user' as const,
+    inheritedPermissions: [g3.id, g4.id, g5.id, g6.id, g7.id],
+  };
+
+  // Operations Team — explicit
+  const grp_ops: Group = {
+    id: uuidv4(),
+    name: 'Operations Team',
+    description: 'General operations staff',
+    members: [],
+    membershipRules: [],
+    membershipLogic: 'AND' as const,
+    membershipType: 'explicit' as const,
+    targetEntityType: 'user' as const,
+    inheritedPermissions: [g2.id, g8.id],
+  };
+
+  // Engineering Lead — hybrid: explicit members + dynamic rule for Engineering dept
+  const grp_eng: Group = {
+    id: uuidv4(),
+    name: 'Engineering Lead',
+    description: 'Engineering department leads',
+    members: [],
+    membershipRules: [
+      { id: 'mr-eng-1', leftSide: 'user.department', operator: '==', rightSide: 'Engineering' },
+    ],
+    membershipLogic: 'AND' as const,
+    membershipType: 'hybrid' as const,
+    targetEntityType: 'user' as const,
+    inheritedPermissions: [g4.id, g5.id],
+  };
+
+  // Facilities — explicit
+  const grp_fac: Group = {
+    id: uuidv4(),
+    name: 'Facilities',
+    description: 'Facilities management',
+    members: [],
+    membershipRules: [],
+    membershipLogic: 'AND' as const,
+    membershipType: 'explicit' as const,
+    targetEntityType: 'user' as const,
+    inheritedPermissions: [g3.id, g7.id],
+  };
+
+  // Read-Only — explicit
+  const grp_ro: Group = {
+    id: uuidv4(),
+    name: 'Read-Only',
+    description: 'Audit/read-only access',
+    members: [],
+    membershipRules: [],
+    membershipLogic: 'AND' as const,
+    membershipType: 'explicit' as const,
+    targetEntityType: 'user' as const,
+    inheritedPermissions: [g2.id],
+  };
+
+  // High Security Doors — dynamic, targets doors
+  const grp_high_sec_doors: Group = {
+    id: 'group-high-security-doors',
+    name: 'High Security Doors',
+    description: 'Doors with securityLevel == High',
+    members: [],
+    membershipRules: [
+      { id: 'mr-hsd-1', leftSide: 'door.securityLevel', operator: '==', rightSide: 'High' },
+    ],
+    membershipLogic: 'AND' as const,
+    membershipType: 'dynamic' as const,
+    targetEntityType: 'door' as const,
+    inheritedPermissions: [],
+  };
+
+  // Secure Zones — dynamic, targets zones
+  const grp_secure_zones: Group = {
+    id: 'group-secure-zones',
+    name: 'Secure Zones',
+    description: 'Zones with type == Secure',
+    members: [],
+    membershipRules: [
+      { id: 'mr-sz-1', leftSide: 'zone.type', operator: '==', rightSide: 'Secure' },
+    ],
+    membershipLogic: 'AND' as const,
+    membershipType: 'dynamic' as const,
+    targetEntityType: 'zone' as const,
+    inheritedPermissions: [],
+  };
+
+  const groups: Group[] = [grp_exec, grp_sec, grp_ops, grp_eng, grp_fac, grp_ro, grp_high_sec_doors, grp_secure_zones];
 
   // ── Users (30) ──
   const depts = ['Engineering', 'Security', 'Operations', 'Executive', 'Facilities'];
@@ -120,10 +235,10 @@ export function generateTestData() {
     const clearances: User['clearanceLevel'][] = ['Unclassified', 'Confidential', 'Secret', 'TopSecret'];
     const clearanceLevel = clearances[i % 4];
     const groupList =
-      dept === 'Executive' ? [grp_exec.id] :
-      dept === 'Security' ? [grp_sec.id] :
-      dept === 'Operations' ? [grp_ops.id] :
-      dept === 'Engineering' ? [grp_eng.id] :
+      dept === 'Executive'    ? [grp_exec.id] :
+      dept === 'Security'     ? [grp_sec.id] :
+      dept === 'Operations'   ? [grp_ops.id] :
+      dept === 'Engineering'  ? [grp_eng.id] :
       [grp_fac.id];
     const u: User = {
       id: uuidv4(),
@@ -140,18 +255,20 @@ export function generateTestData() {
     return u;
   });
 
-  // Add users to groups
+  // Add users to explicit/hybrid groups as GroupMember entries
   users.forEach((u) => {
     u.groupIds.forEach((gid) => {
-      const g = groups.find((g) => g.id === gid);
-      if (g) g.memberUserIds.push(u.id);
+      const g = groups.find((grp) => grp.id === gid);
+      if (g && (g.membershipType === 'explicit' || g.membershipType === 'hybrid')) {
+        g.members.push({ entityType: 'user', entityId: u.id });
+      }
     });
   });
 
   // Add a few read-only users
   [users[20], users[21], users[22]].forEach((u) => {
     u.groupIds.push(grp_ro.id);
-    grp_ro.memberUserIds.push(u.id);
+    grp_ro.members.push({ entityType: 'user', entityId: u.id });
   });
 
   // Assign managers
@@ -165,7 +282,7 @@ export function generateTestData() {
       id: uuidv4(),
       name: 'Engineering Department Only',
       description: 'Allow only Engineering department members',
-      rules: [{ id: uuidv4(), attribute: 'department', operator: '==', value: 'Engineering' }],
+      rules: [{ id: uuidv4(), leftSide: 'user.department', operator: '==', rightSide: 'Engineering' }],
       logicalOperator: 'AND',
       doorIds: [d3.id, d4.id],
     },
@@ -173,7 +290,7 @@ export function generateTestData() {
       id: uuidv4(),
       name: 'Secret+ Clearance',
       description: 'Requires Secret or higher clearance',
-      rules: [{ id: uuidv4(), attribute: 'clearanceLevel', operator: '>=', value: 'Secret' }],
+      rules: [{ id: uuidv4(), leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'Secret' }],
       logicalOperator: 'AND',
       doorIds: [d7.id, d12.id],
     },
@@ -182,8 +299,8 @@ export function generateTestData() {
       name: 'Security & Active Status',
       description: 'Security department with Active status',
       rules: [
-        { id: uuidv4(), attribute: 'department', operator: '==', value: 'Security' },
-        { id: uuidv4(), attribute: 'status', operator: '==', value: 'Active' },
+        { id: uuidv4(), leftSide: 'user.department', operator: '==', rightSide: 'Security' },
+        { id: uuidv4(), leftSide: 'user.status',     operator: '==', rightSide: 'Active' },
       ],
       logicalOperator: 'AND',
       doorIds: [d1.id, d2.id],
@@ -193,7 +310,7 @@ export function generateTestData() {
       name: 'Ops or Facilities',
       description: 'Operations or Facilities teams',
       rules: [
-        { id: uuidv4(), attribute: 'department', operator: 'IN', value: ['Operations', 'Facilities'] },
+        { id: uuidv4(), leftSide: 'user.department', operator: 'IN', rightSide: ['Operations', 'Facilities'] },
       ],
       logicalOperator: 'AND',
       doorIds: [d10.id, d11.id],
@@ -203,11 +320,37 @@ export function generateTestData() {
       name: 'TopSecret Executive Access',
       description: 'TopSecret Executive access only',
       rules: [
-        { id: uuidv4(), attribute: 'clearanceLevel', operator: '==', value: 'TopSecret' },
-        { id: uuidv4(), attribute: 'department', operator: '==', value: 'Executive' },
+        { id: uuidv4(), leftSide: 'user.clearanceLevel', operator: '==', rightSide: 'TopSecret' },
+        { id: uuidv4(), leftSide: 'user.department',     operator: '==', rightSide: 'Executive' },
       ],
       logicalOperator: 'AND',
       doorIds: [d12.id],
+    },
+    {
+      id: 'policy-cross-clearance',
+      name: 'Cross-entity Clearance Check',
+      description: 'Grants access when user clearance meets door requirement',
+      rules: [{
+        id: 'rule-cc-1',
+        leftSide: 'user.clearanceLevel',
+        operator: '>=' as const,
+        rightSide: 'door.requiredClearance',
+      }],
+      logicalOperator: 'AND',
+      doorIds: [d3.id, d7.id],
+    },
+    {
+      id: 'policy-door-group-membership',
+      name: 'High Security Door Access',
+      description: 'Grants access when door is in High Security Doors group',
+      rules: [{
+        id: 'rule-dg-1',
+        leftSide: 'door',
+        operator: 'IN' as const,
+        rightSide: 'group.High Security Doors',
+      }],
+      logicalOperator: 'AND',
+      doorIds: [d1.id, d4.id, d12.id],
     },
   ];
 

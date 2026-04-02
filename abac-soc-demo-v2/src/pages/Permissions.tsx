@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
-import type { Grant, GrantScope, ActionType } from '../types';
+import type { Grant, GrantScope, ActionType, Rule, Schedule } from '../types';
+import RuleBuilder from '../components/RuleBuilder';
+import ScheduleEditor from '../components/ScheduleEditor';
+import AttributeEditor from '../components/AttributeEditor';
 
 const ALL_ACTIONS: ActionType[] = [
   'arm',
@@ -14,21 +17,22 @@ const ALL_ACTIONS: ActionType[] = [
   'override',
 ];
 
-const ACTION_LABEL: Record<ActionType, string> = {
-  arm: 'arm',
-  disarm: 'disarm',
-  unlock: 'unlock',
-  lockdown: 'lockdown',
-  view_logs: 'view_logs',
-  manage_users: 'manage_users',
-  manage_tasks: 'manage_tasks',
-  override: 'override',
-};
-
 const SCOPE_BADGE_CLASS: Record<GrantScope, string> = {
   global: 'bg-blue-900 text-blue-300 border border-blue-700',
   site: 'bg-green-900 text-green-300 border border-green-700',
   zone: 'bg-orange-900 text-orange-300 border border-orange-700',
+};
+
+const MODE_BADGE_CLASS: Record<Grant['applicationMode'], string> = {
+  assigned: 'bg-slate-700 text-slate-300 border border-slate-600',
+  conditional: 'bg-amber-900 text-amber-300 border border-amber-700',
+  auto: 'bg-purple-900 text-purple-300 border border-purple-700',
+};
+
+const MODE_LABEL: Record<Grant['applicationMode'], string> = {
+  assigned: 'Assigned',
+  conditional: 'Conditional',
+  auto: 'Auto',
 };
 
 const EMPTY_FORM = {
@@ -37,9 +41,26 @@ const EMPTY_FORM = {
   scope: 'global' as GrantScope,
   targetId: '',
   actions: [] as ActionType[],
+  applicationMode: 'assigned' as Grant['applicationMode'],
+  conditions: [] as Rule[],
+  conditionLogic: 'AND' as 'AND' | 'OR',
+  customAttributes: {} as Record<string, string>,
+  schedule: null as Schedule | null,
 };
 
 type FormState = typeof EMPTY_FORM;
+
+function formatScheduleSummary(schedule: Schedule): string {
+  const days =
+    schedule.daysOfWeek.length === 0
+      ? 'Every day'
+      : schedule.daysOfWeek.length === 5 && !schedule.daysOfWeek.includes(0) && !schedule.daysOfWeek.includes(6)
+        ? 'Mon–Fri'
+        : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+            .filter((_, i) => schedule.daysOfWeek.includes(i))
+            .join(', ');
+  return `${days} ${schedule.startTime}–${schedule.endTime}`;
+}
 
 export default function Permissions() {
   const grants = useStore((s) => s.grants);
@@ -48,6 +69,8 @@ export default function Permissions() {
   const addGrant = useStore((s) => s.addGrant);
   const updateGrant = useStore((s) => s.updateGrant);
   const deleteGrant = useStore((s) => s.deleteGrant);
+
+  const defaultTimezone = sites[0]?.timezone ?? 'UTC';
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -67,6 +90,11 @@ export default function Permissions() {
       scope: grant.scope,
       targetId: grant.targetId ?? '',
       actions: [...grant.actions],
+      applicationMode: grant.applicationMode ?? 'assigned',
+      conditions: grant.conditions ? [...grant.conditions] : [],
+      conditionLogic: grant.conditionLogic ?? 'AND',
+      customAttributes: { ...(grant.customAttributes ?? {}) },
+      schedule: grant.schedule ? { ...grant.schedule } : null,
     });
     setModalOpen(true);
   }
@@ -100,6 +128,11 @@ export default function Permissions() {
       scope: form.scope,
       targetId: form.scope !== 'global' && form.targetId ? form.targetId : undefined,
       actions: form.actions,
+      applicationMode: form.applicationMode,
+      conditions: form.conditions,
+      conditionLogic: form.conditionLogic,
+      customAttributes: form.customAttributes,
+      schedule: form.schedule,
     };
     if (editingId) {
       updateGrant(grant);
@@ -139,68 +172,88 @@ export default function Permissions() {
           <div className="text-gray-500 text-sm mt-12 text-center">No grants defined. Click "Add Grant" to create one.</div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {grants.map((grant) => (
-              <div
-                key={grant.id}
-                className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col gap-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-white text-base truncate">{grant.name}</div>
-                    {grant.description && (
-                      <div className="text-gray-400 text-xs mt-0.5 line-clamp-2">{grant.description}</div>
+            {grants.map((grant) => {
+              const mode = grant.applicationMode ?? 'assigned';
+              return (
+                <div
+                  key={grant.id}
+                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-white text-base truncate">{grant.name}</div>
+                      {grant.description && (
+                        <div className="text-gray-400 text-xs mt-0.5 line-clamp-2">{grant.description}</div>
+                      )}
+                    </div>
+                    <span
+                      className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full capitalize ${SCOPE_BADGE_CLASS[grant.scope]}`}
+                    >
+                      {grant.scope}
+                    </span>
+                  </div>
+
+                  {/* Mode / Schedule / Conditions badges */}
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MODE_BADGE_CLASS[mode]}`}>
+                      {MODE_LABEL[mode]}
+                    </span>
+                    {grant.schedule && (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-teal-900 text-teal-300 border border-teal-700">
+                        {formatScheduleSummary(grant.schedule)}
+                      </span>
+                    )}
+                    {grant.conditions && grant.conditions.length > 0 && (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-900 text-indigo-300 border border-indigo-700">
+                        {grant.conditions.length} condition{grant.conditions.length !== 1 ? 's' : ''}
+                      </span>
                     )}
                   </div>
-                  <span
-                    className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full capitalize ${SCOPE_BADGE_CLASS[grant.scope]}`}
-                  >
-                    {grant.scope}
-                  </span>
-                </div>
 
-                {grant.scope !== 'global' && grant.targetId && (
-                  <div className="text-xs text-gray-400">
-                    <span className="text-gray-500 mr-1">Target:</span>
-                    {getTargetName(grant)}
+                  {grant.scope !== 'global' && grant.targetId && (
+                    <div className="text-xs text-gray-400">
+                      <span className="text-gray-500 mr-1">Target:</span>
+                      {getTargetName(grant)}
+                    </div>
+                  )}
+
+                  {grant.actions.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {grant.actions.map((action) => (
+                        <span
+                          key={action}
+                          className="text-xs bg-gray-800 text-gray-300 border border-gray-700 px-2 py-0.5 rounded"
+                        >
+                          {action}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1 mt-auto">
+                    <button
+                      onClick={() => openEdit(grant)}
+                      className="flex-1 text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded transition-colors border border-gray-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteGrant(grant.id)}
+                      className="flex-1 text-xs px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded transition-colors border border-red-900"
+                    >
+                      Delete
+                    </button>
                   </div>
-                )}
-
-                {grant.actions.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {grant.actions.map((action) => (
-                      <span
-                        key={action}
-                        className="text-xs bg-gray-800 text-gray-300 border border-gray-700 px-2 py-0.5 rounded"
-                      >
-                        {ACTION_LABEL[action]}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-1 mt-auto">
-                  <button
-                    onClick={() => openEdit(grant)}
-                    className="flex-1 text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded transition-colors border border-gray-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deleteGrant(grant.id)}
-                    className="flex-1 text-xs px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded transition-colors border border-red-900"
-                  >
-                    Delete
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
               <h2 className="text-lg font-semibold text-white">
                 {editingId ? 'Edit Grant' : 'Add Grant'}
@@ -215,6 +268,7 @@ export default function Permissions() {
             </div>
 
             <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-5">
+              {/* Name */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-gray-300 font-medium">Name</label>
                 <input
@@ -227,6 +281,7 @@ export default function Permissions() {
                 />
               </div>
 
+              {/* Description */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-gray-300 font-medium">Description</label>
                 <input
@@ -238,6 +293,7 @@ export default function Permissions() {
                 />
               </div>
 
+              {/* Scope */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm text-gray-300 font-medium">Scope</label>
                 <div className="flex gap-4">
@@ -298,6 +354,7 @@ export default function Permissions() {
                 </div>
               )}
 
+              {/* Actions */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm text-gray-300 font-medium">Actions</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -315,7 +372,93 @@ export default function Permissions() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              {/* ── Application Mode ── */}
+              <div className="flex flex-col gap-2 pt-1 border-t border-gray-800">
+                <label className="text-sm text-gray-300 font-medium pt-1">Application Mode</label>
+                <div className="flex flex-col gap-2">
+                  {(['assigned', 'conditional', 'auto'] as Grant['applicationMode'][]).map((mode) => (
+                    <label key={mode} className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="applicationMode"
+                        value={mode}
+                        checked={form.applicationMode === mode}
+                        onChange={() => setForm((f) => ({ ...f, applicationMode: mode }))}
+                        className="accent-blue-500 mt-0.5"
+                      />
+                      <div>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${MODE_BADGE_CLASS[mode]}`}>
+                          {MODE_LABEL[mode]}
+                        </span>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {mode === 'assigned' && 'Grant applies when explicitly assigned to a user or group.'}
+                          {mode === 'conditional' && 'Must be explicitly assigned AND conditions must pass.'}
+                          {mode === 'auto' && 'No assignment needed — automatically applies to anyone whose attributes match.'}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Conditions (conditional + auto only) ── */}
+              {(form.applicationMode === 'conditional' || form.applicationMode === 'auto') && (
+                <div className="flex flex-col gap-2 pt-1 border-t border-gray-800">
+                  <div className="flex items-center justify-between pt-1">
+                    <label className="text-sm text-gray-300 font-medium">Conditions</label>
+                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                      <span>Logic:</span>
+                      {(['AND', 'OR'] as const).map((logic) => (
+                        <button
+                          key={logic}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, conditionLogic: logic }))}
+                          className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                            form.conditionLogic === logic
+                              ? 'bg-blue-700 text-blue-200'
+                              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                          }`}
+                        >
+                          {logic}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Use <code className="text-blue-400">user.role == admin</code> for attribute conditions,{' '}
+                    <code className="text-teal-400">now.dayOfWeek IN Mon,Tue,Wed,Thu,Fri</code> for time conditions.
+                  </p>
+                  <RuleBuilder
+                    rules={form.conditions}
+                    onChange={(rules) => setForm((f) => ({ ...f, conditions: rules }))}
+                  />
+                </div>
+              )}
+
+              {/* ── Schedule ── */}
+              <div className="flex flex-col gap-2 pt-1 border-t border-gray-800">
+                <label className="text-sm text-gray-300 font-medium pt-1">Schedule</label>
+                <ScheduleEditor
+                  schedule={form.schedule}
+                  onChange={(schedule) => setForm((f) => ({ ...f, schedule }))}
+                  defaultTimezone={defaultTimezone}
+                />
+              </div>
+
+              {/* ── Custom Attributes ── */}
+              <div className="flex flex-col gap-2 pt-1 border-t border-gray-800">
+                <label className="text-sm text-gray-300 font-medium pt-1">Custom Attributes</label>
+                <p className="text-xs text-gray-500">
+                  Reference as <code className="text-teal-400">grant.attributeName</code> in policy rules.
+                </p>
+                <AttributeEditor
+                  attributes={form.customAttributes}
+                  onChange={(attrs) => setForm((f) => ({ ...f, customAttributes: attrs }))}
+                />
+              </div>
+
+              {/* Submit buttons */}
+              <div className="flex gap-3 pt-2 border-t border-gray-800">
                 <button
                   type="button"
                   onClick={closeModal}

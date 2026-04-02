@@ -4,6 +4,12 @@ import { useStore } from '../store/store';
 import type { AccessResult, Door, StoreSnapshot } from '../types';
 import { evaluateAccess } from '../engine/accessEngine';
 
+const MODE_BADGE: Record<string, string> = {
+  assigned: 'bg-slate-700 text-slate-300 border-slate-600',
+  conditional: 'bg-amber-900 text-amber-300 border-amber-700',
+  auto: 'bg-purple-900 text-purple-300 border-purple-700',
+};
+
 export default function TestAccess() {
   const users = useStore((s) => s.users);
   const doors = useStore((s) => s.doors);
@@ -35,6 +41,7 @@ export default function TestAccess() {
       allSites: sites,
       allControllers: controllers,
       allGroups: groups,
+      allGrants: grants,
     };
     const accessResult = evaluateAccess(selectedUser, selectedDoor, policies, groups, grants, store);
     setResult(accessResult);
@@ -103,8 +110,19 @@ export default function TestAccess() {
 
       {evaluated && result && (
         <div className="space-y-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-5 space-y-3">
+          {/* Now context box */}
+          <div className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 flex items-center gap-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Evaluated at</span>
+            <span className="text-sm font-mono text-teal-300">
+              {result.nowContext.dayOfWeek} {String(result.nowContext.hour).padStart(2, '0')}:{String(result.nowContext.minute).padStart(2, '0')}
+              {' · '}{result.nowContext.date}
+            </span>
+          </div>
+
+          {/* Permission Layer */}
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-5 space-y-4">
             <h2 className="text-lg font-semibold text-slate-200">Permission Layer</h2>
+
             <div className="flex items-center gap-2">
               {result.permissionGranted ? (
                 <span className="inline-flex items-center gap-1 bg-green-900 border border-green-700 text-green-300 text-sm font-bold px-3 py-1 rounded-full">
@@ -116,27 +134,102 @@ export default function TestAccess() {
                 </span>
               )}
             </div>
-            {result.permissionGranted ? (
+
+            {/* Per-grant evaluation trace */}
+            {result.grantResults.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Grant Evaluation</p>
+                <div className="space-y-2">
+                  {result.grantResults.map((gr) => (
+                    <div
+                      key={gr.grantId}
+                      className={`border rounded-md overflow-hidden ${
+                        gr.included ? 'border-green-800' : 'border-slate-600'
+                      }`}
+                    >
+                      <div className={`flex items-center justify-between px-3 py-2 ${
+                        gr.included ? 'bg-green-950' : 'bg-slate-900'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-200">{gr.grantName}</span>
+                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded border ${MODE_BADGE[gr.applicationMode] ?? MODE_BADGE.assigned}`}>
+                            {gr.applicationMode.toUpperCase()}
+                          </span>
+                        </div>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          gr.included
+                            ? 'bg-green-900 border border-green-700 text-green-300'
+                            : 'bg-red-900 border border-red-700 text-red-300'
+                        }`}>
+                          {gr.included ? 'INCLUDED' : 'EXCLUDED'}
+                        </span>
+                      </div>
+
+                      <div className="px-3 py-2 space-y-1.5 bg-slate-900/50">
+                        {/* Schedule row */}
+                        {gr.scheduleActive !== null && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-slate-500 w-16 shrink-0">Schedule</span>
+                            {gr.scheduleActive ? (
+                              <span className="text-green-400">✓ Active</span>
+                            ) : (
+                              <span className="text-red-400">✗ Outside window</span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Conditions rows */}
+                        {gr.conditionResults.map((rr) => (
+                          <div key={rr.ruleId} className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+                            <span className="text-slate-500 w-16 shrink-0 font-sans">Condition</span>
+                            <span className="text-slate-300">{rr.leftSide}</span>
+                            <span className="text-blue-400">{rr.operator}</span>
+                            <span className="text-amber-300">
+                              {Array.isArray(rr.rightSide) ? rr.rightSide.join(', ') : rr.rightSide}
+                            </span>
+                            <span className="text-slate-500">→</span>
+                            <span className="text-slate-200">{rr.leftResolved}</span>
+                            {rr.rightResolved !== (Array.isArray(rr.rightSide) ? rr.rightSide.join(', ') : rr.rightSide) && (
+                              <>
+                                <span className="text-slate-500">vs</span>
+                                <span className="text-slate-200">{rr.rightResolved}</span>
+                              </>
+                            )}
+                            <span className="text-slate-500">→</span>
+                            {rr.passed ? (
+                              <span className="text-green-400 font-bold font-sans">PASS</span>
+                            ) : (
+                              <span className="text-red-400 font-bold font-sans">FAIL</span>
+                            )}
+                          </div>
+                        ))}
+
+                        {gr.scheduleActive === null && gr.conditionResults.length === 0 && (
+                          <p className="text-xs text-slate-500 italic">No conditions or schedule — included if assigned.</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {result.permissionGranted && result.matchedGrants.length > 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Matched Grants</p>
-                {result.matchedGrants.length > 0 ? (
-                  <ul className="space-y-1">
-                    {result.matchedGrants.map((grantName, i) => (
-                      <li key={i} className="text-sm text-green-300 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                        {grantName}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-slate-400">No matching grants found.</p>
-                )}
+                <ul className="space-y-1">
+                  {result.matchedGrants.map((grantName, i) => (
+                    <li key={i} className="text-sm text-green-300 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                      {grantName}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ) : (
-              <p className="text-sm text-slate-400">No matching grants found.</p>
             )}
           </div>
 
+          {/* ABAC Layer */}
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-5 space-y-4">
             <h2 className="text-lg font-semibold text-slate-200">ABAC Layer</h2>
             {assignedPolicies.length === 0 ? (
@@ -191,6 +284,7 @@ export default function TestAccess() {
             )}
           </div>
 
+          {/* Overall result banner */}
           <div
             className={`rounded-lg border-2 p-6 flex items-center justify-center gap-4 ${
               result.overallGranted

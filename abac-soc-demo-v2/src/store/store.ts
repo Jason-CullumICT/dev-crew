@@ -137,7 +137,7 @@ export const useStore = create<AppState>()(
       addArmingLog: (log) => set((s) => ({ armingLogs: [log, ...s.armingLogs] })),
     }),
     {
-      name: 'soc-demo-store-v2',
+      name: 'soc-demo-store-v3',
       storage: createJSONStorage(() => sessionStorage),
     },
   ),

@@ -1,6 +1,10 @@
 export type ClearanceLevel = 'Unclassified' | 'Confidential' | 'Secret' | 'TopSecret';
-export const CLEARANCE_RANK: Record<ClearanceLevel, number> = {
-  Unclassified: 0, Confidential: 1, Secret: 2, TopSecret: 3,
+
+export const CLEARANCE_HIERARCHY: Record<ClearanceLevel, number> = {
+  'Unclassified': 0,
+  'Confidential': 1,
+  'Secret': 2,
+  'TopSecret': 3
 };
 
 export type UserStatus = 'Active' | 'Suspended' | 'Pending';
@@ -14,54 +18,28 @@ export interface User {
   clearanceLevel: ClearanceLevel;
   status: UserStatus;
   customAttributes: Record<string, string>;
-  grantedPermissions: string[];
+  grantedPermissions: string[]; // array of explicit permission grant IDs
   groupIds: string[];
-}
-
-export interface GroupMember {
-  entityType: 'user' | 'door' | 'zone' | 'site' | 'controller';
-  entityId: string;
 }
 
 export interface Group {
   id: string;
   name: string;
   description: string;
-  members: GroupMember[];
-  membershipRules: Rule[];
-  membershipLogic: 'AND' | 'OR';
-  membershipType: 'explicit' | 'dynamic' | 'hybrid';
-  targetEntityType: 'user' | 'door' | 'zone' | 'site' | 'controller' | 'any';
-  inheritedPermissions: string[];
+  memberUserIds: string[];
+  inheritedPermissions: string[]; // array of permission grant IDs
 }
 
 export type GrantScope = 'global' | 'site' | 'zone';
-
-export type ActionType =
-  | 'arm' | 'disarm' | 'unlock' | 'lockdown'
-  | 'view_logs' | 'manage_users' | 'manage_tasks' | 'override';
-
-export interface Schedule {
-  daysOfWeek: number[];   // [0..6]; 0=Sun,1=Mon,...,6=Sat; empty = all days
-  startTime: string;      // 'HH:MM' 24h
-  endTime: string;        // 'HH:MM' 24h
-  validFrom?: string;     // 'YYYY-MM-DD' optional
-  validUntil?: string;    // 'YYYY-MM-DD' optional
-  timezone: string;       // IANA e.g. 'Australia/Sydney'
-}
+export type ActionType = 'arm' | 'disarm' | 'unlock' | 'lockdown' | 'view_logs' | 'manage_users' | 'manage_tasks' | 'override';
 
 export interface Grant {
   id: string;
   name: string;
   description: string;
   scope: GrantScope;
-  targetId?: string;
+  targetId?: string; // siteId or zoneId
   actions: ActionType[];
-  applicationMode: 'assigned' | 'conditional' | 'auto';
-  conditions: Rule[];
-  conditionLogic: 'AND' | 'OR';
-  customAttributes: Record<string, string>;
-  schedule: Schedule | null;
 }
 
 export type SiteStatus = 'Armed' | 'Disarmed' | 'PartialArm' | 'Alarm' | 'Lockdown';
@@ -72,9 +50,9 @@ export interface Site {
   address: string;
   timezone: string;
   status: SiteStatus;
+  armingSchedule?: string; // e.g. weekday bitmask + times
   assignedManagerIds: string[];
-  zones: string[];
-  customAttributes: Record<string, string>;
+  zones: string[]; // zone IDs
 }
 
 export type ZoneType = 'Perimeter' | 'Interior' | 'Secure' | 'Public' | 'Emergency';
@@ -88,7 +66,6 @@ export interface Zone {
   status: ZoneStatus;
   doorIds: string[];
   cameraIds?: string[];
-  customAttributes: Record<string, string>;
 }
 
 export type LockState = 'Locked' | 'Unlocked' | 'Forced' | 'Held';
@@ -102,7 +79,6 @@ export interface Door {
   controllerId: string;
   description: string;
   lockState: LockState;
-  customAttributes: Record<string, string>;
 }
 
 export interface Controller {
@@ -111,16 +87,16 @@ export interface Controller {
   location: string;
   siteId: string;
   doorIds: string[];
-  customAttributes: Record<string, string>;
 }
 
 export type Operator = '==' | '!=' | '>=' | '<=' | 'IN' | 'NOT IN';
+export type LogicalOperator = 'AND' | 'OR';
 
 export interface Rule {
   id: string;
-  leftSide: string;
+  attribute: string;
   operator: Operator;
-  rightSide: string | string[];
+  value: string | string[];
 }
 
 export interface Policy {
@@ -128,7 +104,7 @@ export interface Policy {
   name: string;
   description: string;
   rules: Rule[];
-  logicalOperator: 'AND' | 'OR';
+  logicalOperator: LogicalOperator;
   doorIds: string[];
 }
 
@@ -159,13 +135,12 @@ export interface Task {
 }
 
 export interface RuleResult {
-  ruleId: string;
-  leftSide: string;
+  attribute: string;
   operator: Operator;
-  rightSide: string | string[];
-  leftResolved: string;
-  rightResolved: string;
+  value: string | string[];
+  actualValue: string | null;
   passed: boolean;
+  reason: string;
 }
 
 export interface PolicyResult {
@@ -175,34 +150,12 @@ export interface PolicyResult {
   ruleResults: RuleResult[];
 }
 
-export interface NowContext {
-  hour: number;          // 0-23
-  minute: number;        // 0-59
-  dayOfWeek: string;     // 'Sun'|'Mon'|'Tue'|'Wed'|'Thu'|'Fri'|'Sat'
-  dayOfWeekNum: number;  // 0=Sun ... 6=Sat
-  date: string;          // 'YYYY-MM-DD'
-  month: number;         // 1-12
-}
-
-export interface GrantResult {
-  grantId: string;
-  grantName: string;
-  applicationMode: Grant['applicationMode'];
-  scheduleActive: boolean | null;    // null if no schedule
-  conditionsPassed: boolean | null;  // null if assigned with no conditions
-  conditionResults: RuleResult[];
-  included: boolean;
-}
-
 export interface AccessResult {
   permissionGranted: boolean;
   abacGranted: boolean;
   overallGranted: boolean;
   matchedPolicy?: string;
-  matchedGrants: string[];
   policyResults: PolicyResult[];
-  grantResults: GrantResult[];
-  nowContext: NowContext;
 }
 
 export interface ArmingLog {
@@ -211,15 +164,5 @@ export interface ArmingLog {
   userName: string;
   action: string;
   siteName: string;
-  result: 'Success' | 'Denied';
-}
-
-export interface StoreSnapshot {
-  allUsers: User[];
-  allDoors: Door[];
-  allZones: Zone[];
-  allSites: Site[];
-  allControllers: Controller[];
-  allGroups: Group[];
-  allGrants: Grant[];
+  result: string;
 }

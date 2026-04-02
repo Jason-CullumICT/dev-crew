@@ -91,15 +91,60 @@ export function generateTestData() {
   sites[4].zones = [z_ex_sec.id, z_ex_pub.id];
 
   // ── Grants ──
-  const g1: Grant = { id: uuidv4(), name: 'Global Admin', description: 'Full access to all actions', scope: 'global', actions: ['arm','disarm','unlock','lockdown','view_logs','manage_users','manage_tasks','override'] };
-  const g2: Grant = { id: uuidv4(), name: 'Global View', description: 'View logs globally', scope: 'global', actions: ['view_logs'] };
-  const g3: Grant = { id: uuidv4(), name: 'HQ Arm/Disarm', description: 'Arm and disarm HQ', scope: 'site', targetId: s1, actions: ['arm','disarm'] };
-  const g4: Grant = { id: uuidv4(), name: 'HQ Unlock', description: 'Unlock HQ doors', scope: 'site', targetId: s1, actions: ['unlock'] };
-  const g5: Grant = { id: uuidv4(), name: 'DC Secure Access', description: 'Full DC access', scope: 'site', targetId: s3, actions: ['arm','disarm','unlock','lockdown','override'] };
-  const g6: Grant = { id: uuidv4(), name: 'Regional Operator', description: 'Operate regional office', scope: 'site', targetId: s2, actions: ['arm','disarm','unlock'] };
-  const g7: Grant = { id: uuidv4(), name: 'Warehouse Access', description: 'Warehouse arm/unlock', scope: 'site', targetId: s4, actions: ['arm','disarm','unlock'] };
-  const g8: Grant = { id: uuidv4(), name: 'Task Manager', description: 'Create and manage tasks globally', scope: 'global', actions: ['manage_tasks'] };
-  const grants: Grant[] = [g1, g2, g3, g4, g5, g6, g7, g8];
+  const g1: Grant = { id: uuidv4(), name: 'Global Admin', description: 'Full access to all actions', scope: 'global', actions: ['arm','disarm','unlock','lockdown','view_logs','manage_users','manage_tasks','override'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+  const g2: Grant = { id: uuidv4(), name: 'Global View', description: 'View logs globally', scope: 'global', actions: ['view_logs'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+  const g3: Grant = { id: uuidv4(), name: 'HQ Arm/Disarm', description: 'Arm and disarm HQ', scope: 'site', targetId: s1, actions: ['arm','disarm'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+  const g4: Grant = { id: uuidv4(), name: 'HQ Unlock', description: 'Unlock HQ doors', scope: 'site', targetId: s1, actions: ['unlock'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+  const g5: Grant = { id: uuidv4(), name: 'DC Secure Access', description: 'Full DC access', scope: 'site', targetId: s3, actions: ['arm','disarm','unlock','lockdown','override'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+  const g6: Grant = { id: uuidv4(), name: 'Regional Operator', description: 'Operate regional office', scope: 'site', targetId: s2, actions: ['arm','disarm','unlock'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+  const g7: Grant = { id: uuidv4(), name: 'Warehouse Access', description: 'Warehouse arm/unlock', scope: 'site', targetId: s4, actions: ['arm','disarm','unlock'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+  const g8: Grant = { id: uuidv4(), name: 'Task Manager', description: 'Create and manage tasks globally', scope: 'global', actions: ['manage_tasks'], applicationMode: 'assigned', conditions: [], conditionLogic: 'AND', customAttributes: {}, schedule: null };
+
+  const gDayShift: Grant = {
+    id: 'grant-day-shift',
+    name: 'Day Shift Access',
+    description: 'Unlock access restricted to business hours Mon–Fri',
+    scope: 'global',
+    actions: ['unlock'],
+    applicationMode: 'assigned',
+    conditions: [],
+    conditionLogic: 'AND',
+    customAttributes: { tier: 'standard' },
+    schedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: '08:00',
+      endTime: '18:00',
+      timezone: 'Australia/Sydney',
+    },
+  };
+
+  const gAdminAuto: Grant = {
+    id: 'grant-admin-auto',
+    name: 'Admin Auto-Grant',
+    description: 'Automatically granted to any user with role == Administrator',
+    scope: 'global',
+    actions: ['unlock', 'arm', 'disarm', 'manage_users'],
+    applicationMode: 'auto',
+    conditions: [{ id: 'c-aa-1', leftSide: 'user.role', operator: '==', rightSide: 'Administrator' }],
+    conditionLogic: 'AND',
+    customAttributes: { tier: 'admin' },
+    schedule: null,
+  };
+
+  const gHighSec: Grant = {
+    id: 'grant-high-sec',
+    name: 'High Security Access',
+    description: 'Assigned grant that only counts for Secret-cleared users',
+    scope: 'global',
+    actions: ['unlock', 'override'],
+    applicationMode: 'conditional',
+    conditions: [{ id: 'c-hs-1', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'Secret' }],
+    conditionLogic: 'AND',
+    customAttributes: { tier: 'secure' },
+    schedule: null,
+  };
+
+  const grants: Grant[] = [g1, g2, g3, g4, g5, g6, g7, g8, gDayShift, gAdminAuto, gHighSec];
 
   // ── Groups ──
   // Executives — explicit
@@ -275,6 +320,15 @@ export function generateTestData() {
   sites[0].assignedManagerIds = [users[0].id, users[1].id];
   sites[1].assignedManagerIds = [users[5].id];
   sites[2].assignedManagerIds = [users[10].id];
+
+  // Assign day-shift grant to a few users (demonstrates schedule filtering)
+  users[1].grantedPermissions.push(gDayShift.id);
+  users[2].grantedPermissions.push(gDayShift.id);
+  users[3].grantedPermissions.push(gDayShift.id);
+
+  // Assign conditional high-sec grant to Secret+ cleared users
+  users.filter((u) => ['Secret', 'TopSecret'].includes(u.clearanceLevel))
+       .forEach((u) => u.grantedPermissions.push(gHighSec.id));
 
   // ── ABAC Policies ──
   const policies: Policy[] = [

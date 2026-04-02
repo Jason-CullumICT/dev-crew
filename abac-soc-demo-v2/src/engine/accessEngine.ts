@@ -2,7 +2,7 @@ import { CLEARANCE_RANK } from '../types';
 import type {
   User, Group, Grant, Door, Zone, Site, Controller,
   Policy, ActionType, AccessResult, PolicyResult, RuleResult,
-  Rule, Operator, StoreSnapshot, GroupMember,
+  Rule, Operator, StoreSnapshot, GroupMember, NowContext, GrantResult, Schedule,
 } from '../types';
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -13,18 +13,58 @@ export interface EvalContext {
   zone?: Zone;
   site?: Site;
   controller?: Controller;
+  grant?: Grant;
+  now: NowContext;
   store: StoreSnapshot;
   _visitedGroups?: Set<string>;  // internal recursion guard
 }
 
+// ── Now context ───────────────────────────────────────────────────────────────
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+export function buildNowContext(): NowContext {
+  const d = new Date();
+  return {
+    hour: d.getHours(),
+    minute: d.getMinutes(),
+    dayOfWeek: DAY_NAMES[d.getDay()],
+    dayOfWeekNum: d.getDay(),
+    date: d.toISOString().slice(0, 10),
+    month: d.getMonth() + 1,
+  };
+}
+
+// ── Schedule evaluation ───────────────────────────────────────────────────────
+
+export function isScheduleActive(schedule: Schedule): boolean {
+  const now = new Date();
+  // Convert to schedule timezone using toLocaleString (widely supported)
+  const tzDate = new Date(now.toLocaleString('en-US', { timeZone: schedule.timezone }));
+  const h = tzDate.getHours();
+  const m = tzDate.getMinutes();
+  const dayNum = tzDate.getDay();
+  const localTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const localDate = `${tzDate.getFullYear()}-${String(tzDate.getMonth() + 1).padStart(2, '0')}-${String(tzDate.getDate()).padStart(2, '0')}`;
+
+  if (schedule.daysOfWeek.length > 0 && !schedule.daysOfWeek.includes(dayNum)) return false;
+  if (localTime < schedule.startTime) return false;
+  if (localTime > schedule.endTime) return false;
+  if (schedule.validFrom && localDate < schedule.validFrom) return false;
+  if (schedule.validUntil && localDate > schedule.validUntil) return false;
+  return true;
+}
+
 // ── Attribute resolution ──────────────────────────────────────────────────────
 
-const USER_BUILTINS = new Set(['name','email','department','role','clearanceLevel','status']);
-const DOOR_BUILTINS = new Set(['name','location','lockState','description']);
-const ZONE_BUILTINS = new Set(['name','type','status']);
-const SITE_BUILTINS = new Set(['name','address','status','timezone']);
-const CTRL_BUILTINS = new Set(['name','location']);
+const USER_BUILTINS  = new Set(['name','email','department','role','clearanceLevel','status']);
+const DOOR_BUILTINS  = new Set(['name','location','lockState','description']);
+const ZONE_BUILTINS  = new Set(['name','type','status']);
+const SITE_BUILTINS  = new Set(['name','address','status','timezone']);
+const CTRL_BUILTINS  = new Set(['name','location']);
 const GROUP_BUILTINS = new Set(['name','targetEntityType','membershipType']);
+const NOW_BUILTINS   = new Set(['hour','minute','dayOfWeek','dayOfWeekNum','date','month']);
+const GRANT_BUILTINS = new Set(['name','scope','applicationMode']);
 
 function getBuiltinOrCustom(entity: Record<string, unknown>, builtins: Set<string>, key: string): string {
   if (builtins.has(key)) {
@@ -55,6 +95,10 @@ export function resolveAttribute(ref: string, ctx: EvalContext): string {
       return ctx.site ? getBuiltinOrCustom(ctx.site as unknown as Record<string, unknown>, SITE_BUILTINS, attrKey) : '';
     case 'controller':
       return ctx.controller ? getBuiltinOrCustom(ctx.controller as unknown as Record<string, unknown>, CTRL_BUILTINS, attrKey) : '';
+    case 'now':
+      return getBuiltinOrCustom(ctx.now as unknown as Record<string, unknown>, NOW_BUILTINS, attrKey);
+    case 'grant':
+      return ctx.grant ? getBuiltinOrCustom(ctx.grant as unknown as Record<string, unknown>, GRANT_BUILTINS, attrKey) : '';
     case 'group': {
       // Resolve against the first group the user belongs to
       const userGroup = ctx.store.allGroups.find(g =>
@@ -87,8 +131,8 @@ function getEntityIdFromCtx(entityType: BareEntityType, ctx: EvalContext): strin
 }
 
 function buildEntityCtx(entityType: BareEntityType, entityId: string, baseCtx: EvalContext): EvalContext {
-  const { store } = baseCtx;
-  const ctx: EvalContext = { user: baseCtx.user, store };
+  const { store, now } = baseCtx;
+  const ctx: EvalContext = { user: baseCtx.user, now, store };
   switch (entityType) {
     case 'user': {
       const u = store.allUsers.find(x => x.id === entityId);
@@ -248,16 +292,80 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): RuleResult {
 
 // ── Permission (RBAC) layer ───────────────────────────────────────────────────
 
-function getEffectiveGrantIds(user: User, groups: Group[], ctx: EvalContext): Set<string> {
+function evaluateGrantConditions(grant: Grant, ctx: EvalContext): {
+  conditionsPassed: boolean | null;
+  conditionResults: RuleResult[];
+} {
+  if (grant.conditions.length === 0) {
+    return { conditionsPassed: null, conditionResults: [] };
+  }
+  const grantCtx: EvalContext = { ...ctx, grant };
+  const conditionResults = grant.conditions.map(r => evaluateRule(r, grantCtx));
+  const conditionsPassed =
+    grant.conditionLogic === 'AND'
+      ? conditionResults.every(r => r.passed)
+      : conditionResults.some(r => r.passed);
+  return { conditionsPassed, conditionResults };
+}
+
+function buildGrantResults(
+  candidateIds: Set<string>,
+  allGrants: Grant[],
+  ctx: EvalContext,
+): { effectiveIds: Set<string>; grantResults: GrantResult[] } {
+  const grantResults: GrantResult[] = [];
+  const effectiveIds = new Set<string>();
+
+  for (const grantId of candidateIds) {
+    const grant = allGrants.find(g => g.id === grantId);
+    if (!grant) continue;
+
+    const scheduleActive = grant.schedule ? isScheduleActive(grant.schedule) : null;
+    const { conditionsPassed, conditionResults } = evaluateGrantConditions(grant, ctx);
+
+    let included = true;
+    // Conditional grants require conditions to pass
+    if (grant.applicationMode === 'conditional' && conditionsPassed === false) included = false;
+    // Schedule must be active if set
+    if (scheduleActive === false) included = false;
+
+    grantResults.push({
+      grantId: grant.id,
+      grantName: grant.name,
+      applicationMode: grant.applicationMode,
+      scheduleActive,
+      conditionsPassed,
+      conditionResults,
+      included,
+    });
+
+    if (included) effectiveIds.add(grantId);
+  }
+
+  return { effectiveIds, grantResults };
+}
+
+function collectCandidateGrantIds(user: User, groups: Group[], ctx: EvalContext): Set<string> {
   const ids = new Set<string>(user.grantedPermissions);
+
+  // Inherited from groups
   for (const group of groups) {
     if (group.inheritedPermissions.length === 0) continue;
-    // Check if user is a member (explicit or dynamic)
-    const isMember = isEntityInGroup(user.id, 'user', group, ctx);
-    if (isMember) {
+    if (isEntityInGroup(user.id, 'user', group, ctx)) {
       for (const gid of group.inheritedPermissions) ids.add(gid);
     }
   }
+
+  // Auto grants — scan all grants whose conditions match
+  for (const grant of ctx.store.allGrants) {
+    if (grant.applicationMode === 'auto' && grant.conditions.length > 0) {
+      const grantCtx: EvalContext = { ...ctx, grant };
+      if (evaluateRuleSet(grant.conditions, grant.conditionLogic, grantCtx)) {
+        ids.add(grant.id);
+      }
+    }
+  }
+
   return ids;
 }
 
@@ -270,8 +378,9 @@ export function hasPermission(
   siteId?: string,
   zoneId?: string,
 ): boolean {
-  const grantIds = getEffectiveGrantIds(user, groups, ctx);
-  for (const grantId of grantIds) {
+  const candidateIds = collectCandidateGrantIds(user, groups, ctx);
+  const { effectiveIds } = buildGrantResults(candidateIds, ctx.store.allGrants, ctx);
+  for (const grantId of effectiveIds) {
     const grant = grants.find(g => g.id === grantId);
     if (!grant || !grant.actions.includes(action)) continue;
     if (grant.scope === 'global') return true;
@@ -279,27 +388,6 @@ export function hasPermission(
     if (grant.scope === 'zone' && zoneId && grant.targetId === zoneId) return true;
   }
   return false;
-}
-
-function getMatchedGrantNames(
-  user: User,
-  groups: Group[],
-  grants: Grant[],
-  action: ActionType,
-  ctx: EvalContext,
-  siteId?: string,
-  zoneId?: string,
-): string[] {
-  const grantIds = getEffectiveGrantIds(user, groups, ctx);
-  const matched: string[] = [];
-  for (const grantId of grantIds) {
-    const grant = grants.find(g => g.id === grantId);
-    if (!grant || !grant.actions.includes(action)) continue;
-    if (grant.scope === 'global') { matched.push(grant.name); continue; }
-    if (grant.scope === 'site' && siteId && grant.targetId === siteId) { matched.push(grant.name); continue; }
-    if (grant.scope === 'zone' && zoneId && grant.targetId === zoneId) matched.push(grant.name);
-  }
-  return matched;
 }
 
 // ── Main evaluateAccess ───────────────────────────────────────────────────────
@@ -312,17 +400,33 @@ export function evaluateAccess(
   grants: Grant[],
   store: StoreSnapshot,
 ): AccessResult {
+  const now = buildNowContext();
   const zone = store.allZones.find(z => z.id === door.zoneId);
   const site = store.allSites.find(s => s.id === door.siteId);
   const controller = store.allControllers.find(c => c.id === door.controllerId);
 
-  const ctx: EvalContext = { user, door, zone, site, controller, store };
+  const ctx: EvalContext = { user, door, zone, site, controller, now, store };
 
-  const permissionGranted = hasPermission(user, groups, grants, 'unlock', ctx, door.siteId, door.zoneId);
-  const matchedGrants = getMatchedGrantNames(user, groups, grants, 'unlock', ctx, door.siteId, door.zoneId);
+  const candidateIds = collectCandidateGrantIds(user, groups, ctx);
+  const { effectiveIds, grantResults } = buildGrantResults(candidateIds, store.allGrants, ctx);
+
+  // Determine permission from effective grants
+  let permissionGranted = false;
+  const matchedGrants: string[] = [];
+  for (const grantId of effectiveIds) {
+    const grant = grants.find(g => g.id === grantId);
+    if (!grant || !grant.actions.includes('unlock')) continue;
+    const scopeMatch =
+      grant.scope === 'global' ||
+      (grant.scope === 'site' && grant.targetId === door.siteId) ||
+      (grant.scope === 'zone' && grant.targetId === door.zoneId);
+    if (scopeMatch) {
+      permissionGranted = true;
+      matchedGrants.push(grant.name);
+    }
+  }
 
   const assignedPolicies = policies.filter(p => p.doorIds.includes(door.id));
-
   const policyResults: PolicyResult[] = assignedPolicies.map(policy => {
     const ruleResults = policy.rules.map(rule => evaluateRule(rule, ctx));
     const passed =
@@ -337,5 +441,14 @@ export function evaluateAccess(
   const abacGranted = assignedPolicies.length === 0 ? true : policyResults.some(p => p.passed);
   const matchedPolicy = policyResults.find(p => p.passed)?.policyName;
 
-  return { permissionGranted, abacGranted, overallGranted: permissionGranted && abacGranted, matchedPolicy, matchedGrants, policyResults };
+  return {
+    permissionGranted,
+    abacGranted,
+    overallGranted: permissionGranted && abacGranted,
+    matchedPolicy,
+    matchedGrants,
+    policyResults,
+    grantResults,
+    nowContext: now,
+  };
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
-import { hasPermission } from '../engine/accessEngine';
+import { hasPermission, buildNowContext } from '../engine/accessEngine';
 import type { EvalContext } from '../engine/accessEngine';
 import type { SiteStatus, ZoneStatus, ZoneType } from '../types';
 
@@ -61,10 +61,11 @@ export default function Arming() {
     allSites: sites,
     allControllers: controllers,
     allGroups: groups,
+    allGrants: grants,
   };
 
   const authorizedUsers = users.filter((u) => {
-    const ctx: EvalContext = { user: u, store: storeSnapshot };
+    const ctx: EvalContext = { user: u, now: buildNowContext(), store: storeSnapshot };
     return hasPermission(u, groups, grants, 'arm', ctx, selectedSiteId);
   });
 

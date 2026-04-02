@@ -205,6 +205,7 @@ export default function AccessMatrix() {
         allSites: sites,
         allControllers: controllers,
         allGroups: groups,
+        allGrants: grants,
       };
       const result = evaluateAccess(user, door, policies, groups, grants, store);
       setModal({ user, door, result });
@@ -220,6 +221,7 @@ export default function AccessMatrix() {
       allSites: sites,
       allControllers: controllers,
       allGroups: groups,
+      allGrants: grants,
     };
     const map = new Map<string, boolean>();
     for (const user of users) {

@@ -366,24 +366,29 @@ wait
       console.error(`[container] App supervisor failed to start: ${err.message}`);
     });
 
-    // Give apps time to start
-    await new Promise(r => setTimeout(r, 5000));
+    // Poll each endpoint until it responds (replaces fixed 5s sleep).
+    // Returns true as soon as the app answers, false if maxWaitMs is exceeded.
+    const pollEndpoint = async (url, maxWaitMs = 30000) => {
+      const deadline = Date.now() + maxWaitMs;
+      while (Date.now() < deadline) {
+        const check = await this.docker.execInContainer(
+          containerId, "bash",
+          ["-c", `curl -s -o /dev/null -w '%{http_code}' --max-time 2 ${url} || echo 000`],
+          { quiet: true }
+        );
+        const code = check.stdout.trim();
+        if (code !== "000" && code !== "") return true;
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      return false;
+    };
 
-    // Verify they're running
     if (checkBackend.exitCode === 0) {
-      const check = await this.docker.execInContainer(
-        containerId, "bash", ["-c", "curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:3001/ || echo 000"],
-        { quiet: true }
-      );
-      result.backend = check.stdout.trim() !== "000";
+      result.backend = await pollEndpoint("http://localhost:3001/");
     }
 
     if (checkFrontend.exitCode === 0) {
-      const check = await this.docker.execInContainer(
-        containerId, "bash", ["-c", "curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:5173/ || echo 000"],
-        { quiet: true }
-      );
-      result.frontend = check.stdout.trim() !== "000";
+      result.frontend = await pollEndpoint("http://localhost:5173/");
     }
 
     return result;

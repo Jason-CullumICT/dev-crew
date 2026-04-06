@@ -1425,8 +1425,6 @@ fi
 
         if (run.app.running) {
           console.log(`[${run.id}] App running for dynamic tests: backend=${run.app.backend || "--"} frontend=${run.app.frontend || "--"}`);
-          // Give the app a moment to fully initialize (DB migrations, etc.)
-          await new Promise((r) => setTimeout(r, 3000));
         } else {
           console.log(`[${run.id}] App failed to start — agents will use static fallback`);
         }

@@ -34,6 +34,13 @@ This agent maintains a persistent learnings file at `Teams/TheATeam/learnings/ba
 ### Write Phase
 Save discoveries about the codebase, working commands, and patterns for future runs.
 
+## Hard Limits
+
+- **Never touch `platform/`** — that directory is the orchestrator that is running you. Modifying it breaks the pipeline for all future cycles. If a task seems to require changes to `platform/`, stop and report it.
+- **Never use `--passWithNoTests`** — if a test suite has no tests after your changes, that is a failure, not a pass.
+- **Never use `--no-verify`** on git commits.
+- **Never swallow errors silently** — every `catch` block must re-throw, log via `logger`, or explicitly document why the error is suppressed.
+
 ## Dashboard Reporting
 
 Agent key: `backend_coder`.

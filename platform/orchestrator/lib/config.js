@@ -28,6 +28,11 @@ const config = {
 
   // Worker
   workerImage: process.env.WORKER_IMAGE || "dev-crew-worker:latest",
+  // Resource limits per worker container (Docker HostConfig).
+  // WORKER_MEMORY_GB: hard RAM cap in gigabytes (default 4)
+  // WORKER_CPUS: soft CPU share in cores (default 2, uses NanoCpus)
+  workerMemoryBytes: Math.round((Number(process.env.WORKER_MEMORY_GB) || 4) * 1024 * 1024 * 1024),
+  workerNanoCpus: Math.round((Number(process.env.WORKER_CPUS) || 2) * 1e9),
 
   // Feedback
   maxFeedbackLoops: Number(process.env.MAX_FEEDBACK_LOOPS) || 2,

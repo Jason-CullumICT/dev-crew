@@ -129,6 +129,9 @@ class ContainerManager {
           "3001/tcp": [{ HostPort: String(ports.backend) }],
           "5173/tcp": [{ HostPort: String(ports.frontend) }],
         },
+        // Resource limits — prevent runaway agents from starving the host.
+        Memory: config.workerMemoryBytes,
+        NanoCpus: config.workerNanoCpus,
       },
       ExposedPorts: {
         "3001/tcp": {},
@@ -247,6 +250,8 @@ class ContainerManager {
           "3001/tcp": [{ HostPort: String(ports.backend) }],
           "5173/tcp": [{ HostPort: String(ports.frontend) }],
         },
+        Memory: config.workerMemoryBytes,
+        NanoCpus: config.workerNanoCpus,
       },
       ExposedPorts: { "3001/tcp": {}, "5173/tcp": {} },
       NetworkingConfig: { EndpointsConfig: { [networkName]: {} } },

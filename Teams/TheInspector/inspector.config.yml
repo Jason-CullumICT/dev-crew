@@ -12,23 +12,20 @@
 # ──────────────────────────────────────────────────────────────
 
 project:
-  name: "My Project"            # Used in report headers
-  domain: "web-application"     # Informs threat model focus: web-application, api-service, iot, fintech, access-control, etc.
+  name: "dev-crew Source App"   # Work item workflow management system
+  domain: "web-application"     # Express REST API + React SPA
 
 # ── Services ──────────────────────────────────────────────────
 # Define your running services for dynamic-mode testing.
 # Each service needs a health endpoint for availability detection.
 services:
   - name: backend
-    health: http://localhost:3001/health
-    metrics: http://localhost:3001/metrics    # optional — for metrics proxy analysis
+    health: http://localhost:3001/
+    metrics: http://localhost:3001/metrics
     port: 3001
-  # - name: frontend
-  #   health: http://localhost:3000
-  #   port: 3000
-  # - name: worker
-  #   health: http://localhost:4000/health
-  #   port: 4000
+  - name: frontend
+    health: http://localhost:5173
+    port: 5173
 
 # ── Specifications ────────────────────────────────────────────
 # Where your domain truth lives. Quality oracle uses these for drift analysis.
@@ -58,23 +55,29 @@ source:
 security:
   # Critical operations that constitute P1 if compromised
   critical_operations:
-    - "user authentication"
-    - "authorization / access control"
-    - "payment processing"
-    - "PII data access"
-    - "admin operations"
+    - "work item state machine integrity (VALID_STATUS_TRANSITIONS)"
+    - "assessment verdict assignment (blocks/unblocks routing)"
+    - "work item deletion (soft-delete via deleted flag)"
+    - "in-memory store consistency (concurrent modification)"
 
-  # Domain-specific threat scenarios (red teamer will attempt these)
+  # Domain-specific threat scenarios for this work item workflow system.
+  # No authentication layer exists — focus is on data integrity and state machine abuse.
   threat_scenarios:
-    - name: "Authentication bypass"
-      description: "Attacker accesses protected resources without valid credentials"
-      entry_points: ["/api/auth/login", "/api/auth/register"]
-    - name: "Privilege escalation"
-      description: "Normal user gains admin capabilities"
-      entry_points: ["/api/admin/*", "/api/users/*/roles"]
-    - name: "Data exfiltration"
-      description: "Attacker accesses other users' data"
-      entry_points: ["/api/users/*", "/api/accounts/*"]
+    - name: "Invalid state transition"
+      description: "Caller forces a WorkItem into a status not permitted by VALID_STATUS_TRANSITIONS"
+      entry_points: ["/api/work-items/:id/transition", "/api/work-items/:id/workflow"]
+    - name: "Phantom work item access"
+      description: "Caller reads or modifies a soft-deleted work item via direct ID reference"
+      entry_points: ["/api/work-items/:id"]
+    - name: "Assessment verdict injection"
+      description: "Caller submits a malformed AssessmentVerdict that bypasses routing logic"
+      entry_points: ["/api/work-items/:id/assessment"]
+    - name: "Store key collision"
+      description: "Work item ID crafted to overwrite an existing store entry"
+      entry_points: ["/api/work-items (POST)"]
+    - name: "Unbounded list exfiltration"
+      description: "GET /api/work-items returns all items with no pagination limit"
+      entry_points: ["/api/work-items"]
 
   # OWASP categories to always check (generic, not domain-specific)
   owasp_always:
@@ -87,21 +90,20 @@ security:
 # Latency budgets and performance expectations.
 performance:
   latency_budgets:
-    p95_default_ms: 500           # Default p95 budget for all endpoints
-    p99_default_ms: 2000          # Default p99 budget
-    critical_paths:               # Override budgets for specific paths
-      - path: "/api/auth/login"
-        p95_ms: 300
-      # - path: "/api/checkout"
-      #   p95_ms: 200
+    p95_default_ms: 200           # In-memory store — all ops should be fast
+    p99_default_ms: 500
+    critical_paths:
+      - path: "/api/work-items"
+        p95_ms: 100               # List should be near-instant (no DB)
+      - path: "/api/dashboard"
+        p95_ms: 150
 
   # Patterns to detect in static analysis
   static_checks:
-    - "N+1 query detection"
-    - "Missing database indexes on foreign keys"
-    - "Unbounded list queries (no LIMIT)"
-    - "Synchronous I/O in request handlers"
-    - "Large payload serialization"
+    - "Unbounded Map iteration (no slice/limit on work item list)"
+    - "Synchronous I/O in request handlers (should be none — all in-memory)"
+    - "Large payload serialization on GET /api/work-items"
+    - "Missing input validation on request body fields"
 
 # ── Chaos Testing ─────────────────────────────────────────────
 # Fault injection scenarios for the chaos monkey.
@@ -109,19 +111,18 @@ chaos:
   mcp_tools: auto-discover        # "auto-discover" or explicit list of MCP tool names
   fault_scenarios:
     - name: "Backend restart"
-      description: "Kill and restart the backend — verify recovery"
+      description: "Kill and restart the backend — verify recovery (all in-memory data lost by design)"
       type: "process-kill"
       target: "backend"
-      expect: "auto-restart within 30s, no data loss"
-    - name: "Database connection drop"
-      description: "Simulate DB connection failure"
-      type: "static-analysis"     # Can't inject this dynamically without DB access
-      expect: "graceful error responses, no crashes"
-    # - name: "Controller offline"
-    #   description: "Stop controller mid-operation"
-    #   type: "process-kill"
-    #   target: "controller"
-    #   expect: "backend handles timeout, events queued"
+      expect: "process restarts, 503 during downtime, no crash loop"
+    - name: "Concurrent state transitions"
+      description: "Send two conflicting transition requests for the same work item simultaneously"
+      type: "static-analysis"
+      expect: "state machine rejects one transition, no corrupt state"
+    - name: "Malformed request body"
+      description: "Send requests with missing required fields, wrong types, extra unknown fields"
+      type: "static-analysis"
+      expect: "400 with { error: message }, no 500, no unhandled exceptions"
 
 # ── Grading ───────────────────────────────────────────────────
 # How to assign the overall health grade.
@@ -134,6 +135,6 @@ grading:
 
 # ── Report ────────────────────────────────────────────────────
 report:
-  output_dir: "docs/reports/"
-  filename_pattern: "inspector-audit-{date}.html"
+  output_dir: "Teams/TheInspector/findings/"   # matches findings/README.md convention
+  filename_pattern: "audit-{date}-{grade}.html"
   backlog_pattern: "bug-backlog-{date}.json"

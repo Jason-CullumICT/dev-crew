@@ -70,5 +70,7 @@ Keeps the feedback loop internal rather than creating downstream feedback.
 ### 4. Verify + security-spotter instead of many reviewers
 For changes to existing code, one verify agent runs tests and smoke tests while a lightweight haiku security-spotter does read-only analysis in parallel.
 
+> **Orchestrator note:** The pipeline engine uses a two-bucket model — `fixer` roles run as implementation stage; all other roles run as a single parallel QA stage. The `design-critic` (Tier 2, sequential, needs browser) runs in the same batch as Tier 1 read-only agents. The team-leader can prevent port contention by placing `design-critic` in a separate later stage in the dispatch plan.
+
 ### 5. Self-learning carried over
 Each agent reads/writes `Teams/TheFixer/learnings/{role}.md` for institutional memory across runs.

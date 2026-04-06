@@ -695,10 +695,15 @@ fi
       }
     } else {
       const output = reviewResult.stdout;
-      if (/REQUEST_CHANGES/i.test(output)) {
-        verdict = "REQUEST_CHANGES";
-      } else {
+      // Require explicit APPROVE — anything ambiguous is REQUEST_CHANGES.
+      // "not REQUEST_CHANGES" is too permissive: confused output or non-answers would auto-merge.
+      if (/\bAPPROVE\b/i.test(output) && !/REQUEST_CHANGES/i.test(output)) {
         verdict = "APPROVE";
+      } else {
+        verdict = "REQUEST_CHANGES";
+        if (!/REQUEST_CHANGES/i.test(output)) {
+          comment = `AI reviewer did not produce a clear APPROVE verdict. Output: ${output.slice(0, 300)}`;
+        }
       }
     }
 
@@ -1158,6 +1163,15 @@ fi
         } catch (err) {
           console.warn(`[${run.id}] Parse failed (${err.message}), using fallback plan`);
           dispatchPlan = this.dispatch.buildFallbackPlan(taskWithImages, run.team, leaderOutput || "");
+
+          // WARN: fallback plan strips the full QA pipeline to 1 coder + 1 qa-review agent.
+          // Security, chaos, traceability, and visual agents are silently absent.
+          // This is recorded on the run so dashboards and postmortems can identify affected cycles.
+          console.warn(`[${run.id}] ⚠ FALLBACK DISPATCH: full QA pipeline was NOT run. ` +
+            `Fallback has ${dispatchPlan.stages.length} stage(s) / ` +
+            `${dispatchPlan.stages.reduce((n, s) => n + s.agents.length, 0)} agent(s). ` +
+            `Review the leader output to diagnose the parse failure.`);
+          run.phases.fallbackDispatch = { reason: err.message, at: ts() };
         }
 
         run.phases.dispatch = {
@@ -1165,6 +1179,7 @@ fi
           stageCount: dispatchPlan.stages.length,
           agentCount: dispatchPlan.stages.reduce((n, s) => n + s.agents.length, 0),
           parsedAt: ts(),
+          isFallback: !!run.phases.fallbackDispatch,
         };
         saveRunFn(run);
         await this._writeProgress(containerId, run);

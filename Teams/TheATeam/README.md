@@ -91,6 +91,8 @@ Coders (backend and frontend) can be **scaled up** based on complexity-weighted 
 | **Tier 2** | qa-review-and-tests | Database (test resets) | **Sequential** |
 | **Tier 3** | design-critic, integration-reviewer | Ports, database, browser | **Sequential** |
 
+> **Orchestrator note:** The pipeline engine (`workflow-engine.js`) uses a two-bucket model: `coder/fixer` roles → implementation stage; all other roles → a single QA stage run in parallel. The three-tier ordering above is the **team-leader's responsibility** to enforce by structuring the dispatch plan with separate stage entries. The orchestrator does not natively enforce sequential Tier 2/3 execution — the team-leader must write a dispatch plan that separates Tier 1 (one stage) from Tier 2/3 (subsequent stages) to get the correct ordering.
+
 ### 4. Self-Learning Across Runs
 - Every agent maintains a persistent learnings file at `Teams/TheATeam/learnings/{role}.md`
 - Read at start, write at end

@@ -34,6 +34,13 @@ This agent maintains a persistent learnings file at `Teams/TheATeam/learnings/fr
 ### Write Phase
 Save discoveries about the codebase, working commands, and patterns for future runs.
 
+## Hard Limits
+
+- **Never touch `platform/`** — that directory is the orchestrator that is running you.
+- **Never use `--passWithNoTests`** — zero tests after your changes is a failure.
+- **Never use `--no-verify`** on git commits.
+- **Never swallow errors silently** — every `catch` must re-throw, log, or explicitly document the suppression.
+
 ## Dashboard Reporting
 
 Agent key: `frontend_coder`.

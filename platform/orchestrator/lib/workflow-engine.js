@@ -1225,19 +1225,20 @@ fi
           }
         }
 
-        // ── Mechanical Check Stage 2: Post-implementation deletion gate ──
+        // ── Mechanical Check Stage 2: Post-implementation deletion + observability gates ──
         if (!isQA && passed && this.config.mechChecksEnabled) {
+          const mechEnv = [
+            `MECH_MAX_DELETED_FILES=${this.config.mechMaxDeletedFiles}`,
+            `MECH_MAX_DELETED_LINE_RATIO=${this.config.mechMaxDeletedLineRatio}`,
+            `MECH_MAX_DELETED_LINES=${this.config.mechMaxDeletedLines}`,
+            `MECH_OBS_STRICT=${this.config.mechObsStrict}`,
+          ];
+
+          // Deletion gate — hard block on exit 1
           const mechResult = await this.containerManager.execInWorker(
             containerId, "bash",
             ["/app/scripts/mechanical-checks.sh", "post-impl", run.id, this._baseBranch(run)],
-            {
-              label: "mech-post-impl", quiet: false,
-              env: {
-                MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
-                MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
-                MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
-              },
-            }
+            { label: "mech-post-impl", quiet: false, env: mechEnv }
           );
           if (mechResult.exitCode !== 0) {
             console.error(`[${run.id}] MECHANICAL CHECK BLOCKED (post-impl):\n${mechResult.stdout.slice(0, 600)}`);
@@ -1248,6 +1249,18 @@ fi
               ar.exitCode = 1;
               ar.outputTail += `\n\nMECHANICAL CHECK BLOCKED:\n${mechResult.stdout.slice(-600)}`;
             }
+            saveRunFn(run);
+          }
+
+          // Observability gate — per-file language detection, non-blocking by default
+          const obsResult = await this.containerManager.execInWorker(
+            containerId, "bash",
+            ["/app/scripts/mechanical-checks.sh", "observability", run.id, this._baseBranch(run)],
+            { label: "mech-observability", quiet: false, env: mechEnv }
+          );
+          if (obsResult.stdout.trim()) {
+            console.log(`[${run.id}] Observability check:\n${obsResult.stdout.trim()}`);
+            run.phases[stageKey].obsCheckOutput = obsResult.stdout.slice(-800);
             saveRunFn(run);
           }
         }

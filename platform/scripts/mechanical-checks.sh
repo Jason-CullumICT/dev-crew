@@ -234,8 +234,136 @@ CONTEXT
     exit 0
     ;;
 
+  observability)
+    # Check changed source files for raw logging patterns.
+    # Language is detected per-file from extension — no project config needed.
+    # Works in monorepos: a Go file gets Go rules, a TS file gets TS rules, etc.
+    #
+    # Non-blocking by default (warnings only).
+    # Set MECH_OBS_STRICT=true to make violations block (exit 1).
+    OBS_STRICT="${MECH_OBS_STRICT:-false}"
+
+    if ! is_git_repo; then
+      echo "[mech-check:observability] Not a git repo — skipping"
+      exit 0
+    fi
+
+    BASE=$(git_base)
+    if [ -z "$BASE" ]; then
+      exit 0
+    fi
+
+    # Changed/added source files only — not deleted, not vendored/generated
+    CHANGED=$(git -C "$WORKSPACE" diff --diff-filter=ACM --name-only "${BASE}..HEAD" 2>/dev/null \
+      | grep -vE '\.(md|json|yaml|yml|xml|toml|lock|txt|env|sum|mod\.rs|pb\.go|pb\.ts|generated\.)' \
+      | grep -vE '(^|/)(__tests__|__mocks__|fixtures|testdata|vendor|node_modules|dist|build|\.git)/' \
+      | grep -vE '(_test\.(go|py|rb|cs|rs|kt|java)|\.test\.(ts|tsx|js|jsx)|\.spec\.(ts|tsx|js|jsx)|_spec\.rb|Test\.java|Tests\.cs)$' \
+      || true)
+
+    if [ -z "$CHANGED" ]; then
+      echo "[mech-check:observability] No changed source files to check"
+      exit 0
+    fi
+
+    WARNINGS=0
+
+    while IFS= read -r filepath; do
+      [ -z "$filepath" ] && continue
+      FULL_PATH="${WORKSPACE}/${filepath}"
+      [ ! -f "$FULL_PATH" ] && continue
+
+      # Derive extension (handles multi-part like .test.ts already filtered above)
+      ext="${filepath##*.}"
+
+      BAD_PATTERN=""
+      LANG=""
+
+      case "$ext" in
+        ts|tsx|mts|cts)
+          BAD_PATTERN='console\.(log|error|warn|debug|info)\s*\('
+          LANG="TypeScript"
+          ;;
+        js|jsx|mjs|cjs)
+          BAD_PATTERN='console\.(log|error|warn|debug|info)\s*\('
+          LANG="JavaScript"
+          ;;
+        py)
+          # Bare print() calls — excludes `if __name__` blocks and CLI entrypoints
+          BAD_PATTERN='^\s*print\s*\('
+          LANG="Python"
+          ;;
+        go)
+          BAD_PATTERN='fmt\.(Print|Println|Printf)\('
+          LANG="Go"
+          ;;
+        java)
+          BAD_PATTERN='(System\.(out|err)\.(print|println|printf)\s*\(|\.printStackTrace\s*\()'
+          LANG="Java"
+          ;;
+        kt)
+          # Kotlin: bare println/print (not method calls like someObj.println)
+          BAD_PATTERN='^\s*println\s*\('
+          LANG="Kotlin"
+          ;;
+        rb)
+          # Ruby: puts/p/pp at start of expression (not method names)
+          BAD_PATTERN='^\s*(puts|p|pp)\s'
+          LANG="Ruby"
+          ;;
+        php)
+          BAD_PATTERN='^\s*(echo\s|var_dump\s*\(|print_r\s*\(|var_export\s*\()'
+          LANG="PHP"
+          ;;
+        cs)
+          BAD_PATTERN='Console\.(Write|WriteLine)\s*\('
+          LANG="C#"
+          ;;
+        rs)
+          # Rust: println!/eprintln!/dbg! macros
+          BAD_PATTERN='(println!|eprintln!|dbg!)\s*\('
+          LANG="Rust"
+          ;;
+        swift)
+          BAD_PATTERN='^\s*(print\s*\(|NSLog\s*\()'
+          LANG="Swift"
+          ;;
+        cpp|cc|cxx|c)
+          BAD_PATTERN='(std::cout|std::cerr|printf\s*\(|fprintf\s*\(stderr)'
+          LANG="C/C++"
+          ;;
+        *)
+          # Unknown extension — skip silently
+          continue
+          ;;
+      esac
+
+      # Check for bad pattern, excluding comment-only lines
+      HITS=$(grep -nE "$BAD_PATTERN" "$FULL_PATH" 2>/dev/null \
+        | grep -vE '^\s*[0-9]+\s*:\s*(//|#|/\*|\*|--|\')' \
+        | head -5 || true)
+
+      if [ -n "$HITS" ]; then
+        echo "[mech-check:observability] ⚠ [$LANG] ${filepath}:"
+        echo "$HITS" | sed 's/^/    /'
+        WARNINGS=$(( WARNINGS + 1 ))
+      fi
+    done <<< "$CHANGED"
+
+    if [ "$WARNINGS" -gt 0 ]; then
+      echo ""
+      echo "[mech-check:observability] ${WARNINGS} file(s) use raw output instead of structured logging."
+      echo "  Replace with your project's logger. See CLAUDE.md Observability section."
+      if [ "$OBS_STRICT" = "true" ]; then
+        exit 1
+      fi
+    else
+      echo "[mech-check:observability] ✓ No raw logging patterns detected in changed files"
+    fi
+    exit 0
+    ;;
+
   *)
-    echo "Usage: mechanical-checks.sh <snapshot|post-impl|deletion-context|pre-merge|post-merge> <run_id> <base_branch>"
+    echo "Usage: mechanical-checks.sh <snapshot|post-impl|deletion-context|pre-merge|post-merge|observability> <run_id> <base_branch>"
     exit 1
     ;;
 

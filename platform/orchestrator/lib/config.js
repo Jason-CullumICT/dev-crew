@@ -46,6 +46,8 @@ const config = {
   mechMaxDeletedFiles: Number(process.env.MECH_MAX_DELETED_FILES) || 10,
   mechMaxDeletedLineRatio: Number(process.env.MECH_MAX_DELETED_LINE_RATIO) || 40,  // percent
   mechMaxDeletedLines: Number(process.env.MECH_MAX_DELETED_LINES) || 2000,
+  // Observability: set MECH_OBS_STRICT=true to block (not just warn) on raw logging
+  mechObsStrict: process.env.MECH_OBS_STRICT === "true",
 };
 
 module.exports = config;

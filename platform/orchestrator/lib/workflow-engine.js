@@ -151,6 +151,34 @@ class WorkflowEngine {
   }
 
   /**
+   * Strip npm/yarn/pnpm boilerplate lines from agent output.
+   * Removes progress bars, "added N packages", funding notices, and audit summaries
+   * so that feedback loops see signal rather than install noise.
+   */
+  _stripNpmBoilerplate(text) {
+    return text
+      .split("\n")
+      .filter((line) => {
+        // npm progress bars / spinners
+        if (/^[\s\u2800-\u28FF⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]+$/.test(line)) return false;
+        // "added N packages", "removed N packages", "changed N packages"
+        if (/^(added|removed|changed|updated|audited|found)\s+\d+/.test(line.trim())) return false;
+        // "N packages are looking for funding"
+        if (/packages? are looking for funding/.test(line)) return false;
+        // "run `npm fund`"
+        if (/run `npm fund`/.test(line)) return false;
+        // npm warn/notice EBADENGINE / skipping optional dependency
+        if (/^npm (warn|notice)\s+(EBADENGINE|EBADPLATFORM|skipping optional dependency)/i.test(line)) return false;
+        // npm timing lines
+        if (/^npm timing /.test(line)) return false;
+        // "up to date in Xs" / "done in Xs"
+        if (/^(up to date|done) in \d/.test(line.trim())) return false;
+        return true;
+      })
+      .join("\n");
+  }
+
+  /**
    * Extract error-relevant lines from agent output for feedback loops.
    * Returns ±contextLines around each error/fail/exception match.
    * Falls back to the last 800 chars when no patterns are found.
@@ -277,7 +305,7 @@ ${feedback}`;
       return {
         role: agent.role,
         exitCode: result.exitCode,
-        outputTail: result.stdout.slice(-2000),
+        outputTail: this._stripNpmBoilerplate(result.stdout).slice(-2000),
       };
     };
 

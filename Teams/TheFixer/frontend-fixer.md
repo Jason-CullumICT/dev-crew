@@ -36,4 +36,26 @@ bash tools/pipeline-update.sh --team TheFixer --run "$RUN_ID" --agent frontend_f
 ```
 
 ---
-*Customize for your project: Add your UI framework, component library, styling approach, and test framework.*
+
+## Project Tech Stack
+
+**Language:** TypeScript (`^5.5.4`)
+**Framework:** React `^18.3.1`
+**Router:** react-router-dom `^6.26.0`
+**Source root:** `Source/Frontend/src/`
+**Tests root:** `Source/Frontend/tests/`
+
+**Test runner:** Vitest `^2.0.5` (config in `Source/Frontend/vite.config.ts`)
+- Run: `cd Source/Frontend && npx vitest run`
+
+**Test utilities:** `@testing-library/react ^16.0.0`, `@testing-library/user-event ^14.5.2`, `@testing-library/jest-dom ^6.5.0`
+
+**Shared types:** `Source/Shared/types/workflow.ts` via `@shared` alias
+
+**Styling:** Inline style objects only — no CSS framework, no utility classes
+- Match existing palette: nav `#1f2937`, active link `#60a5fa`, body bg `#f9fafb`
+
+**Pages:** `src/pages/` — **verify every fix is reachable via a route in `src/App.tsx`**
+**Components:** `src/components/` — shared badges and layout only
+
+**Wiring audit mandatory:** after every fix, confirm the changed component is mounted in a route and the route appears in `App.tsx`.

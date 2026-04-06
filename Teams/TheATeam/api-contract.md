@@ -37,4 +37,29 @@ bash tools/pipeline-update.sh --team TheATeam --run "$RUN_ID" --agent api_contra
 ```
 
 ---
-*Customize for your project: Specify the shared types directory path, type definition format (TypeScript, Go structs, etc.), and API documentation format.*
+
+## Project Contract Conventions
+
+**Shared types file:** `Source/Shared/types/workflow.ts`
+- Imported by backend via `@shared/types/workflow` (tsconfig alias: `../Shared`)
+- Imported by frontend via `@shared/types/workflow` (vite alias: `../Shared`)
+- **All new shared types and enums go in this single file** — do not create additional files in `Source/Shared/types/`
+
+**Contracts document:** Write to `Source/Shared/api-contracts.md` (create if absent)
+- Format: one section per endpoint, showing HTTP method + path, request body type, response type, and error codes
+
+**Type format:** TypeScript interfaces and enums only
+- Use `export interface` for request/response shapes
+- Use `export enum` for status/type/priority variants
+- No `type` aliases for object shapes — use `interface`
+
+**Existing key types** (do not redefine, only extend):
+- `WorkItem`, `WorkItemStatus`, `WorkItemType`, `WorkItemPriority`, `WorkItemSource`, `WorkItemComplexity`, `WorkItemRoute`, `AssessmentVerdict`
+- `VALID_STATUS_TRANSITIONS: Record<WorkItemStatus, WorkItemStatus[]>` — the state machine
+
+**Response shape conventions:**
+- Paginated list: `{ data: T[], page, limit, total, totalPages }` — `PaginatedResponse<T>`
+- Simple list: `{ data: T[] }` — `DataResponse<T>`
+- Single item: return `T` directly
+- Delete: `204 No Content` (no body type needed)
+- Error: `{ error: string }` — `ApiErrorResponse`

@@ -36,4 +36,29 @@ bash tools/pipeline-update.sh --team TheFixer --run "$RUN_ID" --agent backend_fi
 ```
 
 ---
-*Customize for your project: Add your tech stack, test framework, database setup, and coding standards.*
+
+## Project Tech Stack
+
+**Language:** TypeScript (`^5.3.3`)
+**Framework:** Express `^4.18.2`
+**Source root:** `Source/Backend/src/`
+**Tests root:** `Source/Backend/tests/`
+
+**Test runner:** Jest `^29.7.0` + `ts-jest ^29.1.2`
+- Run: `cd Source/Backend && npx jest`
+- Run single file: `npx jest tests/routes/workflow.test.ts`
+
+**Shared types:** `Source/Shared/types/workflow.ts` via `@shared` alias — never redefine inline
+
+**Data layer:** In-memory `Map<string, WorkItem>` in `Source/Backend/src/store/workItemStore.ts`
+- No DB, no migrations — fixes that require state persistence are out of scope for TheFixer
+
+**Key directories:**
+- Routes: `src/routes/{dashboard,intake,workflow,workItems}.ts`
+- Services: `src/services/{assessment,changeHistory,dashboard,router}.ts`
+- Middleware: `src/middleware/errorHandler.ts`
+
+**Logging:** `src/logger.ts` (Pino) — never `console.log`
+**HTTP testing:** Supertest `^6.3.3`
+
+**Smoke test:** after applying fixes, curl the changed endpoint: `curl -s http://localhost:3001/api/...`

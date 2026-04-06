@@ -37,4 +37,34 @@ bash tools/pipeline-update.sh --team TheFixer --run "$RUN_ID" --agent planner --
 ```
 
 ---
-*Customize for your project: Add your source directory structure, shared type paths, and routing conventions so the planner can accurately determine scope.*
+
+## Project Structure (for scope analysis)
+
+```
+Source/
+  Backend/
+    src/
+      routes/      — Express route handlers (dashboard, intake, workflow, workItems)
+      services/    — Business logic (assessment, changeHistory, dashboard, router)
+      store/       — workItemStore.ts (in-memory Map, no DB)
+      middleware/  — errorHandler.ts
+      logger.ts    — Pino logger (use this, never console.log)
+      metrics.ts   — prom-client Prometheus metrics
+    tests/routes/  — Supertest route tests (Jest + ts-jest)
+  Frontend/
+    src/
+      pages/       — React pages (5 pages, all in App.tsx routes)
+      components/  — Layout, PriorityBadge, StatusBadge, TypeBadge
+      App.tsx      — Root with react-router-dom routes
+    tests/         — Vitest + Testing Library tests
+  Shared/
+    types/workflow.ts  — ALL shared TypeScript types and enums (single source of truth)
+    api-contracts.md   — Human-readable endpoint contracts (may not exist yet)
+```
+
+**scope_tag rules for this project:**
+- `backend-only` — change is entirely in `Source/Backend/` (routes, services, store, middleware)
+- `frontend-only` — change is entirely in `Source/Frontend/` (pages, components)
+- `fullstack` — change spans both, OR touches `Source/Shared/types/workflow.ts`
+
+**Shared type changes always require `fullstack` scope** — both coders import from `@shared`.

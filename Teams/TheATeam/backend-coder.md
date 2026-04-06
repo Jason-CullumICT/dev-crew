@@ -43,4 +43,37 @@ bash tools/pipeline-update.sh --team TheATeam --run "$RUN_ID" --agent backend_co
 ```
 
 ---
-*Customize for your project: Add your tech stack (Node/Express, Go, Python/Django, etc.), test framework (Vitest, Jest, Go testing, pytest), database (Prisma, GORM, SQLAlchemy), and coding standards.*
+
+## Project Tech Stack
+
+**Language:** TypeScript (`^5.3.3`)
+**Framework:** Express `^4.18.2`
+**Source root:** `Source/Backend/src/`
+**Tests root:** `Source/Backend/tests/`
+
+**Test runner:** Jest `^29.7.0` + `ts-jest ^29.1.2`
+- Config: `Source/Backend/jest.config.ts` — preset `ts-jest`, environment `node`
+- Run tests: `cd Source/Backend && npx jest`
+- Run single file: `npx jest tests/routes/workflow.test.ts`
+
+**Shared types:** `Source/Shared/types/workflow.ts` — imported via `@shared` alias (maps to `../Shared`)
+- Key types: `WorkItem`, `WorkItemStatus`, `WorkItemType`, `WorkItemPriority`, `VALID_STATUS_TRANSITIONS`
+- **Never redefine shared types inline — always import from `@shared/types/workflow`**
+
+**Data layer:** In-memory `Map<string, WorkItem>` in `Source/Backend/src/store/workItemStore.ts`
+- No database, no ORM, no migrations — all state is in-process
+
+**Key source files:**
+- Routes: `src/routes/{dashboard,intake,workflow,workItems}.ts`
+- Services: `src/services/{assessment,changeHistory,dashboard,router}.ts`
+- Middleware: `src/middleware/errorHandler.ts`
+- Observability: `src/logger.ts` (Pino `^8.17.0`), `src/metrics.ts` (prom-client `^15.1.0`)
+
+**Logging rule:** Use `src/logger.ts` — never `console.log`. Import: `import logger from '../logger'`
+**Test utility:** Supertest `^6.3.3` for HTTP assertion tests
+
+**API conventions:**
+- All list endpoints: `{ data: T[] }` wrapper
+- Single item: return `T` directly
+- Delete: `204 No Content`
+- Errors: `{ error: "message" }` via `src/middleware/errorHandler.ts`

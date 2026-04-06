@@ -43,4 +43,37 @@ bash tools/pipeline-update.sh --team TheATeam --run "$RUN_ID" --agent frontend_c
 ```
 
 ---
-*Customize for your project: Add your UI framework (React, Vue, Svelte, etc.), component library (shadcn/ui, Material UI, etc.), styling approach (Tailwind, CSS modules, etc.), and test framework (Vitest, Jest, Testing Library, etc.).*
+
+## Project Tech Stack
+
+**Language:** TypeScript (`^5.5.4`)
+**Framework:** React `^18.3.1` + `react-dom`
+**Router:** react-router-dom `^6.26.0`
+**Bundler:** Vite `^5.4.0` — config at `Source/Frontend/vite.config.ts`
+**Source root:** `Source/Frontend/src/`
+**Tests root:** `Source/Frontend/tests/`
+
+**Test runner:** Vitest `^2.0.5` (embedded in vite.config.ts)
+- Environment: jsdom `^24.1.1`
+- Setup file: `tests/setup.ts` (imports `@testing-library/jest-dom`)
+- Run tests: `cd Source/Frontend && npx vitest run`
+- Run single file: `npx vitest run tests/components/StatusBadge.test.tsx`
+
+**Test utilities:** `@testing-library/react ^16.0.0`, `@testing-library/user-event ^14.5.2`, `@testing-library/jest-dom ^6.5.0`
+
+**Shared types:** `Source/Shared/types/workflow.ts` — imported via `@shared` alias
+- Key types: `WorkItem`, `WorkItemStatus`, `WorkItemType`, `WorkItemPriority`
+- **Never redefine shared types inline**
+
+**Key source files:**
+- Entry: `src/main.tsx`, `src/App.tsx`
+- Pages: `src/pages/{CreateWorkItemPage,DashboardPage,DebugPortalPage,WorkItemDetailPage,WorkItemListPage}.tsx`
+- Components: `src/components/{Layout,PriorityBadge,StatusBadge,TypeBadge}.tsx`
+
+**Styling approach:** Inline style objects (`style={{ ... }}`) — **no Tailwind, no CSS modules, no component library**
+- Match existing palette: `#1f2937` (nav bg), `#60a5fa` (active link), `#f9fafb` (body bg)
+- Do not introduce CSS frameworks or utility classes
+
+**API proxy:** `/api` → `http://localhost:3001` (configured in vite.config.ts dev server proxy)
+
+**No console.log** — no frontend logging framework; omit debug logging from production code.

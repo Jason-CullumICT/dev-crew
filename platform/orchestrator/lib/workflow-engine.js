@@ -150,6 +150,23 @@ class WorkflowEngine {
     }
   }
 
+  /**
+   * Commit a git checkpoint inside the worker container.
+   * No-ops silently when there is nothing to commit (clean working tree).
+   */
+  async _gitCheckpoint(containerId, stageName, runId) {
+    await this.containerManager.execInWorker(
+      containerId, "bash",
+      ["-c",
+        "cd /workspace && " +
+        "git add -A 2>/dev/null; " +
+        "git diff --cached --quiet 2>/dev/null || " +
+        `git commit -m "[checkpoint] ${stageName} passed - ${runId}" 2>/dev/null || true`
+      ],
+      { label: "git-checkpoint", quiet: true }
+    );
+  }
+
   async _listWorkerDir(containerId, dir) {
     const result = await this.containerManager.execInWorker(
       containerId, "ls", [dir], { quiet: true }
@@ -1263,6 +1280,12 @@ fi
             run.phases[stageKey].obsCheckOutput = obsResult.stdout.slice(-800);
             saveRunFn(run);
           }
+        }
+
+        // ── Git checkpoint: implementation stage cleared all gates ──
+        if (!isQA && passed) {
+          console.log(`[${run.id}] Git checkpoint: ${stage.name} passed`);
+          await this._gitCheckpoint(containerId, stage.name, run.id);
         }
 
         // ── Feedback loop: Implementation failed (no Source/ changes) -> re-run implementation ──

@@ -209,13 +209,15 @@ class WorkflowEngine {
    * No-ops silently when there is nothing to commit (clean working tree).
    */
   async _gitCheckpoint(containerId, stageName, runId) {
+    // Sanitize before shell interpolation — stage names come from AI-generated plans
+    const safe = (s) => s.replace(/["'`$\\\r\n]/g, "").slice(0, 80);
+    const msg = `[checkpoint] ${safe(stageName)} passed - ${safe(runId)}`;
     await this.containerManager.execInWorker(
       containerId, "bash",
       ["-c",
         "cd /workspace && " +
         "git add -A 2>/dev/null; " +
-        "git diff --cached --quiet 2>/dev/null || " +
-        `git commit -m "[checkpoint] ${stageName} passed - ${runId}" 2>/dev/null || true`
+        `git diff --cached --quiet 2>/dev/null || git commit -m "${msg}" 2>/dev/null || true`
       ],
       { label: "git-checkpoint", quiet: true }
     );
@@ -1230,11 +1232,11 @@ fi
             ["/app/scripts/mechanical-checks.sh", "deletion-context", run.id, this._baseBranch(run)],
             {
               label: "mech-deletion-ctx", quiet: true,
-              env: {
-                MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
-                MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
-                MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
-              },
+              env: [
+                `MECH_MAX_DELETED_FILES=${this.config.mechMaxDeletedFiles}`,
+                `MECH_MAX_DELETED_LINE_RATIO=${this.config.mechMaxDeletedLineRatio}`,
+                `MECH_MAX_DELETED_LINES=${this.config.mechMaxDeletedLines}`,
+              ],
             }
           );
           if (ctxResult.exitCode === 0 && ctxResult.stdout.trim()) {
@@ -1786,11 +1788,11 @@ fi
               ["/app/scripts/mechanical-checks.sh", "pre-merge", run.id, this._baseBranch(run)],
               {
                 label: "mech-pre-merge", quiet: false,
-                env: {
-                  MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
-                  MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
-                  MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
-                },
+                env: [
+                  `MECH_MAX_DELETED_FILES=${this.config.mechMaxDeletedFiles}`,
+                  `MECH_MAX_DELETED_LINE_RATIO=${this.config.mechMaxDeletedLineRatio}`,
+                  `MECH_MAX_DELETED_LINES=${this.config.mechMaxDeletedLines}`,
+                ],
               }
             );
             if (preMergeCheck.exitCode !== 0) {
@@ -1883,11 +1885,11 @@ fi
             ["/app/scripts/mechanical-checks.sh", "post-merge", run.id, this._baseBranch(run)],
             {
               label: "mech-post-merge", quiet: false,
-              env: {
-                MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
-                MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
-                MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
-              },
+              env: [
+                `MECH_MAX_DELETED_FILES=${this.config.mechMaxDeletedFiles}`,
+                `MECH_MAX_DELETED_LINE_RATIO=${this.config.mechMaxDeletedLineRatio}`,
+                `MECH_MAX_DELETED_LINES=${this.config.mechMaxDeletedLines}`,
+              ],
             }
           );
           run.mechanicalAudit = {

@@ -33,8 +33,10 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && rm -rf /var/lib/apt/lists/*
 
 # Playwright system dependencies + Chromium binary (for E2E tests in pipeline)
-RUN npx playwright install-deps chromium 2>/dev/null || true \
-    && npm install -g playwright \
+# install-deps must run after Node.js is available (needs npx) and BEFORE the
+# binary install so OS-level shared libraries (libgbm, libatk, etc.) are present.
+RUN npm install -g playwright \
+    && playwright install-deps chromium \
     && playwright install chromium
 
 # Claude Code

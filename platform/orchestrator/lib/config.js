@@ -38,6 +38,14 @@ const config = {
   defaultRiskLevel: process.env.DEFAULT_RISK_LEVEL || "medium",
   autoMergeLow: process.env.AUTO_MERGE_LOW !== "false",
   autoMergeMedium: process.env.AUTO_MERGE_MEDIUM !== "false",
+
+  // Mechanical checks — hard numeric gates against destructive agent output.
+  // Passed as env vars into the worker container so mechanical-checks.sh reads them.
+  // Set MECH_ENABLED=false to disable all gates (not recommended in production).
+  mechChecksEnabled: process.env.MECH_ENABLED !== "false",
+  mechMaxDeletedFiles: Number(process.env.MECH_MAX_DELETED_FILES) || 10,
+  mechMaxDeletedLineRatio: Number(process.env.MECH_MAX_DELETED_LINE_RATIO) || 40,  // percent
+  mechMaxDeletedLines: Number(process.env.MECH_MAX_DELETED_LINES) || 2000,
 };
 
 module.exports = config;

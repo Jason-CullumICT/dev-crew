@@ -1021,6 +1021,25 @@ fi
         saveRunFn(run);
       }
 
+      // ── Mechanical Check Stage 1: Baseline snapshot ──
+      if (this.config.mechChecksEnabled) {
+        const snapshotResult = await this.containerManager.execInWorker(
+          containerId, "bash",
+          ["/app/scripts/mechanical-checks.sh", "snapshot", run.id, this._baseBranch(run)],
+          {
+            label: "mech-snapshot", quiet: false,
+            env: [
+              `MECH_MAX_DELETED_FILES=${this.config.mechMaxDeletedFiles}`,
+              `MECH_MAX_DELETED_LINE_RATIO=${this.config.mechMaxDeletedLineRatio}`,
+              `MECH_MAX_DELETED_LINES=${this.config.mechMaxDeletedLines}`,
+            ],
+          }
+        );
+        if (snapshotResult.exitCode !== 0) {
+          console.warn(`[${run.id}] Mechanical snapshot non-fatal: ${snapshotResult.stdout.slice(0, 200)}`);
+        }
+      }
+
       // ── Phase 2: Parse dispatch plan ──
       let dispatchPlan;
 
@@ -1132,7 +1151,32 @@ fi
 
         console.log(`[${run.id}] Stage ${i + 1}/${dispatchPlan.stages.length}: ${stage.name} (${stage.agents.length} agent(s), parallel=${stage.parallel})`);
 
-        let { passed, agentResults } = await this.executeStageInWorker(containerId, stage);
+        // ── Mechanical Check Stage 3: Inject deletion context into QA prompts ──
+        let stageForExec = stage;
+        if (isQA && this.config.mechChecksEnabled) {
+          const ctxResult = await this.containerManager.execInWorker(
+            containerId, "bash",
+            ["/app/scripts/mechanical-checks.sh", "deletion-context", run.id, this._baseBranch(run)],
+            {
+              label: "mech-deletion-ctx", quiet: true,
+              env: {
+                MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
+                MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
+                MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
+              },
+            }
+          );
+          if (ctxResult.exitCode === 0 && ctxResult.stdout.trim()) {
+            const deletionCtx = ctxResult.stdout.trim();
+            stageForExec = {
+              ...stage,
+              agents: stage.agents.map((a) => ({ ...a, prompt: a.prompt + "\n\n" + deletionCtx })),
+            };
+            console.log(`[${run.id}] Injected deletion context into QA stage (${stageForExec.agents.length} agent(s))`);
+          }
+        }
+
+        let { passed, agentResults } = await this.executeStageInWorker(containerId, stageForExec);
 
         // Record per-agent results
         for (const ar of agentResults) {
@@ -1178,6 +1222,33 @@ fi
             saveRunFn(run);
           } else {
             console.log(`[${run.id}] Implementation verified: Source/ files changed:\n${changedFiles}`);
+          }
+        }
+
+        // ── Mechanical Check Stage 2: Post-implementation deletion gate ──
+        if (!isQA && passed && this.config.mechChecksEnabled) {
+          const mechResult = await this.containerManager.execInWorker(
+            containerId, "bash",
+            ["/app/scripts/mechanical-checks.sh", "post-impl", run.id, this._baseBranch(run)],
+            {
+              label: "mech-post-impl", quiet: false,
+              env: {
+                MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
+                MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
+                MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
+              },
+            }
+          );
+          if (mechResult.exitCode !== 0) {
+            console.error(`[${run.id}] MECHANICAL CHECK BLOCKED (post-impl):\n${mechResult.stdout.slice(0, 600)}`);
+            run.phases[stageKey].mechCheckFailed = true;
+            run.phases[stageKey].mechCheckOutput = mechResult.stdout.slice(-1000);
+            passed = false;
+            for (const ar of agentResults) {
+              ar.exitCode = 1;
+              ar.outputTail += `\n\nMECHANICAL CHECK BLOCKED:\n${mechResult.stdout.slice(-600)}`;
+            }
+            saveRunFn(run);
           }
         }
 
@@ -1608,6 +1679,27 @@ fi
         saveRunFn(run);
 
         try {
+          // ── Mechanical Check Stage 4: Pre-merge gate ──
+          if (this.config.mechChecksEnabled) {
+            const preMergeCheck = await this.containerManager.execInWorker(
+              containerId, "bash",
+              ["/app/scripts/mechanical-checks.sh", "pre-merge", run.id, this._baseBranch(run)],
+              {
+                label: "mech-pre-merge", quiet: false,
+                env: {
+                  MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
+                  MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
+                  MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
+                },
+              }
+            );
+            if (preMergeCheck.exitCode !== 0) {
+              run.phases.prMerge.mechCheckFailed = true;
+              run.phases.prMerge.mechCheckOutput = preMergeCheck.stdout.slice(-1000);
+              throw new Error(`MECHANICAL_CHECK_BLOCKED: ${preMergeCheck.stdout.slice(0, 300)}`);
+            }
+          }
+
           // Phase 6.5a: Create PR — Verifies: FR-TMP-004
           await this._createPR(containerId, run, saveRunFn);
 
@@ -1629,11 +1721,16 @@ fi
           saveRunFn(run);
         } catch (err) {
           // Verifies: FR-TMP-010 — PR/merge errors are non-fatal
-          console.warn(`[${run.id}] PR/merge phase error: ${err.message}`);
-          run.phases.prMerge.status = "failed";
+          const isMechBlock = err.message.startsWith("MECHANICAL_CHECK_BLOCKED");
+          if (isMechBlock) {
+            console.error(`[${run.id}] PR blocked by mechanical check: ${err.message.slice(0, 200)}`);
+          } else {
+            console.warn(`[${run.id}] PR/merge phase error: ${err.message}`);
+          }
+          run.phases.prMerge.status = isMechBlock ? "blocked_mech_check" : "failed";
           run.phases.prMerge.completedAt = ts();
           run.phases.prMerge.error = err.message;
-          run.results.pr = "error";
+          run.results.pr = isMechBlock ? "blocked_mech_check" : "error";
           saveRunFn(run);
         }
       }
@@ -1676,6 +1773,32 @@ fi
         }
       } catch (err) {
         console.warn(`[${run.id}] Learnings sync failed: ${err.message}`);
+      }
+
+      // ── Mechanical Check Stage 5: Post-merge audit (non-blocking) ──
+      if (this.config.mechChecksEnabled) {
+        try {
+          const auditResult = await this.containerManager.execInWorker(
+            containerId, "bash",
+            ["/app/scripts/mechanical-checks.sh", "post-merge", run.id, this._baseBranch(run)],
+            {
+              label: "mech-post-merge", quiet: false,
+              env: {
+                MECH_MAX_DELETED_FILES: String(this.config.mechMaxDeletedFiles),
+                MECH_MAX_DELETED_LINE_RATIO: String(this.config.mechMaxDeletedLineRatio),
+                MECH_MAX_DELETED_LINES: String(this.config.mechMaxDeletedLines),
+              },
+            }
+          );
+          run.mechanicalAudit = {
+            exitCode: auditResult.exitCode,
+            output: auditResult.stdout.slice(-500),
+            completedAt: ts(),
+          };
+          saveRunFn(run);
+        } catch (err) {
+          console.warn(`[${run.id}] Post-merge audit failed (non-fatal): ${err.message}`);
+        }
       }
 
       // ── Phase 9: Auto-update portal if this cycle targeted the portal repo ──

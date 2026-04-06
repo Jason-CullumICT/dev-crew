@@ -1265,6 +1265,25 @@ fi
 
         console.log(`[${run.id}] Stage ${stage.name}: ${passed ? "PASSED" : "FAILED"}`);
 
+        // ── QA completion gate: QA agents must produce meaningful output ──
+        // A QA agent that exits 0 having written nothing counts as a fake pass.
+        // Require at least 150 chars of non-boilerplate output per QA agent.
+        if (isQA && passed) {
+          const emptyQaAgents = agentResults.filter((ar) => ar.exitCode === 0 && ar.outputTail.trim().length < 150);
+          if (emptyQaAgents.length > 0) {
+            const names = emptyQaAgents.map((ar) => ar.role).join(", ");
+            console.error(`[${run.id}] QA completion gate: ${emptyQaAgents.length} agent(s) produced no meaningful output: ${names}`);
+            run.phases[stageKey].status = "failed";
+            run.phases[stageKey].qaEmptyOutput = names;
+            passed = false;
+            for (const ar of emptyQaAgents) {
+              ar.exitCode = 1;
+              ar.outputTail += "\n\nQA COMPLETION GATE FAILED: Your output was too short to be a meaningful review. You MUST produce a written report with findings, a verdict (PASS/FAIL), and evidence. Exiting 0 with minimal output is not acceptable.";
+            }
+            saveRunFn(run);
+          }
+        }
+
         // ── Code change verification: implementation must produce code ──
         if (!isQA && passed) {
           // Try git-based detection first, fall back to filesystem scan if not a git repo
@@ -1646,10 +1665,12 @@ fi
         try {
           let e2ePassed = await this._runPlaywrightE2E(containerId, run, saveRunFn);
 
-          // Verifies: FR-TMP-003 — E2E feedback loop (shared counter with QA)
-          if (!e2ePassed && feedbackLoops < this.config.maxFeedbackLoops && lastImplStageIdx >= 0) {
-            feedbackLoops++;
-            console.log(`[${run.id}] E2E feedback loop ${feedbackLoops}/${this.config.maxFeedbackLoops}`);
+          // Verifies: FR-TMP-003 — E2E feedback loop (own counter, independent of QA/impl loops)
+          let e2eFeedbackLoops = 0;
+          if (!e2ePassed && e2eFeedbackLoops < this.config.maxFeedbackLoops && lastImplStageIdx >= 0) {
+            e2eFeedbackLoops++;
+            feedbackLoops++; // also increment shared counter for reporting
+            console.log(`[${run.id}] E2E feedback loop ${e2eFeedbackLoops}/${this.config.maxFeedbackLoops}`);
 
             const e2eFeedback = `E2E TEST FAILURES:\n${run.e2e.outputTail || "(no output)"}`;
 
@@ -1702,6 +1723,16 @@ fi
           // Verifies: FR-TMP-009 — update results with E2E status
           run.results.e2e = run.e2e.status;
           run.feedbackLoops = feedbackLoops;
+
+          // Retroactively downgrade run.status if E2E failed after allPassed was computed.
+          // allPassed is computed at Phase 5 before E2E runs — E2E failure must override it.
+          if (run.e2e.status === "failed" && run.status === "complete") {
+            console.warn(`[${run.id}] E2E failed after allPassed — downgrading run.status to "failed"`);
+            run.status = "failed";
+            run.results.allPassed = false;
+            run.results.e2eOverride = true;
+          }
+
           saveRunFn(run);
         } catch (err) {
           // Verifies: FR-TMP-010 — E2E errors are non-fatal

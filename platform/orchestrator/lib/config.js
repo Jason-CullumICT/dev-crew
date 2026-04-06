@@ -30,7 +30,7 @@ const config = {
   workerImage: process.env.WORKER_IMAGE || "dev-crew-worker:latest",
 
   // Feedback
-  maxFeedbackLoops: 2,
+  maxFeedbackLoops: Number(process.env.MAX_FEEDBACK_LOOPS) || 2,
 
   // Tiered merge pipeline (FR-TMP-007)
   // Verifies: FR-TMP-007

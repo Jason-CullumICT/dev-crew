@@ -1613,6 +1613,18 @@ fi
         feedbackLoops,
         allPassed,
       };
+
+      // ── Metrics: wall-clock duration per phase + total ──
+      const phaseMetrics = {};
+      for (const [key, phase] of Object.entries(run.phases)) {
+        if (phase.startedAt && phase.completedAt) {
+          phaseMetrics[key] = Math.round(new Date(phase.completedAt) - new Date(phase.startedAt));
+        }
+      }
+      run.metrics = {
+        totalMs: run.createdAt ? Math.round(Date.now() - new Date(run.createdAt)) : null,
+        phases: phaseMetrics,
+      };
       saveRunFn(run);
 
       console.log(`[${run.id}] === WORKFLOW ${run.status.toUpperCase()} === leader=${run.results.leader} impl=${run.results.implementation} qa=${run.results.qa} smoke=${run.results.smoketest} inspect=${run.results.inspector} feedbackLoops=${feedbackLoops}`);

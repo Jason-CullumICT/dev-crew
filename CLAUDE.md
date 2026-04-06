@@ -113,6 +113,9 @@ These are non-negotiable. All agents and solo sessions must follow them.
 - **New routes must have observability** -- structured logging (not console.log), Prometheus metrics for domain-significant operations
 - **Business logic has no framework imports** -- keep domain logic in pure functions/services
 - **Shared type changes affect multiple layers** -- coordinate across layers before editing
+- **Never swallow errors silently** -- every `catch` block must either re-throw, log with full context, or explicitly document why the error is intentionally suppressed
+- **Verify success independently of exit codes** -- after `git push`, confirm the ref exists on remote; after DB writes, confirm the record exists; do not trust process exit codes alone
+- **Preserve failure evidence** -- when a step fails, write the full error output to a log file or run state before cleaning up; never discard the only copy of failure information
 
 <!-- Add project-specific rules as needed: -->
 <!-- - **Frontend UI must use [component library]** -- all user-facing UI elements must use the shared component primitives -->
@@ -135,7 +138,8 @@ Write tests before or alongside implementation. Run verification gates before ma
 
 **Verification gates:**
 ```bash
-# Add your test commands here
+python3 tools/traceability-enforcer.py
+npm test --workspaces --if-present
 ```
 
 If any gate fails: fix it, re-run the full gate sequence, then mark done.

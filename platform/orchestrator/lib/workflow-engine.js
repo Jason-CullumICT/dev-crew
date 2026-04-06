@@ -151,6 +151,32 @@ class WorkflowEngine {
   }
 
   /**
+   * Extract error-relevant lines from agent output for feedback loops.
+   * Returns ±contextLines around each error/fail/exception match.
+   * Falls back to the last 800 chars when no patterns are found.
+   */
+  _snippetErrors(text, contextLines = 5) {
+    const lines = text.split("\n");
+    const errorPattern = /error|fail|exception|traceback|panic|fatal|assert|unexpected|cannot|undefined is not|typeerror|syntaxerror|referenceerror/i;
+    const matched = new Set();
+
+    for (let i = 0; i < lines.length; i++) {
+      if (errorPattern.test(lines[i])) {
+        const start = Math.max(0, i - contextLines);
+        const end = Math.min(lines.length - 1, i + contextLines);
+        for (let j = start; j <= end; j++) matched.add(j);
+      }
+    }
+
+    if (matched.size === 0) {
+      return text.slice(-800);
+    }
+
+    const snippetLines = [...matched].sort((a, b) => a - b).map((i) => lines[i]);
+    return snippetLines.join("\n");
+  }
+
+  /**
    * Commit a git checkpoint inside the worker container.
    * No-ops silently when there is nothing to commit (clean working tree).
    */
@@ -1294,7 +1320,7 @@ fi
           console.log(`[${run.id}] Feedback loop ${feedbackLoops}/${this.config.maxFeedbackLoops}: No Source/ changes -> re-run implementation`);
 
           const feedback = agentResults
-            .map((ar) => `-- ${ar.role} --\n${ar.outputTail.slice(-1000)}`)
+            .map((ar) => `-- ${ar.role} --\n${this._snippetErrors(ar.outputTail)}`)
             .join("\n\n");
 
           const fbImplKey = `feedback_${feedbackLoops}_${stage.name}`;
@@ -1348,7 +1374,7 @@ fi
           // Collect QA feedback from failed agents
           const feedback = agentResults
             .filter((ar) => ar.exitCode !== 0)
-            .map((ar) => `-- ${ar.role} (FAILED) --\n${ar.outputTail.slice(-1000)}`)
+            .map((ar) => `-- ${ar.role} (FAILED) --\n${this._snippetErrors(ar.outputTail)}`)
             .join("\n\n");
 
           // Re-run implementation with feedback — scope to affected layer when possible

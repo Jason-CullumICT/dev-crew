@@ -1,0 +1,7 @@
+# HTML audit reports are large and generated — do not commit to git
+*.html
+
+# Keep these tracked for record-keeping and trend analysis
+!bug-backlog-*.json
+!README.md
+!.gitkeep

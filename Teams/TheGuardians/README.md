@@ -42,20 +42,23 @@ Stage 3: Synthesis (team-leader)
 
 The Guardians operate best when integrated into a CI/CD pipeline right before a major release or on a nightly schedule. 
 
-- **Penetration Testing:** Actively attempts to break into the running application or theoretically traces exploit chains if running in static mode.
+- **Penetration Testing:** White-box static analysis maps the full attack surface. The red-teamer then chains those findings into active exploits against the live environment — always dynamic, no static fallback.
 - **Compliance Auditing:** Maps codebase realities (e.g., how passwords are hashed, how PII is stored) against strict compliance requirements.
-- **Static Analysis:** Scans the codebase for anti-patterns, hardcoded secrets, and known vulnerability signatures.
+- **Static Analysis:** Scans first-party source code for CWEs, hardcoded secrets, and insecure API patterns. Third-party CVEs are handled by TheInspector's dependency-auditor.
 
 ## How to Invoke
 
-Provide the team leader with the current build context, the target environment URLs (if dynamic), and the compliance frameworks to audit against.
+Provide the team leader with the current build context, the target environment URLs, and the compliance frameworks to audit against.
+
+> **REQUIRED:** The red-teamer executes active exploit chains. Always confirm the target is an **ephemeral, isolated environment** (e.g., a Docker Compose stack spun up for this run) — never shared dev, staging, or production. The team-leader will gate on this before dispatching Phase 2.
 
 ```text
 Read the role file at Teams/TheGuardians/team-leader.md and follow it exactly.
 
 Task context:
 Audit: Security and Compliance Review
-Target: New Build Candidate
+Target: Ephemeral isolated environment (confirm before red-teamer dispatch)
 
 Team folder: Teams/TheGuardians
+Config: Teams/TheGuardians/security.config.yml
 ```

@@ -133,6 +133,24 @@ grading:
   D: { max_p1: 999 }             # Anything worse = D
   # F is reserved for: exploitable auth bypass + critical domain failure
 
+# ── Cross-Team Escalation ─────────────────────────────────────
+# When TheInspector surfaces a finding that belongs to another team's domain,
+# document it and route it — don't attempt to own it.
+escalation:
+  # Security findings: route to TheGuardians, not TheFixer
+  # If quality-oracle or chaos-monkey surfaces an auth bypass, injection risk,
+  # or sensitive data exposure, mark it [ESCALATE → TheGuardians] in the report.
+  security_escalation_team: TheGuardians
+  security_triggers:
+    - "auth bypass"
+    - "injection"
+    - "sensitive data exposed"
+    - "hardcoded secret"
+    - "missing access control"
+
+  # Bug fixes and code quality: route to TheFixer
+  fix_team: TheFixer
+
 # ── Report ────────────────────────────────────────────────────
 report:
   output_dir: "Teams/TheInspector/findings/"   # matches findings/README.md convention

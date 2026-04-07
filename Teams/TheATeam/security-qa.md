@@ -33,7 +33,7 @@ Then read each changed file in full.
 | Security Misconfiguration | Secrets or tokens hardcoded in source; debug endpoints exposed in production paths |
 | Sensitive Data Exposure | PII or internal system data returned in API responses unnecessarily |
 | Insecure Direct Object References | User-supplied IDs used to access the store without ownership verification |
-| Supply Chain | New packages added to `package.json` — check for known-vulnerable or abandoned packages |
+| Supply Chain | New packages added to `package.json` — flag obviously suspicious additions (e.g., typosquats, packages with <100 weekly downloads, postinstall scripts). Deep CVE scanning is TheInspector/dependency-auditor's scope — note `[SEE dependency-auditor]` rather than re-running npm audit. |
 
 ### Frontend-specific
 - User input rendered directly into the DOM without sanitization (React `innerHTML` pattern)

@@ -30,6 +30,22 @@ The project's architectural archivist and knowledge refiner. Your mission is to 
 
 Agent key: `librarian`.
 
+Initialize run:
 ```bash
-bash tools/pipeline-update.sh --team Maintenance --run "$RUN_ID" --agent librarian --action start --name "Librarian" --model sonnet
+RUN_ID=$(bash tools/pipeline-update.sh --team Maintenance --action init \
+  --agent librarian --name "Librarian" --model sonnet \
+  --metrics '{"task_title": "Knowledge Synthesis"}')
+```
+
+On start:
+```bash
+bash tools/pipeline-update.sh --team Maintenance --run "$RUN_ID" \
+  --agent librarian --action start --name "Librarian" --model sonnet
+```
+
+On completion:
+```bash
+bash tools/pipeline-update.sh --team Maintenance --run "$RUN_ID" \
+  --agent librarian --action complete \
+  --metrics '{"files_pruned": 0, "proposals_generated": 0}'
 ```

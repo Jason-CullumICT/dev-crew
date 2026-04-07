@@ -114,9 +114,24 @@ Write to: `Teams/TheGuardians/findings/security-backlog-{date}.json`
 
 ## Dashboard Reporting
 
+**Initialize run (FIRST thing — captures RUN_ID for all subsequent calls):**
+```bash
+RUN_ID=$(bash tools/pipeline-update.sh --team TheGuardians --action init \
+  --agent team_leader --name "Team Leader" --model sonnet \
+  --metrics '{"task_title": "Security & Compliance Audit"}')
+```
+
+**CRITICAL: Pass run ID to all spawned agents.** Every agent prompt MUST include:
+```
+Pipeline run ID: {RUN_ID}
+Use --run {RUN_ID} for all pipeline-update.sh calls.
+```
+
+After each phase completes:
 ```bash
 bash tools/pipeline-update.sh --team TheGuardians --run "$RUN_ID" \
-  --agent team_leader --action start --name "Team Leader" --model sonnet
+  --agent team_leader --action update \
+  --metrics '{"current_phase": 1, "phases_total": 2, "agents_completed": 3}'
 ```
 
 On completion:

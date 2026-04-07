@@ -52,13 +52,28 @@ Frontend: X points -> Y coder(s)
 - Frontend Coder 1: FR-002 [S], FR-004 [M] (3 pts)
 ```
 
+## Project-Specific Validation
+
+For the dev-crew project:
+- **Spec source of truth:** `Specifications/` — read relevant specs before reviewing any FR
+- **Traceability pattern:** every FR must be testable with a `// Verifies: FR-XXX` comment
+- **Architecture rules from `CLAUDE.md`:** no direct DB calls from route handlers, shared types in `Source/Shared/`, all list endpoints return `{data: T[]}` wrappers — reject FRs that would require violating these
+- **Domain concepts:** work items, state machines, assessment verdicts, ABAC — validate FRs use correct terminology
+- **Reject if:** FR is untestable, contradicts an existing spec, or would require touching `platform/`
+
 ## Dashboard Reporting
 
 Agent key: `requirements_reviewer`.
 
+On start:
 ```bash
-bash tools/pipeline-update.sh --team TheATeam --run "$RUN_ID" --agent requirements_reviewer --action start --name "Requirements Reviewer" --model sonnet
+bash tools/pipeline-update.sh --team TheATeam --run "$RUN_ID" \
+  --agent requirements_reviewer --action start --name "Requirements Reviewer" --model sonnet
 ```
 
----
-*Customize for your project: Add domain-specific validation rules, spec file paths, and terminology.*
+On completion:
+```bash
+bash tools/pipeline-update.sh --team TheATeam --run "$RUN_ID" \
+  --agent requirements_reviewer --action complete \
+  --metrics '{"verdict": "approved", "fr_count": 0, "backend_pts": 0, "frontend_pts": 0}'
+```

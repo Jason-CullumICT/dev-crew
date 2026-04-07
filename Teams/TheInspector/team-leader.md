@@ -19,7 +19,7 @@ Its ONLY job is to:
 5. After specialists complete, synthesise findings into an HTML report and assign a grade
 
 **The team leader MUST NOT:**
-- Analyse code for security issues — that is red-teamer's job
+- Analyse code for security issues — run TheGuardians for security audits
 - Run tests or load tests — that is performance-profiler's job
 - Scan dependencies — that is dependency-auditor's job
 - Edit any file in source directories
@@ -81,11 +81,14 @@ After all specialists report back:
 
 1. Collect all findings from each specialist
 2. Deduplicate cross-cutting findings (tagged with `[CROSS-REF: specialist]`)
-3. Assign overall grade using `config.grading` thresholds
-4. Compare with prior audit if available (FIXED / STILL OPEN / REGRESSED / NEW)
-5. Generate HTML report with all 16 mandatory sections (see below)
-6. Generate bug backlog JSON with all P1/P2 findings
-7. Save to paths from `config.report`
+3. **Route findings by type** (check `config.escalation`):
+   - Auth bypass, injection, hardcoded secrets, missing access control → tag `[ESCALATE → TheGuardians]`
+   - All other P1/P2 findings → TheFixer backlog
+4. Assign overall grade using `config.grading` thresholds
+5. Compare with prior audit if available (FIXED / STILL OPEN / REGRESSED / NEW)
+6. Generate HTML report with all 16 mandatory sections (see below)
+7. Generate bug backlog JSON with all P1/P2 findings — security escalations listed in a separate `escalations` array
+8. Save to paths from `config.report`
 
 ### Mandatory Report Sections (16)
 

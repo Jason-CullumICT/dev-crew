@@ -1,6 +1,8 @@
 # TheInspector
 
-A config-driven system health audit team that performs adversarial security analysis, spec-drift detection, performance profiling, chaos testing, and dependency auditing. Runs periodically or post-merge to catch systemic issues that accumulate across features.
+A config-driven system health audit team that performs spec-drift detection, performance profiling, chaos testing, and dependency auditing. Runs periodically or post-merge to catch systemic issues that accumulate across features.
+
+> **Security audits** (penetration testing, SAST, compliance) are handled by **TheGuardians**, not TheInspector. If TheInspector surfaces a P1 security finding, escalate by running TheGuardians rather than routing to TheFixer.
 
 **Project-agnostic.** All domain knowledge comes from `inspector.config.yml` — the specialists adapt to any project.
 
@@ -84,6 +86,18 @@ What counts as "critical" comes from `security.critical_operations` in config �
 Two artifacts per run:
 - **HTML Report** — graded A-F, executive summary, per-specialist findings, trend comparison
 - **Bug Backlog JSON** — machine-readable P1/P2 findings for TheFixer to remediate
+
+### Escalation Routing
+
+Not all findings go to TheFixer. Route based on finding type:
+
+| Finding Type | Route To |
+|---|---|
+| Bug, logic error, test failure, perf regression | **TheFixer** |
+| Auth bypass, injection risk, hardcoded secret, missing access control | **TheGuardians** |
+| Outdated package with P1 CVE | **TheFixer** (code change) + **TheGuardians** (exploitability assessment) |
+
+Mark security-escalation findings with `[ESCALATE → TheGuardians]` in the report. The synthesis section should list escalations separately so the operator knows to trigger a TheGuardians run.
 
 ## How to Invoke
 

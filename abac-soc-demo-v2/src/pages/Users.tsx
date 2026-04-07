@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
 import type { User, ClearanceLevel, UserStatus } from '../types';
@@ -299,9 +299,8 @@ export default function Users() {
                 </tr>
               )}
               {pageUsers.map((user) => (
-                <>
+                <React.Fragment key={user.id}>
                   <tr
-                    key={user.id}
                     className={`border-b border-gray-800 hover:bg-gray-800/60 cursor-pointer transition-colors ${expandedId === user.id ? 'bg-gray-800/80' : ''}`}
                     onClick={() => setExpandedId(expandedId === user.id ? null : user.id)}
                   >
@@ -430,7 +429,7 @@ export default function Users() {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>

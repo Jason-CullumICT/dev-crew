@@ -35,7 +35,6 @@ Its ONLY job is to:
    curl -sf {service.health} > /dev/null 2>&1
    ```
 4. Determine mode per specialist:
-   - red-teamer: hybrid (always static, optional dynamic verification if services up)
    - quality-oracle: always static
    - performance-profiler: dynamic if backend service healthy, else static
    - chaos-monkey: dynamic if ALL services healthy, else static
@@ -54,12 +53,6 @@ Return a structured plan the parent session uses to dispatch specialists:
 **Services:** backend (up/down), frontend (up/down), ...
 
 ### Specialist Assignments
-
-#### red-teamer
-- Mode: hybrid (static + dynamic verification)
-- Focus: {files and areas from git diff}
-- Threat scenarios: {from config.security.threat_scenarios}
-- Re-verify: {P1/P2 IDs from prior audit}
 
 #### quality-oracle
 - Mode: static

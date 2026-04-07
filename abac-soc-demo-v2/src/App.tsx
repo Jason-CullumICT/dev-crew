@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import { useStore } from './store/store';
-import { generateTestData } from './data/testData';
+import { generateRealWorldData } from './data/realWorldData';
 
 import Dashboard from './pages/Dashboard';
 import Sites from './pages/Sites';
@@ -22,7 +22,7 @@ export default function App() {
 
   useEffect(() => {
     if (users.length === 0) {
-      generateTestData();
+      generateRealWorldData();
     }
   }, []);
 

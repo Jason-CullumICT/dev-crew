@@ -1,0 +1,117 @@
+# TheGuardians Security Configuration (OPTIONAL)
+# ──────────────────────────────────────────────────────────────
+# This file is OPTIONAL. Agents auto-discover project context
+# from CLAUDE.md and the codebase. Use this file to specify
+# compliance frameworks, target URLs, and critical operations
+# that CLAUDE.md cannot capture.
+#
+# If this file doesn't exist, agents will:
+# - Read CLAUDE.md for service URLs, ports, tech stack
+# - Default to OWASP Top 10 for pen-tester focus
+# - Skip framework-specific compliance checks
+# ──────────────────────────────────────────────────────────────
+
+project:
+  name: "dev-crew Source App"
+  domain: "web-application"
+
+# ── Compliance Frameworks ──────────────────────────────────────
+# Which frameworks the compliance-auditor must verify against.
+compliance:
+  frameworks:
+    - id: "OWASP-ASVS"
+      level: 2                          # 1=opportunistic, 2=standard, 3=advanced
+      focus: ["authentication", "access-control", "data-protection"]
+    - id: "SOC2-Type2"
+      controls: ["CC6.1", "CC6.2", "CC6.3", "CC7.1", "CC8.1"]
+      focus: ["audit-logging", "access-control", "encryption"]
+
+  # Fields containing PII/sensitive data — auditor checks these are encrypted/masked
+  sensitive_fields:
+    - "email"
+    - "password"
+    - "token"
+    - "secret"
+    - "api_key"
+
+  # Events that must appear in audit logs for compliance
+  required_audit_events:
+    - "login_attempt"
+    - "permission_denied"
+    - "state_transition"
+    - "data_export"
+
+# ── Penetration Test Scope ─────────────────────────────────────
+pentest:
+  # In-scope services for the red-teamer (requires running instances)
+  targets:
+    - name: backend
+      url: http://localhost:3001
+      health: http://localhost:3001/
+    - name: frontend
+      url: http://localhost:5173
+      health: http://localhost:5173
+
+  # OWASP categories to always probe
+  owasp_focus:
+    - "A01: Broken Access Control"
+    - "A02: Cryptographic Failures"
+    - "A03: Injection"
+    - "A07: Identification and Authentication Failures"
+    - "A08: Software and Data Integrity Failures"
+
+  # High-value objectives the red-teamer attempts to achieve
+  objectives:
+    - "Bypass work item state machine to reach an invalid status"
+    - "Access or modify a soft-deleted work item via direct ID reference"
+    - "Submit a malformed assessment verdict that bypasses routing logic"
+    - "Enumerate all work items without pagination limit enforcement"
+
+  # Entry points the pen-tester maps exhaustively
+  critical_entry_points:
+    - "/api/work-items"
+    - "/api/work-items/:id"
+    - "/api/work-items/:id/transition"
+    - "/api/work-items/:id/assessment"
+    - "/api/dashboard"
+
+# ── Static Analysis Focus ──────────────────────────────────────
+static_analysis:
+  # Patterns static-analyzer always checks (in addition to CWE defaults)
+  always_check:
+    - "Dynamic code execution with user-controlled input"
+    - "Shell command construction from request parameters"
+    - "Unvalidated redirect targets"
+    - "Error messages leaking stack traces to clients"
+    - "Unsafe deserialization of untrusted input"
+
+  # Source dirs to scan
+  source_dirs:
+    - "Source/Backend/"
+    - "Source/Frontend/"
+    - "Source/Shared/"
+
+  exclude:
+    - "node_modules/"
+    - "dist/"
+    - ".git/"
+
+# ── Grading ────────────────────────────────────────────────────
+# Severity scale: Critical=P1, High=P2, Medium=P3, Low=P4 (aligns with TheInspector)
+grading:
+  A: { max_critical: 0, max_high: 2,  min_compliance_pass_rate: 90 }
+  B: { max_critical: 0, max_high: 6,  min_compliance_pass_rate: 75 }
+  C: { max_critical: 1, max_high: 12, min_compliance_pass_rate: 60 }
+  D: { max_critical: 2 }
+  # F: reserved for confirmed red-team breach of a critical objective
+
+# ── Report Output ──────────────────────────────────────────────
+report:
+  output_dir: "Teams/TheGuardians/findings/"
+  html_pattern: "security-report-{date}-{grade}.html"
+  backlog_pattern: "security-backlog-{date}.json"
+
+# ── Artifact Handoff ───────────────────────────────────────────
+# File the pen-tester writes; the red-teamer reads before exploiting.
+artifacts:
+  attack_surface_map: "Teams/TheGuardians/artifacts/attack-surface-map.md"

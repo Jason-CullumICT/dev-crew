@@ -4,12 +4,11 @@ A config-driven system health audit team that performs adversarial security anal
 
 **Project-agnostic.** All domain knowledge comes from `inspector.config.yml` — the specialists adapt to any project.
 
-## Agents (6)
+## Agents (5)
 
 | Agent | Model | Role | Mode |
 |-------|-------|------|------|
 | **`team-leader`** | **sonnet** | Pipeline orchestrator — scopes audit, dispatches specialists, synthesises HTML report | Orchestration only |
-| `red-teamer` | sonnet | Adversarial security analysis — exploit chains, not code smells | Hybrid (static + optional dynamic) |
 | `quality-oracle` | sonnet | Spec-drift analysis, pattern enforcement, documentation audit | Always static |
 | `performance-profiler` | sonnet | Load testing (dynamic) or N+1/index analysis (static fallback) | Dynamic-first |
 | `chaos-monkey` | sonnet | Fault injection (dynamic) or invariant analysis (static fallback) | Dynamic-first |
@@ -23,11 +22,11 @@ Stage 1: Scoping (team-leader)
           determines dynamic vs static mode per specialist
           |
 Stage 2: Specialists (ALL dispatched in parallel)
-          ┌──────────────┬──────────────┬───────────────────┬──────────────┬──────────────────┐
-          v              v              v                   v              v
-   red-teamer    quality-oracle  perf-profiler       chaos-monkey  dependency-auditor
-   [hybrid]      [static]        [dynamic-first]     [dynamic-first]  [static]
-          └──────────────┴──────────────┴───────────────────┴──────────────┴──────────────────┘
+          ┌──────────────┬───────────────────┬──────────────┬──────────────────┐
+          v              v                   v              v
+    quality-oracle  perf-profiler       chaos-monkey  dependency-auditor
+    [static]        [dynamic-first]     [dynamic-first]  [static]
+          └──────────────┴───────────────────┴──────────────┴──────────────────┘
           |
 Stage 3: Synthesis (team-leader)
           Deduplicates findings, generates HTML report, assigns grade A-F

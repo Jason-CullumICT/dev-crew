@@ -1,0 +1,45 @@
+name: Run TheGuardians
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to audit (leave blank for current default branch)'
+        required: false
+        default: ''
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+
+      # TODO: add your orchestrator invocation here.
+      # TheGuardians requires an ephemeral isolated environment —
+      # spin up a Docker Compose stack before invoking the team leader.
+      #
+      # Example skeleton:
+      #   - name: Start ephemeral environment
+      #     run: docker compose -f docker-compose.test.yml up -d
+      #
+      #   - name: Run TheGuardians
+      #     run: |
+      #       # Invoke Claude Code / your orchestrator with:
+      #       # "Read Teams/TheGuardians/team-leader.md and follow it exactly.
+      #       #  Audit: Security and Compliance Review
+      #       #  Target: Ephemeral isolated environment (confirmed)
+      #       #  Team folder: Teams/TheGuardians
+      #       #  Config: Teams/TheGuardians/security.config.yml"
+      #
+      #   - name: Tear down ephemeral environment
+      #     if: always()
+      #     run: docker compose -f docker-compose.test.yml down -v
+
+      - name: Placeholder
+        run: |
+          echo "TheGuardians workflow stub — wire up your orchestrator above."
+          echo "Branch: ${{ inputs.branch || github.ref }}"

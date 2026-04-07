@@ -1,0 +1,48 @@
+name: Run TheInspector
+
+on:
+  # Scheduled: nightly health audit
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC daily — adjust to suit
+
+  # Manual: trigger from a PR badge button or the Actions tab
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to audit (leave blank for default branch)'
+        required: false
+        default: ''
+      focus:
+        description: 'Optional focus areas (e.g. "auth routes, work item state machine")'
+        required: false
+        default: ''
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+
+      # TODO: add your orchestrator invocation here.
+      # TheInspector can run in static mode without a live environment.
+      # For dynamic mode (performance-profiler, chaos-monkey), spin up services first.
+      #
+      # Example skeleton:
+      #   - name: Run TheInspector
+      #     run: |
+      #       # Invoke Claude Code / your orchestrator with:
+      #       # "Read Teams/TheInspector/team-leader.md and follow it exactly.
+      #       #  Audit: System Health Audit
+      #       #  Focus: ${{ inputs.focus }}
+      #       #  Team folder: Teams/TheInspector
+      #       #  Config: Teams/TheInspector/inspector.config.yml"
+
+      - name: Placeholder
+        run: |
+          echo "TheInspector workflow stub — wire up your orchestrator above."
+          echo "Branch: ${{ inputs.branch || github.ref }}"
+          echo "Focus: ${{ inputs.focus }}"

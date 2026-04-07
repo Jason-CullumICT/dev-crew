@@ -84,6 +84,39 @@ After all specialists report back:
 3. **Route findings by type** (check `config.escalation`):
    - Auth bypass, injection, hardcoded secrets, missing access control → tag `[ESCALATE → TheGuardians]`
    - All other P1/P2 findings → TheFixer backlog
+   - If any `[ESCALATE → TheGuardians]` findings exist, run this escalation block:
+
+```bash
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)
+PR_NUM=$(gh pr view --json number -q .number 2>/dev/null)
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+AUDIT_ID="${RUN_ID}"
+# Replace {FINDING_SUMMARY} with a one-line description of the escalated finding
+
+if [ -n "$PR_NUM" ] && [ -n "$REPO" ]; then
+  gh pr comment "$PR_NUM" --body "## TheInspector — Security Signal
+
+**Audit:** \`${AUDIT_ID}\` · **Branch:** \`${BRANCH}\`
+**Finding:** {FINDING_SUMMARY}
+
+[![Trigger TheGuardians](https://img.shields.io/badge/Trigger-TheGuardians_Audit-CC0000?style=for-the-badge)](https://github.com/${REPO}/actions/workflows/run-guardians.yml) [![Trigger TheFixer](https://img.shields.io/badge/Trigger-TheFixer-0075CA?style=for-the-badge)](https://github.com/${REPO}/actions/workflows/run-fixer.yml)
+
+> **TheGuardians** — full security audit of this branch  
+> **TheFixer** — remaining non-security findings from this audit
+
+_Posted by TheInspector · \`${AUDIT_ID}\`_"
+
+else
+  printf '\n⚠  ESCALATION → TheGuardians\n'
+  printf '   Finding : %s\n' "{FINDING_SUMMARY}"
+  printf '   Branch  : %s\n' "${BRANCH}"
+  printf '   When    : before next release, or wait for the scheduled security run\n'
+  printf '\n   To trigger TheGuardians now:\n'
+  printf '     Read Teams/TheGuardians/team-leader.md and follow it exactly.\n'
+  printf '     Target: ephemeral isolated environment (required).\n'
+  printf '\n   Non-security findings → TheFixer backlog (see report)\n\n'
+fi
+```
 4. Assign overall grade using `config.grading` thresholds
 5. Compare with prior audit if available (FIXED / STILL OPEN / REGRESSED / NEW)
 6. Generate HTML report with all 16 mandatory sections (see below)

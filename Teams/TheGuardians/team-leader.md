@@ -65,7 +65,63 @@ Once all specialists return their findings:
    - **D**: ≤ 2 Critical
    - **F**: Any confirmed red-team breach of a critical objective (automatic)
 4. **Write output artifacts** (see Output below).
-5. **Write learnings**: Append synthesis notes to `Teams/TheGuardians/learnings/team-leader.md`.
+5. **Post verdict** — run this after writing artifacts. Auto-detects PR vs local.
+
+```bash
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)
+PR_NUM=$(gh pr view --json number -q .number 2>/dev/null)
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+# Populate these from synthesis results
+GRADE="?"          # A / B / C / D / F
+CRITICAL=0
+HIGH=0
+THEORETICAL=0      # PEN/SAST/COMP findings not confirmed by red-team
+CONFIRMED=0        # RED-ID confirmed breaches
+
+if [ -n "$PR_NUM" ] && [ -n "$REPO" ]; then
+  # Build TheFixer button only when there are theoretical (non-exploited) findings
+  # and no confirmed breaches — confirmed breaches require operator decision, not TheFixer
+  if [ "$CONFIRMED" -eq 0 ] && [ "$THEORETICAL" -gt 0 ]; then
+    FIXER_BUTTON="[![Trigger TheFixer](https://img.shields.io/badge/Remediate_findings-TheFixer-0075CA?style=for-the-badge)](https://github.com/${REPO}/actions/workflows/run-fixer.yml)"
+  else
+    FIXER_BUTTON=""
+  fi
+
+  gh pr comment "$PR_NUM" --body "## TheGuardians — Grade: ${GRADE}
+
+**Run:** \`${RUN_ID}\` · **Branch:** \`${BRANCH}\`
+
+| | Result |
+|---|---|
+| Critical | ${CRITICAL} |
+| High | ${HIGH} |
+| Theoretical findings | ${THEORETICAL} |
+| Confirmed breaches | ${CONFIRMED} |
+
+{paste top 1-3 finding titles here}
+
+${FIXER_BUTTON}
+
+> Full report: \`Teams/TheGuardians/findings/security-report-$(date +%Y-%m-%d)-${GRADE}.html\`
+
+_Posted by TheGuardians · \`${RUN_ID}\`_"
+
+else
+  printf '\n🛡  TheGuardians — Grade: %s\n' "${GRADE}"
+  printf '   Branch    : %s\n' "${BRANCH}"
+  printf '   Critical  : %s  High: %s\n' "${CRITICAL}" "${HIGH}"
+  printf '   Confirmed : %s  Theoretical: %s\n' "${CONFIRMED}" "${THEORETICAL}"
+  if [ "$CONFIRMED" -gt 0 ]; then
+    printf '\n   ⛔ Confirmed breach — operator decision required before any merge.\n'
+  elif [ "$THEORETICAL" -gt 0 ]; then
+    printf '\n   Theoretical findings → route to TheFixer backlog.\n'
+    printf '     Read Teams/TheFixer/team-leader.md and follow it exactly.\n'
+  fi
+  printf '\n   Full report: Teams/TheGuardians/findings/security-report-$(date +%%Y-%%m-%%d)-%s.html\n\n' "${GRADE}"
+fi
+```
+
+6. **Write learnings**: Append synthesis notes to `Teams/TheGuardians/learnings/team-leader.md`.
 
 ## Output Format
 

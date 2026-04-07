@@ -68,6 +68,41 @@ If no issues found: `### VERDICT: PASS — no security issues found in this diff
 
 Exit 0 if PASS or MEDIUM-only. Exit 1 if any CRITICAL or HIGH findings.
 
+## Escalation
+
+Run this block immediately after writing your findings **if VERDICT is FAIL** (any HIGH or CRITICAL finding present). It auto-detects whether a PR exists and routes accordingly.
+
+```bash
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)
+PR_NUM=$(gh pr view --json number -q .number 2>/dev/null)
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+# Replace {FINDING_SUMMARY} with a one-line description of the worst finding
+
+if [ -n "$PR_NUM" ] && [ -n "$REPO" ]; then
+  gh pr comment "$PR_NUM" --body "## Security QA — HIGH/CRITICAL finding
+
+**Run:** \`${RUN_ID}\` · **Branch:** \`${BRANCH}\`
+**Finding:** {FINDING_SUMMARY}
+
+A full security audit is recommended before merging.
+
+[![Trigger TheGuardians](https://img.shields.io/badge/Trigger-TheGuardians_Audit-CC0000?style=for-the-badge)](https://github.com/${REPO}/actions/workflows/run-guardians.yml)
+
+> Not urgent? TheGuardians also runs on the pre-release schedule.
+
+_Posted by security-qa · TheATeam · \`${RUN_ID}\`_"
+
+else
+  printf '\n⚠  ESCALATION → TheGuardians\n'
+  printf '   Finding : %s\n' "{FINDING_SUMMARY}"
+  printf '   Branch  : %s\n' "${BRANCH}"
+  printf '   When    : before merge, or wait for the next scheduled security run\n'
+  printf '\n   To trigger now:\n'
+  printf '     Read Teams/TheGuardians/team-leader.md and follow it exactly.\n'
+  printf '     Target: ephemeral isolated environment (required).\n\n'
+fi
+```
+
 ## Scope Guard
 
 - Read only `Source/Backend/`, `Source/Frontend/`, `Source/Shared/` and test files

@@ -1,0 +1,39 @@
+name: Run TheFixer
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to fix (leave blank for current default branch)'
+        required: false
+        default: ''
+      fix_description:
+        description: 'High-level description of what needs fixing'
+        required: false
+        default: 'Address findings from latest audit'
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+
+      # TODO: add your orchestrator invocation here.
+      #
+      # Example skeleton:
+      #   - name: Run TheFixer
+      #     run: |
+      #       # Invoke Claude Code / your orchestrator with:
+      #       # "Read Teams/TheFixer/team-leader.md and follow it exactly.
+      #       #  Fix: ${{ inputs.fix_description }}
+      #       #  Team folder: Teams/TheFixer"
+
+      - name: Placeholder
+        run: |
+          echo "TheFixer workflow stub — wire up your orchestrator above."
+          echo "Branch: ${{ inputs.branch || github.ref }}"
+          echo "Fix: ${{ inputs.fix_description }}"

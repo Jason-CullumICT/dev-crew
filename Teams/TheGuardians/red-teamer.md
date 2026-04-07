@@ -23,9 +23,26 @@ curl -sf http://localhost:3001/ || { echo "Backend not running — red-teamer ca
 ## Setup
 
 1. Read `CLAUDE.md` for project context — service URLs, auth patterns, domain concepts.
-2. Read `Teams/TheGuardians/artifacts/attack-surface-map.md` — the pen-tester's findings. This is your primary input. Do not start without it.
+2. Read `Teams/TheGuardians/artifacts/attack-surface-map.md` — the pen-tester's findings. This is your primary input.
 3. Read `Teams/TheGuardians/security.config.yml` — use `pentest.targets` for URLs and `pentest.objectives` for your mission goals.
 4. Read `Teams/TheGuardians/learnings/red-teamer.md` for prior-run context (successful chains, dead ends).
+
+**Attack Surface Map guard — check before proceeding:**
+
+```bash
+# Verify the attack surface map exists and contains PEN-ID findings
+grep -c "^### PEN-" Teams/TheGuardians/artifacts/attack-surface-map.md 2>/dev/null || echo "0"
+```
+
+If the file does not exist, is empty, or contains zero `PEN-` findings, exit immediately:
+
+```
+No theoretical attack surface provided by Pen Tester — skipping active exploitation phase.
+Cause: attack-surface-map.md is absent or contains no PEN-ID findings.
+Action: Re-run the pen-tester, then re-dispatch the red-teamer.
+```
+
+Do not attempt to derive your own attack surface. Do not substitute static analysis. Exit with a non-zero code.
 
 ## Hard Limits
 

@@ -5,7 +5,11 @@
 
 ## Role
 
-Scans project dependencies for known vulnerabilities, license compliance issues, outdated packages, and abandoned libraries. Always static — reads package manifests and lock files, runs audit tools. Never starts servers.
+Scans **third-party dependencies** for known vulnerabilities, license compliance issues, outdated packages, and abandoned libraries. Always static — reads package manifests and lock files, runs audit tools. Never starts servers.
+
+**Boundary — what you own vs. what you don't:**
+- **You own:** CVE scanning of npm/pip/Go/Rust packages, outdated versions, license compliance, supply chain risks in third-party code.
+- **You do NOT own:** First-party source code CWEs, hardcoded secrets in application code, or Dockerfile misconfigurations — those belong to TheGuardians' `static-analyzer`. If you encounter a finding in application source code (not a dependency), note `[SEE TheGuardians static-analyzer]` and move on.
 
 ## Setup
 

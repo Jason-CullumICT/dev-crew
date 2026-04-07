@@ -43,6 +43,12 @@ compliance:
 
 # ── Penetration Test Scope ─────────────────────────────────────
 pentest:
+  # SAFETY: The red-teamer executes active exploit chains (SQL injection, state
+  # manipulation, data modification). It MUST ONLY run against an ephemeral,
+  # isolated environment — never against shared dev, staging, or production.
+  # The team-leader will refuse to dispatch the red-teamer if this is not set.
+  require_ephemeral_environment: true
+
   # In-scope services for the red-teamer (requires running instances)
   targets:
     - name: backend

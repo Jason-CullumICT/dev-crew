@@ -36,6 +36,14 @@ Dispatch specialists in two phases. **Phase 1 runs in parallel; Phase 2 is seque
 - **`pen-tester`**: Perform white-box data-flow tracing and logic analysis. Map the full attack surface into `Teams/TheGuardians/artifacts/attack-surface-map.md`. Produce PEN-ID findings.
 
 **Phase 2: Adversarial Exploitation (sequential — requires Phase 1 artifact)**
+
+**Before dispatching the red-teamer, you MUST verify both conditions:**
+
+1. **Ephemeral environment gate** — Check `security.config.yml pentest.require_ephemeral_environment`. If `true`, confirm with the operator that the target is a throw-away isolated environment (e.g., a Docker Compose stack spun up for this run) before proceeding. If you cannot confirm this, do NOT dispatch the red-teamer. Record in synthesis: "Phase 2: Skipped — ephemeral environment not confirmed. Red-teamer must not run against shared dev/staging/production."
+
+2. **Attack surface map gate** — Confirm `Teams/TheGuardians/artifacts/attack-surface-map.md` exists and contains at least one `PEN-` finding. If empty or absent, record: "Phase 2: Skipped — pen-tester produced no attack surface map."
+
+If both gates pass:
 - **`red-teamer`**: Read `Teams/TheGuardians/artifacts/attack-surface-map.md`. Attempt every objective from `pentest.objectives` against live endpoints. Chain PEN-IDs into active exploits. Append RED-ID results to the attack surface map under `## Red Team Results`.
 
 > If the `red-teamer` reports the services are not running, record this in the synthesis as "Phase 2: Not executed — services unavailable" and continue with Phase 1 findings only. Do not instruct the red-teamer to fall back to static analysis.

@@ -36,7 +36,6 @@ const BADGE_COLORS: Record<string, string> = {
 interface GroupDraft {
   id: string;
   name: string;
-  description: string;
   conditionChips: ConditionChip[];
   timeWindows: TimeWindow[];
   members: GroupMember[];
@@ -45,14 +44,13 @@ interface GroupDraft {
 }
 
 function emptyDraft(): GroupDraft {
-  return { id: '', name: '', description: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [] };
+  return { id: '', name: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [] };
 }
 
 function groupToDraft(g: Group): GroupDraft {
   return {
     id: g.id,
     name: g.name,
-    description: g.description,
     conditionChips: rulesToConditionChips(g.membershipRules),
     timeWindows: rulesToTimeWindows(g.membershipRules),
     members: [...g.members],
@@ -77,7 +75,6 @@ function draftToGroup(draft: GroupDraft, existing?: Group): Group {
     ...(existing ?? {}),
     id: draft.id || uuidv4(),
     name: draft.name.trim(),
-    description: draft.description.trim(),
     members: draft.members,
     membershipRules,
     membershipLogic: 'AND',
@@ -340,20 +337,6 @@ export default function Groups() {
                   onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
                   placeholder="e.g. Night Shift Security"
                   className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">
-                  Description <span className="text-slate-600 normal-case font-normal">(optional)</span>
-                </label>
-                <textarea
-                  value={draft.description}
-                  onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
-                  placeholder="What is this group for?"
-                  rows={2}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
                 />
               </div>
 

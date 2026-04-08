@@ -71,7 +71,7 @@ export const CHIP_COLORS: Record<string, string> = {
   department: 'bg-indigo-900 text-indigo-300',
   status:     'bg-green-900 text-green-300',
   clearance:  'bg-violet-900 text-violet-300',
-  role:       'bg-sky-900 text-sky-300',
+  role:       'bg-indigo-900 text-indigo-300',
   personType: 'bg-indigo-900 text-indigo-300',
   group:      'bg-slate-700 text-slate-300',
   time:       'bg-amber-900 text-amber-300',

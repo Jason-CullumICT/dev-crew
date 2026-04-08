@@ -40,4 +40,165 @@ export function generateRealWorldData(): void {
   store.setSchedules(SCHEDULES as any);
   store.setTasks(TASKS as any);
   store.setArmingLogs(ARMING_LOGS as any);
+
+  // ── Demo seed: Grants ───────────────────────────────────────────────────────
+  const existingGrants = useStore.getState().grants;
+  if (!existingGrants.find(g => g.id === 'demo-grant-dc')) {
+    const grantDC = {
+      id: 'demo-grant-dc',
+      name: 'Data Centre Unlock',
+      description: 'Unlock access to Data Centre doors',
+      scope: 'site',
+      actions: ['unlock'],
+      applicationMode: 'auto',
+      conditions: [],
+      conditionLogic: 'AND',
+      customAttributes: {},
+      schedule: null,
+    };
+
+    const grantAllDoors = {
+      id: 'demo-grant-allshift',
+      name: 'All Doors Unlock',
+      description: 'Full unlock access across all sites',
+      scope: 'global',
+      actions: ['unlock'],
+      applicationMode: 'auto',
+      conditions: [],
+      conditionLogic: 'AND',
+      customAttributes: {},
+      schedule: null,
+    };
+
+    const grantEscort = {
+      id: 'demo-grant-escort',
+      name: 'Escorted Access',
+      description: 'Access limited to escorted areas during business hours',
+      scope: 'site',
+      actions: ['unlock'],
+      applicationMode: 'conditional',
+      conditions: [],
+      conditionLogic: 'AND',
+      customAttributes: {},
+      schedule: null,
+    };
+
+    useStore.getState().addGrant(grantDC as any);
+    useStore.getState().addGrant(grantAllDoors as any);
+    useStore.getState().addGrant(grantEscort as any);
+  }
+
+  // ── Demo seed: Groups ───────────────────────────────────────────────────────
+  const existingGroups = useStore.getState().groups;
+  if (!existingGroups.find(g => g.id === 'demo-group-dc-engineers')) {
+    useStore.getState().addGroup({
+      id: 'demo-group-dc-engineers',
+      name: 'Data Centre Engineers',
+      description: 'Engineering staff with Confidential clearance — auto-enrolled',
+      membershipType: 'dynamic',
+      membershipLogic: 'AND',
+      targetEntityType: 'user',
+      members: [],
+      membershipRules: [
+        { id: 'dcr-1', leftSide: 'user.department', operator: '==', rightSide: 'Engineering' },
+        { id: 'dcr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'Confidential' },
+        { id: 'dcr-3', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
+      ],
+      inheritedPermissions: ['demo-grant-dc'],
+    });
+
+    useStore.getState().addGroup({
+      id: 'demo-group-night-security',
+      name: 'Night Shift Security',
+      description: 'Security staff on evening rotation — time-gated',
+      membershipType: 'dynamic',
+      membershipLogic: 'AND',
+      targetEntityType: 'user',
+      members: [],
+      membershipRules: [
+        { id: 'nsr-1', leftSide: 'user.department', operator: '==', rightSide: 'Security' },
+        { id: 'nsr-2', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
+        { id: 'nsr-3', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
+        { id: 'nsr-4', leftSide: 'now.hour', operator: '>=', rightSide: '20:00' },
+        { id: 'nsr-5', leftSide: 'now.hour', operator: '<', rightSide: '23:59' },
+      ],
+      inheritedPermissions: ['demo-grant-allshift'],
+    });
+
+    useStore.getState().addGroup({
+      id: 'demo-group-cleared-contractors',
+      name: 'Cleared Contractors',
+      description: 'TopSecret-cleared contractors — business hours only',
+      membershipType: 'dynamic',
+      membershipLogic: 'AND',
+      targetEntityType: 'user',
+      members: [],
+      membershipRules: [
+        { id: 'ccr-1', leftSide: 'user.role', operator: '==', rightSide: 'Contractor' },
+        { id: 'ccr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'TopSecret' },
+        { id: 'ccr-3', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
+        { id: 'ccr-4', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
+        { id: 'ccr-5', leftSide: 'now.hour', operator: '>=', rightSide: '08:00' },
+        { id: 'ccr-6', leftSide: 'now.hour', operator: '<', rightSide: '18:00' },
+      ],
+      inheritedPermissions: ['demo-grant-escort'],
+    });
+  }
+
+  // ── Demo seed: Policies ──────────────────────────────────────────────────────
+  const liveDoors = useStore.getState().doors;
+  function doorIdsByName(...names: string[]): string[] {
+    return liveDoors
+      .filter(d => names.some(n => d.name.toLowerCase().includes(n.toLowerCase())))
+      .map(d => d.id);
+  }
+
+  const existingPolicies = useStore.getState().policies;
+  if (!existingPolicies.find(p => p.id === 'demo-policy-biz-hours')) {
+    const mainEntranceDoors = doorIdsByName('main', 'entrance', 'lobby', 'reception');
+
+    useStore.getState().addPolicy({
+      id: 'demo-policy-biz-hours',
+      name: 'Business Hours — All Staff',
+      description: 'Standard access for all active employees during working hours',
+      logicalOperator: 'AND',
+      rules: [
+        { id: 'bhr-1', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
+        { id: 'bhr-2', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
+        { id: 'bhr-3', leftSide: 'now.hour', operator: '>=', rightSide: '08:00' },
+        { id: 'bhr-4', leftSide: 'now.hour', operator: '<', rightSide: '18:00' },
+      ],
+      doorIds: mainEntranceDoors.length > 0 ? mainEntranceDoors.slice(0, 6) : liveDoors.slice(0, 3).map(d => d.id),
+    });
+
+    const labDoors = doorIdsByName('lab', 'research', 'server', 'data');
+    // IMPORTANT: group reference uses group ID (not name): 'group.demo-group-dc-engineers'
+    useStore.getState().addPolicy({
+      id: 'demo-policy-afterhours-lab',
+      name: 'After-Hours Research Lab',
+      description: 'Data Centre Engineers can access the lab at any time',
+      logicalOperator: 'AND',
+      rules: [
+        { id: 'ahr-1', leftSide: 'user', operator: 'IN', rightSide: 'group.demo-group-dc-engineers' },
+        { id: 'ahr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'Confidential' },
+      ],
+      doorIds: labDoors.length > 0 ? labDoors.slice(0, 4) : liveDoors.slice(3, 7).map(d => d.id),
+    });
+
+    // Emergency Override: use ALL door IDs so isOverride badge triggers
+    // (isOverride = no time window AND assignedDoors.length >= total doors)
+    const allDoorIds = liveDoors.map(d => d.id);
+    // IMPORTANT: group reference uses group IDs: 'group.demo-group-night-security'
+    useStore.getState().addPolicy({
+      id: 'demo-policy-emergency',
+      name: 'Emergency Override',
+      description: 'Security and Emergency Team with TopSecret clearance — unrestricted access',
+      logicalOperator: 'OR',
+      rules: [
+        { id: 'emr-1', leftSide: 'user', operator: 'IN', rightSide: 'group.demo-group-night-security' },
+        { id: 'emr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'TopSecret' },
+      ],
+      doorIds: allDoorIds,
+    });
+  }
 }

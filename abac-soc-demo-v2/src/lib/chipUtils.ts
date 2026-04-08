@@ -18,10 +18,10 @@ export function timeWindowToRules(tw: TimeWindow): Rule[] {
     rules.push({ id: uuidv4(), leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: tw.days.join(', ') });
   }
   if (tw.startTime) {
-    rules.push({ id: uuidv4(), leftSide: 'now.hour', operator: '>=', rightSide: String(parseInt(tw.startTime.split(':')[0], 10)) });
+    rules.push({ id: uuidv4(), leftSide: 'now.hour', operator: '>=', rightSide: tw.startTime });
   }
   if (tw.endTime) {
-    rules.push({ id: uuidv4(), leftSide: 'now.hour', operator: '<', rightSide: String(parseInt(tw.endTime.split(':')[0], 10)) });
+    rules.push({ id: uuidv4(), leftSide: 'now.hour', operator: '<', rightSide: tw.endTime });
   }
   return rules;
 }
@@ -60,8 +60,8 @@ export function rulesToTimeWindows(rules: Rule[]): TimeWindow[] {
     // id derived from rule ids for stable React key across re-renders
     id: startRule?.id ?? dayRule?.id ?? endRule?.id ?? uuidv4(),
     days: dayRule ? String(dayRule.rightSide).split(', ') : [],
-    startTime: startRule ? String(startRule.rightSide).padStart(2, '0') + ':00' : '00:00',
-    endTime:   endRule   ? String(endRule.rightSide).padStart(2, '0') + ':00'   : '23:59',
+    startTime: startRule ? String(startRule.rightSide) : '00:00',
+    endTime:   endRule   ? String(endRule.rightSide)   : '23:59',
   }];
 }
 

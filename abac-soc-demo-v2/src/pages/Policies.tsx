@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
-import type { Policy, ConditionChip, TimeWindow } from '../types';
+import type { Policy, ConditionChip, TimeWindow, Door } from '../types';
 import ConditionChips from '../components/ConditionChips';
 import TimeWindowChips from '../components/TimeWindowChips';
 import {
@@ -37,20 +37,21 @@ function Lane({ color, label, accentClass, children }: LaneProps) {
 
 function PolicyCard({
   policy,
+  doors,
   onEdit,
   onDelete,
 }: {
   policy: Policy;
+  doors: Door[];
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const doors   = useStore(s => s.doors);
   const [expanded, setExpanded] = useState(false);
 
   const peopleChips = useMemo(() => rulesToConditionChips(policy.rules), [policy.rules]);
   const timeWindows = useMemo(() => rulesToTimeWindows(policy.rules), [policy.rules]);
   const assignedDoors = useMemo(() => doors.filter(d => policy.doorIds.includes(d.id)), [doors, policy.doorIds]);
-  const isOverride = timeWindows.length === 0 && policy.doorIds.length > 5;
+  const isOverride = timeWindows.length === 0 && assignedDoors.length > 0 && assignedDoors.length >= doors.length;
 
   function chipLabel(tw: TimeWindow) {
     const dayPart = tw.days.length === 0 ? 'Every day' : tw.days.join('–');
@@ -239,6 +240,7 @@ export default function Policies() {
             <PolicyCard
               key={policy.id}
               policy={policy}
+              doors={doors}
               onEdit={() => openEdit(policy)}
               onDelete={() => setDeleteConfirmId(policy.id)}
             />

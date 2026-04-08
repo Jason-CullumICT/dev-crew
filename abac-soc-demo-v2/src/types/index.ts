@@ -223,3 +223,33 @@ export interface StoreSnapshot {
   allGroups: Group[];
   allGrants: Grant[];
 }
+
+// ── UI-only chip types (not persisted) ──────────────────────────────────────
+
+export type ConditionChipType =
+  | 'department'
+  | 'status'
+  | 'clearance'
+  | 'role'
+  | 'personType'
+  | 'group';
+
+export interface ConditionChip {
+  id: string;
+  chipType: ConditionChipType;
+  /** Human label shown on chip, e.g. "Engineering", "Active", "Confidential+" */
+  label: string;
+  /** Rule.leftSide value, e.g. "user.department" */
+  attribute: string;
+  operator: Operator;
+  /** Rule.rightSide value, e.g. "Engineering" */
+  value: string;
+}
+
+export interface TimeWindow {
+  id: string;
+  /** e.g. ['Mon','Tue','Wed','Thu','Fri'] — empty means every day */
+  days: string[];
+  startTime: string; // 'HH:MM' 24h
+  endTime: string;   // 'HH:MM' 24h
+}

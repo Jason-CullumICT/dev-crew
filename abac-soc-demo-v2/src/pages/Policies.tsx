@@ -168,9 +168,9 @@ function policyToDraft(p: Policy, groups: { id: string; name: string }[]): Polic
     name: p.name,
     description: p.description,
     logicalOperator: p.logicalOperator,
-    peopleChips: rulesToConditionChips(p.rules, groups),
-    timeWindows: rulesToTimeWindows(p.rules),
-    doorIds: [...p.doorIds],
+    peopleChips: rulesToConditionChips(p.rules ?? [], groups),
+    timeWindows: rulesToTimeWindows(p.rules ?? []),
+    doorIds: [...(p.doorIds ?? [])],
     scheduleId: p.scheduleId,
   };
 }

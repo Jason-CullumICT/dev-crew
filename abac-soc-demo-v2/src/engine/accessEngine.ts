@@ -386,15 +386,15 @@ function collectCandidateGrantIds(user: User, groups: Group[], ctx: EvalContext)
 
   // Inherited from groups
   for (const group of groups) {
-    if (group.inheritedPermissions.length === 0) continue;
+    if ((group.inheritedPermissions ?? []).length === 0) continue;
     if (isEntityInGroup(user.id, 'user', group, ctx)) {
-      for (const gid of group.inheritedPermissions) ids.add(gid);
+      for (const gid of (group.inheritedPermissions ?? [])) ids.add(gid);
     }
   }
 
   // Auto grants — scan all grants whose conditions match
   for (const grant of ctx.store.allGrants) {
-    if (grant.applicationMode === 'auto' && grant.conditions.length > 0) {
+    if (grant.applicationMode === 'auto' && (grant.conditions ?? []).length > 0) {
       const grantCtx: EvalContext = { ...ctx, grant };
       if (evaluateRuleSet(grant.conditions, grant.conditionLogic, grantCtx)) {
         ids.add(grant.id);
@@ -418,7 +418,7 @@ export function hasPermission(
   const { effectiveIds } = buildGrantResults(candidateIds, ctx.store.allGrants, ctx);
   for (const grantId of effectiveIds) {
     const grant = grants.find(g => g.id === grantId);
-    if (!grant || !grant.actions.includes(action)) continue;
+    if (!grant || !(grant.actions ?? []).includes(action)) continue;
     if (grant.scope === 'global') return true;
     if (grant.scope === 'site' && siteId && grant.targetId === siteId) return true;
     if (grant.scope === 'zone' && zoneId && grant.targetId === zoneId) return true;
@@ -451,7 +451,7 @@ export function evaluateAccess(
   const matchedGrants: string[] = [];
   for (const grantId of effectiveIds) {
     const grant = grants.find(g => g.id === grantId);
-    if (!grant || !grant.actions.includes('unlock')) continue;
+    if (!grant || !(grant.actions ?? []).includes('unlock')) continue;
     const scopeMatch =
       grant.scope === 'global' ||
       (grant.scope === 'site' && grant.targetId === door.siteId) ||
@@ -462,7 +462,7 @@ export function evaluateAccess(
     }
   }
 
-  const assignedPolicies = policies.filter(p => p.doorIds.includes(door.id));
+  const assignedPolicies = policies.filter(p => (p.doorIds ?? []).includes(door.id));
   const policyResults: PolicyResult[] = assignedPolicies.map(policy => {
     // Check named schedule gate for policy (v3)
     if (policy.scheduleId) {
@@ -471,9 +471,10 @@ export function evaluateAccess(
         return { policyId: policy.id, policyName: policy.name, passed: false, ruleResults: [] };
       }
     }
-    const ruleResults = policy.rules.map(rule => evaluateRule(rule, ctx));
+    const rules = policy.rules ?? [];
+    const ruleResults = rules.map(rule => evaluateRule(rule, ctx));
     const passed =
-      policy.rules.length === 0
+      rules.length === 0
         ? false
         : policy.logicalOperator === 'AND'
           ? ruleResults.every(r => r.passed)

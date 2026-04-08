@@ -51,7 +51,7 @@ export default function TestAccess() {
   }
 
   const assignedPolicies = selectedDoor
-    ? policies.filter((p) => p.doorIds.includes(selectedDoor.id))
+    ? policies.filter((p) => (p.doorIds ?? []).includes(selectedDoor.id))
     : [];
 
   return (

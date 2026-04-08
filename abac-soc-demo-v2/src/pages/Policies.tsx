@@ -52,9 +52,9 @@ function PolicyCard({
   const [expanded, setExpanded] = useState(false);
   const schedules = useStore(s => s.schedules);
 
-  const peopleChips = useMemo(() => rulesToConditionChips(policy.rules, groups), [policy.rules, groups]);
-  const timeWindows = useMemo(() => rulesToTimeWindows(policy.rules), [policy.rules]);
-  const assignedDoors = useMemo(() => doors.filter(d => policy.doorIds.includes(d.id)), [doors, policy.doorIds]);
+  const peopleChips = useMemo(() => rulesToConditionChips(policy.rules ?? [], groups), [policy.rules, groups]);
+  const timeWindows = useMemo(() => rulesToTimeWindows(policy.rules ?? []), [policy.rules]);
+  const assignedDoors = useMemo(() => doors.filter(d => (policy.doorIds ?? []).includes(d.id)), [doors, policy.doorIds]);
   const linkedSchedule = policy.scheduleId ? schedules.find(s => s.id === policy.scheduleId) : undefined;
   const isOverride = timeWindows.length === 0 && !policy.scheduleId && assignedDoors.length > 0 && assignedDoors.length >= doors.length;
 

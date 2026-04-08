@@ -17,8 +17,8 @@ import {
 
 function membershipBadges(group: Group): string[] {
   const badges: string[] = [];
-  const hasDynamic  = group.membershipRules.some(r => !r.leftSide.startsWith('now.'));
-  const hasTime     = group.membershipRules.some(r => r.leftSide.startsWith('now.'));
+  const hasDynamic  = (group.membershipRules ?? []).some(r => !r.leftSide.startsWith('now.'));
+  const hasTime     = (group.membershipRules ?? []).some(r => r.leftSide.startsWith('now.'));
   const hasExplicit = group.membershipType === 'explicit' || group.membershipType === 'hybrid';
   if (hasDynamic || group.membershipType === 'dynamic') badges.push('auto-enrolled');
   if (hasExplicit && group.membershipType !== 'dynamic') badges.push('hand-picked');
@@ -96,11 +96,11 @@ function draftToGroup(draft: GroupDraft, existing?: Group): Group {
 function SentenceRow({ group }: { group: Group }) {
   const groups     = useStore(s => s.groups);
   const schedules  = useStore(s => s.schedules);
-  const chips      = useMemo(() => rulesToConditionChips(group.membershipRules, groups), [group.membershipRules, groups]);
-  const timeWindows = useMemo(() => rulesToTimeWindows(group.membershipRules), [group.membershipRules]);
+  const chips      = useMemo(() => rulesToConditionChips(group.membershipRules ?? [], groups), [group.membershipRules, groups]);
+  const timeWindows = useMemo(() => rulesToTimeWindows(group.membershipRules ?? []), [group.membershipRules]);
   const linkedSchedule = group.scheduleId ? schedules.find(s => s.id === group.scheduleId) : undefined;
 
-  if (chips.length === 0 && timeWindows.length === 0 && group.members.length === 0 && !linkedSchedule) {
+  if (chips.length === 0 && timeWindows.length === 0 && (group.members ?? []).length === 0 && !linkedSchedule) {
     return <span className="text-slate-600 text-xs italic">No conditions defined</span>;
   }
 
@@ -140,11 +140,11 @@ function SentenceRow({ group }: { group: Group }) {
           </span>
         </span>
       )}
-      {group.membershipType !== 'dynamic' && group.members.length > 0 && chips.length > 0 && (
-        <span className="text-slate-500">+ {group.members.length} explicit</span>
+      {group.membershipType !== 'dynamic' && (group.members ?? []).length > 0 && chips.length > 0 && (
+        <span className="text-slate-500">+ {(group.members ?? []).length} explicit</span>
       )}
-      {group.membershipType === 'explicit' && group.members.length > 0 && chips.length === 0 && (
-        <span className="text-slate-500">{group.members.length} hand-picked member{group.members.length !== 1 ? 's' : ''}</span>
+      {group.membershipType === 'explicit' && (group.members ?? []).length > 0 && chips.length === 0 && (
+        <span className="text-slate-500">{(group.members ?? []).length} hand-picked member{(group.members ?? []).length !== 1 ? 's' : ''}</span>
       )}
     </div>
   );
@@ -245,7 +245,7 @@ export default function Groups() {
         {groups.map(group => {
           const isExpanded = expandedId === group.id;
           const badges     = membershipBadges(group);
-          const grantCount = group.inheritedPermissions.length;
+          const grantCount = (group.inheritedPermissions ?? []).length;
 
           return (
             <div key={group.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
@@ -297,11 +297,11 @@ export default function Groups() {
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Members</h3>
                     {group.membershipType === 'dynamic' ? (
                       <p className="text-gray-500 text-sm italic">Membership determined by conditions</p>
-                    ) : group.members.length === 0 ? (
+                    ) : (group.members ?? []).length === 0 ? (
                       <p className="text-gray-600 text-sm">No explicit members</p>
                     ) : (
                       <ul className="space-y-1.5">
-                        {group.members.map(m => {
+                        {(group.members ?? []).map(m => {
                           const user = users.find(u => u.id === m.entityId);
                           return (
                             <li key={m.entityId} className="text-sm text-white flex items-center gap-2">
@@ -315,11 +315,11 @@ export default function Groups() {
                   </div>
                   <div>
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Inherited Grants</h3>
-                    {group.inheritedPermissions.length === 0 ? (
+                    {(group.inheritedPermissions ?? []).length === 0 ? (
                       <p className="text-gray-600 text-sm">No grants</p>
                     ) : (
                       <ul className="space-y-1.5">
-                        {group.inheritedPermissions.map(gid => {
+                        {(group.inheritedPermissions ?? []).map(gid => {
                           const grant = grants.find(g => g.id === gid);
                           return (
                             <li key={gid} className="flex items-center gap-2">

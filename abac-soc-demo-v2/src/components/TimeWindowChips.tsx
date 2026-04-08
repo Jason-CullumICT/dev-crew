@@ -18,10 +18,15 @@ interface TimeWindowChipsProps {
 }
 
 function chipLabel(tw: TimeWindow): string {
-  const isAlways = tw.startTime === '00:00' && tw.endTime === '23:59';
+  // Only show "Always (24/7)" when there are no day restrictions AND no time restriction
+  if (tw.days.length === 0 && tw.startTime === '00:00' && tw.endTime === '23:59') {
+    return 'Always (24/7)';
+  }
   const dayPart = tw.days.length === 0 ? 'Every day' : tw.days.join('–');
-  if (isAlways && tw.days.length === 0) return 'Always (24/7)';
-  const timePart = isAlways ? 'Always' : `${tw.startTime}–${tw.endTime}`;
+  // Show times unless they span the full day
+  const timePart = tw.startTime === '00:00' && tw.endTime === '23:59'
+    ? 'all hours'
+    : `${tw.startTime}–${tw.endTime}`;
   return `${dayPart} ${timePart}`;
 }
 
@@ -53,7 +58,8 @@ export default function TimeWindowChips({ windows, onChange }: TimeWindowChipsPr
   }
 
   function addPreset(preset: typeof PRESETS[0]) {
-    // Prevent duplicates
+    // Deduplicates by exact match of days+startTime+endTime — this correctly blocks
+    // re-adding an identical window regardless of whether it came from a preset or custom entry
     const already = windows.some(
       w => w.days.join(',') === preset.days.join(',') && w.startTime === preset.startTime && w.endTime === preset.endTime
     );
@@ -64,6 +70,7 @@ export default function TimeWindowChips({ windows, onChange }: TimeWindowChipsPr
   }
 
   function addCustom() {
+    // days: [] means "every day" (no restriction) — this is intentional and valid
     onChange([...windows, { id: uuidv4(), ...draft }]);
     closePicker();
   }

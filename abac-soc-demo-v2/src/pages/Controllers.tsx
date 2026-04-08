@@ -76,7 +76,7 @@ export default function Controllers() {
       name: controller.name,
       location: controller.location,
       siteId: controller.siteId,
-      doorIds: [...controller.doorIds],
+      doorIds: [...(controller.doorIds ?? [])],
       customAttributes: controller.customAttributes ?? {},
     });
     setModalOpen(true);
@@ -159,7 +159,7 @@ export default function Controllers() {
         <div className="space-y-3">
           {controllers.map((controller) => {
             const isExpanded = expandedIds.has(controller.id);
-            const managedDoors = controller.doorIds
+            const managedDoors = (controller.doorIds ?? [])
               .map((id) => ({ id, name: doorById[id] ?? id }))
               .filter(Boolean);
 
@@ -194,7 +194,7 @@ export default function Controllers() {
                       <p className="text-sm text-slate-300">
                         <span className="inline-flex items-center gap-1.5">
                           <DoorOpen size={14} className="text-slate-400" />
-                          {controller.doorIds.length}
+                          {(controller.doorIds ?? []).length}
                         </span>
                       </p>
                     </div>

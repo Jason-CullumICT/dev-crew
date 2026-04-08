@@ -6,7 +6,7 @@ import {
   TestTube, Grid3X3, CalendarClock,
 } from 'lucide-react';
 
-const navItems = [
+const primaryNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/schedules', icon: CalendarClock, label: 'Schedules' },
   { to: '/groups', icon: UsersRound, label: 'Groups' },
@@ -14,6 +14,9 @@ const navItems = [
   { to: '/permissions', icon: Key, label: 'Permissions' },
   { to: '/users', icon: Users, label: 'People' },
   { to: '/sites', icon: Building2, label: 'Infrastructure' },
+];
+
+const secondaryNavItems = [
   { to: '/arming', icon: Shield, label: 'Arming' },
   { to: '/doors', icon: DoorOpen, label: 'Doors' },
   { to: '/controllers', icon: Cpu, label: 'Controllers' },
@@ -33,11 +36,13 @@ function NowPill() {
   const day = days[time.getDay()];
   const h = String(time.getHours()).padStart(2, '0');
   const m = String(time.getMinutes()).padStart(2, '0');
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()?.replace(/_/g, ' ') ?? '';
 
   return (
     <div className="flex items-center gap-1.5 bg-[#071a0e] border border-[#14532d] rounded-full px-3 py-1 text-xs text-green-400 font-mono shrink-0">
       <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
       {day} {h}:{m}
+      {tz && <span className="text-green-600 ml-0.5">{tz}</span>}
     </div>
   );
 }
@@ -55,7 +60,7 @@ export default function Layout() {
 
         {/* Nav links */}
         <nav className="flex items-center gap-0.5 overflow-x-auto flex-1 hide-scrollbar">
-          {navItems.map(({ to, label, end }) => (
+          {primaryNavItems.map(({ to, label, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -65,6 +70,23 @@ export default function Layout() {
                   isActive
                     ? 'bg-blue-600/20 text-blue-300'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-[#0f172a]'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+          <span className="mx-1 text-slate-700 select-none shrink-0">|</span>
+          {secondaryNavItems.map(({ to, label, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+                  isActive
+                    ? 'bg-blue-600/20 text-blue-300'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-[#0f172a]'
                 }`
               }
             >

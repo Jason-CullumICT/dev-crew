@@ -177,7 +177,8 @@ export default function Permissions() {
               return (
                 <div
                   key={grant.id}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col gap-3"
+                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col gap-3 cursor-pointer hover:border-gray-600 transition-colors"
+                  onClick={() => openEdit(grant)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -238,7 +239,7 @@ export default function Permissions() {
                       Edit
                     </button>
                     <button
-                      onClick={() => deleteGrant(grant.id)}
+                      onClick={(e) => { e.stopPropagation(); deleteGrant(grant.id); }}
                       className="flex-1 text-xs px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded transition-colors border border-red-900"
                     >
                       Delete

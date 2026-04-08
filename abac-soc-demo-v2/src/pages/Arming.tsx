@@ -45,6 +45,7 @@ export default function Arming() {
   const grants = useStore((s) => s.grants);
   const doors = useStore((s) => s.doors);
   const controllers = useStore((s) => s.controllers);
+  const schedules = useStore((s) => s.schedules);
   const updateSite = useStore((s) => s.updateSite);
   const updateZone = useStore((s) => s.updateZone);
   const addArmingLog = useStore((s) => s.addArmingLog);
@@ -62,6 +63,7 @@ export default function Arming() {
     allControllers: controllers,
     allGroups: groups,
     allGrants: grants,
+    allSchedules: schedules,
   };
 
   const authorizedUsers = users.filter((u) => {

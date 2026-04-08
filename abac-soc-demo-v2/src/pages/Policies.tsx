@@ -38,17 +38,19 @@ function Lane({ color, label, accentClass, children }: LaneProps) {
 function PolicyCard({
   policy,
   doors,
+  groups,
   onEdit,
   onDelete,
 }: {
   policy: Policy;
   doors: Door[];
+  groups: { id: string; name: string }[];
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const peopleChips = useMemo(() => rulesToConditionChips(policy.rules), [policy.rules]);
+  const peopleChips = useMemo(() => rulesToConditionChips(policy.rules, groups), [policy.rules, groups]);
   const timeWindows = useMemo(() => rulesToTimeWindows(policy.rules), [policy.rules]);
   const assignedDoors = useMemo(() => doors.filter(d => policy.doorIds.includes(d.id)), [doors, policy.doorIds]);
   const isOverride = timeWindows.length === 0 && assignedDoors.length > 0 && assignedDoors.length >= doors.length;
@@ -149,12 +151,12 @@ function emptyDraft(): PolicyDraft {
   return { name: '', description: '', logicalOperator: 'AND', peopleChips: [], timeWindows: [], doorIds: [] };
 }
 
-function policyToDraft(p: Policy): PolicyDraft {
+function policyToDraft(p: Policy, groups: { id: string; name: string }[]): PolicyDraft {
   return {
     name: p.name,
     description: p.description,
     logicalOperator: p.logicalOperator,
-    peopleChips: rulesToConditionChips(p.rules),
+    peopleChips: rulesToConditionChips(p.rules, groups),
     timeWindows: rulesToTimeWindows(p.rules),
     doorIds: [...p.doorIds],
   };
@@ -178,6 +180,7 @@ function draftToPolicy(draft: PolicyDraft, id: string): Policy {
 export default function Policies() {
   const policies      = useStore(s => s.policies);
   const doors         = useStore(s => s.doors);
+  const groups        = useStore(s => s.groups);
   const addPolicy     = useStore(s => s.addPolicy);
   const updatePolicy  = useStore(s => s.updatePolicy);
   const deletePolicy  = useStore(s => s.deletePolicy);
@@ -194,7 +197,7 @@ export default function Policies() {
   );
 
   function openAdd()          { setEditingId(null); setDraft(emptyDraft()); setDoorSearch(''); setModalOpen(true); }
-  function openEdit(p: Policy) { setEditingId(p.id); setDraft(policyToDraft(p)); setDoorSearch(''); setModalOpen(true); }
+  function openEdit(p: Policy) { setEditingId(p.id); setDraft(policyToDraft(p, groups)); setDoorSearch(''); setModalOpen(true); }
   function closeModal()       { setModalOpen(false); setEditingId(null); setDraft(emptyDraft()); setDoorSearch(''); }
 
   function handleSave() {
@@ -241,6 +244,7 @@ export default function Policies() {
               key={policy.id}
               policy={policy}
               doors={doors}
+              groups={groups}
               onEdit={() => openEdit(policy)}
               onDelete={() => setDeleteConfirmId(policy.id)}
             />

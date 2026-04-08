@@ -28,7 +28,7 @@ export function timeWindowToRules(tw: TimeWindow): Rule[] {
 
 // ── Rule → Chip (reverse parse for edit mode) ────────────────────────────────
 
-export function rulesToConditionChips(rules: Rule[]): ConditionChip[] {
+export function rulesToConditionChips(rules: Rule[], groups?: { id: string; name: string }[]): ConditionChip[] {
   const chips: ConditionChip[] = [];
   for (const rule of rules) {
     const v = Array.isArray(rule.rightSide) ? rule.rightSide[0] : rule.rightSide;
@@ -43,7 +43,8 @@ export function rulesToConditionChips(rules: Rule[]): ConditionChip[] {
     } else if (rule.leftSide === 'user.type' && rule.operator === '==') {
       chips.push({ id: rule.id, chipType: 'personType', label: v, attribute: 'user.type', operator: '==', value: v });
     } else if (rule.leftSide === 'user' && rule.operator === 'IN') {
-      const groupName = v.replace('group.', '');
+      const groupId = v.replace('group.', '');
+      const groupName = groups?.find(g => g.id === groupId)?.name ?? groupId;
       chips.push({ id: rule.id, chipType: 'group', label: groupName, attribute: 'user', operator: 'IN', value: v });
     }
     // now.* rules handled by rulesToTimeWindows — skip here

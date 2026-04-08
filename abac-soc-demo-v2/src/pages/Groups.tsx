@@ -48,12 +48,12 @@ function emptyDraft(): GroupDraft {
   return { id: '', name: '', description: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [] };
 }
 
-function groupToDraft(g: Group): GroupDraft {
+function groupToDraft(g: Group, groups: { id: string; name: string }[]): GroupDraft {
   return {
     id: g.id,
     name: g.name,
     description: g.description ?? '',
-    conditionChips: rulesToConditionChips(g.membershipRules),
+    conditionChips: rulesToConditionChips(g.membershipRules, groups),
     timeWindows: rulesToTimeWindows(g.membershipRules),
     members: [...g.members],
     memberSearch: '',
@@ -90,7 +90,8 @@ function draftToGroup(draft: GroupDraft, existing?: Group): Group {
 // ── Sentence chip row (read-only card display) ───────────────────────────────
 
 function SentenceRow({ group }: { group: Group }) {
-  const chips      = useMemo(() => rulesToConditionChips(group.membershipRules), [group.membershipRules]);
+  const groups     = useStore(s => s.groups);
+  const chips      = useMemo(() => rulesToConditionChips(group.membershipRules, groups), [group.membershipRules, groups]);
   const timeWindows = useMemo(() => rulesToTimeWindows(group.membershipRules), [group.membershipRules]);
 
   if (chips.length === 0 && timeWindows.length === 0 && group.members.length === 0) {
@@ -166,7 +167,7 @@ export default function Groups() {
   // ── Modal handlers ───────────────────────────────────────────────────────────
 
   function openAdd()         { setEditingGroup(null); setDraft(emptyDraft()); setModalOpen(true); }
-  function openEdit(g: Group) { setEditingGroup(g); setDraft(groupToDraft(g)); setModalOpen(true); }
+  function openEdit(g: Group) { setEditingGroup(g); setDraft(groupToDraft(g, groups)); setModalOpen(true); }
   function closeModal()      { setModalOpen(false); setEditingGroup(null); setDraft(emptyDraft()); }
 
   function handleSave() {

@@ -119,7 +119,7 @@ export function generateRealWorldData(): void {
         { id: 'nsr-1', leftSide: 'user.department', operator: '==', rightSide: 'Security' },
         { id: 'nsr-2', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
         { id: 'nsr-3', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
-        { id: 'nsr-4', leftSide: 'now.hour', operator: '>=', rightSide: '20' },
+        { id: 'nsr-4', leftSide: 'now.hour', operator: '>=', rightSide: '20:00' },
       ],
       inheritedPermissions: ['demo-grant-allshift'],
     });
@@ -137,8 +137,8 @@ export function generateRealWorldData(): void {
         { id: 'ccr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'TopSecret' },
         { id: 'ccr-3', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
         { id: 'ccr-4', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
-        { id: 'ccr-5', leftSide: 'now.hour', operator: '>=', rightSide: '8' },
-        { id: 'ccr-6', leftSide: 'now.hour', operator: '<=', rightSide: '18' },
+        { id: 'ccr-5', leftSide: 'now.hour', operator: '>=', rightSide: '08:00' },
+        { id: 'ccr-6', leftSide: 'now.hour', operator: '<', rightSide: '18:00' },
       ],
       inheritedPermissions: ['demo-grant-escort'],
     });
@@ -164,8 +164,8 @@ export function generateRealWorldData(): void {
       rules: [
         { id: 'bhr-1', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
         { id: 'bhr-2', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
-        { id: 'bhr-3', leftSide: 'now.hour', operator: '>=', rightSide: '8' },
-        { id: 'bhr-4', leftSide: 'now.hour', operator: '<=', rightSide: '18' },
+        { id: 'bhr-3', leftSide: 'now.hour', operator: '>=', rightSide: '08:00' },
+        { id: 'bhr-4', leftSide: 'now.hour', operator: '<', rightSide: '18:00' },
       ],
       doorIds: mainEntranceDoors.length > 0 ? mainEntranceDoors.slice(0, 6) : liveDoors.slice(0, 3).map(d => d.id),
     });

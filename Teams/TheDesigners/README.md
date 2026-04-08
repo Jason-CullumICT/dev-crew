@@ -11,6 +11,7 @@ A pre-implementation design pipeline that converts specs into approved, screensh
 | `visual-designer` | sonnet | Renders mockups in browser. Captures screenshots. Produces 2–3 options with trade-offs | No (1) |
 | `design-systems` | haiku | Validates mockups against existing Tailwind tokens, component conventions, spacing grid | No (1) |
 | `accessibility-auditor` | haiku | WCAG 2.1 AA review of proposed designs before implementation | No (1) |
+| `design-qa` | sonnet | Post-implementation — screenshots live app, diffs against approved mockups, verdicts PASS/FAIL | No (1) |
 
 ## Pipeline
 
@@ -31,7 +32,10 @@ Stage 3 (parallel):
     Teams/TheDesigners/artifacts/<feature>/
               |
     TheATeam picks up implementation
-    (design-critic validates against committed spec)
+              |
+    Stage 4: design-qa
+    (screenshots live app, diffs against approved mockups)
+    PASS → done / FAIL → frontend-coder fixes → design-qa re-runs
 ```
 
 ## Key Design Decisions
@@ -74,11 +78,11 @@ All agents report to `tools/pipeline-state-TheDesigners.json` via `tools/pipelin
 
 TheATeam's `design-critic` (in `Teams/Shared/design-critic.md`) reads the committed design spec from `docs/designs/` and validates the implemented UI against it. The handoff is the design spec file — TheDesigners writes it, design-critic reads it.
 
-| Phase | Team | Key Output |
-|---|---|---|
-| Design | **TheDesigners** | `docs/designs/<feature>.md` + screenshots |
-| Implementation | TheATeam | Working code |
-| Visual validation | TheATeam/design-critic | Pass/Fail verdict against design spec |
+| Phase | Team | Agent | Key Output |
+|---|---|---|---|
+| Design | **TheDesigners** | ux-researcher → visual-designer → review | `docs/designs/<feature>.md` + screenshots |
+| Implementation | TheATeam | frontend-coder | Working code |
+| Visual validation | **TheDesigners** | design-qa | Pass/Fail diff report against approved mockups |
 
 ## When to Use
 

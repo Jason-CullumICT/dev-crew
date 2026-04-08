@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
 import type { ConditionChip, ConditionChipType } from '../types';
@@ -41,6 +41,18 @@ export default function ConditionChips({ chips, onChange, allowGroupRef = false 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState<PickerOption | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function handleMouseDown(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        closePicker();
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [pickerOpen]);
 
   const visibleOptions = allowGroupRef
     ? BASE_OPTIONS
@@ -52,6 +64,14 @@ export default function ConditionChips({ chips, onChange, allowGroupRef = false 
 
   function commitChip(option: PickerOption, value: string) {
     if (!value.trim()) return;
+    // Prevent duplicate chips for the same attribute+value combination
+    const isDuplicate = chips.some(
+      c => c.attribute === option.attribute && c.value === (option.chipType === 'group' ? `group.${value}` : value)
+    );
+    if (isDuplicate) {
+      closePicker();
+      return;
+    }
     const isGroup = option.chipType === 'group';
     const rawValue = isGroup ? `group.${value}` : value;
     const labelStr = isGroup
@@ -100,7 +120,7 @@ export default function ConditionChips({ chips, onChange, allowGroupRef = false 
       ))}
 
       {/* Add picker */}
-      <div className="relative">
+      <div className="relative" ref={pickerRef}>
         {!pickerOpen && (
           <button
             type="button"

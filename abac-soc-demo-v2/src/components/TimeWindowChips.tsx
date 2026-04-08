@@ -7,7 +7,7 @@ const DAY_OPTIONS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const PRESETS: { label: string; days: string[]; startTime: string; endTime: string }[] = [
   { label: 'Business Hours (Mon–Fri 08–18)', days: ['Mon','Tue','Wed','Thu','Fri'], startTime: '08:00', endTime: '18:00' },
-  { label: 'Night Shift (Mon–Fri 20–06)',    days: ['Mon','Tue','Wed','Thu','Fri'], startTime: '20:00', endTime: '06:00' },
+  { label: 'Evening (Mon–Fri 18:00–22:00)',  days: ['Mon','Tue','Wed','Thu','Fri'], startTime: '18:00', endTime: '22:00' },
   { label: 'Weekend',                         days: ['Sat','Sun'],                  startTime: '00:00', endTime: '23:59' },
   { label: 'Always (24/7)',                   days: [],                             startTime: '00:00', endTime: '23:59' },
 ];
@@ -71,6 +71,7 @@ export default function TimeWindowChips({ windows, onChange }: TimeWindowChipsPr
 
   function addCustom() {
     // days: [] means "every day" (no restriction) — this is intentional and valid
+    if (draft.endTime <= draft.startTime) return; // guarded by UI validation
     onChange([...windows, { id: uuidv4(), ...draft }]);
     closePicker();
   }
@@ -102,7 +103,7 @@ export default function TimeWindowChips({ windows, onChange }: TimeWindowChipsPr
       ))}
 
       <div className="relative" ref={pickerRef}>
-        {!pickerOpen && (
+        {!pickerOpen && windows.length < 1 && (
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
@@ -190,11 +191,16 @@ export default function TimeWindowChips({ windows, onChange }: TimeWindowChipsPr
               </div>
             </div>
 
+            {draft.endTime <= draft.startTime && (
+              <p className="text-xs text-red-400">End time must be after start time</p>
+            )}
+
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={addCustom}
-                className="flex-1 px-2 py-1.5 bg-amber-700 hover:bg-amber-600 text-white text-xs rounded-lg transition-colors"
+                disabled={draft.endTime <= draft.startTime}
+                className="flex-1 px-2 py-1.5 bg-amber-700 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors"
               >
                 Add
               </button>

@@ -36,6 +36,7 @@ const BADGE_COLORS: Record<string, string> = {
 interface GroupDraft {
   id: string;
   name: string;
+  description: string;
   conditionChips: ConditionChip[];
   timeWindows: TimeWindow[];
   members: GroupMember[];
@@ -44,13 +45,14 @@ interface GroupDraft {
 }
 
 function emptyDraft(): GroupDraft {
-  return { id: '', name: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [] };
+  return { id: '', name: '', description: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [] };
 }
 
 function groupToDraft(g: Group): GroupDraft {
   return {
     id: g.id,
     name: g.name,
+    description: g.description ?? '',
     conditionChips: rulesToConditionChips(g.membershipRules),
     timeWindows: rulesToTimeWindows(g.membershipRules),
     members: [...g.members],
@@ -75,6 +77,7 @@ function draftToGroup(draft: GroupDraft, existing?: Group): Group {
     ...(existing ?? {}),
     id: draft.id || uuidv4(),
     name: draft.name.trim(),
+    description: draft.description,
     members: draft.members,
     membershipRules,
     membershipLogic: 'AND',
@@ -236,7 +239,7 @@ export default function Groups() {
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
                     <span className="font-semibold text-white text-base">{group.name}</span>
                     {badges.map(badge => (
-                      <span key={badge} className={`text-xs px-2 py-0.5 rounded-full font-medium ${BADGE_COLORS[badge]}`}>
+                      <span key={badge} className={`text-xs px-2 py-0.5 rounded-full font-medium ${BADGE_COLORS[badge] ?? 'bg-slate-700 text-slate-300'}`}>
                         {badge}
                       </span>
                     ))}
@@ -410,12 +413,15 @@ export default function Groups() {
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() => setDraft(d => ({
-                            ...d,
-                            inheritedPermissions: checked
-                              ? d.inheritedPermissions.filter(id => id !== grant.id)
-                              : [...d.inheritedPermissions, grant.id],
-                          }))}
+                          onChange={() => setDraft(d => {
+                            const alreadyChecked = d.inheritedPermissions.includes(grant.id);
+                            return {
+                              ...d,
+                              inheritedPermissions: alreadyChecked
+                                ? d.inheritedPermissions.filter(id => id !== grant.id)
+                                : [...d.inheritedPermissions, grant.id],
+                            };
+                          })}
                           className="w-4 h-4 accent-emerald-500 shrink-0 mt-0.5"
                         />
                         <div className="flex-1 min-w-0">

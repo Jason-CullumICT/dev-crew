@@ -62,7 +62,7 @@ export default function ConditionChips({ chips, onChange, allowGroupRef = false 
     onChange(chips.filter(c => c.id !== id));
   }
 
-  function commitChip(option: PickerOption, value: string) {
+  function commitChip(option: PickerOption, value: string, displayLabel?: string) {
     if (!value.trim()) return;
     // Prevent duplicate chips for the same attribute+value combination
     const isDuplicate = chips.some(
@@ -75,7 +75,7 @@ export default function ConditionChips({ chips, onChange, allowGroupRef = false 
     const isGroup = option.chipType === 'group';
     const rawValue = isGroup ? `group.${value}` : value;
     const labelStr = isGroup
-      ? value
+      ? (displayLabel ?? value)
       : option.operator === '>='
         ? `${value}+`
         : value;
@@ -206,7 +206,7 @@ export default function ConditionChips({ chips, onChange, allowGroupRef = false 
                   <button
                     key={g.id}
                     type="button"
-                    onClick={() => commitChip(selectedOption, g.name)}
+                    onClick={() => commitChip(selectedOption, g.id, g.name)}
                     className="w-full text-left px-2 py-1.5 text-xs text-slate-200 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
                   >
                     {g.name}

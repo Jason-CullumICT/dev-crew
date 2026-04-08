@@ -19,6 +19,7 @@ export default function TestAccess() {
   const sites = useStore((s) => s.sites);
   const zones = useStore((s) => s.zones);
   const controllers = useStore((s) => s.controllers);
+  const schedules = useStore((s) => s.schedules);
 
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedDoorId, setSelectedDoorId] = useState<string>('');
@@ -42,6 +43,7 @@ export default function TestAccess() {
       allControllers: controllers,
       allGroups: groups,
       allGrants: grants,
+      allSchedules: schedules,
     };
     const accessResult = evaluateAccess(selectedUser, selectedDoor, policies, groups, grants, store);
     setResult(accessResult);

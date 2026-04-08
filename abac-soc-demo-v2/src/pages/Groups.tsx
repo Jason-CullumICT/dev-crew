@@ -4,6 +4,7 @@ import { useStore } from '../store/store';
 import type { Group, GroupMember, ConditionChip, TimeWindow } from '../types';
 import ConditionChips from '../components/ConditionChips';
 import TimeWindowChips from '../components/TimeWindowChips';
+import SchedulePicker from '../components/SchedulePicker';
 import {
   chipToRule,
   timeWindowToRules,
@@ -21,7 +22,7 @@ function membershipBadges(group: Group): string[] {
   const hasExplicit = group.membershipType === 'explicit' || group.membershipType === 'hybrid';
   if (hasDynamic || group.membershipType === 'dynamic') badges.push('auto-enrolled');
   if (hasExplicit && group.membershipType !== 'dynamic') badges.push('hand-picked');
-  if (hasTime) badges.push('time-gated');
+  if (hasTime || group.scheduleId) badges.push('time-gated');
   return badges;
 }
 
@@ -42,10 +43,11 @@ interface GroupDraft {
   members: GroupMember[];
   memberSearch: string;
   inheritedPermissions: string[];
+  scheduleId: string | undefined;
 }
 
 function emptyDraft(): GroupDraft {
-  return { id: '', name: '', description: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [] };
+  return { id: '', name: '', description: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [], scheduleId: undefined };
 }
 
 function groupToDraft(g: Group, groups: { id: string; name: string }[]): GroupDraft {
@@ -58,6 +60,7 @@ function groupToDraft(g: Group, groups: { id: string; name: string }[]): GroupDr
     members: [...g.members],
     memberSearch: '',
     inheritedPermissions: [...g.inheritedPermissions],
+    scheduleId: g.scheduleId,
   };
 }
 
@@ -84,6 +87,7 @@ function draftToGroup(draft: GroupDraft, existing?: Group): Group {
     membershipType,
     targetEntityType: 'user',
     inheritedPermissions: draft.inheritedPermissions,
+    scheduleId: draft.scheduleId,
   } as Group;
 }
 
@@ -91,10 +95,12 @@ function draftToGroup(draft: GroupDraft, existing?: Group): Group {
 
 function SentenceRow({ group }: { group: Group }) {
   const groups     = useStore(s => s.groups);
+  const schedules  = useStore(s => s.schedules);
   const chips      = useMemo(() => rulesToConditionChips(group.membershipRules, groups), [group.membershipRules, groups]);
   const timeWindows = useMemo(() => rulesToTimeWindows(group.membershipRules), [group.membershipRules]);
+  const linkedSchedule = group.scheduleId ? schedules.find(s => s.id === group.scheduleId) : undefined;
 
-  if (chips.length === 0 && timeWindows.length === 0 && group.members.length === 0) {
+  if (chips.length === 0 && timeWindows.length === 0 && group.members.length === 0 && !linkedSchedule) {
     return <span className="text-slate-600 text-xs italic">No conditions defined</span>;
   }
 
@@ -122,6 +128,18 @@ function SentenceRow({ group }: { group: Group }) {
           </span>
         );
       })}
+      {linkedSchedule && (
+        <span className="flex items-center gap-1.5">
+          <span className="text-slate-500">schedule</span>
+          <span
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium text-xs"
+            style={{ backgroundColor: `${linkedSchedule.color}22`, color: linkedSchedule.color, border: `1px solid ${linkedSchedule.color}66` }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: linkedSchedule.color }} />
+            {linkedSchedule.name}
+          </span>
+        </span>
+      )}
       {group.membershipType !== 'dynamic' && group.members.length > 0 && chips.length > 0 && (
         <span className="text-slate-500">+ {group.members.length} explicit</span>
       )}
@@ -359,11 +377,18 @@ export default function Groups() {
                 <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                   When are they active? <span className="text-slate-600 normal-case font-normal">(optional)</span>
                 </label>
-                <p className="text-xs text-slate-600 mb-3">Leave empty for no time restriction.</p>
-                <TimeWindowChips
-                  windows={draft.timeWindows}
-                  onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
+                <p className="text-xs text-slate-600 mb-3">Select a named schedule, or leave empty for no time restriction.</p>
+                <SchedulePicker
+                  value={draft.scheduleId}
+                  onChange={scheduleId => setDraft(d => ({ ...d, scheduleId }))}
+                  className="mb-3"
                 />
+                {!draft.scheduleId && (
+                  <TimeWindowChips
+                    windows={draft.timeWindows}
+                    onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
+                  />
+                )}
               </div>
 
               {/* Explicit members */}

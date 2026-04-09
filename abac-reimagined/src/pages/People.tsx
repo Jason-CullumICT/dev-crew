@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { useStore } from '../store/store'
+import UserModal from '../modals/UserModal'
+import type { User } from '../types'
 
 const STATUS_CLASS = {
   active:    'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
@@ -13,13 +16,24 @@ const TYPE_CLASS = {
 }
 
 export default function People() {
-  const users = useStore(s => s.users)
+  const users      = useStore(s => s.users)
+  const deleteUser = useStore(s => s.deleteUser)
+
+  const [editing, setEditing] = useState<User | null | 'new'>(null)
 
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-100">People</h1>
-        <span className="text-[10px] text-slate-600">{users.length} users</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-slate-600">{users.length} users</span>
+          <button
+            onClick={() => setEditing('new')}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            + New
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-2">
@@ -35,13 +49,20 @@ export default function People() {
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${TYPE_CLASS[user.type]}`}>{user.type}</span>
               <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${STATUS_CLASS[user.status]}`}>{user.status}</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">
-                L{user.clearanceLevel}
-              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">L{user.clearanceLevel}</span>
+              <button onClick={() => setEditing(user)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors ml-1">Edit</button>
+              <button onClick={() => deleteUser(user.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
             </div>
           </div>
         ))}
       </div>
+
+      {editing !== null && (
+        <UserModal
+          user={editing === 'new' ? undefined : editing}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   )
 }

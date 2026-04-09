@@ -1,21 +1,30 @@
+import { useState } from 'react'
 import { useStore } from '../store/store'
+import GroupModal from '../modals/GroupModal'
+import type { Group } from '../types'
 
 export default function Groups() {
-  const groups = useStore(s => s.groups)
-  const grants = useStore(s => s.grants)
+  const groups      = useStore(s => s.groups)
+  const grants      = useStore(s => s.grants)
+  const deleteGroup = useStore(s => s.deleteGroup)
+
+  const [editing, setEditing] = useState<Group | null | 'new'>(null)
 
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-100">Groups</h1>
-        <span className="text-[10px] text-slate-600">{groups.length} groups</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-slate-600">{groups.length} groups</span>
+          <button onClick={() => setEditing('new')} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors">+ New</button>
+        </div>
       </div>
 
       <div className="grid gap-3">
         {groups.map(group => {
           const subGroupNames = group.subGroups.map(id => groups.find(g => g.id === id)?.name ?? id)
           const grantNames    = group.inheritedPermissions.map(id => grants.find(g => g.id === id)?.name ?? id)
-          const memberCount   = group.membershipType === 'static' ? group.members.length : null
+          const memberCount   = group.members.length
 
           return (
             <div key={group.id} className="bg-[#0f1320] border border-[#1e2d4a] rounded-lg p-4 space-y-3">
@@ -24,14 +33,14 @@ export default function Groups() {
                   <div className="text-[13px] font-bold text-slate-100">{group.name}</div>
                   <div className="text-[10px] text-slate-500 mt-0.5">{group.description}</div>
                 </div>
-                <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded border font-medium ${
-                  group.membershipType === 'dynamic'
-                    ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                }`}>{group.membershipType}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {memberCount > 0 && <span className="text-[9px] text-slate-600">{memberCount} members</span>}
+                  <button onClick={() => setEditing(group)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
+                  <button onClick={() => deleteGroup(group.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+                </div>
               </div>
 
-              {group.membershipType === 'dynamic' && group.membershipRules.length > 0 && (
+              {group.membershipRules.length > 0 && (
                 <div className="space-y-1">
                   {group.membershipRules.map(r => (
                     <div key={r.id} className="bg-[#111827] rounded px-2 py-1.5 text-[10px] font-mono text-slate-400">
@@ -41,10 +50,6 @@ export default function Groups() {
                     </div>
                   ))}
                 </div>
-              )}
-
-              {memberCount !== null && memberCount > 0 && (
-                <div className="text-[10px] text-slate-500">{memberCount} static members</div>
               )}
 
               {subGroupNames.length > 0 && (
@@ -66,6 +71,10 @@ export default function Groups() {
           )
         })}
       </div>
+
+      {editing !== null && (
+        <GroupModal group={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />
+      )}
     </div>
   )
 }

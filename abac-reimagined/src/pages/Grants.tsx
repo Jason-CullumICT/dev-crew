@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { useStore } from '../store/store'
+import GrantModal from '../modals/GrantModal'
+import type { Grant } from '../types'
 
 const SCOPE_CLASS = {
   global: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -13,16 +16,22 @@ const MODE_CLASS = {
 }
 
 export default function Grants() {
-  const grants    = useStore(s => s.grants)
-  const schedules = useStore(s => s.schedules)
-  const sites     = useStore(s => s.sites)
-  const zones     = useStore(s => s.zones)
+  const grants      = useStore(s => s.grants)
+  const schedules   = useStore(s => s.schedules)
+  const sites       = useStore(s => s.sites)
+  const zones       = useStore(s => s.zones)
+  const deleteGrant = useStore(s => s.deleteGrant)
+
+  const [editing, setEditing] = useState<Grant | null | 'new'>(null)
 
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-100">Grants</h1>
-        <span className="text-[10px] text-slate-600">{grants.length} grants</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-slate-600">{grants.length} grants</span>
+          <button onClick={() => setEditing('new')} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors">+ New</button>
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -38,33 +47,31 @@ export default function Grants() {
             <div key={grant.id} className="bg-[#0c0a1e] border border-[#2e1f6b] rounded-lg p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="text-[13px] font-bold text-violet-200">{grant.name}</div>
-                <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded border font-medium ${SCOPE_CLASS[grant.scope]}`}>
-                  {grant.scope}
-                </span>
+                <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded border font-medium ${SCOPE_CLASS[grant.scope]}`}>{grant.scope}</span>
               </div>
-              {grant.description && (
-                <div className="text-[10px] text-slate-500">{grant.description}</div>
-              )}
+              {grant.description && <div className="text-[10px] text-slate-500">{grant.description}</div>}
               <div className="flex flex-wrap gap-1">
                 {grant.actions.map(a => (
                   <span key={a} className="text-[9px] bg-[#111827] border border-[#1e293b] text-slate-400 px-1.5 py-0.5 rounded">{a}</span>
                 ))}
               </div>
               <div className="flex flex-wrap gap-1.5">
-                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${MODE_CLASS[grant.applicationMode]}`}>
-                  {grant.applicationMode}
-                </span>
-                {schedule && (
-                  <span className="text-[9px] bg-[#07100e] border border-[#134e4a] text-teal-400 px-1.5 py-0.5 rounded">{schedule.name}</span>
-                )}
-                {targetName && (
-                  <span className="text-[9px] text-slate-500">→ {targetName}</span>
-                )}
+                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${MODE_CLASS[grant.applicationMode]}`}>{grant.applicationMode}</span>
+                {schedule && <span className="text-[9px] bg-[#07100e] border border-[#134e4a] text-teal-400 px-1.5 py-0.5 rounded">{schedule.name}</span>}
+                {targetName && <span className="text-[9px] text-slate-500">→ {targetName}</span>}
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setEditing(grant)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
+                <button onClick={() => deleteGrant(grant.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
               </div>
             </div>
           )
         })}
       </div>
+
+      {editing !== null && (
+        <GrantModal grant={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />
+      )}
     </div>
   )
 }

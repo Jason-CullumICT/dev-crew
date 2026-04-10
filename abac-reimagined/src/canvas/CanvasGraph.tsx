@@ -5,6 +5,7 @@ import GroupNode from './nodes/GroupNode'
 import GrantNode from './nodes/GrantNode'
 import DoorNode from './nodes/DoorNode'
 import ScheduleNode from './nodes/ScheduleNode'
+import CanvasMinimap from './CanvasMinimap'
 import type { CanvasPosition } from '../types'
 
 type EntityType = 'groups' | 'grants' | 'schedules' | 'doors'
@@ -13,6 +14,7 @@ interface Props {
   siteFilter:   string | null
   scopeFilter:  string | null
   visibleTypes: Set<EntityType>
+  onAutoLayout?: () => void
 }
 
 const CANVAS_W = 4000
@@ -21,6 +23,22 @@ const GRID_SIZE = 24
 const ZOOM_MIN = 0.1
 const ZOOM_MAX = 3
 const ZOOM_STEP = 0.12
+
+// Cluster background colors per site (cycling palette)
+const SITE_CLUSTER_COLORS = [
+  { bg: 'rgba(99, 102, 241, 0.06)',  border: 'rgba(99, 102, 241, 0.18)',  label: 'rgba(99, 102, 241, 0.5)'  },
+  { bg: 'rgba(20, 184, 166, 0.06)',  border: 'rgba(20, 184, 166, 0.18)',  label: 'rgba(20, 184, 166, 0.5)'  },
+  { bg: 'rgba(245, 158, 11, 0.06)',  border: 'rgba(245, 158, 11, 0.18)',  label: 'rgba(245, 158, 11, 0.5)'  },
+  { bg: 'rgba(239, 68, 68, 0.06)',   border: 'rgba(239, 68, 68, 0.18)',   label: 'rgba(239, 68, 68, 0.5)'   },
+  { bg: 'rgba(168, 85, 247, 0.06)',  border: 'rgba(168, 85, 247, 0.18)',  label: 'rgba(168, 85, 247, 0.5)'  },
+  { bg: 'rgba(59, 130, 246, 0.06)',  border: 'rgba(59, 130, 246, 0.18)',  label: 'rgba(59, 130, 246, 0.5)'  },
+  { bg: 'rgba(236, 72, 153, 0.06)',  border: 'rgba(236, 72, 153, 0.18)',  label: 'rgba(236, 72, 153, 0.5)'  },
+  { bg: 'rgba(16, 185, 129, 0.06)',  border: 'rgba(16, 185, 129, 0.18)',  label: 'rgba(16, 185, 129, 0.5)'  },
+]
+
+const DOOR_NODE_W = 116
+const DOOR_NODE_H = 60
+const CLUSTER_PAD = 20
 
 function nodeCenter(pos: CanvasPosition, w = 148, h = 80): { x: number; y: number } {
   return { x: pos.x + w / 2, y: pos.y + h / 2 }
@@ -40,12 +58,13 @@ interface Edge {
   sourceKey: string; targetKey: string
 }
 
-export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: Props) {
+export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onAutoLayout }: Props) {
   const allGroups    = useStore(s => s.groups)
   const allGrants    = useStore(s => s.grants)
   const allDoors     = useStore(s => s.doors)
   const zones        = useStore(s => s.zones)
   const allSchedules = useStore(s => s.schedules)
+  const allSites     = useStore(s => s.sites)
   const selected     = useStore(s => s.selectedCanvasNodeId)
   const setSelected  = useStore(s => s.setSelectedCanvasNode)
 
@@ -93,7 +112,7 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
   }, [])
 
   // Pan drag on background
-  const panDragRef    = useRef<{ startX: number; startY: number; origPan: { x: number; y: number }; moved: boolean } | null>(null)
+  const panDragRef = useRef<{ startX: number; startY: number; origPan: { x: number; y: number }; moved: boolean } | null>(null)
 
   const handlePanStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
@@ -128,7 +147,6 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
   // Zoom button helpers
   function zoomBy(factor: number) {
     const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomRef.current * factor))
-    // Zoom toward canvas center
     const el = containerRef.current
     if (!el) return
     const mx = el.clientWidth / 2
@@ -147,6 +165,12 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
     zoomRef.current = 0.65
     panRef.current  = { x: 20, y: 20 }
   }
+
+  // Minimap pan callback — called from CanvasMinimap when user clicks/drags
+  const handleMinimapPan = useCallback((newPan: { x: number; y: number }) => {
+    panRef.current = newPan
+    setPan(newPan)
+  }, [])
 
   // ── Filters ────────────────────────────────────────────────────────────────
   const filteredDoors = allDoors.filter(d => {
@@ -189,11 +213,56 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
     return positions[key] ?? { x: 0, y: 0 }
   }
 
+  // ── Site clusters for doors (only when no site filter) ─────────────────────
+  interface SiteCluster {
+    siteId: string
+    siteName: string
+    left: number
+    top: number
+    width: number
+    height: number
+    colorIdx: number
+  }
+
+  const siteClusters: SiteCluster[] = []
+
+  if (!siteFilter && visibleTypes.has('doors') && doors.length > 0) {
+    // Build sorted list of unique siteIds in the order they first appear
+    const siteOrder: string[] = []
+    for (const door of doors) {
+      if (!siteOrder.includes(door.siteId)) siteOrder.push(door.siteId)
+    }
+
+    siteOrder.forEach((siteId, idx) => {
+      const siteDoors = doors.filter(d => d.siteId === siteId)
+      if (siteDoors.length === 0) return
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      for (const door of siteDoors) {
+        const p = pos(`door-${door.id}`)
+        minX = Math.min(minX, p.x)
+        minY = Math.min(minY, p.y)
+        maxX = Math.max(maxX, p.x + DOOR_NODE_W)
+        maxY = Math.max(maxY, p.y + DOOR_NODE_H)
+      }
+
+      const site = allSites.find(s => s.id === siteId)
+      siteClusters.push({
+        siteId,
+        siteName: site?.name ?? siteId,
+        left:   minX - CLUSTER_PAD,
+        top:    minY - CLUSTER_PAD,
+        width:  maxX - minX + CLUSTER_PAD * 2,
+        height: maxY - minY + CLUSTER_PAD * 2,
+        colorIdx: idx % SITE_CLUSTER_COLORS.length,
+      })
+    })
+  }
+
   // ── Edges ──────────────────────────────────────────────────────────────────
   const edges: Edge[] = []
 
   // H7: Track the FULL logical coverage of each grant→door (not just rendered edges)
-  // Key: grantNodeKey → Set of all covered door node keys
   const grantFullDoorCoverage = new Map<string, Set<string>>()
 
   for (const group of groups) {
@@ -233,7 +302,7 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
     // H7: Render edges for up to 3 doors only (performance), full coverage tracked above
     for (const door of allCoveredDoors.slice(0, 3)) {
       const key  = `door-${door.id}`
-      const dPos = nodeCenter(pos(key), 116, 60)
+      const dPos = nodeCenter(pos(key), DOOR_NODE_W, DOOR_NODE_H)
       edges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: grantKey, targetKey: key })
     }
   }
@@ -245,14 +314,12 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
       if (e.sourceKey === selected) connectedKeys.add(e.targetKey)
       if (e.targetKey === selected) connectedKeys.add(e.sourceKey)
     }
-    // H7: For a selected grant, also add ALL logically covered doors (not just rendered 3)
     if (selected.startsWith('grant-')) {
       const fullCoverage = grantFullDoorCoverage.get(selected)
       if (fullCoverage) {
         for (const doorKey of fullCoverage) connectedKeys.add(doorKey)
       }
     }
-    // H7: For a selected door, also mark any grant that fully covers it (even without a rendered edge)
     if (selected.startsWith('door-')) {
       for (const [grantKey, doorKeys] of grantFullDoorCoverage) {
         if (doorKeys.has(selected)) connectedKeys.add(grantKey)
@@ -268,6 +335,17 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
   }
 
   const totalVisible = groups.length + grants.length + schedules.length + doors.length
+
+  // ── Minimap nodes list ─────────────────────────────────────────────────────
+  const minimapNodes = [
+    ...groups.map(g    => ({ key: `group-${g.id}`,       pos: pos(`group-${g.id}`) })),
+    ...grants.map(g    => ({ key: `grant-${g.id}`,       pos: pos(`grant-${g.id}`) })),
+    ...schedules.map(s => ({ key: `schedule-${s.id}`,    pos: pos(`schedule-${s.id}`) })),
+    ...doors.map(d     => ({ key: `door-${d.id}`,        pos: pos(`door-${d.id}`) })),
+  ]
+
+  const containerWidth  = containerRef.current?.clientWidth  ?? 800
+  const containerHeight = containerRef.current?.clientHeight ?? 600
 
   // ── Grid background that tracks pan/zoom ───────────────────────────────────
   const gs  = GRID_SIZE * zoom
@@ -296,6 +374,43 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
           transformOrigin: '0 0',
         }}
       >
+        {/* Feature 3: Site cluster background regions (behind everything, only in all-sites mode) */}
+        {siteClusters.map(cluster => {
+          const colors = SITE_CLUSTER_COLORS[cluster.colorIdx]
+          return (
+            <div
+              key={cluster.siteId}
+              style={{
+                position: 'absolute',
+                left:   cluster.left,
+                top:    cluster.top,
+                width:  cluster.width,
+                height: cluster.height,
+                background: colors.bg,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 8,
+                pointerEvents: 'none',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  left: 8,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: colors.label,
+                  letterSpacing: '0.04em',
+                  userSelect: 'none',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {cluster.siteName}
+              </span>
+            </div>
+          )
+        })}
+
         {/* Edges SVG */}
         <svg
           className="absolute inset-0 pointer-events-none"
@@ -348,7 +463,6 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
           const p = pos(`grant-${grant.id}`)
           const key = `grant-${grant.id}`
           const { highlighted, dimmed } = nodeProps(key)
-          // H7: Pass full door count so GrantNode can show "covers N doors" for global grants
           const coveredDoorCount = grantFullDoorCoverage.get(key)?.size ?? 0
           return (
             <div key={grant.id} style={{ left: p.x, top: p.y, position: 'absolute' }} onMouseDown={e => startDrag(key, e)}>
@@ -392,6 +506,35 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
           </div>
         </div>
       )}
+
+      {/* Bottom-left controls: minimap + auto-layout */}
+      <div
+        className="absolute bottom-4 left-4 flex flex-col items-start gap-2 pointer-events-auto"
+        onMouseDown={e => e.stopPropagation()}
+      >
+        {/* Auto-layout button */}
+        {onAutoLayout && (
+          <button
+            onClick={onAutoLayout}
+            className="text-[10px] px-2.5 py-1 rounded bg-[#0f1320] border border-[#1e2d4a] text-slate-400 hover:text-slate-200 hover:border-indigo-500/50 transition-colors whitespace-nowrap"
+            title="Arrange visible nodes in hierarchical columns"
+          >
+            Auto-Layout
+          </button>
+        )}
+
+        {/* Minimap */}
+        <CanvasMinimap
+          nodes={minimapNodes}
+          pan={pan}
+          zoom={zoom}
+          containerWidth={containerWidth}
+          containerHeight={containerHeight}
+          canvasW={CANVAS_W}
+          canvasH={CANVAS_H}
+          onPanChange={handleMinimapPan}
+        />
+      </div>
 
       {/* Zoom controls */}
       <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 pointer-events-auto">

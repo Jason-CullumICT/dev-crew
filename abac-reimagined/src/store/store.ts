@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type {
   User, Group, Grant, NamedSchedule, Policy,
   Door, Zone, Site, Controller, ArmingLog, CanvasPosition,
@@ -8,7 +9,7 @@ import {
   DOORS, ZONES, SITES, CONTROLLERS,
 } from './seed'
 
-function defaultCanvasPositions(): Record<string, CanvasPosition> {
+export function defaultCanvasPositions(): Record<string, CanvasPosition> {
   const positions: Record<string, CanvasPosition> = {}
 
   // Groups: 2-column grid, 25 per column, gap 120
@@ -72,6 +73,9 @@ interface AxonStore {
   setCanvasPosition:     (key: string, pos: CanvasPosition) => void
   setSelectedCanvasNode: (id: string | null)     => void
 
+  // ── Seed reset ────────────────────────────────────────────────────────────
+  resetToSeed: () => void
+
   // ── Users ─────────────────────────────────────────────────────────────────
   addUser:    (user: User)   => void
   updateUser: (user: User)   => void
@@ -116,221 +120,249 @@ interface AxonStore {
   deleteController: (id: string)             => void
 }
 
-export const useStore = create<AxonStore>((set) => ({
-  users:       USERS,
-  groups:      GROUPS,
-  grants:      GRANTS,
-  schedules:   SCHEDULES,
-  policies:    POLICIES,
-  doors:       DOORS,
-  zones:       ZONES,
-  sites:       SITES,
-  controllers: CONTROLLERS,
-  armingLog:   [],
+export const useStore = create<AxonStore>()(
+  persist(
+    (set) => ({
+      users:       USERS,
+      groups:      GROUPS,
+      grants:      GRANTS,
+      schedules:   SCHEDULES,
+      policies:    POLICIES,
+      doors:       DOORS,
+      zones:       ZONES,
+      sites:       SITES,
+      controllers: CONTROLLERS,
+      armingLog:   [],
 
-  canvasPositions:      defaultCanvasPositions(),
-  selectedCanvasNodeId: null,
+      canvasPositions:      defaultCanvasPositions(),
+      selectedCanvasNodeId: null,
 
-  // ── Plan 1 ────────────────────────────────────────────────────────────────
-  updateSite: (site) =>
-    set(state => ({ sites: state.sites.map(s => s.id === site.id ? site : s) })),
+      // ── Plan 1 ────────────────────────────────────────────────────────────────
+      updateSite: (site) =>
+        set(state => ({ sites: state.sites.map(s => s.id === site.id ? site : s) })),
 
-  updateZone: (zone) =>
-    set(state => ({ zones: state.zones.map(z => z.id === zone.id ? zone : z) })),
+      updateZone: (zone) =>
+        set(state => ({ zones: state.zones.map(z => z.id === zone.id ? zone : z) })),
 
-  addArmingLog: (entry) =>
-    set(state => ({ armingLog: [entry, ...state.armingLog].slice(0, 100) })),
+      addArmingLog: (entry) =>
+        set(state => ({ armingLog: [entry, ...state.armingLog].slice(0, 100) })),
 
-  // Trade-off note: spreading the full canvasPositions record on every drag frame creates
-  // GC pressure (~660 entries). This shallow-clone approach is correct and cheap enough for
-  // a demo; a production canvas would batch drag updates or use a separate drag-state atom.
-  setCanvasPosition: (key, pos) =>
-    set(state => {
-      const next = { ...state.canvasPositions }
-      next[key] = pos
-      return { canvasPositions: next }
-    }),
+      // Trade-off note: spreading the full canvasPositions record on every drag frame creates
+      // GC pressure (~660 entries). This shallow-clone approach is correct and cheap enough for
+      // a demo; a production canvas would batch drag updates or use a separate drag-state atom.
+      setCanvasPosition: (key, pos) =>
+        set(state => {
+          const next = { ...state.canvasPositions }
+          next[key] = pos
+          return { canvasPositions: next }
+        }),
 
-  setSelectedCanvasNode: (id) =>
-    set({ selectedCanvasNodeId: id }),
+      setSelectedCanvasNode: (id) =>
+        set({ selectedCanvasNodeId: id }),
 
-  // ── Users ─────────────────────────────────────────────────────────────────
-  addUser: (user) =>
-    set(state => ({ users: [...state.users, user] })),
+      // ── Seed reset ────────────────────────────────────────────────────────────
+      resetToSeed: () =>
+        set({
+          users:       USERS,
+          groups:      GROUPS,
+          grants:      GRANTS,
+          schedules:   SCHEDULES,
+          policies:    POLICIES,
+          doors:       DOORS,
+          zones:       ZONES,
+          sites:       SITES,
+          controllers: CONTROLLERS,
+          canvasPositions: defaultCanvasPositions(),
+          armingLog:   [],
+        }),
 
-  updateUser: (user) =>
-    set(state => ({ users: state.users.map(u => u.id === user.id ? user : u) })),
+      // ── Users ─────────────────────────────────────────────────────────────────
+      addUser: (user) =>
+        set(state => ({ users: [...state.users, user] })),
 
-  deleteUser: (id) =>
-    set(state => ({
-      users:  state.users.filter(u => u.id !== id),
-      groups: state.groups.map(g => ({ ...g, members: g.members.filter(m => m !== id) })),
-    })),
+      updateUser: (user) =>
+        set(state => ({ users: state.users.map(u => u.id === user.id ? user : u) })),
 
-  // ── Groups ────────────────────────────────────────────────────────────────
-  addGroup: (group) =>
-    set(state => ({
-      groups: [...state.groups, group],
-      canvasPositions: {
-        ...state.canvasPositions,
-        [`group-${group.id}`]: { x: 80, y: nextY(state.canvasPositions, 'group-', 130) },
-      },
-    })),
-
-  updateGroup: (group) =>
-    set(state => ({ groups: state.groups.map(g => g.id === group.id ? group : g) })),
-
-  deleteGroup: (id) =>
-    set(state => {
-      const { [`group-${id}`]: _removed, ...restPositions } = state.canvasPositions
-      return {
-        groups: state.groups
-          .filter(g => g.id !== id)
-          .map(g => ({ ...g, subGroups: g.subGroups.filter(sg => sg !== id) })),
-        canvasPositions: restPositions,
-      }
-    }),
-
-  // ── Grants ────────────────────────────────────────────────────────────────
-  addGrant: (grant) =>
-    set(state => ({
-      grants: [...state.grants, grant],
-      canvasPositions: {
-        ...state.canvasPositions,
-        [`grant-${grant.id}`]: { x: 340, y: nextY(state.canvasPositions, 'grant-', 100) },
-      },
-    })),
-
-  updateGrant: (grant) =>
-    set(state => ({ grants: state.grants.map(g => g.id === grant.id ? grant : g) })),
-
-  deleteGrant: (id) =>
-    set(state => {
-      const { [`grant-${id}`]: _removed, ...restPositions } = state.canvasPositions
-      return {
-        grants: state.grants.filter(g => g.id !== id),
-        groups: state.groups.map(g => ({
-          ...g,
-          inheritedPermissions: g.inheritedPermissions.filter(p => p !== id),
+      deleteUser: (id) =>
+        set(state => ({
+          users:  state.users.filter(u => u.id !== id),
+          groups: state.groups.map(g => ({ ...g, members: g.members.filter(m => m !== id) })),
         })),
-        // Cascade: remove deleted grant from any holiday override lists so stale
-        // grant references don't silently persist in schedule holiday config.
-        schedules: state.schedules.map(s => ({
-          ...s,
-          holidays: s.holidays.map(h =>
-            h.overrideGrantIds.includes(id)
-              ? { ...h, overrideGrantIds: h.overrideGrantIds.filter(gid => gid !== id) }
-              : h
+
+      // ── Groups ────────────────────────────────────────────────────────────────
+      addGroup: (group) =>
+        set(state => ({
+          groups: [...state.groups, group],
+          canvasPositions: {
+            ...state.canvasPositions,
+            [`group-${group.id}`]: { x: 80, y: nextY(state.canvasPositions, 'group-', 130) },
+          },
+        })),
+
+      updateGroup: (group) =>
+        set(state => ({ groups: state.groups.map(g => g.id === group.id ? group : g) })),
+
+      deleteGroup: (id) =>
+        set(state => {
+          const { [`group-${id}`]: _removed, ...restPositions } = state.canvasPositions
+          return {
+            groups: state.groups
+              .filter(g => g.id !== id)
+              .map(g => ({ ...g, subGroups: g.subGroups.filter(sg => sg !== id) })),
+            canvasPositions: restPositions,
+          }
+        }),
+
+      // ── Grants ────────────────────────────────────────────────────────────────
+      addGrant: (grant) =>
+        set(state => ({
+          grants: [...state.grants, grant],
+          canvasPositions: {
+            ...state.canvasPositions,
+            [`grant-${grant.id}`]: { x: 340, y: nextY(state.canvasPositions, 'grant-', 100) },
+          },
+        })),
+
+      updateGrant: (grant) =>
+        set(state => ({ grants: state.grants.map(g => g.id === grant.id ? grant : g) })),
+
+      deleteGrant: (id) =>
+        set(state => {
+          const { [`grant-${id}`]: _removed, ...restPositions } = state.canvasPositions
+          return {
+            grants: state.grants.filter(g => g.id !== id),
+            groups: state.groups.map(g => ({
+              ...g,
+              inheritedPermissions: g.inheritedPermissions.filter(p => p !== id),
+            })),
+            // Cascade: remove deleted grant from any holiday override lists so stale
+            // grant references don't silently persist in schedule holiday config.
+            schedules: state.schedules.map(s => ({
+              ...s,
+              holidays: s.holidays.map(h =>
+                h.overrideGrantIds.includes(id)
+                  ? { ...h, overrideGrantIds: h.overrideGrantIds.filter(gid => gid !== id) }
+                  : h
+              ),
+            })),
+            canvasPositions: restPositions,
+          }
+        }),
+
+      // ── Schedules ─────────────────────────────────────────────────────────────
+      addSchedule: (schedule) =>
+        set(state => ({
+          schedules: [...state.schedules, schedule],
+          canvasPositions: {
+            ...state.canvasPositions,
+            [`schedule-${schedule.id}`]: { x: 340, y: nextY(state.canvasPositions, 'schedule-', 90) },
+          },
+        })),
+
+      updateSchedule: (schedule) =>
+        set(state => ({ schedules: state.schedules.map(s => s.id === schedule.id ? schedule : s) })),
+
+      deleteSchedule: (id) =>
+        set(state => {
+          const { [`schedule-${id}`]: _removed, ...restPositions } = state.canvasPositions
+          return {
+            schedules: state.schedules.filter(s => s.id !== id),
+            grants:    state.grants.map(g => g.scheduleId === id ? { ...g, scheduleId: undefined } : g),
+            policies:  state.policies.map(p => p.scheduleId === id ? { ...p, scheduleId: undefined } : p),
+            canvasPositions: restPositions,
+          }
+        }),
+
+      // ── Policies ──────────────────────────────────────────────────────────────
+      addPolicy: (policy) =>
+        set(state => ({ policies: [...state.policies, policy] })),
+
+      updatePolicy: (policy) =>
+        set(state => ({ policies: state.policies.map(p => p.id === policy.id ? policy : p) })),
+
+      deletePolicy: (id) =>
+        set(state => ({ policies: state.policies.filter(p => p.id !== id) })),
+
+      // ── Doors ─────────────────────────────────────────────────────────────────
+      addDoor: (door) =>
+        set(state => ({
+          doors: [...state.doors, door],
+          canvasPositions: {
+            ...state.canvasPositions,
+            [`door-${door.id}`]: { x: 620, y: nextY(state.canvasPositions, 'door-', 70) },
+          },
+        })),
+
+      updateDoor: (door) =>
+        set(state => ({ doors: state.doors.map(d => d.id === door.id ? door : d) })),
+
+      deleteDoor: (id) =>
+        set(state => {
+          const { [`door-${id}`]: _removed, ...restPositions } = state.canvasPositions
+          return {
+            doors:       state.doors.filter(d => d.id !== id),
+            policies:    state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => d !== id) })),
+            controllers: state.controllers.map(c => ({ ...c, doorIds: c.doorIds.filter(d => d !== id) })),
+            canvasPositions: restPositions,
+          }
+        }),
+
+      // ── Zones ─────────────────────────────────────────────────────────────────
+      addZone: (zone) =>
+        set(state => ({ zones: [...state.zones, zone] })),
+
+      deleteZone: (id) =>
+        set(state => ({
+          zones: state.zones.filter(z => z.id !== id),
+          doors: state.doors.map(d => d.zoneId === id ? { ...d, zoneId: undefined } : d),
+          // Cascade: clear targetId on zone-scoped grants that pointed at this zone.
+          grants: state.grants.map(g =>
+            g.scope === 'zone' && g.targetId === id ? { ...g, targetId: undefined } : g
           ),
         })),
-        canvasPositions: restPositions,
-      }
-    }),
 
-  // ── Schedules ─────────────────────────────────────────────────────────────
-  addSchedule: (schedule) =>
-    set(state => ({
-      schedules: [...state.schedules, schedule],
-      canvasPositions: {
-        ...state.canvasPositions,
-        [`schedule-${schedule.id}`]: { x: 340, y: nextY(state.canvasPositions, 'schedule-', 90) },
+      // ── Sites ─────────────────────────────────────────────────────────────────
+      addSite: (site) =>
+        set(state => ({ sites: [...state.sites, site] })),
+
+      deleteSite: (id) =>
+        set(state => {
+          // zoneIds reserved: zones don't currently have canvas positions, but if they gain
+          // them in future this is where per-zone canvas cleanup would go.
+          const doorIds = state.doors.filter(d => d.siteId === id).map(d => d.id)
+          const restPositions = { ...state.canvasPositions }
+          doorIds.forEach(did => { delete restPositions[`door-${did}`] })
+          return {
+            sites:       state.sites.filter(s => s.id !== id),
+            zones:       state.zones.filter(z => z.siteId !== id),
+            doors:       state.doors.filter(d => d.siteId !== id),
+            policies:    state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => !doorIds.includes(d)) })),
+            controllers: state.controllers.filter(c => c.siteId !== id),
+            // Cascade: clear targetId on site-scoped grants that pointed at this site.
+            grants: state.grants.map(g =>
+              g.scope === 'site' && g.targetId === id ? { ...g, targetId: undefined } : g
+            ),
+            canvasPositions: restPositions,
+          }
+        }),
+
+      // ── Controllers ───────────────────────────────────────────────────────────
+      addController: (controller) =>
+        set(state => ({ controllers: [...state.controllers, controller] })),
+
+      updateController: (controller) =>
+        set(state => ({ controllers: state.controllers.map(c => c.id === controller.id ? controller : c) })),
+
+      deleteController: (id) =>
+        set(state => ({ controllers: state.controllers.filter(c => c.id !== id) })),
+    }),
+    {
+      name: 'axon-store',
+      partialize: (state) => {
+        // Exclude selectedCanvasNodeId from persistence — it is ephemeral UI state
+        const { selectedCanvasNodeId: _excluded, ...rest } = state
+        return rest
       },
-    })),
-
-  updateSchedule: (schedule) =>
-    set(state => ({ schedules: state.schedules.map(s => s.id === schedule.id ? schedule : s) })),
-
-  deleteSchedule: (id) =>
-    set(state => {
-      const { [`schedule-${id}`]: _removed, ...restPositions } = state.canvasPositions
-      return {
-        schedules: state.schedules.filter(s => s.id !== id),
-        grants:    state.grants.map(g => g.scheduleId === id ? { ...g, scheduleId: undefined } : g),
-        policies:  state.policies.map(p => p.scheduleId === id ? { ...p, scheduleId: undefined } : p),
-        canvasPositions: restPositions,
-      }
-    }),
-
-  // ── Policies ──────────────────────────────────────────────────────────────
-  addPolicy: (policy) =>
-    set(state => ({ policies: [...state.policies, policy] })),
-
-  updatePolicy: (policy) =>
-    set(state => ({ policies: state.policies.map(p => p.id === policy.id ? policy : p) })),
-
-  deletePolicy: (id) =>
-    set(state => ({ policies: state.policies.filter(p => p.id !== id) })),
-
-  // ── Doors ─────────────────────────────────────────────────────────────────
-  addDoor: (door) =>
-    set(state => ({
-      doors: [...state.doors, door],
-      canvasPositions: {
-        ...state.canvasPositions,
-        [`door-${door.id}`]: { x: 620, y: nextY(state.canvasPositions, 'door-', 70) },
-      },
-    })),
-
-  updateDoor: (door) =>
-    set(state => ({ doors: state.doors.map(d => d.id === door.id ? door : d) })),
-
-  deleteDoor: (id) =>
-    set(state => {
-      const { [`door-${id}`]: _removed, ...restPositions } = state.canvasPositions
-      return {
-        doors:       state.doors.filter(d => d.id !== id),
-        policies:    state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => d !== id) })),
-        controllers: state.controllers.map(c => ({ ...c, doorIds: c.doorIds.filter(d => d !== id) })),
-        canvasPositions: restPositions,
-      }
-    }),
-
-  // ── Zones ─────────────────────────────────────────────────────────────────
-  addZone: (zone) =>
-    set(state => ({ zones: [...state.zones, zone] })),
-
-  deleteZone: (id) =>
-    set(state => ({
-      zones: state.zones.filter(z => z.id !== id),
-      doors: state.doors.map(d => d.zoneId === id ? { ...d, zoneId: undefined } : d),
-      // Cascade: clear targetId on zone-scoped grants that pointed at this zone.
-      grants: state.grants.map(g =>
-        g.scope === 'zone' && g.targetId === id ? { ...g, targetId: undefined } : g
-      ),
-    })),
-
-  // ── Sites ─────────────────────────────────────────────────────────────────
-  addSite: (site) =>
-    set(state => ({ sites: [...state.sites, site] })),
-
-  deleteSite: (id) =>
-    set(state => {
-      // zoneIds reserved: zones don't currently have canvas positions, but if they gain
-      // them in future this is where per-zone canvas cleanup would go.
-      const doorIds = state.doors.filter(d => d.siteId === id).map(d => d.id)
-      const restPositions = { ...state.canvasPositions }
-      doorIds.forEach(did => { delete restPositions[`door-${did}`] })
-      return {
-        sites:       state.sites.filter(s => s.id !== id),
-        zones:       state.zones.filter(z => z.siteId !== id),
-        doors:       state.doors.filter(d => d.siteId !== id),
-        policies:    state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => !doorIds.includes(d)) })),
-        controllers: state.controllers.filter(c => c.siteId !== id),
-        // Cascade: clear targetId on site-scoped grants that pointed at this site.
-        grants: state.grants.map(g =>
-          g.scope === 'site' && g.targetId === id ? { ...g, targetId: undefined } : g
-        ),
-        canvasPositions: restPositions,
-      }
-    }),
-
-  // ── Controllers ───────────────────────────────────────────────────────────
-  addController: (controller) =>
-    set(state => ({ controllers: [...state.controllers, controller] })),
-
-  updateController: (controller) =>
-    set(state => ({ controllers: state.controllers.map(c => c.id === controller.id ? controller : c) })),
-
-  deleteController: (id) =>
-    set(state => ({ controllers: state.controllers.filter(c => c.id !== id) })),
-}))
+    }
+  )
+)

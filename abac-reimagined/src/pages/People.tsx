@@ -7,13 +7,13 @@ import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { User } from '../types'
 
-const STATUS_CLASS = {
+const STATUS_CLASS: Record<string, string> = {
   active:    'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
   suspended: 'bg-red-500/10 text-red-400 border border-red-500/20',
   inactive:  'bg-slate-700 text-slate-500 border border-slate-600',
 }
 
-const TYPE_CLASS = {
+const TYPE_CLASS: Record<string, string> = {
   employee:   'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20',
   contractor: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
   visitor:    'bg-slate-700 text-slate-400 border border-slate-600',
@@ -23,8 +23,8 @@ export default function People() {
   const users      = useStore(s => s.users)
   const deleteUser = useStore(s => s.deleteUser)
 
-  const [editing, setEditing]           = useState<User | null | 'new'>(null)
-  const [search, setSearch]             = useState('')
+  const [editing, setEditing]             = useState<User | null | 'new'>(null)
+  const [search, setSearch]               = useState('')
   const [pendingDelete, setPendingDelete] = useState<User | null>(null)
 
   const filtered = useMemo(() => {
@@ -42,7 +42,7 @@ export default function People() {
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 52, // px — accounts for py-3 + content
+    estimateSize: () => 52,
     overscan: 10,
   })
 
@@ -55,6 +55,7 @@ export default function People() {
 
   return (
     <div className="p-6 space-y-4 flex flex-col h-full overflow-hidden">
+      {/* Page header */}
       <div className="flex items-center justify-between shrink-0">
         <h1 className="text-xl font-bold text-slate-100">People</h1>
         <div className="flex items-center gap-3">
@@ -68,6 +69,7 @@ export default function People() {
         </div>
       </div>
 
+      {/* Search */}
       <div className="shrink-0">
         <SearchBar
           value={search}
@@ -76,6 +78,34 @@ export default function People() {
           resultCount={filtered.length}
           totalCount={users.length}
         />
+      </div>
+
+      {/* Column headers */}
+      <div className="shrink-0 px-4 flex items-center gap-4">
+        {/* Avatar placeholder */}
+        <div className="w-8 shrink-0" />
+        {/* Name+subtitle */}
+        <div className="flex-1 min-w-0 text-[9px] text-slate-600 uppercase tracking-wider font-semibold">
+          Name
+        </div>
+        {/* Department */}
+        <div className="w-[120px] shrink-0 text-[9px] text-slate-600 uppercase tracking-wider font-semibold">
+          Department
+        </div>
+        {/* Type */}
+        <div className="w-[80px] shrink-0 text-[9px] text-slate-600 uppercase tracking-wider font-semibold">
+          Type
+        </div>
+        {/* Status */}
+        <div className="w-[70px] shrink-0 text-[9px] text-slate-600 uppercase tracking-wider font-semibold">
+          Status
+        </div>
+        {/* CL */}
+        <div className="w-[40px] shrink-0 text-[9px] text-slate-600 uppercase tracking-wider font-semibold">
+          CL
+        </div>
+        {/* Actions */}
+        <div className="w-[60px] shrink-0" />
       </div>
 
       {/* Virtual scroll container */}
@@ -88,6 +118,13 @@ export default function People() {
         >
           {rowVirtualizer.getVirtualItems().map(virtualRow => {
             const user = filtered[virtualRow.index]
+            const typeClass  = TYPE_CLASS[user.type]   ?? 'bg-slate-700 text-slate-400 border border-slate-600'
+            const statusClass = STATUS_CLASS[user.status] ?? 'bg-slate-700 text-slate-500 border border-slate-600'
+            const typeLabel  = user.type   || '—'
+            const statusLabel = user.status || '—'
+            const clLabel    = user.clearanceLevel != null ? `L${user.clearanceLevel}` : '—'
+            const dept       = user.department || '—'
+
             return (
               <div
                 key={user.id}
@@ -101,17 +138,49 @@ export default function People() {
                 }}
               >
                 <div className="bg-[#0f1320] border border-[#1e293b] rounded-lg px-4 py-3 flex items-center gap-4">
+                  {/* Avatar — 40px visual, mapped to w-8 (32px) + gap-4 (16px) alignment */}
                   <div className="w-8 h-8 rounded-full bg-[#1c1f2e] border border-[#2d3148] flex items-center justify-center text-[11px] font-bold text-slate-400 shrink-0">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+                    {user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}
                   </div>
+
+                  {/* Name + subtitle — flex-1 */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-slate-100">{user.name}</div>
-                    <div className="text-[10px] text-slate-500">{user.role} · {user.department}</div>
+                    <div className="text-[12px] font-semibold text-slate-100 truncate">
+                      {user.name || '—'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      {user.role || '—'} · {user.email || '—'}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${TYPE_CLASS[user.type]}`}>{user.type}</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${STATUS_CLASS[user.status]}`}>{user.status}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">L{user.clearanceLevel}</span>
+
+                  {/* Department — 120px */}
+                  <div className="w-[120px] shrink-0 text-[10px] text-slate-400 truncate">
+                    {dept}
+                  </div>
+
+                  {/* Type badge — 80px */}
+                  <div className="w-[80px] shrink-0">
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${typeClass}`}>
+                      {typeLabel}
+                    </span>
+                  </div>
+
+                  {/* Status badge — 70px */}
+                  <div className="w-[70px] shrink-0">
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${statusClass}`}>
+                      {statusLabel}
+                    </span>
+                  </div>
+
+                  {/* CL badge — 40px */}
+                  <div className="w-[40px] shrink-0">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">
+                      {clLabel}
+                    </span>
+                  </div>
+
+                  {/* Edit / Delete — 60px */}
+                  <div className="w-[60px] shrink-0 flex items-center gap-1 justify-end">
                     <button
                       onClick={() => setEditing(user)}
                       aria-label="Edit"
@@ -132,6 +201,7 @@ export default function People() {
             )
           })}
         </div>
+
         {filtered.length === 0 && (
           <p className="text-[12px] text-slate-600 py-4">
             {search ? 'No users match your search.' : 'No users yet.'}

@@ -78,12 +78,35 @@ export default function Groups() {
           return (
             <div key={group.id} className="bg-[#0f1320] border border-[#1e2d4a] rounded-lg p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-[13px] font-bold text-slate-100">{group.name}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">{group.description}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="text-[13px] font-bold text-slate-100">{group.name}</div>
+                    {/* Membership type badge */}
+                    <span className={`text-[9px] px-2 py-0.5 rounded border font-semibold ${
+                      group.membershipType === 'dynamic'
+                        ? 'bg-violet-500/10 text-violet-400 border-violet-500/25'
+                        : 'bg-slate-700/60 text-slate-400 border-slate-600/40'
+                    }`}>{group.membershipType}</span>
+                    {/* Logic operator badge — only when rules exist */}
+                    {group.membershipRules.length > 0 && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded border font-bold bg-amber-500/10 text-amber-400 border-amber-500/25">
+                        {group.membershipLogic}
+                      </span>
+                    )}
+                  </div>
+                  {/* Member count */}
+                  <div className="text-[10px] text-slate-500 mt-1">
+                    {group.membershipType === 'static'
+                      ? `${memberCount} member${memberCount !== 1 ? 's' : ''}`
+                      : memberCount > 0
+                        ? `${memberCount} member${memberCount !== 1 ? 's' : ''} (rules-based)`
+                        : '0 members (rules-based)'}
+                  </div>
+                  {group.description && (
+                    <div className="text-[10px] text-slate-600 mt-0.5">{group.description}</div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {memberCount > 0 && <span className="text-[9px] text-slate-600">{memberCount} members</span>}
                   <button
                     onClick={() => setEditing(group)}
                     aria-label="Edit"

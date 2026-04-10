@@ -228,7 +228,7 @@ export default function Oracle() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Query form */}
-        <div className="w-80 border-r border-[#141828] flex flex-col p-4 gap-4 shrink-0 overflow-y-auto">
+        <div className="w-[300px] border-r border-[#141828] flex flex-col p-4 gap-4 shrink-0 overflow-y-auto">
           {mode === 'who-can-access' ? (
             <div className="space-y-1.5">
               <label className="text-[9px] uppercase tracking-wider text-[#374151] font-semibold">Door</label>

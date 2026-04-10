@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import ZoneModal from '../modals/ZoneModal'
 import type { Zone, ZoneType, ZoneStatus } from '../types'
@@ -45,8 +46,12 @@ export default function Zones() {
               </div>
               <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${TYPE_CLASS[zone.type]}`}>{zone.type}</span>
               <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${STATUS_CLASS[zone.status]}`}>{zone.status}</span>
-              <button onClick={() => setEditing(zone)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-              <button onClick={() => deleteZone(zone.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+              <button onClick={() => setEditing(zone)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                <Pencil size={12} />
+              </button>
+              <button onClick={() => deleteZone(zone.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                <Trash2 size={12} />
+              </button>
             </div>
           )
         })}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import GrantModal from '../modals/GrantModal'
 import type { Grant } from '../types'
@@ -60,9 +61,13 @@ export default function Grants() {
                 {schedule && <span className="text-[9px] bg-[#07100e] border border-[#134e4a] text-teal-400 px-1.5 py-0.5 rounded">{schedule.name}</span>}
                 {targetName && <span className="text-[9px] text-slate-500">→ {targetName}</span>}
               </div>
-              <div className="flex gap-3 pt-1">
-                <button onClick={() => setEditing(grant)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-                <button onClick={() => deleteGrant(grant.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+              <div className="flex gap-1 pt-1">
+                <button onClick={() => setEditing(grant)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                  <Pencil size={12} />
+                </button>
+                <button onClick={() => deleteGrant(grant.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                  <Trash2 size={12} />
+                </button>
               </div>
             </div>
           )

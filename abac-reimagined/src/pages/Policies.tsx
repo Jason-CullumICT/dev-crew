@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import PolicyModal from '../modals/PolicyModal'
 import type { Policy } from '../types'
@@ -34,8 +35,12 @@ export default function Policies() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[9px] text-slate-600">{policy.rules.length} rule{policy.rules.length !== 1 ? 's' : ''}</span>
-                  <button onClick={() => setEditing(policy)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-                  <button onClick={() => deletePolicy(policy.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+                  <button onClick={() => setEditing(policy)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => deletePolicy(policy.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
               {policyDoors.length > 0 && (

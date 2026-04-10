@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import UserModal from '../modals/UserModal'
 import type { User } from '../types'
@@ -50,8 +51,12 @@ export default function People() {
               <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${TYPE_CLASS[user.type]}`}>{user.type}</span>
               <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${STATUS_CLASS[user.status]}`}>{user.status}</span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">L{user.clearanceLevel}</span>
-              <button onClick={() => setEditing(user)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors ml-1">Edit</button>
-              <button onClick={() => deleteUser(user.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+              <button onClick={() => setEditing(user)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                <Pencil size={12} />
+              </button>
+              <button onClick={() => deleteUser(user.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                <Trash2 size={12} />
+              </button>
             </div>
           </div>
         ))}

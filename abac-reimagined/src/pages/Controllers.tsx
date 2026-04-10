@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import ControllerModal from '../modals/ControllerModal'
 import type { Controller } from '../types'
@@ -33,8 +34,12 @@ export default function Controllers() {
                   <div className="text-[10px] text-slate-500">{site?.name} · {ctrl.location}</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => setEditing(ctrl)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-                  <button onClick={() => deleteController(ctrl.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+                  <button onClick={() => setEditing(ctrl)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => deleteController(ctrl.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
               {ctrlDoors.length > 0 && (

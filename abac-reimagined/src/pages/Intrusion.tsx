@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { useStore } from '../store/store'
 import { hasPermission } from '../engine/accessEngine'
@@ -32,6 +33,18 @@ export default function Intrusion() {
   const addArmingLog = useStore(s => s.addArmingLog)
 
   const [selectedSiteId, setSelectedSiteId] = useState(sites[0]?.id ?? '')
+  const [siteDropdownOpen, setSiteDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setSiteDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const selectedSite = sites.find(s => s.id === selectedSiteId) ?? null
   const siteZones    = zones.filter(z => z.siteId === selectedSiteId)
@@ -106,20 +119,43 @@ export default function Intrusion() {
           {/* Site selector */}
           <div className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 space-y-3">
             <label className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">Site</label>
-            <select
-              value={selectedSiteId}
-              onChange={e => setSelectedSiteId(e.target.value)}
-              className="w-full bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-[12px] text-slate-100 focus:outline-none focus:border-indigo-500"
-            >
-              {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <div ref={dropdownRef} className="relative">
+              {/* Trigger */}
+              <button
+                onClick={() => setSiteDropdownOpen(o => !o)}
+                className="w-full bg-[#111827] border border-[#1e293b] hover:border-slate-600 rounded-lg px-3 py-2 text-[12px] text-slate-100 focus:outline-none focus:border-indigo-500 flex items-center gap-2 transition-colors"
+              >
+                {selectedSite && (
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded border font-bold shrink-0 ${SITE_STATUS_BADGE[selectedSite.status]}`}>
+                    {selectedSite.status}
+                  </span>
+                )}
+                <span className="flex-1 text-left truncate">{selectedSite?.name ?? 'Select site…'}</span>
+                <ChevronDown size={12} className={`text-slate-500 transition-transform shrink-0 ${siteDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown list */}
+              {siteDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full bg-[#111827] border border-[#1e293b] rounded-lg shadow-xl overflow-hidden max-h-72 overflow-y-auto">
+                  {sites.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setSelectedSiteId(s.id); setSiteDropdownOpen(false) }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors ${s.id === selectedSiteId ? 'bg-white/[0.03]' : ''}`}
+                    >
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded border font-bold shrink-0 ${SITE_STATUS_BADGE[s.status]}`}>
+                        {s.status}
+                      </span>
+                      <span className="text-[12px] text-slate-200 flex-1 truncate">{s.name}</span>
+                      <span className="text-[9px] text-slate-600 truncate hidden sm:block">{s.address.split(',').slice(-2).join(',').trim()}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {selectedSite && (
-              <div className="flex items-center gap-3">
-                <span className={`text-[10px] px-2 py-0.5 rounded border font-bold ${SITE_STATUS_BADGE[selectedSite.status]}`}>
-                  {selectedSite.status}
-                </span>
-                <span className="text-[10px] text-slate-500">{selectedSite.address}</span>
-              </div>
+              <div className="text-[10px] text-slate-500">{selectedSite.address}</div>
             )}
           </div>
 

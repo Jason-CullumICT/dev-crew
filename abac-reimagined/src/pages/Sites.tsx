@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import SiteModal from '../modals/SiteModal'
 import type { Site, SiteStatus, ZoneStatus } from '../types'
@@ -46,8 +47,12 @@ export default function Sites() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[9px] px-2 py-0.5 rounded border font-bold ${SITE_STATUS_CLASS[site.status]}`}>{site.status}</span>
-                  <button onClick={() => setEditing(site)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-                  <button onClick={() => deleteSite(site.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+                  <button onClick={() => setEditing(site)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => deleteSite(site.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
               {siteZones.length > 0 && (

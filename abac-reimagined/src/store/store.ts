@@ -10,10 +10,33 @@ import {
 
 function defaultCanvasPositions(): Record<string, CanvasPosition> {
   const positions: Record<string, CanvasPosition> = {}
-  GROUPS.forEach((g, i)    => { positions[`group-${g.id}`]    = { x: 80,  y: 60 + i * 130 } })
-  GRANTS.forEach((g, i)    => { positions[`grant-${g.id}`]    = { x: 340, y: 60 + i * 100 } })
-  SCHEDULES.forEach((s, i) => { positions[`schedule-${s.id}`] = { x: 340, y: 60 + GRANTS.length * 100 + i * 90 } })
-  DOORS.forEach((d, i)     => { positions[`door-${d.id}`]     = { x: 620, y: 60 + i * 70 } })
+
+  // Groups: 2-column grid, 25 per column, gap 120
+  GROUPS.forEach((g, i) => {
+    const col = Math.floor(i / 25)
+    const row = i % 25
+    positions[`group-${g.id}`] = { x: 80 + col * 180, y: 60 + row * 120 }
+  })
+
+  // Grants: 2-column grid, 25 per column, gap 95
+  GRANTS.forEach((g, i) => {
+    const col = Math.floor(i / 25)
+    const row = i % 25
+    positions[`grant-${g.id}`] = { x: 460 + col * 180, y: 60 + row * 95 }
+  })
+
+  // Schedules: 1 column, x=840, gap 85
+  SCHEDULES.forEach((s, i) => {
+    positions[`schedule-${s.id}`] = { x: 840, y: 60 + i * 85 }
+  })
+
+  // Doors: 12-column grid, 45 per column, gap 65 — covers all ~540 doors
+  DOORS.forEach((d, i) => {
+    const col = Math.floor(i / 45)
+    const row = i % 45
+    positions[`door-${d.id}`] = { x: 1040 + col * 140, y: 60 + row * 65 }
+  })
+
   return positions
 }
 

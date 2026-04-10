@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import ScheduleModal from '../modals/ScheduleModal'
 import { buildNowContext } from '../engine/scheduleEngine'
@@ -36,8 +37,12 @@ export default function Schedules() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {usedBy.length > 0 && <div className="text-[9px] text-teal-900">{usedBy.length} grant{usedBy.length !== 1 ? 's' : ''}</div>}
-                  <button onClick={() => setEditing(schedule)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-                  <button onClick={() => deleteSchedule(schedule.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+                  <button onClick={() => setEditing(schedule)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => deleteSchedule(schedule.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
 

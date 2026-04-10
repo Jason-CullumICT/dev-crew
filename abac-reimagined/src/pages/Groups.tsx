@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import GroupModal from '../modals/GroupModal'
 import type { Group } from '../types'
@@ -35,8 +36,12 @@ export default function Groups() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {memberCount > 0 && <span className="text-[9px] text-slate-600">{memberCount} members</span>}
-                  <button onClick={() => setEditing(group)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-                  <button onClick={() => deleteGroup(group.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+                  <button onClick={() => setEditing(group)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => deleteGroup(group.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
 

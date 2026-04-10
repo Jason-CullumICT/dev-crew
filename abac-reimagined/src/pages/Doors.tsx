@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import DoorModal from '../modals/DoorModal'
 import type { Door } from '../types'
@@ -33,8 +34,12 @@ export default function Doors() {
                 <div className={`text-[12px] font-semibold ${isRestricted ? 'text-red-300' : 'text-slate-200'}`}>{door.name}</div>
                 <div className="text-[10px] text-slate-600">{site?.name} {zone ? `· ${zone.name} (${zone.type})` : ''}</div>
               </div>
-              <button onClick={() => setEditing(door)} className="text-[10px] text-slate-600 hover:text-indigo-400 transition-colors">Edit</button>
-              <button onClick={() => deleteDoor(door.id)} className="text-[10px] text-slate-600 hover:text-red-400 transition-colors">Delete</button>
+              <button onClick={() => setEditing(door)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                <Pencil size={12} />
+              </button>
+              <button onClick={() => deleteDoor(door.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                <Trash2 size={12} />
+              </button>
             </div>
           )
         })}

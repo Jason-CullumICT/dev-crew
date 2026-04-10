@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { CheckCircle, XCircle, MinusCircle, ChevronDown, ChevronRight } from 'lucide-react'
 import { useStore } from '../store/store'
@@ -9,6 +9,7 @@ import type { ActionType, AccessResult } from '../types'
 interface OracleNavState {
   userId?: string
   doorId?: string
+  action?: ActionType
 }
 
 type StepStatus = 'pass' | 'fail' | 'skip' | 'holiday'
@@ -89,9 +90,25 @@ export default function Reasoner() {
 
   const [selectedUserId,  setSelectedUserId]  = useState(navState.userId ?? users[0]?.id ?? '')
   const [selectedDoorId,  setSelectedDoorId]  = useState(navState.doorId ?? doors[0]?.id ?? '')
-  const [selectedAction,  setSelectedAction]  = useState<ActionType>('unlock')
+  const [selectedAction,  setSelectedAction]  = useState<ActionType>(navState.action ?? 'unlock')
   const [result, setResult] = useState<AccessResult | null>(null)
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([0, 1, 2, 3, 4]))
+
+  // Auto-run trace when navigated from Oracle with full context
+  const autoRan = useRef(false)
+  useEffect(() => {
+    if (autoRan.current) return
+    if (navState.userId && navState.doorId) {
+      autoRan.current = true
+      const user = users.find(u => u.id === navState.userId)
+      const door = doors.find(d => d.id === navState.doorId)
+      if (user && door) {
+        const now = buildNowContext()
+        setResult(evaluateAccess(user, door, store, now, navState.action ?? 'unlock'))
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const store = useMemo(() => ({
     allUsers: users, allGroups: groups, allGrants: grants,

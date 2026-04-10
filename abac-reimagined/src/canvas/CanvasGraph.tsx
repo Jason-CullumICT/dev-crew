@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/store'
 import { useCanvasLayout } from './useCanvasLayout'
 import GroupNode from './nodes/GroupNode'
@@ -6,15 +7,18 @@ import GrantNode from './nodes/GrantNode'
 import DoorNode from './nodes/DoorNode'
 import ScheduleNode from './nodes/ScheduleNode'
 import CanvasMinimap from './CanvasMinimap'
+import HoverTooltip from './HoverTooltip'
 import type { CanvasPosition } from '../types'
 
 type EntityType = 'groups' | 'grants' | 'schedules' | 'doors'
 
 interface Props {
-  siteFilter:   string | null
-  scopeFilter:  string | null
-  visibleTypes: Set<EntityType>
+  siteFilter:    string | null
+  scopeFilter:   string | null
+  visibleTypes:  Set<EntityType>
   onAutoLayout?: () => void
+  initialZoom?:  number
+  initialPan?:   { x: number; y: number }
 }
 
 const CANVAS_W = 4000
@@ -36,7 +40,7 @@ const SITE_CLUSTER_COLORS = [
   { bg: 'rgba(16, 185, 129, 0.06)',  border: 'rgba(16, 185, 129, 0.18)',  label: 'rgba(16, 185, 129, 0.5)'  },
 ]
 
-const DOOR_NODE_W = 116
+const DOOR_NODE_W = 100   // was 116 — updated to match compact door chip size
 const DOOR_NODE_H = 60
 const CLUSTER_PAD = 20
 
@@ -58,7 +62,20 @@ interface Edge {
   sourceKey: string; targetKey: string
 }
 
-export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onAutoLayout }: Props) {
+interface BundledEdge {
+  grantKey:  string
+  x1: number; y1: number   // grant center
+  x2: number; y2: number   // centroid of covered doors
+  count:     number
+  colorKey:  EdgeColor
+}
+
+export default function CanvasGraph({
+  siteFilter, scopeFilter, visibleTypes, onAutoLayout,
+  initialZoom, initialPan,
+}: Props) {
+  const navigate = useNavigate()
+
   const allGroups    = useStore(s => s.groups)
   const allGrants    = useStore(s => s.grants)
   const allDoors     = useStore(s => s.doors)
@@ -67,11 +84,17 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
   const allSites     = useStore(s => s.sites)
   const selected     = useStore(s => s.selectedCanvasNodeId)
   const setSelected  = useStore(s => s.setSelectedCanvasNode)
+  const edgeMode     = useStore(s => s.edgeMode)
+
+  // ── Hover state ────────────────────────────────────────────────────────────
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  const [hoverScreenPos, setHoverScreenPos] = useState({ x: 0, y: 0 })
+  const hoverDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Viewport state ─────────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null)
-  const [zoom, setZoom] = useState(0.65)
-  const [pan, setPan]   = useState({ x: 20, y: 20 })
+  const [zoom, setZoom] = useState(initialZoom ?? 0.65)
+  const [pan, setPan]   = useState(initialPan  ?? { x: 20, y: 20 })
 
   // Refs so event handlers (registered once) always see current values
   const zoomRef = useRef(zoom)
@@ -112,7 +135,11 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
   }, [])
 
   // Pan drag on background
-  const panDragRef = useRef<{ startX: number; startY: number; origPan: { x: number; y: number }; moved: boolean } | null>(null)
+  const panDragRef = useRef<{
+    startX: number; startY: number
+    origPan: { x: number; y: number }
+    moved: boolean
+  } | null>(null)
 
   const handlePanStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
@@ -166,7 +193,54 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
     panRef.current  = { x: 20, y: 20 }
   }
 
-  // Minimap pan callback — called from CanvasMinimap when user clicks/drags
+  // Fit-to-content: compute bounding box of all visible node positions
+  function fitToContent() {
+    const el = containerRef.current
+    if (!el) return
+
+    type NodeEntry = { key: string; w: number; h: number }
+    const nodeEntries: NodeEntry[] = [
+      ...groups.map(g    => ({ key: `group-${g.id}`,    w: 148,        h: 80 })),
+      ...grants.map(g    => ({ key: `grant-${g.id}`,    w: 136,        h: 80 })),
+      ...schedules.map(s => ({ key: `schedule-${s.id}`, w: 140,        h: 80 })),
+      ...doors.map(d     => ({ key: `door-${d.id}`,     w: DOOR_NODE_W, h: DOOR_NODE_H })),
+    ]
+
+    if (nodeEntries.length === 0) return
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const { key, w, h } of nodeEntries) {
+      const p = positions[key]
+      if (!p) continue
+      minX = Math.min(minX, p.x)
+      minY = Math.min(minY, p.y)
+      maxX = Math.max(maxX, p.x + w)
+      maxY = Math.max(maxY, p.y + h)
+    }
+
+    if (!isFinite(minX)) return
+
+    const bbW = maxX - minX
+    const bbH = maxY - minY
+    const padding = 40
+    const cW = el.clientWidth
+    const cH = el.clientHeight
+
+    const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN,
+      Math.min((cW - padding * 2) / bbW, (cH - padding * 2) / bbH) * 0.85
+    ))
+    const newPan = {
+      x: (cW - bbW * newZoom) / 2 - minX * newZoom,
+      y: (cH - bbH * newZoom) / 2 - minY * newZoom,
+    }
+
+    zoomRef.current = newZoom
+    panRef.current  = newPan
+    setZoom(newZoom)
+    setPan(newPan)
+  }
+
+  // Minimap pan callback
   const handleMinimapPan = useCallback((newPan: { x: number; y: number }) => {
     panRef.current = newPan
     setPan(newPan)
@@ -227,7 +301,6 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
   const siteClusters: SiteCluster[] = []
 
   if (!siteFilter && visibleTypes.has('doors') && doors.length > 0) {
-    // Build sorted list of unique siteIds in the order they first appear
     const siteOrder: string[] = []
     for (const door of doors) {
       if (!siteOrder.includes(door.siteId)) siteOrder.push(door.siteId)
@@ -261,10 +334,12 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
 
   // ── Edges ──────────────────────────────────────────────────────────────────
   const edges: Edge[] = []
+  const bundledGrantEdges: BundledEdge[] = []
 
-  // H7: Track the FULL logical coverage of each grant→door (not just rendered edges)
+  // H7: Track the FULL logical coverage of each grant→door
   const grantFullDoorCoverage = new Map<string, Set<string>>()
 
+  // Group → Grant edges
   for (const group of groups) {
     const gPos = nodeCenter(pos(`group-${group.id}`))
     for (const grantId of group.inheritedPermissions) {
@@ -275,6 +350,7 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
     }
   }
 
+  // Grant → Schedule edges
   for (const grant of grants) {
     if (!grant.scheduleId) continue
     const key = `schedule-${grant.scheduleId}`
@@ -284,49 +360,126 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
     edges.push({ x1: grPos.x, y1: grPos.y, x2: sPos.x, y2: sPos.y, colorKey: 'teal', sourceKey: `grant-${grant.id}`, targetKey: key })
   }
 
+  // Grant → Door edges (bundled)
   for (const grant of grants) {
     const grantKey = `grant-${grant.id}`
-    const grPos = nodeCenter(pos(grantKey), 136)
+    const grPos    = nodeCenter(pos(grantKey), 136)
 
-    // H7: Compute FULL set of covered doors for accurate connection tracking
     const allCoveredDoors = doors.filter(d =>
       visibleDoorIds.has(d.id) && (
         grant.scope === 'global' ||
-        (grant.scope === 'site'  && grant.targetId === d.siteId) ||
-        (grant.scope === 'zone'  && grant.targetId === d.zoneId)
+        (grant.scope === 'site' && grant.targetId === d.siteId) ||
+        (grant.scope === 'zone' && grant.targetId === d.zoneId)
       )
     )
     const fullDoorKeys = new Set(allCoveredDoors.map(d => `door-${d.id}`))
     grantFullDoorCoverage.set(grantKey, fullDoorKeys)
 
-    // H7: Render edges for up to 3 doors only (performance), full coverage tracked above
-    for (const door of allCoveredDoors.slice(0, 3)) {
-      const key  = `door-${door.id}`
-      const dPos = nodeCenter(pos(key), DOOR_NODE_W, DOOR_NODE_H)
-      edges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: grantKey, targetKey: key })
+    if (allCoveredDoors.length === 0) continue
+
+    // Global-scope: no grant→door edges (tile shows "GLOBAL")
+    if (grant.scope === 'global') continue
+
+    // Site-scope or zone-scope: draw ONE bundled line to centroid of covered doors
+    let sumX = 0, sumY = 0
+    for (const door of allCoveredDoors) {
+      const dPos = nodeCenter(pos(`door-${door.id}`), DOOR_NODE_W, DOOR_NODE_H)
+      sumX += dPos.x
+      sumY += dPos.y
     }
+    const cx = sumX / allCoveredDoors.length
+    const cy = sumY / allCoveredDoors.length
+
+    bundledGrantEdges.push({
+      grantKey,
+      x1: grPos.x, y1: grPos.y,
+      x2: cx,      y2: cy,
+      count: allCoveredDoors.length,
+      colorKey: 'violet',
+    })
+  }
+
+  // ── Clear selection when no longer visible ─────────────────────────────────
+  if (selected && !visibleKeys.has(selected)) {
+    queueMicrotask(() => setSelected(null))
   }
 
   // ── Selection highlight ────────────────────────────────────────────────────
   const connectedKeys = new Set<string>()
-  if (selected) {
+  const selectionEdges: Edge[] = []
+
+  if (selected && visibleKeys.has(selected)) {
     for (const e of edges) {
       if (e.sourceKey === selected) connectedKeys.add(e.targetKey)
       if (e.targetKey === selected) connectedKeys.add(e.sourceKey)
     }
+    // Bundled edges also contribute to connectedKeys
+    for (const be of bundledGrantEdges) {
+      if (be.grantKey === selected) {
+        const fullCoverage = grantFullDoorCoverage.get(be.grantKey)
+        if (fullCoverage) fullCoverage.forEach(k => connectedKeys.add(k))
+      }
+      if (selected.startsWith('door-')) {
+        const fullCoverage = grantFullDoorCoverage.get(be.grantKey)
+        if (fullCoverage?.has(selected)) connectedKeys.add(be.grantKey)
+      }
+    }
+
+    // For a selected grant: highlight ALL covered doors and draw individual selection edges
     if (selected.startsWith('grant-')) {
       const fullCoverage = grantFullDoorCoverage.get(selected)
       if (fullCoverage) {
-        for (const doorKey of fullCoverage) connectedKeys.add(doorKey)
+        const grPos = nodeCenter(pos(selected), 136)
+        for (const doorKey of fullCoverage) {
+          connectedKeys.add(doorKey)
+          const dPos = nodeCenter(pos(doorKey), DOOR_NODE_W, DOOR_NODE_H)
+          selectionEdges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: selected, targetKey: doorKey })
+        }
       }
     }
+
+    // For a selected door: highlight ALL grants that cover it and draw individual selection edges
     if (selected.startsWith('door-')) {
       for (const [grantKey, doorKeys] of grantFullDoorCoverage) {
-        if (doorKeys.has(selected)) connectedKeys.add(grantKey)
+        if (doorKeys.has(selected)) {
+          connectedKeys.add(grantKey)
+          const grPos = nodeCenter(pos(grantKey), 136)
+          const dPos  = nodeCenter(pos(selected), DOOR_NODE_W, DOOR_NODE_H)
+          selectionEdges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: grantKey, targetKey: selected })
+        }
       }
     }
   }
-  const hasSelection = selected !== null
+
+  const hasSelection = selected !== null && visibleKeys.has(selected)
+
+  // ── Edge visibility filtering based on edgeMode ────────────────────────────
+  function edgeIsVisible(sourceKey: string, targetKey: string): boolean {
+    if (edgeMode === 'off') return false
+    if (edgeMode === 'always') return true
+    // 'hover': show only edges connected to hovered node or selected node
+    if (hasSelection && (sourceKey === selected || targetKey === selected)) return true
+    if (hoveredKey && (sourceKey === hoveredKey || targetKey === hoveredKey)) return true
+    return false
+  }
+
+  function bundledEdgeIsVisible(be: BundledEdge): boolean {
+    if (edgeMode === 'off') return false
+    if (edgeMode === 'always') return true
+    if (hasSelection && be.grantKey === selected) return true
+    if (hoveredKey && be.grantKey === hoveredKey) return true
+    // Also show if any covered door is hovered
+    if (hoveredKey && hoveredKey.startsWith('door-')) {
+      const coverage = grantFullDoorCoverage.get(be.grantKey)
+      if (coverage?.has(hoveredKey)) return true
+    }
+    return false
+  }
+
+  const visibleEdges      = edges.filter(e => edgeIsVisible(e.sourceKey, e.targetKey))
+  const visibleBundled    = bundledGrantEdges.filter(be => bundledEdgeIsVisible(be))
+  // Selection edges always show when selected (they are meaningful context)
+  const visibleSelEdges   = edgeMode !== 'off' ? selectionEdges : []
 
   function nodeProps(key: string) {
     if (!hasSelection || key === selected) return { highlighted: false, dimmed: false }
@@ -338,21 +491,40 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
 
   // ── Minimap nodes list ─────────────────────────────────────────────────────
   const minimapNodes = [
-    ...groups.map(g    => ({ key: `group-${g.id}`,       pos: pos(`group-${g.id}`) })),
-    ...grants.map(g    => ({ key: `grant-${g.id}`,       pos: pos(`grant-${g.id}`) })),
-    ...schedules.map(s => ({ key: `schedule-${s.id}`,    pos: pos(`schedule-${s.id}`) })),
-    ...doors.map(d     => ({ key: `door-${d.id}`,        pos: pos(`door-${d.id}`) })),
+    ...groups.map(g    => ({ key: `group-${g.id}`,    pos: pos(`group-${g.id}`) })),
+    ...grants.map(g    => ({ key: `grant-${g.id}`,    pos: pos(`grant-${g.id}`) })),
+    ...schedules.map(s => ({ key: `schedule-${s.id}`, pos: pos(`schedule-${s.id}`) })),
+    ...doors.map(d     => ({ key: `door-${d.id}`,     pos: pos(`door-${d.id}`) })),
   ]
 
   const containerWidth  = containerRef.current?.clientWidth  ?? 800
   const containerHeight = containerRef.current?.clientHeight ?? 600
 
   // ── Grid background that tracks pan/zoom ───────────────────────────────────
-  const gs  = GRID_SIZE * zoom
+  const gs = GRID_SIZE * zoom
   const bgStyle = {
     backgroundImage: 'linear-gradient(rgba(30,37,59,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(30,37,59,.35) 1px,transparent 1px)',
     backgroundSize:  `${gs}px ${gs}px`,
     backgroundPosition: `${pan.x % gs}px ${pan.y % gs}px`,
+  }
+
+  // ── Hover handlers ─────────────────────────────────────────────────────────
+  function makeHoverEnter(key: string) {
+    return (e: React.MouseEvent) => {
+      if (hoverDebounceRef.current) clearTimeout(hoverDebounceRef.current)
+      const rect = containerRef.current?.getBoundingClientRect()
+      const screenX = e.clientX - (rect?.left ?? 0)
+      const screenY = e.clientY - (rect?.top  ?? 0)
+      setHoveredKey(key)
+      setHoverScreenPos({ x: screenX, y: screenY })
+    }
+  }
+
+  function makeHoverLeave() {
+    return () => {
+      if (hoverDebounceRef.current) clearTimeout(hoverDebounceRef.current)
+      hoverDebounceRef.current = setTimeout(() => setHoveredKey(null), 150)
+    }
   }
 
   return (
@@ -363,6 +535,9 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
       onMouseDown={handlePanStart}
       onClick={handleBackgroundClick}
     >
+      {/* Animated edge flow keyframes */}
+      <style>{`@keyframes edgeFlow { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }`}</style>
+
       {/* Transformed canvas */}
       <div
         style={{
@@ -374,7 +549,7 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
           transformOrigin: '0 0',
         }}
       >
-        {/* Feature 3: Site cluster background regions (behind everything, only in all-sites mode) */}
+        {/* Site cluster background regions */}
         {siteClusters.map(cluster => {
           const colors = SITE_CLUSTER_COLORS[cluster.colorIdx]
           return (
@@ -426,7 +601,9 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
               </marker>,
             ])}
           </defs>
-          {edges.map((e) => {
+
+          {/* Regular edges (group→grant, grant→schedule) */}
+          {visibleEdges.map((e) => {
             const isConnected = hasSelection && (e.sourceKey === selected || e.targetKey === selected)
             const isDimmed    = hasSelection && !isConnected
             const color       = isConnected ? EDGE_COLORS[e.colorKey].bright : EDGE_COLORS[e.colorKey].dim
@@ -438,64 +615,172 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
                 stroke={color}
                 strokeWidth={isConnected ? 2.5 : 1.5}
                 fill="none"
-                strokeDasharray={isConnected ? 'none' : '5,3'}
+                strokeDasharray={isConnected ? '6 6' : '5,3'}
+                style={isConnected ? { animation: 'edgeFlow 0.6s linear infinite' } : undefined}
                 markerEnd={`url(#arr-${e.colorKey}${markerSuffix})`}
                 opacity={isDimmed ? 0.1 : isConnected ? 1 : 0.7}
               />
+            )
+          })}
+
+          {/* Selection edges (individual grant→door lines when selected) */}
+          {visibleSelEdges.map((e) => {
+            const color = EDGE_COLORS[e.colorKey].bright
+            return (
+              <path
+                key={`sel-${e.sourceKey}→${e.targetKey}`}
+                d={`M ${e.x1} ${e.y1} C ${(e.x1 + e.x2) / 2} ${e.y1} ${(e.x1 + e.x2) / 2} ${e.y2} ${e.x2} ${e.y2}`}
+                stroke={color}
+                strokeWidth={2.5}
+                fill="none"
+                strokeDasharray="6 6"
+                style={{ animation: 'edgeFlow 0.6s linear infinite' }}
+                markerEnd={`url(#arr-${e.colorKey}-bright)`}
+                opacity={1}
+              />
+            )
+          })}
+
+          {/* Bundled grant→door edges */}
+          {visibleBundled.map((be) => {
+            const isConnected = hasSelection && be.grantKey === selected
+            const isDimmed    = hasSelection && !isConnected && !connectedKeys.has(be.grantKey)
+            const mx = (be.x1 + be.x2) / 2
+            const my = (be.y1 + be.y2) / 2
+            return (
+              <g key={`bundled-${be.grantKey}`} opacity={isDimmed ? 0.08 : 1}>
+                <path
+                  d={`M ${be.x1} ${be.y1} C ${mx} ${be.y1} ${mx} ${be.y2} ${be.x2} ${be.y2}`}
+                  stroke="rgba(139,92,246,0.3)"
+                  strokeWidth={5}
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                {/* Count badge at midpoint */}
+                <circle cx={mx} cy={my} r={10} fill="#2e1f6b" stroke="#8b5cf6" strokeWidth={1} />
+                <text
+                  x={mx} y={my}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize={8}
+                  fontWeight={600}
+                  fill="#c4b5fd"
+                >
+                  {be.count}
+                </text>
+              </g>
             )
           })}
         </svg>
 
         {/* Group nodes */}
         {groups.map(group => {
-          const p = pos(`group-${group.id}`)
+          const p   = pos(`group-${group.id}`)
           const key = `group-${group.id}`
           const { highlighted, dimmed } = nodeProps(key)
           return (
-            <div key={group.id} style={{ left: p.x, top: p.y, position: 'absolute' }} onMouseDown={e => startDrag(key, e)}>
-              <GroupNode group={group} allGroups={allGroups} selected={selected === key} highlighted={highlighted} dimmed={dimmed} onClick={() => setSelected(key)} />
+            <div
+              key={group.id}
+              style={{ left: p.x, top: p.y, position: 'absolute' }}
+              onMouseDown={e => startDrag(key, e)}
+              onMouseEnter={makeHoverEnter(key)}
+              onMouseLeave={makeHoverLeave()}
+            >
+              <GroupNode
+                group={group}
+                allGroups={allGroups}
+                selected={selected === key}
+                highlighted={highlighted}
+                dimmed={dimmed}
+                onClick={() => setSelected(key)}
+                onDoubleClick={() => navigate('/groups')}
+              />
             </div>
           )
         })}
 
         {/* Grant nodes */}
         {grants.map(grant => {
-          const p = pos(`grant-${grant.id}`)
+          const p   = pos(`grant-${grant.id}`)
           const key = `grant-${grant.id}`
           const { highlighted, dimmed } = nodeProps(key)
           const coveredDoorCount = grantFullDoorCoverage.get(key)?.size ?? 0
           return (
-            <div key={grant.id} style={{ left: p.x, top: p.y, position: 'absolute' }} onMouseDown={e => startDrag(key, e)}>
-              <GrantNode grant={grant} selected={selected === key} highlighted={highlighted} dimmed={dimmed} onClick={() => setSelected(key)} coveredDoorCount={coveredDoorCount} />
+            <div
+              key={grant.id}
+              style={{ left: p.x, top: p.y, position: 'absolute' }}
+              onMouseDown={e => startDrag(key, e)}
+              onMouseEnter={makeHoverEnter(key)}
+              onMouseLeave={makeHoverLeave()}
+            >
+              <GrantNode
+                grant={grant}
+                selected={selected === key}
+                highlighted={highlighted}
+                dimmed={dimmed}
+                onClick={() => setSelected(key)}
+                onDoubleClick={() => navigate('/grants')}
+                coveredDoorCount={coveredDoorCount}
+              />
             </div>
           )
         })}
 
         {/* Schedule nodes */}
         {schedules.map(schedule => {
-          const p = pos(`schedule-${schedule.id}`)
+          const p   = pos(`schedule-${schedule.id}`)
           const key = `schedule-${schedule.id}`
           const { highlighted, dimmed } = nodeProps(key)
           return (
-            <div key={schedule.id} style={{ left: p.x, top: p.y, position: 'absolute' }} onMouseDown={e => startDrag(key, e)}>
-              <ScheduleNode schedule={schedule} selected={selected === key} highlighted={highlighted} dimmed={dimmed} onClick={() => setSelected(key)} />
+            <div
+              key={schedule.id}
+              style={{ left: p.x, top: p.y, position: 'absolute' }}
+              onMouseDown={e => startDrag(key, e)}
+              onMouseEnter={makeHoverEnter(key)}
+              onMouseLeave={makeHoverLeave()}
+            >
+              <ScheduleNode
+                schedule={schedule}
+                selected={selected === key}
+                highlighted={highlighted}
+                dimmed={dimmed}
+                onClick={() => setSelected(key)}
+                onDoubleClick={() => navigate('/schedules')}
+              />
             </div>
           )
         })}
 
         {/* Door nodes */}
         {doors.map(door => {
-          const p = pos(`door-${door.id}`)
-          const key = `door-${door.id}`
+          const p    = pos(`door-${door.id}`)
+          const key  = `door-${door.id}`
           const zone = zones.find(z => z.id === door.zoneId)
           const { highlighted, dimmed } = nodeProps(key)
           return (
-            <div key={door.id} style={{ left: p.x, top: p.y, position: 'absolute' }} onMouseDown={e => startDrag(key, e)}>
-              <DoorNode door={door} zone={zone} selected={selected === key} highlighted={highlighted} dimmed={dimmed} onClick={() => setSelected(key)} />
+            <div
+              key={door.id}
+              style={{ left: p.x, top: p.y, position: 'absolute' }}
+              onMouseDown={e => startDrag(key, e)}
+              onMouseEnter={makeHoverEnter(key)}
+              onMouseLeave={makeHoverLeave()}
+            >
+              <DoorNode
+                door={door}
+                zone={zone}
+                selected={selected === key}
+                highlighted={highlighted}
+                dimmed={dimmed}
+                onClick={() => setSelected(key)}
+                onDoubleClick={() => navigate('/doors')}
+              />
             </div>
           )
         })}
       </div>
+
+      {/* HoverTooltip — rendered outside the transform div (screen space) */}
+      <HoverTooltip nodeKey={hoveredKey} screenX={hoverScreenPos.x} screenY={hoverScreenPos.y} />
 
       {/* Empty state */}
       {totalVisible === 0 && (
@@ -544,6 +829,12 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
           className="w-7 h-7 rounded bg-[#0f1320] border border-[#1e2d4a] text-slate-400 hover:text-slate-200 hover:border-slate-500 text-sm font-medium leading-none flex items-center justify-center transition-colors"
           title="Zoom in"
         >+</button>
+        <button
+          onMouseDown={e => e.stopPropagation()}
+          onClick={fitToContent}
+          className="w-14 h-5 rounded bg-[#0f1320] border border-[#1e2d4a] text-[9px] text-slate-500 hover:text-slate-300 hover:border-slate-500 transition-colors"
+          title="Fit to content"
+        >Fit</button>
         <button
           onMouseDown={e => e.stopPropagation()}
           onClick={resetView}

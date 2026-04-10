@@ -40,6 +40,59 @@ const LAYOUT_MAX_PER_COL = 25
 // Horizontal spacing between overflow columns
 const LAYOUT_COL_SPACING = 180
 
+// Node dimensions for bounding box calculation
+const NODE_DIMS: Record<EntityType, { w: number; h: number }> = {
+  groups:    { w: 148, h: 80 },
+  grants:    { w: 136, h: 80 },
+  schedules: { w: 140, h: 80 },
+  doors:     { w: 100, h: 60 },
+}
+
+const ZOOM_MIN = 0.1
+const ZOOM_MAX = 3
+
+interface LayoutFit {
+  zoom: number
+  pan:  { x: number; y: number }
+}
+
+function computeFit(
+  positions: { x: number; y: number; w: number; h: number }[],
+  containerW: number,
+  containerH: number,
+): LayoutFit {
+  if (positions.length === 0) return { zoom: 0.65, pan: { x: 20, y: 20 } }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const { x, y, w, h } of positions) {
+    minX = Math.min(minX, x)
+    minY = Math.min(minY, y)
+    maxX = Math.max(maxX, x + w)
+    maxY = Math.max(maxY, y + h)
+  }
+
+  const bbW = maxX - minX
+  const bbH = maxY - minY
+  if (bbW === 0 || bbH === 0) return { zoom: 0.65, pan: { x: 20, y: 20 } }
+
+  const padding = 40
+  const zoom = Math.min(
+    ZOOM_MAX,
+    Math.max(ZOOM_MIN, Math.min(
+      (containerW - padding * 2) / bbW,
+      (containerH - padding * 2) / bbH,
+    ) * 0.85),
+  )
+
+  // Center the bounding box in the viewport
+  const pan = {
+    x: (containerW - bbW * zoom) / 2 - minX * zoom,
+    y: (containerH - bbH * zoom) / 2 - minY * zoom,
+  }
+
+  return { zoom, pan }
+}
+
 export default function Canvas() {
   const selectedNode    = useStore(s => s.selectedCanvasNodeId)
   const sites           = useStore(s => s.sites)
@@ -49,14 +102,16 @@ export default function Canvas() {
   const allDoors        = useStore(s => s.doors)
   const zones           = useStore(s => s.zones)
   const setCanvasPosition = useStore(s => s.setCanvasPosition)
+  const edgeMode        = useStore(s => s.edgeMode)
+  const setEdgeMode     = useStore(s => s.setEdgeMode)
 
   const [siteFilter, setSiteFilter]       = useState<string>('all')
   const [scopeFilter, setScopeFilter]     = useState<string>('all')
   const [visibleTypes, setVisibleTypes]   = useState<Set<EntityType>>(new Set(ALL_TYPES))
 
   // ── Auto-layout trigger ────────────────────────────────────────────────────
-  // We use a counter to signal CanvasGraph to reset pan/zoom after layout is applied
   const [layoutResetKey, setLayoutResetKey] = useState(0)
+  const [initialFit, setInitialFit]         = useState<LayoutFit | null>(null)
 
   const handleAutoLayout = useCallback(() => {
     const activeSite  = siteFilter  === 'all' ? null : siteFilter
@@ -93,28 +148,39 @@ export default function Canvas() {
     const schedules = visibleTypes.has('schedules') ? [...visibleSchedules].sort((a, b) => a.name.localeCompare(b.name)) : []
     const doors     = visibleTypes.has('doors')     ? [...visibleDoors].sort((a, b)   => a.name.localeCompare(b.name))   : []
 
+    // Track all final positions for fit-to-content computation
+    const allPositions: { x: number; y: number; w: number; h: number }[] = []
+
     function assignPositions(
       items: { id: string }[],
       baseX: number,
       gapY: number,
       prefix: string,
+      dims: { w: number; h: number },
     ) {
       items.forEach((item, i) => {
         const col = Math.floor(i / LAYOUT_MAX_PER_COL)
         const row = i % LAYOUT_MAX_PER_COL
-        setCanvasPosition(`${prefix}-${item.id}`, {
-          x: baseX + col * LAYOUT_COL_SPACING,
-          y: 60 + row * gapY,
-        })
+        const x   = baseX + col * LAYOUT_COL_SPACING
+        const y   = 60 + row * gapY
+        setCanvasPosition(`${prefix}-${item.id}`, { x, y })
+        allPositions.push({ x, y, w: dims.w, h: dims.h })
       })
     }
 
-    assignPositions(groups,    LAYOUT_COL.groups,    LAYOUT_GAP.groups,    'group')
-    assignPositions(grants,    LAYOUT_COL.grants,    LAYOUT_GAP.grants,    'grant')
-    assignPositions(schedules, LAYOUT_COL.schedules, LAYOUT_GAP.schedules, 'schedule')
-    assignPositions(doors,     LAYOUT_COL.doors,     LAYOUT_GAP.doors,     'door')
+    assignPositions(groups,    LAYOUT_COL.groups,    LAYOUT_GAP.groups,    'group',    NODE_DIMS.groups)
+    assignPositions(grants,    LAYOUT_COL.grants,    LAYOUT_GAP.grants,    'grant',    NODE_DIMS.grants)
+    assignPositions(schedules, LAYOUT_COL.schedules, LAYOUT_GAP.schedules, 'schedule', NODE_DIMS.schedules)
+    assignPositions(doors,     LAYOUT_COL.doors,     LAYOUT_GAP.doors,     'door',     NODE_DIMS.doors)
 
-    // Signal CanvasGraph to reset the viewport
+    // Compute fit-to-content zoom/pan
+    const containerEl = document.querySelector('[data-canvas-container]') as HTMLElement | null
+    const containerW  = containerEl?.clientWidth  ?? 800
+    const containerH  = containerEl?.clientHeight ?? 600
+    const fit = computeFit(allPositions, containerW, containerH)
+    setInitialFit(fit)
+
+    // Remount CanvasGraph with new initial viewport
     setLayoutResetKey(k => k + 1)
   }, [siteFilter, scopeFilter, visibleTypes, allGroups, allGrants, allSchedules, allDoors, zones, setCanvasPosition])
 
@@ -138,6 +204,12 @@ export default function Canvas() {
   }
 
   const isFiltered = siteFilter !== 'all' || scopeFilter !== 'all' || visibleTypes.size < ALL_TYPES.length
+
+  const EDGE_MODE_OPTIONS = [
+    { value: 'always' as const, label: 'Always' },
+    { value: 'hover'  as const, label: 'Hover'  },
+    { value: 'off'    as const, label: 'Off'    },
+  ]
 
   return (
     <div className="flex flex-col w-full h-full bg-[#0b0e18]">
@@ -205,6 +277,28 @@ export default function Canvas() {
           </div>
         </div>
 
+        <div className="h-4 w-px bg-[#1e2d4a]" />
+
+        {/* Edge visibility mode */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-600 uppercase tracking-wide whitespace-nowrap">Edges</span>
+          <div className="flex gap-1">
+            {EDGE_MODE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setEdgeMode(opt.value)}
+                className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                  edgeMode === opt.value
+                    ? 'bg-violet-500/25 text-violet-300 border-violet-400/50'
+                    : 'bg-transparent text-slate-500 border-[#1e2d4a] hover:text-slate-300 hover:border-slate-500'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Reset — only visible when something is filtered */}
         {isFiltered && (
           <>
@@ -220,13 +314,15 @@ export default function Canvas() {
       </div>
 
       {/* Canvas area */}
-      <div className="relative flex-1 min-h-0">
+      <div className="relative flex-1 min-h-0" data-canvas-container>
         <CanvasGraph
           key={layoutResetKey}
           siteFilter={siteFilter === 'all' ? null : siteFilter}
           scopeFilter={scopeFilter === 'all' ? null : scopeFilter}
           visibleTypes={visibleTypes}
           onAutoLayout={handleAutoLayout}
+          initialZoom={initialFit?.zoom}
+          initialPan={initialFit?.pan}
         />
         {selectedNode && <DetailPanel />}
       </div>

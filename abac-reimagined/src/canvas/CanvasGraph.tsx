@@ -307,26 +307,53 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
     }
   }
 
+  // ── Clear selection when it's no longer visible (e.g. site filter changed) ─
+  if (selected && !visibleKeys.has(selected)) {
+    // Defer to avoid setState-during-render; the next frame will be clean
+    queueMicrotask(() => setSelected(null))
+  }
+
   // ── Selection highlight ────────────────────────────────────────────────────
   const connectedKeys = new Set<string>()
-  if (selected) {
+  const selectionEdges: Edge[] = []  // additional edges for selected node's full connections
+
+  if (selected && visibleKeys.has(selected)) {
     for (const e of edges) {
       if (e.sourceKey === selected) connectedKeys.add(e.targetKey)
       if (e.targetKey === selected) connectedKeys.add(e.sourceKey)
     }
+    // For a selected grant: highlight ALL covered doors and draw missing edges
     if (selected.startsWith('grant-')) {
       const fullCoverage = grantFullDoorCoverage.get(selected)
       if (fullCoverage) {
-        for (const doorKey of fullCoverage) connectedKeys.add(doorKey)
+        const grPos = nodeCenter(pos(selected), 136)
+        for (const doorKey of fullCoverage) {
+          connectedKeys.add(doorKey)
+          // Draw an edge if one doesn't already exist in the main set
+          if (!edges.some(e => e.sourceKey === selected && e.targetKey === doorKey)) {
+            const dPos = nodeCenter(pos(doorKey), DOOR_NODE_W, DOOR_NODE_H)
+            selectionEdges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: selected, targetKey: doorKey })
+          }
+        }
       }
     }
+    // For a selected door: highlight ALL grants that cover it and draw missing edges
     if (selected.startsWith('door-')) {
       for (const [grantKey, doorKeys] of grantFullDoorCoverage) {
-        if (doorKeys.has(selected)) connectedKeys.add(grantKey)
+        if (doorKeys.has(selected)) {
+          connectedKeys.add(grantKey)
+          if (!edges.some(e => e.sourceKey === grantKey && e.targetKey === selected)) {
+            const grPos = nodeCenter(pos(grantKey), 136)
+            const dPos = nodeCenter(pos(selected), DOOR_NODE_W, DOOR_NODE_H)
+            selectionEdges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: grantKey, targetKey: selected })
+          }
+        }
       }
     }
   }
-  const hasSelection = selected !== null
+
+  const allEdges = [...edges, ...selectionEdges]
+  const hasSelection = selected !== null && visibleKeys.has(selected)
 
   function nodeProps(key: string) {
     if (!hasSelection || key === selected) return { highlighted: false, dimmed: false }
@@ -426,7 +453,7 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes, onA
               </marker>,
             ])}
           </defs>
-          {edges.map((e) => {
+          {allEdges.map((e) => {
             const isConnected = hasSelection && (e.sourceKey === selected || e.targetKey === selected)
             const isDimmed    = hasSelection && !isConnected
             const color       = isConnected ? EDGE_COLORS[e.colorKey].bright : EDGE_COLORS[e.colorKey].dim

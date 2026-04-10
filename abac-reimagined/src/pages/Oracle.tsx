@@ -355,7 +355,7 @@ export default function Oracle() {
                 {granted.map(row => (
                   <div key={`${row.user.id}-${row.door.id}`}
                     className="bg-[#0f1320] border-l-2 border-emerald-500 border border-[#1e293b] rounded-lg px-3 py-2.5 flex items-center gap-3 hover:border-[#374151] transition-colors cursor-pointer"
-                    onClick={() => navigate('/reasoner', { state: { userId: row.user.id, doorId: row.door.id } })}
+                    onClick={() => navigate('/reasoner', { state: { userId: row.user.id, doorId: row.door.id, action: selectedAction } })}
                   >
                     <div className="w-7 h-7 rounded-full bg-[#0f2d1a] flex items-center justify-center text-[10px] font-bold text-emerald-400 shrink-0">
                       {row.user.name.split(' ').map(n => n[0]).join('')}
@@ -387,7 +387,7 @@ export default function Oracle() {
                 {denied.map(row => (
                   <div key={`${row.user.id}-${row.door.id}`}
                     className="bg-[#0f1320] border-l-2 border-red-900 border border-[#1e293b] rounded-lg px-3 py-2.5 flex items-center gap-3 hover:border-[#374151] transition-colors cursor-pointer"
-                    onClick={() => navigate('/reasoner', { state: { userId: row.user.id, doorId: row.door.id } })}
+                    onClick={() => navigate('/reasoner', { state: { userId: row.user.id, doorId: row.door.id, action: selectedAction } })}
                   >
                     <div className="w-7 h-7 rounded-full bg-[#1a0a0a] flex items-center justify-center text-[10px] font-bold text-red-400/50 shrink-0">
                       {row.user.name.split(' ').map(n => n[0]).join('')}

@@ -65,6 +65,7 @@ interface AxonStore {
   // ── Canvas state ──────────────────────────────────────────────────────────
   canvasPositions:      Record<string, CanvasPosition>
   selectedCanvasNodeId: string | null
+  edgeMode:             'always' | 'hover' | 'off'
 
   // ── Plan 1 actions ────────────────────────────────────────────────────────
   updateSite:            (site: Site)            => void
@@ -72,6 +73,7 @@ interface AxonStore {
   addArmingLog:          (entry: ArmingLog)      => void
   setCanvasPosition:     (key: string, pos: CanvasPosition) => void
   setSelectedCanvasNode: (id: string | null)     => void
+  setEdgeMode:           (mode: 'always' | 'hover' | 'off') => void
 
   // ── Seed reset ────────────────────────────────────────────────────────────
   resetToSeed: () => void
@@ -136,6 +138,7 @@ export const useStore = create<AxonStore>()(
 
       canvasPositions:      defaultCanvasPositions(),
       selectedCanvasNodeId: null,
+      edgeMode:             'hover' as const,
 
       // ── Plan 1 ────────────────────────────────────────────────────────────────
       updateSite: (site) =>
@@ -159,6 +162,9 @@ export const useStore = create<AxonStore>()(
 
       setSelectedCanvasNode: (id) =>
         set({ selectedCanvasNodeId: id }),
+
+      setEdgeMode: (mode) =>
+        set({ edgeMode: mode }),
 
       // ── Seed reset ────────────────────────────────────────────────────────────
       resetToSeed: () =>
@@ -359,8 +365,8 @@ export const useStore = create<AxonStore>()(
     {
       name: 'axon-store',
       partialize: (state) => {
-        // Exclude selectedCanvasNodeId from persistence — it is ephemeral UI state
-        const { selectedCanvasNodeId: _excluded, ...rest } = state
+        // Exclude ephemeral UI state from persistence
+        const { selectedCanvasNodeId: _excl1, edgeMode: _excl2, ...rest } = state
         return rest
       },
     }

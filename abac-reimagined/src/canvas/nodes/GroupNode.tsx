@@ -17,10 +17,14 @@ export default function GroupNode({ group, selected, highlighted, dimmed, onClic
     <div
       onClick={onClick}
       onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.() }}
-      style={{ opacity: dimmed ? 0.2 : 1 }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Group: ${group.name}, ${group.membershipType}, ${group.members.length} members`}
+      style={{ opacity: dimmed ? 0.4 : 1 }}
       className={`absolute rounded-2xl cursor-pointer transition-all select-none min-w-[148px] px-3.5 py-3 ${
         selected
-          ? 'bg-[#0f1320] border-2 border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.12),0_8px_28px_rgba(0,0,0,0.5)]'
+          ? 'bg-[#0f1320] border-2 border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.2),0_0_16px_rgba(99,102,241,0.15)]'
           : highlighted
             ? 'bg-[#0f1320] border-2 border-indigo-400 shadow-[0_0_0_3px_rgba(99,102,241,0.2)]'
             : 'bg-[#0f1320] border border-[#1e2d4a] hover:shadow-[0_0_0_2px_rgba(99,102,241,0.25)]'

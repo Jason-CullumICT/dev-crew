@@ -26,10 +26,14 @@ export default function GrantNode({ grant, selected, highlighted, dimmed, onClic
     <div
       onClick={onClick}
       onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.() }}
-      style={{ opacity: dimmed ? 0.2 : 1 }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Grant: ${grant.name}, ${grant.scope} scope`}
+      style={{ opacity: dimmed ? 0.4 : 1 }}
       className={`absolute rounded-xl cursor-pointer transition-all select-none min-w-[136px] px-3.5 py-3 ${
         selected
-          ? 'bg-[#0c0a1e] border-2 border-violet-500 shadow-[0_0_0_4px_rgba(139,92,246,0.12)]'
+          ? 'bg-[#0c0a1e] border-2 border-violet-500 shadow-[0_0_0_4px_rgba(139,92,246,0.2),0_0_16px_rgba(139,92,246,0.15)]'
           : highlighted
             ? 'bg-[#0c0a1e] border-2 border-violet-400 shadow-[0_0_0_3px_rgba(139,92,246,0.2)]'
             : 'bg-[#0c0a1e] border border-[#2e1f6b] hover:shadow-[0_0_0_2px_rgba(139,92,246,0.25)]'

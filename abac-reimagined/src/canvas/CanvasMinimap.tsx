@@ -136,6 +136,8 @@ export default function CanvasMinimap({
     <div
       ref={minimapRef}
       onMouseDown={handleMouseDown}
+      role="img"
+      aria-label="Canvas overview minimap — click to navigate, drag viewport to pan"
       style={{
         width:  MINIMAP_W,
         height: MINIMAP_H,

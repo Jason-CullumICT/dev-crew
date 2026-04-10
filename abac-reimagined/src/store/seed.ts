@@ -39,28 +39,29 @@ export const SITES: Site[] = [
 // ZONES (60 — 3 per site)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Per-zone overrides applied immutably during construction
+const ZONE_OVERRIDES: Partial<Record<string, Partial<Zone>>> = {
+  'zone-cbr-secure':    { type: 'Restricted' },
+  'zone-den-secure':    { type: 'Restricted' },
+  'zone-tko-secure':    { type: 'Restricted' },
+  'zone-tko-interior':  { status: 'Alarm' },
+  'zone-tko-perimeter': { status: 'Alarm' },
+}
+
 function makeZones(siteId: string, siteName: string): Zone[] {
   const siteKey = siteId.replace('site-', '')
-  return [
+  const base: Zone[] = [
     { id: `zone-${siteKey}-perimeter`, siteId, name: `${siteName} Perimeter`, type: 'Perimeter', status: 'Disarmed' },
     { id: `zone-${siteKey}-interior`,  siteId, name: `${siteName} Interior`,  type: 'Interior',  status: 'Disarmed' },
     { id: `zone-${siteKey}-secure`,    siteId, name: `${siteName} Secure`,    type: 'Secure',    status: 'Armed'    },
   ]
+  return base.map(z => {
+    const override = ZONE_OVERRIDES[z.id]
+    return override ? { ...z, ...override } : z
+  })
 }
 
 export const ZONES: Zone[] = SITES.flatMap(s => makeZones(s.id, s.name))
-
-// Patch a few zones for variety
-const _zoneCbrSecure  = ZONES.find(z => z.id === 'zone-cbr-secure')
-const _zoneDenSecure  = ZONES.find(z => z.id === 'zone-den-secure')
-const _zoneTkoSecure  = ZONES.find(z => z.id === 'zone-tko-secure')
-const _zoneTkoInt     = ZONES.find(z => z.id === 'zone-tko-interior')
-const _zoneTkoPer     = ZONES.find(z => z.id === 'zone-tko-perimeter')
-if (_zoneCbrSecure)  _zoneCbrSecure.type   = 'Restricted'
-if (_zoneDenSecure)  _zoneDenSecure.type   = 'Restricted'
-if (_zoneTkoSecure)  _zoneTkoSecure.type   = 'Restricted'
-if (_zoneTkoInt)     _zoneTkoInt.status    = 'Alarm'
-if (_zoneTkoPer)     _zoneTkoPer.status    = 'Alarm'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOORS (~500 generated — 7-9 per zone, using all names from each pool)
@@ -171,7 +172,7 @@ export const SCHEDULES: NamedSchedule[] = [
     id: 'sched-24-7',
     name: '24/7 Always On',
     timezone: 'UTC',
-    windows: [{ id: 'tw-247-1', days: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], startTime: '00:00', endTime: '23:59' }],
+    windows: [{ id: 'tw-247-1', days: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], startTime: '00:00', endTime: '00:00' }],
     holidays: [],
   },
   {
@@ -896,6 +897,7 @@ export const GROUPS: Group[] = [
     name: 'Engineering Team',
     description: 'All users in the Engineering department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-eng-1', leftSide: 'user.department', operator: '==', rightSide: 'Engineering' }],
     subGroups: [],
@@ -906,6 +908,7 @@ export const GROUPS: Group[] = [
     name: 'Security Team',
     description: 'All users in the Security department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-sec-1', leftSide: 'user.department', operator: '==', rightSide: 'Security' }],
     subGroups: [],
@@ -916,6 +919,7 @@ export const GROUPS: Group[] = [
     name: 'Operations Team',
     description: 'All users in the Operations department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-ops-1', leftSide: 'user.department', operator: '==', rightSide: 'Operations' }],
     subGroups: [],
@@ -926,6 +930,7 @@ export const GROUPS: Group[] = [
     name: 'Finance Team',
     description: 'All users in the Finance department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-fin-1', leftSide: 'user.department', operator: '==', rightSide: 'Finance' }],
     subGroups: [],
@@ -936,6 +941,7 @@ export const GROUPS: Group[] = [
     name: 'HR Team',
     description: 'All users in the HR department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-hr-1', leftSide: 'user.department', operator: '==', rightSide: 'HR' }],
     subGroups: [],
@@ -946,6 +952,7 @@ export const GROUPS: Group[] = [
     name: 'IT Team',
     description: 'All users in the IT department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-it-1', leftSide: 'user.department', operator: '==', rightSide: 'IT' }],
     subGroups: [],
@@ -956,6 +963,7 @@ export const GROUPS: Group[] = [
     name: 'Legal Team',
     description: 'All users in the Legal department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-leg-1', leftSide: 'user.department', operator: '==', rightSide: 'Legal' }],
     subGroups: [],
@@ -966,6 +974,7 @@ export const GROUPS: Group[] = [
     name: 'Facilities Team',
     description: 'All users in the Facilities department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-fac-1', leftSide: 'user.department', operator: '==', rightSide: 'Facilities' }],
     subGroups: [],
@@ -976,6 +985,7 @@ export const GROUPS: Group[] = [
     name: 'Sales Team',
     description: 'All users in the Sales department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-sal-1', leftSide: 'user.department', operator: '==', rightSide: 'Sales' }],
     subGroups: [],
@@ -986,6 +996,7 @@ export const GROUPS: Group[] = [
     name: 'Marketing Team',
     description: 'All users in the Marketing department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-mkt-1', leftSide: 'user.department', operator: '==', rightSide: 'Marketing' }],
     subGroups: [],
@@ -996,6 +1007,7 @@ export const GROUPS: Group[] = [
     name: 'Executive Team',
     description: 'All users in the Executive department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-exe-1', leftSide: 'user.department', operator: '==', rightSide: 'Executive' }],
     subGroups: [],
@@ -1006,6 +1018,7 @@ export const GROUPS: Group[] = [
     name: 'Research Team',
     description: 'All users in the Research department.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-res-1', leftSide: 'user.department', operator: '==', rightSide: 'Research' }],
     subGroups: [],
@@ -1016,6 +1029,7 @@ export const GROUPS: Group[] = [
     name: 'Senior Staff',
     description: 'All staff with clearance level 3 or above.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-snr-1', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: '3' }],
     subGroups: ['group-engineering', 'group-security'],
@@ -1026,6 +1040,7 @@ export const GROUPS: Group[] = [
     name: 'Management',
     description: 'All staff with clearance level 4 or above — management grade.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-mgmt-1', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: '4' }],
     subGroups: ['group-senior-staff'],
@@ -1036,6 +1051,7 @@ export const GROUPS: Group[] = [
     name: 'Executives',
     description: 'Top-level executives with clearance level 5.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-exec-1', leftSide: 'user.clearanceLevel', operator: '==', rightSide: '5' }],
     subGroups: ['group-management'],
@@ -1046,6 +1062,7 @@ export const GROUPS: Group[] = [
     name: 'Active Employees',
     description: 'All users of type employee with active status.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [
       { id: 'mr-ae-1', leftSide: 'user.type',   operator: '==', rightSide: 'employee' },
@@ -1059,6 +1076,7 @@ export const GROUPS: Group[] = [
     name: 'Active Contractors',
     description: 'All active contractor users.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [
       { id: 'mr-ac-1', leftSide: 'user.type',   operator: '==', rightSide: 'contractor' },
@@ -1072,6 +1090,7 @@ export const GROUPS: Group[] = [
     name: 'Night Operations',
     description: 'Operations department staff with clearance 2+ for night shift coverage.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [
       { id: 'mr-no-1', leftSide: 'user.department',    operator: '==', rightSide: 'Operations' },
@@ -1085,6 +1104,7 @@ export const GROUPS: Group[] = [
     name: 'Security Operations',
     description: 'Security department operations group.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-so-1', leftSide: 'user.department', operator: '==', rightSide: 'Security' }],
     subGroups: ['group-security'],
@@ -1093,8 +1113,11 @@ export const GROUPS: Group[] = [
   {
     id: 'group-lab-personnel',
     name: 'Lab Personnel',
+    // OR logic: users qualify if they are in a lab department OR have clearance 3+.
+    // This is intentionally permissive — a high-clearance user from any dept can access labs.
     description: 'Research and Engineering staff with clearance 3+ for lab access.',
     membershipType: 'dynamic',
+    membershipLogic: 'OR',
     members: [],
     membershipRules: [
       { id: 'mr-lab-1', leftSide: 'user.department',    operator: 'IN', rightSide: ['Research', 'Engineering'] },
@@ -1108,6 +1131,7 @@ export const GROUPS: Group[] = [
     name: 'All Active Staff',
     description: 'Every user with active status regardless of type.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-aas-1', leftSide: 'user.status', operator: '==', rightSide: 'active' }],
     subGroups: [],
@@ -1118,6 +1142,7 @@ export const GROUPS: Group[] = [
     name: 'Restricted Zone Eligible',
     description: 'Staff with clearance level 4 or above — eligible for restricted zones.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-rze-1', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: '4' }],
     subGroups: [],
@@ -1128,6 +1153,7 @@ export const GROUPS: Group[] = [
     name: 'Visitor Escorts',
     description: 'Employees with clearance 3+ authorized to escort visitors.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [
       { id: 'mr-ve-1', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: '3' },
@@ -1139,8 +1165,11 @@ export const GROUPS: Group[] = [
   {
     id: 'group-datacentre-ops',
     name: 'Data Centre Ops',
+    // OR logic: match users who work in any of the relevant departments OR have the required clearance.
+    // This allows a clearance-4 user from any dept to qualify for data centre access.
     description: 'IT, Engineering, and Security staff with clearance 4+ for data centre operations.',
     membershipType: 'dynamic',
+    membershipLogic: 'OR',
     members: [],
     membershipRules: [
       { id: 'mr-dco-1', leftSide: 'user.department',    operator: 'IN', rightSide: ['IT', 'Engineering', 'Security'] },
@@ -1154,6 +1183,7 @@ export const GROUPS: Group[] = [
     name: 'Contractors Restricted',
     description: 'Contractors are restricted to contractor hours only.',
     membershipType: 'dynamic',
+    membershipLogic: 'AND',
     members: [],
     membershipRules: [{ id: 'mr-cr-1', leftSide: 'user.type', operator: '==', rightSide: 'contractor' }],
     subGroups: [],
@@ -1166,6 +1196,7 @@ export const GROUPS: Group[] = [
     name: 'Crisis Response Team',
     description: 'Handpicked crisis response team — 8 members with clearance 4+.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.clearanceLevel >= 4 && u.type === 'employee', 8),
     membershipRules: [],
     subGroups: ['group-security-operations'],
@@ -1176,6 +1207,7 @@ export const GROUPS: Group[] = [
     name: 'Executive Leadership',
     description: 'Top executive leadership team — 5 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.clearanceLevel === 5, 5),
     membershipRules: [],
     subGroups: ['group-executives'],
@@ -1186,6 +1218,7 @@ export const GROUPS: Group[] = [
     name: 'Board Observers',
     description: 'Non-executive board observers with read-only access.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: ['u-0001', 'u-0002', 'u-0003', 'u-0004'],
     membershipRules: [],
     subGroups: [],
@@ -1196,6 +1229,7 @@ export const GROUPS: Group[] = [
     name: 'Data Centre Team',
     description: 'Core data centre operations team — 12 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => (u.department === 'IT' || u.department === 'Engineering') && u.clearanceLevel >= 3, 12),
     membershipRules: [],
     subGroups: ['group-datacentre-ops'],
@@ -1206,6 +1240,7 @@ export const GROUPS: Group[] = [
     name: 'Security Operations Center',
     description: 'SOC team — 10 members from Security department.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'Security' && u.status === 'active', 10),
     membershipRules: [],
     subGroups: ['group-security-operations'],
@@ -1214,8 +1249,11 @@ export const GROUPS: Group[] = [
   {
     id: 'group-incident-response',
     name: 'Incident Response',
+    // OR logic: members are drawn from Security OR IT — reflecting a cross-department team
+    // where belonging to either department qualifies a user for the static roster.
     description: 'Incident response team — 7 members across security and IT.',
     membershipType: 'static',
+    membershipLogic: 'OR',
     members: firstUserIds(u => (u.department === 'Security' || u.department === 'IT') && u.clearanceLevel >= 3, 7),
     membershipRules: [],
     subGroups: ['group-soc'],
@@ -1226,6 +1264,7 @@ export const GROUPS: Group[] = [
     name: 'Facilities Management',
     description: 'Facilities management team — 6 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'Facilities' && u.status === 'active', 6),
     membershipRules: [],
     subGroups: [],
@@ -1236,6 +1275,7 @@ export const GROUPS: Group[] = [
     name: 'IT Operations',
     description: 'IT operations team — 15 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'IT' && u.status === 'active', 15),
     membershipRules: [],
     subGroups: ['group-it'],
@@ -1246,6 +1286,7 @@ export const GROUPS: Group[] = [
     name: 'Research Core',
     description: 'Core research team — 9 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'Research' && u.clearanceLevel >= 3, 9),
     membershipRules: [],
     subGroups: ['group-research'],
@@ -1256,6 +1297,7 @@ export const GROUPS: Group[] = [
     name: 'Compliance Officers',
     description: 'Compliance and regulatory team — 5 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'Legal' && u.status === 'active', 5),
     membershipRules: [],
     subGroups: [],
@@ -1266,6 +1308,7 @@ export const GROUPS: Group[] = [
     name: 'Network Operations',
     description: 'Network operations center — 8 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'IT' && u.clearanceLevel >= 2 && u.status === 'active', 8),
     membershipRules: [],
     subGroups: [],
@@ -1276,6 +1319,7 @@ export const GROUPS: Group[] = [
     name: 'HR Leadership',
     description: 'Senior HR leadership team — 4 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'HR' && u.clearanceLevel >= 3, 4),
     membershipRules: [],
     subGroups: [],
@@ -1286,6 +1330,7 @@ export const GROUPS: Group[] = [
     name: 'Finance Committee',
     description: 'Finance oversight committee — 6 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'Finance' && u.clearanceLevel >= 3, 6),
     membershipRules: [],
     subGroups: [],
@@ -1296,6 +1341,7 @@ export const GROUPS: Group[] = [
     name: 'Legal Core',
     description: 'Core legal team — 5 members.',
     membershipType: 'static',
+    membershipLogic: 'AND',
     members: firstUserIds(u => u.department === 'Legal' && u.clearanceLevel >= 3, 5),
     membershipRules: [],
     subGroups: ['group-compliance'],
@@ -1304,8 +1350,11 @@ export const GROUPS: Group[] = [
   {
     id: 'group-devops-guild',
     name: 'DevOps Guild',
+    // OR logic: the guild welcomes users from Engineering OR IT — a cross-functional team
+    // where membership in either department (with sufficient clearance) qualifies a user.
     description: 'Cross-functional DevOps guild — 10 members.',
     membershipType: 'static',
+    membershipLogic: 'OR',
     members: firstUserIds(u => (u.department === 'Engineering' || u.department === 'IT') && u.clearanceLevel >= 2 && u.status === 'active', 10),
     membershipRules: [],
     subGroups: ['group-it-ops'],

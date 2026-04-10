@@ -1,9 +1,15 @@
 import { useState, useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
 import { CheckCircle, XCircle, MinusCircle, ChevronDown, ChevronRight } from 'lucide-react'
 import { useStore } from '../store/store'
 import { evaluateAccess } from '../engine/accessEngine'
 import { buildNowContext } from '../engine/scheduleEngine'
 import type { ActionType, AccessResult } from '../types'
+
+interface OracleNavState {
+  userId?: string
+  doorId?: string
+}
 
 function StepHeader({ label, status, expanded, onToggle }: {
   label: string; status: 'pass' | 'fail' | 'skip' | 'holiday'; expanded: boolean; onToggle: () => void
@@ -39,8 +45,11 @@ export default function Reasoner() {
   const sites     = useStore(s => s.sites)
   const controllers = useStore(s => s.controllers)
 
-  const [selectedUserId,  setSelectedUserId]  = useState(users[0]?.id ?? '')
-  const [selectedDoorId,  setSelectedDoorId]  = useState(doors[0]?.id ?? '')
+  const location = useLocation()
+  const navState = (location.state ?? {}) as OracleNavState
+
+  const [selectedUserId,  setSelectedUserId]  = useState(navState.userId ?? users[0]?.id ?? '')
+  const [selectedDoorId,  setSelectedDoorId]  = useState(navState.doorId ?? doors[0]?.id ?? '')
   const [selectedAction,  setSelectedAction]  = useState<ActionType>('unlock')
   const [result, setResult] = useState<AccessResult | null>(null)
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([0, 1, 2, 3, 4]))

@@ -25,7 +25,6 @@ export default function Controllers() {
       <div className="grid sm:grid-cols-2 gap-3">
         {controllers.map(ctrl => {
           const site = sites.find(s => s.id === ctrl.siteId)
-          const ctrlDoors = ctrl.doorIds.map(id => doors.find(d => d.id === id)?.name ?? id)
           return (
             <div key={ctrl.id} className="bg-[#0f1320] border border-[#1e293b] rounded-lg p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
@@ -42,10 +41,10 @@ export default function Controllers() {
                   </button>
                 </div>
               </div>
-              {ctrlDoors.length > 0 && (
+              {ctrl.doorIds.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {ctrlDoors.map(name => (
-                    <span key={name} className="text-[9px] bg-[#111827] border border-[#1e293b] text-slate-500 px-1.5 py-0.5 rounded">🚪 {name}</span>
+                  {ctrl.doorIds.map(id => (
+                    <span key={id} className="text-[9px] bg-[#111827] border border-[#1e293b] text-slate-500 px-1.5 py-0.5 rounded">&#x1F6AA; {doors.find(d => d.id === id)?.name ?? id}</span>
                   ))}
                 </div>
               )}

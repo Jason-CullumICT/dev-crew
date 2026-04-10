@@ -192,6 +192,10 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
   // ── Edges ──────────────────────────────────────────────────────────────────
   const edges: Edge[] = []
 
+  // H7: Track the FULL logical coverage of each grant→door (not just rendered edges)
+  // Key: grantNodeKey → Set of all covered door node keys
+  const grantFullDoorCoverage = new Map<string, Set<string>>()
+
   for (const group of groups) {
     const gPos = nodeCenter(pos(`group-${group.id}`))
     for (const grantId of group.inheritedPermissions) {
@@ -212,18 +216,25 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
   }
 
   for (const grant of grants) {
-    const grPos = nodeCenter(pos(`grant-${grant.id}`), 136)
-    const coveredDoors = doors.filter(d =>
+    const grantKey = `grant-${grant.id}`
+    const grPos = nodeCenter(pos(grantKey), 136)
+
+    // H7: Compute FULL set of covered doors for accurate connection tracking
+    const allCoveredDoors = doors.filter(d =>
       visibleDoorIds.has(d.id) && (
         grant.scope === 'global' ||
         (grant.scope === 'site'  && grant.targetId === d.siteId) ||
         (grant.scope === 'zone'  && grant.targetId === d.zoneId)
       )
-    ).slice(0, 3)
-    for (const door of coveredDoors) {
+    )
+    const fullDoorKeys = new Set(allCoveredDoors.map(d => `door-${d.id}`))
+    grantFullDoorCoverage.set(grantKey, fullDoorKeys)
+
+    // H7: Render edges for up to 3 doors only (performance), full coverage tracked above
+    for (const door of allCoveredDoors.slice(0, 3)) {
       const key  = `door-${door.id}`
       const dPos = nodeCenter(pos(key), 116, 60)
-      edges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: `grant-${grant.id}`, targetKey: key })
+      edges.push({ x1: grPos.x, y1: grPos.y, x2: dPos.x, y2: dPos.y, colorKey: 'violet', sourceKey: grantKey, targetKey: key })
     }
   }
 
@@ -233,6 +244,19 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
     for (const e of edges) {
       if (e.sourceKey === selected) connectedKeys.add(e.targetKey)
       if (e.targetKey === selected) connectedKeys.add(e.sourceKey)
+    }
+    // H7: For a selected grant, also add ALL logically covered doors (not just rendered 3)
+    if (selected.startsWith('grant-')) {
+      const fullCoverage = grantFullDoorCoverage.get(selected)
+      if (fullCoverage) {
+        for (const doorKey of fullCoverage) connectedKeys.add(doorKey)
+      }
+    }
+    // H7: For a selected door, also mark any grant that fully covers it (even without a rendered edge)
+    if (selected.startsWith('door-')) {
+      for (const [grantKey, doorKeys] of grantFullDoorCoverage) {
+        if (doorKeys.has(selected)) connectedKeys.add(grantKey)
+      }
     }
   }
   const hasSelection = selected !== null
@@ -287,14 +311,14 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
               </marker>,
             ])}
           </defs>
-          {edges.map((e, i) => {
+          {edges.map((e) => {
             const isConnected = hasSelection && (e.sourceKey === selected || e.targetKey === selected)
             const isDimmed    = hasSelection && !isConnected
             const color       = isConnected ? EDGE_COLORS[e.colorKey].bright : EDGE_COLORS[e.colorKey].dim
             const markerSuffix = isConnected ? '-bright' : ''
             return (
               <path
-                key={i}
+                key={`${e.sourceKey}→${e.targetKey}`}
                 d={`M ${e.x1} ${e.y1} C ${(e.x1 + e.x2) / 2} ${e.y1} ${(e.x1 + e.x2) / 2} ${e.y2} ${e.x2} ${e.y2}`}
                 stroke={color}
                 strokeWidth={isConnected ? 2.5 : 1.5}
@@ -324,9 +348,11 @@ export default function CanvasGraph({ siteFilter, scopeFilter, visibleTypes }: P
           const p = pos(`grant-${grant.id}`)
           const key = `grant-${grant.id}`
           const { highlighted, dimmed } = nodeProps(key)
+          // H7: Pass full door count so GrantNode can show "covers N doors" for global grants
+          const coveredDoorCount = grantFullDoorCoverage.get(key)?.size ?? 0
           return (
             <div key={grant.id} style={{ left: p.x, top: p.y, position: 'absolute' }} onMouseDown={e => startDrag(key, e)}>
-              <GrantNode grant={grant} selected={selected === key} highlighted={highlighted} dimmed={dimmed} onClick={() => setSelected(key)} />
+              <GrantNode grant={grant} selected={selected === key} highlighted={highlighted} dimmed={dimmed} onClick={() => setSelected(key)} coveredDoorCount={coveredDoorCount} />
             </div>
           )
         })}

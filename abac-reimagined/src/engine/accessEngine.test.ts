@@ -15,6 +15,7 @@ const group: Group = {
   membershipRules: [{ id: 'r1', leftSide: 'user.department', operator: '==', rightSide: 'Operations' }],
   subGroups: [],
   inheritedPermissions: ['grant-unlock'],
+  membershipLogic: 'AND',
 }
 
 const grant: Grant = {

@@ -35,6 +35,8 @@ export default function Zones() {
         </div>
       </div>
 
+      {zones.length === 0 && <p className="text-[12px] text-slate-600">No zones yet. Click + New to create one.</p>}
+
       <div className="grid sm:grid-cols-2 gap-2">
         {zones.map(zone => {
           const site = sites.find(s => s.id === zone.siteId)

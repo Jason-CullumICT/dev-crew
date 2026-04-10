@@ -25,7 +25,6 @@ export default function Policies() {
       <div className="grid gap-3">
         {policies.map(policy => {
           const schedule = policy.scheduleId ? schedules.find(s => s.id === policy.scheduleId) : null
-          const policyDoors = policy.doorIds.map(id => doors.find(d => d.id === id)?.name ?? id)
           return (
             <div key={policy.id} className="bg-[#0f1320] border border-[#1e293b] rounded-lg p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
@@ -43,10 +42,10 @@ export default function Policies() {
                   </button>
                 </div>
               </div>
-              {policyDoors.length > 0 && (
+              {policy.doorIds.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {policyDoors.map(name => (
-                    <span key={name} className="text-[9px] bg-[#111827] border border-[#1e293b] text-slate-500 px-1.5 py-0.5 rounded">🚪 {name}</span>
+                  {policy.doorIds.map(id => (
+                    <span key={id} className="text-[9px] bg-[#111827] border border-[#1e293b] text-slate-500 px-1.5 py-0.5 rounded">&#x1F6AA; {doors.find(d => d.id === id)?.name ?? id}</span>
                   ))}
                 </div>
               )}

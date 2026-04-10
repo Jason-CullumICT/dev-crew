@@ -11,7 +11,7 @@ interface Props {
 }
 
 function blankGroup(): Group {
-  return { id: uuidv4(), name: '', description: '', membershipType: 'static', members: [], membershipRules: [], subGroups: [], inheritedPermissions: [] }
+  return { id: uuidv4(), name: '', description: '', membershipType: 'static', members: [], membershipRules: [], membershipLogic: 'AND', subGroups: [], inheritedPermissions: [] }
 }
 
 type Tab = 'Basics' | 'Members' | 'Rules' | 'Grants'
@@ -26,7 +26,6 @@ export default function GroupModal({ group, onClose }: Props) {
 
   const [draft, setDraft] = useState<Group>(group ?? blankGroup())
   const [tab, setTab]     = useState<Tab>('Basics')
-  const [logic, setLogic] = useState<'AND' | 'OR'>('AND')
 
   // Exclude self from subgroup picker
   const otherGroups = groups.filter(g => g.id !== draft.id)
@@ -55,8 +54,7 @@ export default function GroupModal({ group, onClose }: Props) {
   }
 
   function onRulesChange(rules: Rule[], l: 'AND' | 'OR') {
-    setDraft(d => ({ ...d, membershipRules: rules }))
-    setLogic(l)
+    setDraft(d => ({ ...d, membershipRules: rules, membershipLogic: l }))
   }
 
   function save() {
@@ -132,7 +130,7 @@ export default function GroupModal({ group, onClose }: Props) {
         {tab === 'Rules' && (
           <div>
             <p className="text-[10px] text-slate-500 mb-3">Users matching these rules are dynamically included in the group alongside any static members.</p>
-            <RuleBuilder rules={draft.membershipRules} logic={logic} onChange={onRulesChange} />
+            <RuleBuilder rules={draft.membershipRules} logic={draft.membershipLogic} onChange={onRulesChange} />
           </div>
         )}
 

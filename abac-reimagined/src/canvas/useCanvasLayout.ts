@@ -6,9 +6,15 @@ export function useCanvasLayout(zoomRef: React.RefObject<number>) {
   const setPosition = useStore(s => s.setCanvasPosition)
   const dragRef = useRef<{ nodeKey: string; startX: number; startY: number; origX: number; origY: number } | null>(null)
 
+  // M4: Keep a ref that always reflects current positions so startDrag callbacks
+  // don't need `positions` in their dependency array (prevents 540+ handler re-creates per drag frame).
+  const positionsRef = useRef(positions)
+  positionsRef.current = positions
+
   const startDrag = useCallback((nodeKey: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    const pos = positions[nodeKey] ?? { x: 0, y: 0 }
+    // M4: Read from positionsRef instead of closed-over `positions`
+    const pos = positionsRef.current[nodeKey] ?? { x: 0, y: 0 }
     dragRef.current = { nodeKey, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y }
 
     function onMove(ev: MouseEvent) {
@@ -31,7 +37,8 @@ export function useCanvasLayout(zoomRef: React.RefObject<number>) {
 
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
-  }, [positions, setPosition, zoomRef])
+  // M4: `positions` removed from deps — read via positionsRef.current instead
+  }, [setPosition, zoomRef])
 
   return { positions, startDrag }
 }

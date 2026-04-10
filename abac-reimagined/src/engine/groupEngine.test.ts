@@ -11,16 +11,16 @@ const baseUser: User = {
 const groups: Group[] = [
   {
     id: 'g-night', name: 'Night Shift', description: '', membershipType: 'static',
-    members: ['u1'], membershipRules: [], subGroups: [], inheritedPermissions: ['grant-1'],
+    members: ['u1'], membershipRules: [], subGroups: [], inheritedPermissions: ['grant-1'], membershipLogic: 'AND',
   },
   {
     id: 'g-noc', name: 'NOC Team', description: '', membershipType: 'dynamic',
     members: [], membershipRules: [{ id: 'r1', leftSide: 'user.department', operator: '==', rightSide: 'Operations' }],
-    subGroups: ['g-night'], inheritedPermissions: ['grant-2'],
+    subGroups: ['g-night'], inheritedPermissions: ['grant-2'], membershipLogic: 'AND',
   },
   {
     id: 'g-other', name: 'Other', description: '', membershipType: 'static',
-    members: ['u99'], membershipRules: [], subGroups: [], inheritedPermissions: [],
+    members: ['u99'], membershipRules: [], subGroups: [], inheritedPermissions: [], membershipLogic: 'AND',
   },
 ]
 
@@ -53,9 +53,9 @@ describe('resolveGroupMembership', () => {
   it('does not infinite loop on circular subGroup references', () => {
     const circular: Group[] = [
       { id: 'ga', name: 'A', description: '', membershipType: 'static', members: ['u1'],
-        membershipRules: [], subGroups: ['gb'], inheritedPermissions: [] },
+        membershipRules: [], subGroups: ['gb'], inheritedPermissions: [], membershipLogic: 'AND' },
       { id: 'gb', name: 'B', description: '', membershipType: 'static', members: [],
-        membershipRules: [], subGroups: ['ga'], inheritedPermissions: [] },
+        membershipRules: [], subGroups: ['ga'], inheritedPermissions: [], membershipLogic: 'AND' },
     ]
     const result = resolveGroupMembership(baseUser, circular)
     expect(result).toContain('ga')
@@ -65,7 +65,7 @@ describe('resolveGroupMembership', () => {
     const clearanceGroups: Group[] = [{
       id: 'g-l3', name: 'L3+', description: '', membershipType: 'dynamic',
       members: [], membershipRules: [{ id: 'r1', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: '3' }],
-      subGroups: [], inheritedPermissions: [],
+      subGroups: [], inheritedPermissions: [], membershipLogic: 'AND',
     }]
     expect(resolveGroupMembership({ ...baseUser, clearanceLevel: 3 }, clearanceGroups)).toContain('g-l3')
     expect(resolveGroupMembership({ ...baseUser, clearanceLevel: 2 }, clearanceGroups)).not.toContain('g-l3')

@@ -21,6 +21,8 @@ export default function Groups() {
         </div>
       </div>
 
+      {groups.length === 0 && <p className="text-[12px] text-slate-600">No groups yet. Click + New to create one.</p>}
+
       <div className="grid gap-3">
         {groups.map(group => {
           const subGroupNames = group.subGroups.map(id => groups.find(g => g.id === id)?.name ?? id)
@@ -57,18 +59,18 @@ export default function Groups() {
                 </div>
               )}
 
-              {subGroupNames.length > 0 && (
+              {group.subGroups.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {subGroupNames.map(name => (
-                    <span key={name} className="text-[9px] bg-[#080b12] border border-[#1e293b] text-slate-500 px-2 py-0.5 rounded">↳ {name}</span>
+                  {group.subGroups.map((id, i) => (
+                    <span key={id} className="text-[9px] bg-[#080b12] border border-[#1e293b] text-slate-500 px-2 py-0.5 rounded">&#x21B3; {subGroupNames[i]}</span>
                   ))}
                 </div>
               )}
 
-              {grantNames.length > 0 && (
+              {group.inheritedPermissions.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {grantNames.map(name => (
-                    <span key={name} className="text-[9px] bg-[#0c0a1e] border border-[#2e1f6b] text-violet-400 px-2 py-0.5 rounded">{name}</span>
+                  {group.inheritedPermissions.map((id, i) => (
+                    <span key={id} className="text-[9px] bg-[#0c0a1e] border border-[#2e1f6b] text-violet-400 px-2 py-0.5 rounded">{grantNames[i]}</span>
                   ))}
                 </div>
               )}

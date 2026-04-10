@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import NowPill from './NowPill'
 import CommandPalette from './CommandPalette'
+import ErrorBoundary from './ErrorBoundary'
 
 const primaryNav = [
   { to: '/canvas',    icon: Share2,       label: 'Canvas',      color: '#6366f1' },
@@ -101,7 +102,9 @@ export default function Layout() {
         </header>
 
         <main className="flex-1 overflow-hidden">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 

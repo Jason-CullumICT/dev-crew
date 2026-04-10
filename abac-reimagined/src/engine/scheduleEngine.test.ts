@@ -70,7 +70,7 @@ describe('evaluateSchedule', () => {
       holidays: [],
     }
     const lateNight: NowContext = { dayOfWeek: 'Mon', hour: 23, minute: 30, date: '2026-04-06', month: 4, day: 6 }
-    const earlyMorn: NowContext = { dayOfWeek: 'Mon', hour: 3, minute: 0, date: '2026-04-06', month: 4, day: 6 }
+    const earlyMorn: NowContext = { dayOfWeek: 'Tue', hour: 3, minute: 0, date: '2026-04-07', month: 4, day: 7 }
     const midDay: NowContext = { dayOfWeek: 'Mon', hour: 12, minute: 0, date: '2026-04-06', month: 4, day: 6 }
     expect(evaluateSchedule(overnight, lateNight)).toBe('active')
     expect(evaluateSchedule(overnight, earlyMorn)).toBe('active')

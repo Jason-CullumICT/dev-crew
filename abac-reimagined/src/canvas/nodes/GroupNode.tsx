@@ -12,11 +12,7 @@ interface Props {
 
 export default function GroupNode({ group, allGroups, selected, highlighted, dimmed, onClick }: Props) {
   const users = useStore(s => s.users)
-  const subGroupNames = group.subGroups.map(id => allGroups.find(g => g.id === id)?.name ?? id)
-
-  const memberNames = group.members
-    .map(id => users.find(u => u.id === id)?.name ?? id)
-    .slice(0, 3)
+  // M9: Keep raw IDs for stable keys; resolve display names at render time
   const extraMembers = group.members.length - 3
 
   return (
@@ -36,14 +32,18 @@ export default function GroupNode({ group, allGroups, selected, highlighted, dim
         {group.membershipType === 'dynamic' ? 'dynamic' : `static · ${group.members.length} members`}
       </div>
 
-      {subGroupNames.length > 0 && (
+      {group.subGroups.length > 0 && (
         <div className="mt-2 pt-2 border-t border-[#1e293b]">
           <div className="text-[8px] text-[#1e3a5f] uppercase tracking-wide mb-1">Subgroups</div>
-          {subGroupNames.map(name => (
-            <div key={name} className="flex items-center gap-1.5 bg-[#080b12] border border-[#1e293b] rounded px-1.5 py-0.5 mt-1 text-[9px] text-[#475569]">
-              <span className="text-[#1e3a5f]">↳</span> {name}
-            </div>
-          ))}
+          {/* M9: Key on ID (stable), resolve display name inline */}
+          {group.subGroups.map(id => {
+            const name = allGroups.find(g => g.id === id)?.name ?? id
+            return (
+              <div key={id} className="flex items-center gap-1.5 bg-[#080b12] border border-[#1e293b] rounded px-1.5 py-0.5 mt-1 text-[9px] text-[#475569]">
+                <span className="text-[#1e3a5f]">↳</span> {name}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -60,9 +60,13 @@ export default function GroupNode({ group, allGroups, selected, highlighted, dim
       {selected && group.membershipType === 'static' && group.members.length > 0 && (
         <div className="mt-2 pt-2 border-t border-[#1e293b]">
           <div className="text-[8px] text-indigo-900 uppercase tracking-wide mb-1">Members</div>
-          {memberNames.map(name => (
-            <div key={name} className="text-[9px] text-slate-400 py-0.5 truncate">{name}</div>
-          ))}
+          {/* M9: Key on ID (stable), resolve display name inline */}
+          {group.members.slice(0, 3).map(id => {
+            const name = users.find(u => u.id === id)?.name ?? id
+            return (
+              <div key={id} className="text-[9px] text-slate-400 py-0.5 truncate">{name}</div>
+            )
+          })}
           {extraMembers > 0 && (
             <div className="text-[9px] text-slate-600">+{extraMembers} more</div>
           )}

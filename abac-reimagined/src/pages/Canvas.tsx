@@ -31,12 +31,12 @@ const LAYOUT_GAP = {
 // Max rows per column before wrapping to a new column
 const LAYOUT_MAX_PER_COL = 25
 
-// Node dimensions for bounding box calculation
+// Node dimensions for bounding box and layout spacing (matches redesigned tiles)
 const NODE_DIMS: Record<EntityType, { w: number; h: number }> = {
-  groups:    { w: 148, h: 80 },
-  grants:    { w: 136, h: 80 },
-  schedules: { w: 140, h: 80 },
-  doors:     { w: 100, h: 60 },
+  groups:    { w: 170, h: 72 },
+  grants:    { w: 160, h: 64 },
+  schedules: { w: 180, h: 72 },
+  doors:     { w: 100, h: 38 },
 }
 
 const ZOOM_MIN = 0.1

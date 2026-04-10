@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useStore } from '../store/store'
 
 interface Props {
@@ -146,7 +147,9 @@ export default function HoverTooltip({ nodeKey, screenX, screenY }: Props) {
   const clampedLeft = Math.min(rawLeft, window.innerWidth - TOOLTIP_WIDTH - 8)
   const clampedTop  = Math.max(8, Math.min(screenY, window.innerHeight - 8))
 
-  return (
+  // Portal to document.body so the tooltip escapes any overflow:hidden
+  // or transform-based containing blocks in the canvas hierarchy.
+  return createPortal(
     <div
       style={{
         position: 'fixed',
@@ -163,6 +166,7 @@ export default function HoverTooltip({ nodeKey, screenX, screenY }: Props) {
       }}
     >
       <TooltipContent nodeKey={nodeKey} />
-    </div>
+    </div>,
+    document.body,
   )
 }

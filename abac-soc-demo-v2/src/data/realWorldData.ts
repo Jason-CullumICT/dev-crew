@@ -2,16 +2,7 @@
 // Source: Gallagher Command Centre export (acme.co.nz)
 // Run: python tools/gen_real_world_data.py
 
-import type { NamedSchedule } from '../types';
 import { useStore } from '../store/store';
-
-export const NAMED_SCHEDULES: NamedSchedule[] = [
-  { id: 'sched-business', name: 'Business Hours', daysOfWeek: ['Mon','Tue','Wed','Thu','Fri'], startTime: '09:00', endTime: '17:00', timezone: 'Australia/Sydney', color: '#4ade80' },
-  { id: 'sched-night', name: 'Night Shift', daysOfWeek: ['Mon','Tue','Wed','Thu','Fri'], startTime: '20:00', endTime: '06:00', timezone: 'Australia/Sydney', color: '#f59e0b' },
-  { id: 'sched-afterhours', name: 'After Hours', daysOfWeek: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], startTime: '17:00', endTime: '09:00', timezone: 'Australia/Sydney', color: '#818cf8' },
-  { id: 'sched-always', name: 'Always On (24/7)', daysOfWeek: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], startTime: '00:00', endTime: '23:59', timezone: 'Australia/Sydney', color: '#22d3ee' },
-  { id: 'sched-contractor-apr', name: 'Contractor Access — Apr 2026', daysOfWeek: ['Mon','Tue','Wed','Thu','Fri'], startTime: '08:00', endTime: '17:00', validUntil: '2026-04-28', timezone: 'Australia/Sydney', color: '#f87171' },
-];
 
 const SITES = [{"id": "site-ctrl-0", "name": "Main Building", "location": "Controller 0", "status": "online"}, {"id": "site-ctrl-1", "name": "East Wing", "location": "Controller 1", "status": "online"}, {"id": "site-ctrl-2", "name": "West Wing", "location": "Controller 2", "status": "online"}, {"id": "site-ctrl-3", "name": "North Tower", "location": "Controller 3", "status": "online"}, {"id": "site-ctrl-13", "name": "Warehouse", "location": "Controller 13", "status": "online"}, {"id": "site-ctrl-34", "name": "Parking Structure", "location": "Controller 34", "status": "online"}, {"id": "site-ctrl-36", "name": "Research Lab", "location": "Controller 36", "status": "online"}, {"id": "site-ctrl-88", "name": "Data Centre", "location": "Controller 88", "status": "online"}, {"id": "site-ctrl-89", "name": "Executive Suite", "location": "Controller 89", "status": "online"}, {"id": "site-ctrl-145", "name": "Guard House", "location": "Controller 145", "status": "online"}, {"id": "site-ctrl-146", "name": "Loading Dock", "location": "Controller 146", "status": "online"}, {"id": "site-ctrl-147", "name": "Annex", "location": "Controller 147", "status": "online"}] as const;
 
@@ -97,64 +88,57 @@ export function generateRealWorldData(): void {
     useStore.getState().addGrant(grantEscort as any);
   }
 
-  // ── Demo seed: Schedules ──────────────────────────────────────────────────────
-  const existingSchedules = useStore.getState().schedules;
-  if (existingSchedules.length === 0) {
-    NAMED_SCHEDULES.forEach(s => useStore.getState().addSchedule(s));
-  }
-
   // ── Demo seed: Groups ───────────────────────────────────────────────────────
   const existingGroups = useStore.getState().groups;
   if (!existingGroups.find(g => g.id === 'demo-group-dc-engineers')) {
     useStore.getState().addGroup({
       id: 'demo-group-dc-engineers',
       name: 'Data Centre Engineers',
-      description: 'Engineering staff with Confidential clearance — auto-enrolled',
+      description: 'IT staff with Confidential or higher clearance — auto-enrolled',
       membershipType: 'dynamic',
       membershipLogic: 'AND',
       targetEntityType: 'user',
       members: [],
       membershipRules: [
-        { id: 'dcr-1', leftSide: 'user.department', operator: '==', rightSide: 'Engineering' },
+        { id: 'dcr-1', leftSide: 'user.department', operator: '==', rightSide: 'IT' },
         { id: 'dcr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'Confidential' },
-        { id: 'dcr-3', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
       ],
       inheritedPermissions: ['demo-grant-dc'],
-      scheduleId: 'sched-business',
-    } as any);
+    });
 
     useStore.getState().addGroup({
       id: 'demo-group-night-security',
       name: 'Night Shift Security',
-      description: 'Security staff on evening rotation — time-gated',
+      description: 'Security department staff — active on weekday evenings',
       membershipType: 'dynamic',
       membershipLogic: 'AND',
       targetEntityType: 'user',
       members: [],
       membershipRules: [
         { id: 'nsr-1', leftSide: 'user.department', operator: '==', rightSide: 'Security' },
-        { id: 'nsr-2', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
+        { id: 'nsr-3', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
+        { id: 'nsr-4', leftSide: 'now.hour', operator: '>=', rightSide: '20:00' },
       ],
       inheritedPermissions: ['demo-grant-allshift'],
-      scheduleId: 'sched-night',
-    } as any);
+    });
 
     useStore.getState().addGroup({
       id: 'demo-group-cleared-contractors',
       name: 'Cleared Research Staff',
-      description: 'TopSecret-cleared contractors — business hours only',
+      description: 'Research department with Secret or higher clearance — business hours only',
       membershipType: 'dynamic',
       membershipLogic: 'AND',
       targetEntityType: 'user',
       members: [],
       membershipRules: [
-        { id: 'ccr-1', leftSide: 'user.role', operator: '==', rightSide: 'Contractor' },
-        { id: 'ccr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'TopSecret' },
-        { id: 'ccr-3', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
+        { id: 'ccr-1', leftSide: 'user.department', operator: '==', rightSide: 'Research' },
+        { id: 'ccr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'Secret' },
+        { id: 'ccr-4', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
+        { id: 'ccr-5', leftSide: 'now.hour', operator: '>=', rightSide: '08:00' },
+        { id: 'ccr-6', leftSide: 'now.hour', operator: '<', rightSide: '18:00' },
       ],
       inheritedPermissions: ['demo-grant-escort'],
-      scheduleId: 'sched-business',
-    } as any);
+    });
   }
 
   // ── Demo seed: Policies ──────────────────────────────────────────────────────
@@ -172,10 +156,9 @@ export function generateRealWorldData(): void {
     useStore.getState().addPolicy({
       id: 'demo-policy-biz-hours',
       name: 'Business Hours — All Staff',
-      description: 'Standard access for all active employees during working hours',
+      description: 'Standard access for all staff during weekday business hours',
       logicalOperator: 'AND',
       rules: [
-        { id: 'bhr-1', leftSide: 'user.status', operator: '==', rightSide: 'Active' },
         { id: 'bhr-2', leftSide: 'now.dayOfWeek', operator: 'IN', rightSide: 'Mon, Tue, Wed, Thu, Fri' },
         { id: 'bhr-3', leftSide: 'now.hour', operator: '>=', rightSide: '08:00' },
         { id: 'bhr-4', leftSide: 'now.hour', operator: '<', rightSide: '18:00' },
@@ -204,11 +187,11 @@ export function generateRealWorldData(): void {
     useStore.getState().addPolicy({
       id: 'demo-policy-emergency',
       name: 'Emergency Override',
-      description: 'Security and Emergency Team with TopSecret clearance — unrestricted access',
+      description: 'Night Shift Security group or Secret-cleared staff — unrestricted access',
       logicalOperator: 'OR',
       rules: [
         { id: 'emr-1', leftSide: 'user', operator: 'IN', rightSide: 'group.demo-group-night-security' },
-        { id: 'emr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'TopSecret' },
+        { id: 'emr-2', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: 'Secret' },
       ],
       doorIds: allDoorIds,
     });

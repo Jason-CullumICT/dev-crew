@@ -58,7 +58,7 @@ For the dev-crew project:
 - **Spec source of truth:** `Specifications/` — read relevant specs before reviewing any FR
 - **Traceability pattern:** every FR must be testable with a `// Verifies: FR-XXX` comment
 - **Architecture rules from `CLAUDE.md`:** no direct DB calls from route handlers, shared types in `Source/Shared/`, all list endpoints return `{data: T[]}` wrappers — reject FRs that would require violating these
-- **Domain concepts:** work items, state machines, assessment verdicts, ABAC — validate FRs use correct terminology
+- **Domain concepts:** work items, state machines, assessment verdicts — validate FRs use correct terminology
 - **Reject if:** FR is untestable, contradicts an existing spec, or would require touching `platform/`
 
 ## Dashboard Reporting

@@ -40,15 +40,15 @@ For each UI element in the proposed designs:
 - If no: is this a net-new pattern, or a variation that should be aligned with an existing one?
 
 ### Chip conventions (this project-specific)
-Chips follow a strict color convention per semantic meaning:
+Chips follow a strict color convention per semantic meaning. The exact mapping is project-defined — confirm with `CLAUDE.md` or the design spec. A common pattern:
 | Type | Classes |
 |---|---|
-| Department/Role/Type | `bg-indigo-900 text-indigo-300` |
+| Category/Role/Type | `bg-indigo-900 text-indigo-300` |
 | Status | `bg-green-900 text-green-300` |
-| Clearance | `bg-violet-900 text-violet-300` |
+| Priority/Level | `bg-violet-900 text-violet-300` |
 | Time/Schedule | `bg-amber-900 text-amber-300` |
-| Group reference | `bg-slate-700 text-slate-300` |
-| Door/Location | `bg-emerald-900 text-emerald-300` |
+| Reference/Link | `bg-slate-700 text-slate-300` |
+| Location/Resource | `bg-emerald-900 text-emerald-300` |
 
 ## Output
 

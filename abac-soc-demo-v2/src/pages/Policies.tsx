@@ -4,7 +4,6 @@ import { useStore } from '../store/store';
 import type { Policy, ConditionChip, TimeWindow, Door } from '../types';
 import ConditionChips from '../components/ConditionChips';
 import TimeWindowChips from '../components/TimeWindowChips';
-import SchedulePicker from '../components/SchedulePicker';
 import {
   chipToRule,
   timeWindowToRules,
@@ -12,20 +11,22 @@ import {
   rulesToTimeWindows,
   CHIP_COLORS,
 } from '../lib/chipUtils';
+import PoliciesB from './PoliciesB';
 
 // ── Lane display component ───────────────────────────────────────────────────
 
 interface LaneProps {
   color: string;
+  bgClass: string;
   label: string;
   accentClass: string;
   children: React.ReactNode;
 }
 
-function Lane({ color, label, accentClass, children }: LaneProps) {
+function Lane({ color, bgClass, label, accentClass, children }: LaneProps) {
   return (
-    <div className="flex items-start gap-3">
-      <div className={`w-0.5 self-stretch rounded-full shrink-0 ${color}`} />
+    <div className={`flex items-start gap-3 rounded-lg px-3 py-2.5 ${bgClass}`}>
+      <div className={`w-1 self-stretch rounded-full shrink-0 ${color}`} />
       <div className="flex-1 min-w-0">
         <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${accentClass}`}>{label}</p>
         <div className="flex items-center gap-1.5 flex-wrap">{children}</div>
@@ -50,13 +51,14 @@ function PolicyCard({
   onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const schedules = useStore(s => s.schedules);
+  const users = useStore(s => s.users);
+  const sites = useStore(s => s.sites);
 
-  const peopleChips = useMemo(() => rulesToConditionChips(policy.rules ?? [], groups), [policy.rules, groups]);
-  const timeWindows = useMemo(() => rulesToTimeWindows(policy.rules ?? []), [policy.rules]);
+  const safeRules = Array.isArray(policy.rules) ? policy.rules : [];
+  const peopleChips = useMemo(() => rulesToConditionChips(safeRules, groups), [safeRules, groups]);
+  const timeWindows = useMemo(() => rulesToTimeWindows(safeRules), [safeRules]);
   const assignedDoors = useMemo(() => doors.filter(d => (policy.doorIds ?? []).includes(d.id)), [doors, policy.doorIds]);
-  const linkedSchedule = policy.scheduleId ? schedules.find(s => s.id === policy.scheduleId) : undefined;
-  const isOverride = timeWindows.length === 0 && !policy.scheduleId && assignedDoors.length > 0 && assignedDoors.length >= doors.length;
+  const isOverride = timeWindows.length === 0 && assignedDoors.length > 0 && assignedDoors.length >= doors.length;
 
   function chipLabel(tw: TimeWindow) {
     const dayPart = tw.days.length === 0 ? 'Every day' : tw.days.join('–');
@@ -78,9 +80,9 @@ function PolicyCard({
             </div>
 
             {/* Lanes (always visible) */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {/* People */}
-              <Lane color="bg-indigo-600" label="People" accentClass="text-indigo-400">
+              <Lane color="bg-indigo-500" bgClass="bg-indigo-950/40" label="People" accentClass="text-indigo-400">
                 {peopleChips.length === 0 ? (
                   <span className="text-slate-600 text-xs italic">Anyone</span>
                 ) : peopleChips.map((chip, i) => (
@@ -98,16 +100,8 @@ function PolicyCard({
               </Lane>
 
               {/* Time */}
-              <Lane color="bg-amber-500" label="Time" accentClass="text-amber-400">
-                {linkedSchedule ? (
-                  <span
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: `${linkedSchedule.color}22`, color: linkedSchedule.color, border: `1px solid ${linkedSchedule.color}66` }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: linkedSchedule.color }} />
-                    {linkedSchedule.name}
-                  </span>
-                ) : timeWindows.length === 0 ? (
+              <Lane color="bg-amber-500" bgClass="bg-amber-950/40" label="Time" accentClass="text-amber-400">
+                {timeWindows.length === 0 ? (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CHIP_COLORS.time}`}>Always (24/7)</span>
                 ) : timeWindows.map(tw => (
                   <span key={tw.id} className={`px-2 py-0.5 rounded-full text-xs font-medium ${CHIP_COLORS.time}`}>
@@ -117,7 +111,7 @@ function PolicyCard({
               </Lane>
 
               {/* Doors */}
-              <Lane color="bg-emerald-500" label="Doors" accentClass="text-emerald-400">
+              <Lane color="bg-emerald-500" bgClass="bg-emerald-950/40" label="Doors" accentClass="text-emerald-400">
                 {assignedDoors.length === 0 ? (
                   <span className="text-slate-600 text-xs italic">No doors assigned</span>
                 ) : assignedDoors.map(door => (
@@ -139,9 +133,159 @@ function PolicyCard({
           </div>
         </div>
 
-        {expanded && policy.description && (
-          <p className="text-slate-500 text-sm mt-3 border-t border-gray-800 pt-3">{policy.description}</p>
-        )}
+        {expanded && (() => {
+          const ALL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+          const RANK: Record<string, number> = { Unclassified: 0, Confidential: 1, Secret: 2, TopSecret: 3 };
+
+          function userPassesRule(user: import('../types').User, rule: import('../types').Rule): boolean {
+            const v = Array.isArray(rule.rightSide) ? rule.rightSide[0] : rule.rightSide;
+            switch (rule.leftSide) {
+              case 'user.department': return rule.operator === '==' ? user.department === v : user.department !== v;
+              case 'user.status':    return rule.operator === '==' ? (user.status as string) === v : (user.status as string) !== v;
+              case 'user.role':      return rule.operator === '==' ? user.role === v : user.role !== v;
+              case 'user.clearanceLevel': {
+                const uR = RANK[user.clearanceLevel] ?? 0, rR = RANK[v] ?? 0;
+                if (rule.operator === '>=') return uR >= rR;
+                if (rule.operator === '<=') return uR <= rR;
+                if (rule.operator === '==') return uR === rR;
+                if (rule.operator === '!=') return uR !== rR;
+                return false;
+              }
+              default: return false;
+            }
+          }
+
+          const condRules = safeRules.filter(r => !r.leftSide.startsWith('now.') && r.leftSide !== 'user');
+          const qualifying = condRules.length === 0
+            ? users
+            : users.filter(u => policy.logicalOperator === 'OR'
+                ? condRules.some(r => userPassesRule(u, r))
+                : condRules.every(r => userPassesRule(u, r)));
+
+          const doorsBySite = assignedDoors.reduce<Record<string, { name: string; doors: typeof assignedDoors }>>((acc, d) => {
+            const k = d.siteId || '__none__';
+            if (!acc[k]) {
+              const siteName = sites.find(s => s.id === d.siteId)?.name ?? d.siteId ?? 'Unassigned';
+              acc[k] = { name: siteName, doors: [] };
+            }
+            acc[k].doors.push(d);
+            return acc;
+          }, {});
+          const siteGroups = Object.values(doorsBySite);
+          const multipleSites = siteGroups.length > 1;
+
+          function qualifiesSentence(): string {
+            if (peopleChips.length === 0) return 'All staff have access under this policy.';
+            const parts = peopleChips.map((chip, i) => {
+              const conj = i === 0 ? '' : ` ${policy.logicalOperator} `;
+              if (chip.chipType === 'department') return `${conj}work in ${chip.label}`;
+              if (chip.chipType === 'clearance')  return `${conj}have ${chip.label} clearance`;
+              if (chip.chipType === 'role')       return `${conj}have role ${chip.label}`;
+              if (chip.chipType === 'group')      return `${conj}are in ${chip.label}`;
+              return `${conj}are ${chip.label}`;
+            });
+            return `People who ${parts.join('')}.`;
+          }
+
+          return (
+            <div className="border-t border-gray-800 mt-4 pt-4 space-y-3">
+              {policy.description && <p className="text-gray-500 text-sm leading-relaxed">{policy.description}</p>}
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-800 rounded-xl border border-gray-700 px-4 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">People with access</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-bold text-white tabular-nums">{qualifying.length}</span>
+                    <span className="text-gray-500 text-sm">{qualifying.length === 1 ? 'person' : 'people'}</span>
+                  </div>
+                  {condRules.length === 0 && <p className="text-gray-600 text-[11px] mt-0.5">No restrictions — open to all</p>}
+                </div>
+                <div className="bg-gray-800 rounded-xl border border-gray-700 px-4 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Doors unlocked</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-bold text-white tabular-nums">{assignedDoors.length}</span>
+                    <span className="text-gray-500 text-sm">{assignedDoors.length === 1 ? 'door' : 'doors'}{multipleSites ? `, ${siteGroups.length} sites` : ''}</span>
+                  </div>
+                  {assignedDoors.length === 0 && <p className="text-gray-600 text-[11px] mt-0.5">No doors assigned yet</p>}
+                </div>
+              </div>
+
+              {/* Door map */}
+              {assignedDoors.length > 0 && (
+                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Door map</p>
+                  <div className="space-y-3">
+                    {siteGroups.map(({ name, doors: siteDoors }) => (
+                      <div key={name}>
+                        {multipleSites && <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{name}</p>}
+                        <div className="flex flex-wrap gap-1.5">
+                          {siteDoors.map(d => (
+                            <span key={d.id} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-900 text-emerald-300 border border-emerald-800">{d.name}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Who qualifies */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Who qualifies</p>
+                <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                  {peopleChips.length === 0 ? (
+                    <span className="text-xs text-gray-500 italic">Anyone — no people filter set</span>
+                  ) : peopleChips.map((chip, i) => (
+                    <span key={chip.id} className="flex items-center gap-1">
+                      {i > 0 && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${policy.logicalOperator === 'AND' ? 'bg-indigo-950 text-indigo-400 border border-indigo-800' : 'bg-violet-950 text-violet-400 border border-violet-800'}`}>
+                          {policy.logicalOperator}
+                        </span>
+                      )}
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${chip.chipType === 'clearance' ? 'bg-violet-900 text-violet-300' : chip.chipType === 'status' ? 'bg-green-900 text-green-300' : chip.chipType === 'group' ? 'bg-slate-700 text-slate-300' : 'bg-indigo-900 text-indigo-300'}`}>
+                        {chip.label}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+                <p className="text-gray-500 text-xs leading-relaxed">{qualifiesSentence()}</p>
+              </div>
+
+              {/* Schedule */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Schedule</p>
+                {timeWindows.length === 0 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                    <span className="text-emerald-400 text-sm font-medium">24/7 unrestricted access</span>
+                  </div>
+                ) : timeWindows.map(tw => {
+                  const active = tw.days.length === 0 ? ALL_DAYS : tw.days;
+                  return (
+                    <div key={tw.id} className="flex items-center gap-3 flex-wrap">
+                      <div className="flex gap-1">
+                        {ALL_DAYS.map(day => (
+                          <span key={day} className={`text-[10px] font-bold px-1.5 py-1 rounded leading-none ${active.includes(day) ? 'bg-amber-900 text-amber-300 border border-amber-700' : 'bg-gray-900 text-gray-600 border border-gray-700'}`}>
+                            {day.slice(0, 2)}
+                          </span>
+                        ))}
+                      </div>
+                      {!(tw.startTime === '00:00' && tw.endTime === '23:59') && (
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-900/60 border border-amber-800 text-amber-300 text-xs font-mono font-semibold tracking-wide">
+                          {tw.startTime} – {tw.endTime}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -156,11 +300,10 @@ interface PolicyDraft {
   peopleChips: ConditionChip[];
   timeWindows: TimeWindow[];
   doorIds: string[];
-  scheduleId: string | undefined;
 }
 
 function emptyDraft(): PolicyDraft {
-  return { name: '', description: '', logicalOperator: 'AND', peopleChips: [], timeWindows: [], doorIds: [], scheduleId: undefined };
+  return { name: '', description: '', logicalOperator: 'AND', peopleChips: [], timeWindows: [], doorIds: [] };
 }
 
 function policyToDraft(p: Policy, groups: { id: string; name: string }[]): PolicyDraft {
@@ -168,10 +311,9 @@ function policyToDraft(p: Policy, groups: { id: string; name: string }[]): Polic
     name: p.name,
     description: p.description,
     logicalOperator: p.logicalOperator,
-    peopleChips: rulesToConditionChips(p.rules ?? [], groups),
-    timeWindows: rulesToTimeWindows(p.rules ?? []),
+    peopleChips: rulesToConditionChips(Array.isArray(p.rules) ? p.rules : [], groups),
+    timeWindows: rulesToTimeWindows(Array.isArray(p.rules) ? p.rules : []),
     doorIds: [...(p.doorIds ?? [])],
-    scheduleId: p.scheduleId,
   };
 }
 
@@ -185,7 +327,6 @@ function draftToPolicy(draft: PolicyDraft, id: string): Policy {
     logicalOperator: draft.logicalOperator,
     rules: [...peopleRules, ...timeRules],
     doorIds: draft.doorIds,
-    scheduleId: draft.scheduleId,
   };
 }
 
@@ -199,6 +340,7 @@ export default function Policies() {
   const updatePolicy  = useStore(s => s.updatePolicy);
   const deletePolicy  = useStore(s => s.deletePolicy);
 
+  const [designB, setDesignB]         = useState(false);
   const [modalOpen, setModalOpen]     = useState(false);
   const [editingId, setEditingId]     = useState<string | null>(null);
   const [draft, setDraft]             = useState<PolicyDraft>(emptyDraft());
@@ -209,6 +351,8 @@ export default function Policies() {
     () => doors.filter(d => d.name.toLowerCase().includes(doorSearch.toLowerCase())),
     [doors, doorSearch],
   );
+
+  if (designB) return <PoliciesB onSwitchToA={() => setDesignB(false)} />;
 
   function openAdd()          { setEditingId(null); setDraft(emptyDraft()); setDoorSearch(''); setModalOpen(true); }
   function openEdit(p: Policy) { setEditingId(p.id); setDraft(policyToDraft(p, groups)); setDoorSearch(''); setModalOpen(true); }
@@ -234,18 +378,30 @@ export default function Policies() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  // Only show policies created with the new chip-based schema (have a rules array)
+  const displayPolicies = policies.filter(p => Array.isArray(p.rules));
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-6">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-white tracking-tight">Access Policies</h1>
-          <button type="button" onClick={openAdd} className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors">
-            + New Policy
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDesignB(true)}
+              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium rounded-lg transition-colors"
+            >
+              Design B (Table)
+            </button>
+            <button type="button" onClick={openAdd} className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors">
+              + New Policy
+            </button>
+          </div>
         </div>
 
-        {policies.length === 0 && (
+        {displayPolicies.length === 0 && (
           <div className="text-center py-20 text-gray-500">
             <p className="text-lg">No policies defined.</p>
             <p className="text-sm mt-1">Create a policy to define who can access which doors and when.</p>
@@ -253,7 +409,7 @@ export default function Policies() {
         )}
 
         <div className="space-y-4">
-          {policies.map(policy => (
+          {displayPolicies.map(policy => (
             <PolicyCard
               key={policy.id}
               policy={policy}
@@ -362,19 +518,12 @@ export default function Policies() {
                   <label className="text-xs font-bold text-amber-400 uppercase tracking-widest">Time</label>
                   <span className="text-xs text-gray-600">— when is this active?</span>
                 </div>
-                <p className="text-xs text-gray-600 pl-3">Select a named schedule, or leave empty for always-on (24/7).</p>
+                <p className="text-xs text-gray-600 pl-3">Leave empty for always-on (24/7).</p>
                 <div className="pl-3">
-                  <SchedulePicker
-                    value={draft.scheduleId}
-                    onChange={scheduleId => setDraft(d => ({ ...d, scheduleId }))}
-                    className="mb-3"
+                  <TimeWindowChips
+                    windows={draft.timeWindows}
+                    onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
                   />
-                  {!draft.scheduleId && (
-                    <TimeWindowChips
-                      windows={draft.timeWindows}
-                      onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
-                    />
-                  )}
                 </div>
               </div>
 

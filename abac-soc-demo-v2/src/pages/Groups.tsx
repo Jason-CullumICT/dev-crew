@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStore } from '../store/store';
-import type { Group, GroupMember, ConditionChip, TimeWindow } from '../types';
+import type { Group, GroupMember, ConditionChip, TimeWindow, User, Rule } from '../types';
+import { CLEARANCE_RANK } from '../types';
 import ConditionChips from '../components/ConditionChips';
 import TimeWindowChips from '../components/TimeWindowChips';
-import SchedulePicker from '../components/SchedulePicker';
 import {
   chipToRule,
   timeWindowToRules,
@@ -12,17 +12,19 @@ import {
   rulesToTimeWindows,
   CHIP_COLORS,
 } from '../lib/chipUtils';
+import GroupsB from './GroupsB';
 
 // ── Badge helpers ────────────────────────────────────────────────────────────
 
 function membershipBadges(group: Group): string[] {
   const badges: string[] = [];
-  const hasDynamic  = (group.membershipRules ?? []).some(r => !r.leftSide.startsWith('now.'));
-  const hasTime     = (group.membershipRules ?? []).some(r => r.leftSide.startsWith('now.'));
+  const rules = group.membershipRules ?? [];
+  const hasDynamic  = rules.some(r => !r.leftSide.startsWith('now.'));
+  const hasTime     = rules.some(r => r.leftSide.startsWith('now.'));
   const hasExplicit = group.membershipType === 'explicit' || group.membershipType === 'hybrid';
   if (hasDynamic || group.membershipType === 'dynamic') badges.push('auto-enrolled');
   if (hasExplicit && group.membershipType !== 'dynamic') badges.push('hand-picked');
-  if (hasTime || group.scheduleId) badges.push('time-gated');
+  if (hasTime) badges.push('time-gated');
   return badges;
 }
 
@@ -43,11 +45,10 @@ interface GroupDraft {
   members: GroupMember[];
   memberSearch: string;
   inheritedPermissions: string[];
-  scheduleId: string | undefined;
 }
 
 function emptyDraft(): GroupDraft {
-  return { id: '', name: '', description: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [], scheduleId: undefined };
+  return { id: '', name: '', description: '', conditionChips: [], timeWindows: [], members: [], memberSearch: '', inheritedPermissions: [] };
 }
 
 function groupToDraft(g: Group, groups: { id: string; name: string }[]): GroupDraft {
@@ -55,12 +56,11 @@ function groupToDraft(g: Group, groups: { id: string; name: string }[]): GroupDr
     id: g.id,
     name: g.name,
     description: g.description ?? '',
-    conditionChips: rulesToConditionChips(g.membershipRules, groups),
-    timeWindows: rulesToTimeWindows(g.membershipRules),
-    members: [...g.members],
+    conditionChips: rulesToConditionChips(g.membershipRules ?? [], groups),
+    timeWindows: rulesToTimeWindows(g.membershipRules ?? []),
+    members: [...(g.members ?? [])],
     memberSearch: '',
-    inheritedPermissions: [...g.inheritedPermissions],
-    scheduleId: g.scheduleId,
+    inheritedPermissions: [...(g.inheritedPermissions ?? [])],
   };
 }
 
@@ -87,30 +87,33 @@ function draftToGroup(draft: GroupDraft, existing?: Group): Group {
     membershipType,
     targetEntityType: 'user',
     inheritedPermissions: draft.inheritedPermissions,
-    scheduleId: draft.scheduleId,
   } as Group;
 }
 
 // ── Sentence chip row (read-only card display) ───────────────────────────────
 
-function SentenceRow({ group }: { group: Group }) {
-  const groups     = useStore(s => s.groups);
-  const schedules  = useStore(s => s.schedules);
-  const chips      = useMemo(() => rulesToConditionChips(group.membershipRules ?? [], groups), [group.membershipRules, groups]);
-  const timeWindows = useMemo(() => rulesToTimeWindows(group.membershipRules ?? []), [group.membershipRules]);
-  const linkedSchedule = group.scheduleId ? schedules.find(s => s.id === group.scheduleId) : undefined;
+function chipVerb(chipType: string): string {
+  if (chipType === 'department') return 'work in';
+  if (chipType === 'clearance')  return 'have';
+  if (chipType === 'role')       return 'have role';
+  if (chipType === 'group')      return 'are in';
+  return 'are'; // status, personType
+}
 
-  if (chips.length === 0 && timeWindows.length === 0 && (group.members ?? []).length === 0 && !linkedSchedule) {
-    return <span className="text-slate-600 text-xs italic">No conditions defined</span>;
-  }
+function SentenceRow({ group }: { group: Group }) {
+  const groups      = useStore(s => s.groups);
+  const rules       = group.membershipRules ?? [];
+  const chips       = useMemo(() => rulesToConditionChips(rules, groups), [rules, groups]);
+  const timeWindows = useMemo(() => rulesToTimeWindows(rules), [rules]);
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap text-xs">
-      {chips.length > 0 && <span className="text-slate-500">People who are</span>}
+    <div className="flex items-center gap-1.5 flex-wrap text-sm mt-1">
       {chips.map((chip, i) => (
-        <span key={chip.id} className="flex items-center gap-1">
-          {i > 0 && <span className="text-slate-600 font-semibold">and</span>}
-          <span className={`px-2 py-0.5 rounded-full font-medium ${CHIP_COLORS[chip.chipType] ?? 'bg-slate-700 text-slate-300'}`}>
+        <span key={chip.id} className="flex items-center gap-1.5">
+          <span className="text-slate-400">
+            {i === 0 ? `People who ${chipVerb(chip.chipType)}` : `and ${chipVerb(chip.chipType)}`}
+          </span>
+          <span className={`px-2.5 py-0.5 rounded-full font-semibold text-xs ${CHIP_COLORS[chip.chipType] ?? 'bg-slate-700 text-slate-300'}`}>
             {chip.label}
           </span>
         </span>
@@ -119,36 +122,73 @@ function SentenceRow({ group }: { group: Group }) {
         const dayPart  = tw.days.length === 0 ? '' : tw.days.join('–');
         const timePart = `${tw.startTime}–${tw.endTime}`;
         return (
-          <span key={tw.id} className="flex items-center gap-1">
-            <span className="text-slate-500">during</span>
-            {dayPart && (
-              <span className={`px-2 py-0.5 rounded-full font-medium ${CHIP_COLORS.time}`}>{dayPart}</span>
-            )}
-            <span className={`px-2 py-0.5 rounded-full font-medium ${CHIP_COLORS.time}`}>{timePart}</span>
+          <span key={tw.id} className="flex items-center gap-1.5">
+            <span className="text-slate-400">during</span>
+            {dayPart && <span className={`px-2.5 py-0.5 rounded-full font-semibold text-xs ${CHIP_COLORS.time}`}>{dayPart}</span>}
+            <span className={`px-2.5 py-0.5 rounded-full font-semibold text-xs ${CHIP_COLORS.time}`}>{timePart}</span>
           </span>
         );
       })}
-      {linkedSchedule && (
-        <span className="flex items-center gap-1.5">
-          <span className="text-slate-500">schedule</span>
-          <span
-            className="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium text-xs"
-            style={{ backgroundColor: `${linkedSchedule.color}22`, color: linkedSchedule.color, border: `1px solid ${linkedSchedule.color}66` }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: linkedSchedule.color }} />
-            {linkedSchedule.name}
-          </span>
-        </span>
-      )}
       {group.membershipType !== 'dynamic' && (group.members ?? []).length > 0 && chips.length > 0 && (
-        <span className="text-slate-500">+ {(group.members ?? []).length} explicit</span>
+        <span className="text-slate-500 text-xs">+ {group.members.length} explicit</span>
       )}
       {group.membershipType === 'explicit' && (group.members ?? []).length > 0 && chips.length === 0 && (
-        <span className="text-slate-500">{(group.members ?? []).length} hand-picked member{(group.members ?? []).length !== 1 ? 's' : ''}</span>
+        <span className="text-slate-400 text-xs">{group.members.length} hand-picked member{group.members.length !== 1 ? 's' : ''}</span>
       )}
     </div>
   );
 }
+
+// ── Live member evaluation ───────────────────────────────────────────────────
+
+function userMatchesRule(user: User, rule: Rule): boolean {
+  const v = Array.isArray(rule.rightSide) ? rule.rightSide[0] : rule.rightSide;
+  switch (rule.leftSide) {
+    case 'user.department':
+      return rule.operator === '==' ? user.department === v : user.department !== v;
+    case 'user.status':
+      return rule.operator === '==' ? (user.status as string) === v : (user.status as string) !== v;
+    case 'user.role':
+      return rule.operator === '==' ? user.role === v : user.role !== v;
+    case 'user.type':
+      return rule.operator === '==' ? (user as any).type === v : (user as any).type !== v;
+    case 'user.clearanceLevel': {
+      const uRank = CLEARANCE_RANK[user.clearanceLevel] ?? 0;
+      const rRank = CLEARANCE_RANK[v as keyof typeof CLEARANCE_RANK] ?? 0;
+      if (rule.operator === '>=') return uRank >= rRank;
+      if (rule.operator === '<=') return uRank <= rRank;
+      if (rule.operator === '==') return uRank === rRank;
+      if (rule.operator === '!=') return uRank !== rRank;
+      return false;
+    }
+    default:
+      return false; // now.* time rules — not evaluated client-side
+  }
+}
+
+function matchGroupUsers(group: Group, users: User[]): User[] {
+  const conditionRules = (group.membershipRules ?? []).filter(r => !r.leftSide.startsWith('now.'));
+  if (group.membershipType === 'explicit') {
+    const ids = new Set((group.members ?? []).map(m => m.entityId));
+    return users.filter(u => ids.has(u.id));
+  }
+  const dynamic = conditionRules.length === 0 ? [] : users.filter(u => conditionRules.every(r => userMatchesRule(u, r)));
+  if (group.membershipType === 'hybrid') {
+    const ids = new Set((group.members ?? []).map(m => m.entityId));
+    const map = new Map<string, User>();
+    dynamic.forEach(u => map.set(u.id, u));
+    users.filter(u => ids.has(u.id)).forEach(u => map.set(u.id, u));
+    return [...map.values()];
+  }
+  return dynamic;
+}
+
+function getInitials(name: string): string {
+  return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+}
+
+const AVATAR_PALETTE = ['bg-indigo-700','bg-violet-700','bg-sky-700','bg-rose-700','bg-amber-700','bg-teal-700'];
+const ALL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 // ── Main component ───────────────────────────────────────────────────────────
 
@@ -156,11 +196,13 @@ export default function Groups() {
   const users       = useStore(s => s.users);
   const groups      = useStore(s => s.groups);
   const grants      = useStore(s => s.grants);
+  const doors       = useStore(s => s.doors);
   const addGroup    = useStore(s => s.addGroup);
   const updateGroup = useStore(s => s.updateGroup);
   const deleteGroup = useStore(s => s.deleteGroup);
   const updateUser  = useStore(s => s.updateUser);
 
+  const [designB, setDesignB]         = useState(false);
   const [expandedId, setExpandedId]   = useState<string | null>(null);
   const [modalOpen, setModalOpen]     = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
@@ -224,31 +266,47 @@ export default function Groups() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  if (designB) return <GroupsB onSwitchToA={() => setDesignB(false)} />;
+
+  // Only show groups that were created with the new chip-based schema (have membershipRules)
+  const displayGroups = groups.filter(g => g.membershipRules !== undefined);
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-white tracking-wide">Groups</h1>
-        <button
-          onClick={openAdd}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          + New Group
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDesignB(true)}
+            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium rounded-lg transition-colors"
+          >
+            Design B (Table)
+          </button>
+          <button
+            onClick={openAdd}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            + New Group
+          </button>
+        </div>
       </div>
 
       {/* List */}
       <div className="space-y-3">
-        {groups.length === 0 && (
+        {displayGroups.length === 0 && (
           <div className="text-slate-500 text-sm text-center py-16">No groups yet. Create one to get started.</div>
         )}
-        {groups.map(group => {
+        {displayGroups.map(group => {
           const isExpanded = expandedId === group.id;
           const badges     = membershipBadges(group);
           const grantCount = (group.inheritedPermissions ?? []).length;
+          const accentBorder = badges.includes('time-gated') ? 'border-l-amber-500' :
+                               badges.includes('auto-enrolled') ? 'border-l-indigo-500' :
+                               'border-l-slate-600';
 
           return (
-            <div key={group.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div key={group.id} className={`bg-gray-900 border-l-4 ${accentBorder} border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-colors`}>
               {/* Card header */}
               <div
                 className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-gray-800 transition-colors"
@@ -269,9 +327,6 @@ export default function Groups() {
                     )}
                   </div>
                   <SentenceRow group={group} />
-                  {group.description && (
-                    <p className="text-slate-500 text-xs mt-1 truncate">{group.description}</p>
-                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
@@ -291,48 +346,125 @@ export default function Groups() {
               </div>
 
               {/* Expanded detail */}
-              {isExpanded && (
-                <div className="border-t border-gray-800 px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Members</h3>
-                    {group.membershipType === 'dynamic' ? (
-                      <p className="text-gray-500 text-sm italic">Membership determined by conditions</p>
-                    ) : (group.members ?? []).length === 0 ? (
-                      <p className="text-gray-600 text-sm">No explicit members</p>
-                    ) : (
-                      <ul className="space-y-1.5">
-                        {(group.members ?? []).map(m => {
-                          const user = users.find(u => u.id === m.entityId);
+              {isExpanded && (() => {
+                const timeWindows  = rulesToTimeWindows(group.membershipRules ?? []);
+                const matched      = matchGroupUsers(group, users);
+                const visible      = matched.slice(0, 5);
+                const hiddenCount  = matched.length - visible.length;
+                const DOOR_LIMIT   = 5;
+
+                const resolvedGrants = (group.inheritedPermissions ?? []).map(gid => {
+                  const grant = grants.find(g => g.id === gid);
+                  if (!grant) return null;
+                  let grantDoors = grant.scope === 'zone' && grant.targetId
+                    ? doors.filter(d => d.zoneId === grant.targetId)
+                    : grant.scope === 'site' && grant.targetId
+                      ? doors.filter(d => d.siteId === grant.targetId)
+                      : doors; // global or unscoped
+                  return { grant, visible: grantDoors.slice(0, DOOR_LIMIT), hidden: Math.max(0, grantDoors.length - DOOR_LIMIT) };
+                }).filter(Boolean) as { grant: import('../types').Grant; visible: import('../types').Door[]; hidden: number }[];
+
+                return (
+                  <div className="border-t border-gray-800 bg-gray-950/50">
+                    {group.description && (
+                      <div className="px-5 pt-4">
+                        <p className="text-gray-500 text-sm leading-relaxed">{group.description}</p>
+                      </div>
+                    )}
+                    <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                      {/* Live member count */}
+                      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 flex flex-col gap-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Live Members</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-bold text-white tabular-nums">{matched.length}</span>
+                          <span className="text-gray-500 text-sm">{matched.length === 1 ? 'person qualifies' : 'people qualify'}</span>
+                        </div>
+                        {matched.length === 0 ? (
+                          <p className="text-gray-600 text-xs italic">No users match the current conditions</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {visible.map((u, i) => (
+                              <span key={u.id} title={u.name} className={`inline-flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full text-xs font-medium text-white ${AVATAR_PALETTE[i % AVATAR_PALETTE.length]}`}>
+                                <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[9px] font-bold shrink-0">{getInitials(u.name)}</span>
+                                {u.name.split(' ')[0]}
+                              </span>
+                            ))}
+                            {hiddenCount > 0 && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">+{hiddenCount} more</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Access granted via */}
+                      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 flex flex-col gap-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Access Granted Via</p>
+                        {resolvedGrants.length === 0 ? (
+                          <p className="text-gray-600 text-sm italic">No grants assigned</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {resolvedGrants.map(({ grant, visible: gd, hidden }) => (
+                              <div key={grant.id}>
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <span className="text-xs font-semibold text-gray-300">{grant.name}</span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${grant.scope === 'global' ? 'bg-blue-900 text-blue-300' : grant.scope === 'site' ? 'bg-green-900 text-green-300' : 'bg-orange-900 text-orange-300'}`}>{grant.scope}</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1 mb-1">
+                                  {grant.scope === 'global' && gd.length > 0 ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-900 text-emerald-300">All doors</span>
+                                  ) : gd.map(d => (
+                                    <span key={d.id} className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-900 text-emerald-300">{d.name}</span>
+                                  ))}
+                                  {hidden > 0 && <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-800 text-gray-500 border border-gray-700">+{hidden}</span>}
+                                </div>
+                                <div className="flex gap-1">
+                                  {grant.actions.map(a => (
+                                    <span key={a} className="px-1.5 py-px rounded text-[10px] font-mono bg-gray-800 text-gray-400 border border-gray-700">{a}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Schedule */}
+                      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 flex flex-col gap-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">When Active</p>
+                        {timeWindows.length === 0 ? (
+                          <div className="flex items-center gap-2">
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
+                            <span className="text-emerald-400 text-sm font-medium">Always active (24/7)</span>
+                          </div>
+                        ) : timeWindows.map(tw => {
+                          const active = tw.days.length === 0 ? ALL_DAYS : tw.days;
                           return (
-                            <li key={m.entityId} className="text-sm text-white flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                              {user?.name ?? m.entityId}
-                            </li>
+                            <div key={tw.id} className="space-y-2">
+                              <div className="flex gap-1 flex-wrap">
+                                {ALL_DAYS.map(day => (
+                                  <span key={day} className={`text-[10px] font-bold px-1.5 py-1 rounded leading-none ${active.includes(day) ? 'bg-amber-900 text-amber-300 border border-amber-700' : 'bg-gray-800 text-gray-600 border border-gray-700'}`}>
+                                    {day.slice(0, 2)}
+                                  </span>
+                                ))}
+                              </div>
+                              {!(tw.startTime === '00:00' && tw.endTime === '23:59') && (
+                                <span className="px-2.5 py-1 rounded-lg bg-amber-900/60 border border-amber-800 text-amber-300 text-xs font-mono font-semibold">
+                                  {tw.startTime} – {tw.endTime}
+                                </span>
+                              )}
+                            </div>
                           );
                         })}
-                      </ul>
-                    )}
+                      </div>
+
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Inherited Grants</h3>
-                    {(group.inheritedPermissions ?? []).length === 0 ? (
-                      <p className="text-gray-600 text-sm">No grants</p>
-                    ) : (
-                      <ul className="space-y-1.5">
-                        {(group.inheritedPermissions ?? []).map(gid => {
-                          const grant = grants.find(g => g.id === gid);
-                          return (
-                            <li key={gid} className="flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                              <span className="text-sm text-white">{grant?.name ?? gid}</span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           );
         })}
@@ -377,18 +509,11 @@ export default function Groups() {
                 <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                   When are they active? <span className="text-slate-600 normal-case font-normal">(optional)</span>
                 </label>
-                <p className="text-xs text-slate-600 mb-3">Select a named schedule, or leave empty for no time restriction.</p>
-                <SchedulePicker
-                  value={draft.scheduleId}
-                  onChange={scheduleId => setDraft(d => ({ ...d, scheduleId }))}
-                  className="mb-3"
+                <p className="text-xs text-slate-600 mb-3">Leave empty for no time restriction.</p>
+                <TimeWindowChips
+                  windows={draft.timeWindows}
+                  onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
                 />
-                {!draft.scheduleId && (
-                  <TimeWindowChips
-                    windows={draft.timeWindows}
-                    onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
-                  />
-                )}
               </div>
 
               {/* Explicit members */}

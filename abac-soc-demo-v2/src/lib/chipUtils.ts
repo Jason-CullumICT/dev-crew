@@ -28,9 +28,9 @@ export function timeWindowToRules(tw: TimeWindow): Rule[] {
 
 // ── Rule → Chip (reverse parse for edit mode) ────────────────────────────────
 
-export function rulesToConditionChips(rules: Rule[], groups?: { id: string; name: string }[]): ConditionChip[] {
+export function rulesToConditionChips(rules: Rule[] | undefined, groups?: { id: string; name: string }[]): ConditionChip[] {
   const chips: ConditionChip[] = [];
-  for (const rule of rules) {
+  for (const rule of (rules ?? [])) {
     const v = Array.isArray(rule.rightSide) ? rule.rightSide[0] : rule.rightSide;
     if (rule.leftSide === 'user.department' && rule.operator === '==') {
       chips.push({ id: rule.id, chipType: 'department', label: v, attribute: 'user.department', operator: '==', value: v });
@@ -52,10 +52,11 @@ export function rulesToConditionChips(rules: Rule[], groups?: { id: string; name
   return chips;
 }
 
-export function rulesToTimeWindows(rules: Rule[]): TimeWindow[] {
-  const dayRule   = rules.find(r => r.leftSide === 'now.dayOfWeek' && r.operator === 'IN');
-  const startRule = rules.find(r => r.leftSide === 'now.hour' && r.operator === '>=');
-  const endRule   = rules.find(r => r.leftSide === 'now.hour' && r.operator === '<');
+export function rulesToTimeWindows(rules: Rule[] | undefined): TimeWindow[] {
+  const safeRules = rules ?? [];
+  const dayRule   = safeRules.find(r => r.leftSide === 'now.dayOfWeek' && r.operator === 'IN');
+  const startRule = safeRules.find(r => r.leftSide === 'now.hour' && r.operator === '>=');
+  const endRule   = safeRules.find(r => r.leftSide === 'now.hour' && r.operator === '<');
   if (!dayRule && !startRule && !endRule) return [];
   return [{
     // id derived from rule ids for stable React key across re-renders

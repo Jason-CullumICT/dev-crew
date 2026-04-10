@@ -39,7 +39,7 @@ Write UX brief to `Teams/TheDesigners/artifacts/<feature>/ux-brief.md`.
 
 | Persona | Role | Goal | Existing knowledge |
 |---|---|---|---|
-| e.g. "Alex" | Security analyst | Review which groups have access to a door | Knows the org structure, not familiar with ABAC rules |
+| e.g. "Alex" | Operations manager | Review the status of pending work items | Familiar with the business process, not familiar with the system internals |
 
 ## User Flows
 

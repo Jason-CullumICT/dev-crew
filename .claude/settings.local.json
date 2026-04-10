@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Skill(schedule)",
-      "WebFetch(domain:)"
+      "WebFetch(domain:)",
+      "WebSearch"
     ]
   }
 }

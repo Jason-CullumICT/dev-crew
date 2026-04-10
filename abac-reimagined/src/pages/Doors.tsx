@@ -22,6 +22,8 @@ export default function Doors() {
         </div>
       </div>
 
+      {doors.length === 0 && <p className="text-[12px] text-slate-600">No doors yet. Click + New to create one.</p>}
+
       <div className="grid sm:grid-cols-2 gap-2">
         {doors.map(door => {
           const zone = zones.find(z => z.id === door.zoneId)

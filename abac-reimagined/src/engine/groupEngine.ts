@@ -1,53 +1,19 @@
-import type { User, Group, Rule } from '../types'
-
-function resolveUserAttribute(leftSide: string, user: User): string | number {
-  switch (leftSide) {
-    case 'user.department':    return user.department
-    case 'user.role':          return user.role
-    case 'user.clearanceLevel': return user.clearanceLevel
-    case 'user.type':          return user.type
-    case 'user.status':        return user.status
-    default:
-      if (leftSide.startsWith('user.')) {
-        const key = leftSide.slice(5)
-        return user.customAttributes[key] ?? ''
-      }
-      return ''
-  }
-}
-
-function evaluateRule(rule: Rule, user: User): boolean {
-  const left = resolveUserAttribute(rule.leftSide, user)
-  const right = rule.rightSide
-  switch (rule.operator) {
-    case '==':     return String(left) === String(right)
-    case '!=':     return String(left) !== String(right)
-    case '>=':     return Number(left) >= Number(right)
-    case '<=':     return Number(left) <= Number(right)
-    case '>':      return Number(left) > Number(right)
-    case '<':      return Number(left) < Number(right)
-    case 'IN': {
-      const vals = Array.isArray(right)
-        ? right
-        : String(right).split(',').map(s => s.trim())
-      return vals.includes(String(left))
-    }
-    case 'NOT_IN': {
-      const vals = Array.isArray(right)
-        ? right
-        : String(right).split(',').map(s => s.trim())
-      return !vals.includes(String(left))
-    }
-    default: return false
-  }
-}
+import type { User, Group } from '../types'
+import { evalRule } from './ruleEval'
 
 function userDirectlyMatchesGroup(user: User, group: Group): boolean {
   if (group.membershipType === 'static') {
     return group.members.includes(user.id)
   }
   if (group.membershipRules.length === 0) return false
-  return group.membershipRules.every(rule => evaluateRule(rule, user))
+
+  // H3 fix: respect membershipLogic; default to 'AND' for backwards compat
+  const logic = group.membershipLogic ?? 'AND'
+  const evaluate = (rule: Parameters<typeof evalRule>[0]) => evalRule(rule, user).passed
+
+  return logic === 'OR'
+    ? group.membershipRules.some(evaluate)
+    : group.membershipRules.every(evaluate)
 }
 
 /**

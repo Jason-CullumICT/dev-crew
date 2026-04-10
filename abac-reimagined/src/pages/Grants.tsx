@@ -35,6 +35,8 @@ export default function Grants() {
         </div>
       </div>
 
+      {grants.length === 0 && <p className="text-[12px] text-slate-600">No grants yet. Click + New to create one.</p>}
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {grants.map(grant => {
           const schedule = grant.scheduleId ? schedules.find(s => s.id === grant.scheduleId) : null

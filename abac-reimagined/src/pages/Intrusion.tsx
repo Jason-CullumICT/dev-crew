@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { useStore } from '../store/store'
@@ -18,6 +18,15 @@ const ZONE_STATUS_BADGE: Record<ZoneStatus, string> = {
   Armed:    'bg-red-500/10 text-red-400 border-red-500/20',
   Disarmed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   Alarm:    'bg-red-600/20 text-red-300 border-red-600/30',
+}
+
+// Valid transitions: from current status → set of reachable statuses
+const VALID_TRANSITIONS: Record<SiteStatus, Set<SiteStatus>> = {
+  Disarmed:   new Set(['Armed', 'PartialArm', 'Lockdown']),
+  Armed:      new Set(['Disarmed', 'Lockdown']),
+  PartialArm: new Set(['Armed', 'Disarmed', 'Lockdown']),
+  Alarm:      new Set(['Disarmed', 'Lockdown']),
+  Lockdown:   new Set(['Disarmed']),
 }
 
 export default function Intrusion() {
@@ -50,27 +59,56 @@ export default function Intrusion() {
   const siteZones    = zones.filter(z => z.siteId === selectedSiteId)
   const now          = buildNowContext()
 
-  // Acting user = first active user with arm permission (for demo)
-  const actingUser = users.find(u =>
-    u.status === 'active' &&
-    hasPermission(u, groups, grants, 'arm', now, schedules, selectedSiteId)
-  ) ?? users.find(u => u.status === 'active') ?? users[0]
-
-  const authorizedUsers = users.filter(u =>
-    u.status === 'active' &&
-    hasPermission(u, groups, grants, 'arm', now, schedules, selectedSiteId)
+  // M3: Memoize authorized users — only recompute when dependencies change
+  const authorizedUsers = useMemo(() =>
+    users.filter(u =>
+      u.status === 'active' &&
+      hasPermission(u, groups, grants, 'arm', now, schedules, selectedSiteId)
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [users, groups, grants, schedules, selectedSiteId]
   )
 
+  // C2: Acting user is the first authorized user only — no fallback to any active user
+  const actingUser = authorizedUsers[0] ?? null
+
+  // C2: Check if acting user has permission for a specific action
+  function canAct(action: Parameters<typeof hasPermission>[3]): boolean {
+    if (!actingUser || !selectedSite) return false
+    return hasPermission(actingUser, groups, grants, action, now, schedules, selectedSiteId)
+  }
+
+  // C3: Check if a transition to targetStatus is valid from current site status
+  function canTransitionTo(targetStatus: SiteStatus): boolean {
+    if (!selectedSite) return false
+    return VALID_TRANSITIONS[selectedSite.status].has(targetStatus)
+  }
+
+  // C3: Lockdown → Disarmed requires 'override' or 'lockdown' action permission
+  function canDisarmFromLockdown(): boolean {
+    if (!actingUser || !selectedSite) return false
+    return (
+      hasPermission(actingUser, groups, grants, 'override', now, schedules, selectedSiteId) ||
+      hasPermission(actingUser, groups, grants, 'lockdown', now, schedules, selectedSiteId)
+    )
+  }
+
   function log(action: string, result: 'Success' | 'Denied') {
-    if (!actingUser || !selectedSite) return
+    // Log with acting user if available; for Denied entries use a fallback label
+    const userName = actingUser?.name ?? 'Unknown'
+    if (!selectedSite) return
     addArmingLog({
       id: uuidv4(), timestamp: new Date().toISOString(),
-      userName: actingUser.name, action, siteName: selectedSite.name, result,
+      userName, action, siteName: selectedSite.name, result,
     })
   }
 
   function arm() {
     if (!selectedSite) return
+    // C2: check permission
+    if (!canAct('arm')) { log('Armed', 'Denied'); return }
+    // C3: check valid transition
+    if (!canTransitionTo('Armed')) { log('Armed', 'Denied'); return }
     updateSite({ ...selectedSite, status: 'Armed' })
     siteZones.forEach(z => updateZone({ ...z, status: 'Armed' }))
     log('Armed', 'Success')
@@ -78,6 +116,13 @@ export default function Intrusion() {
 
   function disarm() {
     if (!selectedSite) return
+    // C2: check permission
+    if (!canAct('disarm')) { log('Disarmed', 'Denied'); return }
+    // C3: Lockdown → Disarmed requires override or lockdown action
+    if (selectedSite.status === 'Lockdown' && !canDisarmFromLockdown()) {
+      log('Disarmed', 'Denied'); return
+    }
+    if (!canTransitionTo('Disarmed')) { log('Disarmed', 'Denied'); return }
     updateSite({ ...selectedSite, status: 'Disarmed' })
     siteZones.forEach(z => updateZone({ ...z, status: 'Disarmed' }))
     log('Disarmed', 'Success')
@@ -85,6 +130,8 @@ export default function Intrusion() {
 
   function partialArm() {
     if (!selectedSite) return
+    if (!canAct('arm')) { log('Partial Arm', 'Denied'); return }
+    if (!canTransitionTo('PartialArm')) { log('Partial Arm', 'Denied'); return }
     updateSite({ ...selectedSite, status: 'PartialArm' })
     const perimeterTypes: ZoneType[] = ['Perimeter']
     const interiorTypes: ZoneType[]  = ['Interior', 'Public']
@@ -97,6 +144,8 @@ export default function Intrusion() {
 
   function lockdown() {
     if (!selectedSite) return
+    if (!canAct('lockdown')) { log('Lockdown', 'Denied'); return }
+    if (!canTransitionTo('Lockdown')) { log('Lockdown', 'Denied'); return }
     updateSite({ ...selectedSite, status: 'Lockdown' })
     siteZones.forEach(z => updateZone({ ...z, status: 'Armed' }))
     log('Lockdown', 'Success')
@@ -104,10 +153,24 @@ export default function Intrusion() {
 
   function clearAlarm() {
     if (!selectedSite) return
+    if (!canAct('disarm')) { log('Clear Alarm', 'Denied'); return }
+    // C3: clearAlarm only valid when status is Alarm (targets Disarmed)
+    if (selectedSite.status !== 'Alarm') { log('Clear Alarm', 'Denied'); return }
     updateSite({ ...selectedSite, status: 'Disarmed' })
     siteZones.forEach(z => updateZone({ ...z, status: 'Disarmed' }))
     log('Clear Alarm', 'Success')
   }
+
+  // C2+C3: Compute disabled state for each button
+  const noAuth = authorizedUsers.length === 0
+  const currentStatus = selectedSite?.status ?? 'Disarmed'
+
+  const armDisabled     = noAuth || !selectedSite || !canTransitionTo('Armed')    || !canAct('arm')
+  const disarmDisabled  = noAuth || !selectedSite || !canTransitionTo('Disarmed') || !canAct('disarm') ||
+                          (currentStatus === 'Lockdown' && !canDisarmFromLockdown())
+  const partialDisabled = noAuth || !selectedSite || !canTransitionTo('PartialArm') || !canAct('arm')
+  const lockdownDisabled= noAuth || !selectedSite || !canTransitionTo('Lockdown') || !canAct('lockdown')
+  const clearDisabled   = noAuth || !selectedSite || currentStatus !== 'Alarm'     || !canAct('disarm')
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full">
@@ -211,24 +274,25 @@ export default function Intrusion() {
           <div className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 space-y-3">
             <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">Actions</div>
             {[
-              { label: 'Arm Site',         fn: arm,       cls: 'bg-red-700 hover:bg-red-600' },
-              { label: 'Disarm Site',      fn: disarm,    cls: 'bg-emerald-700 hover:bg-emerald-600' },
-              { label: 'Partial Arm',      fn: partialArm,cls: 'bg-amber-600 hover:bg-amber-500' },
-              { label: 'Trigger Lockdown', fn: lockdown,  cls: 'bg-purple-700 hover:bg-purple-600' },
-              { label: 'Clear Alarm',      fn: clearAlarm,cls: 'bg-blue-700 hover:bg-blue-600' },
-            ].map(({ label, fn, cls }) => (
+              { label: 'Arm Site',         fn: arm,       cls: 'bg-red-700 hover:bg-red-600',         disabled: armDisabled },
+              { label: 'Disarm Site',      fn: disarm,    cls: 'bg-emerald-700 hover:bg-emerald-600',  disabled: disarmDisabled },
+              { label: 'Partial Arm',      fn: partialArm,cls: 'bg-amber-600 hover:bg-amber-500',      disabled: partialDisabled },
+              { label: 'Trigger Lockdown', fn: lockdown,  cls: 'bg-purple-700 hover:bg-purple-600',    disabled: lockdownDisabled },
+              { label: 'Clear Alarm',      fn: clearAlarm,cls: 'bg-blue-700 hover:bg-blue-600',        disabled: clearDisabled },
+            ].map(({ label, fn, cls, disabled }) => (
               <button
                 key={label}
                 onClick={fn}
-                disabled={!selectedSite}
+                disabled={disabled}
                 className={`w-full py-2.5 rounded-lg text-white text-[12px] font-semibold transition-colors disabled:bg-[#1e293b] disabled:text-slate-600 disabled:cursor-not-allowed ${cls}`}
               >
                 {label}
               </button>
             ))}
-            {actingUser && (
-              <p className="text-[9px] text-slate-600 pt-1">Acting as: {actingUser.name}</p>
-            )}
+            {actingUser
+              ? <p className="text-[9px] text-slate-600 pt-1">Acting as: {actingUser.name}</p>
+              : <p className="text-[9px] text-red-700 pt-1">No authorized user</p>
+            }
           </div>
 
           {/* Arming log */}

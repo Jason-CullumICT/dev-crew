@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/store'
 
@@ -32,7 +32,8 @@ export default function CommandPalette({ onClose }: Props) {
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
-  const allResults: Result[] = [
+  // Memoize the full entity search index so it is not rebuilt on every keystroke
+  const allResults: Result[] = useMemo(() => [
     ...users.map(u => ({ id: u.id, label: u.name, sublabel: `${u.department} · L${u.clearanceLevel}`, type: 'User', route: '/people' })),
     ...groups.map(g => ({ id: g.id, label: g.name, sublabel: g.description, type: 'Group', route: '/groups' })),
     ...grants.map(g => ({ id: g.id, label: g.name, sublabel: `${g.scope} · ${g.applicationMode}`, type: 'Grant', route: '/grants' })),
@@ -42,7 +43,7 @@ export default function CommandPalette({ onClose }: Props) {
     ...zones.map(z => ({ id: z.id, label: z.name, sublabel: z.type, type: 'Zone', route: '/zones' })),
     ...policies.map(p => ({ id: p.id, label: p.name, sublabel: p.description, type: 'Policy', route: '/policies' })),
     ...controllers.map(c => ({ id: c.id, label: c.name, sublabel: c.location, type: 'Controller', route: '/controllers' })),
-  ]
+  ], [users, groups, grants, schedules, doors, sites, zones, policies, controllers])
 
   const filtered = query.trim()
     ? allResults.filter(r =>
@@ -58,8 +59,15 @@ export default function CommandPalette({ onClose }: Props) {
     return acc
   }, {})
 
-  // Flatten for keyboard navigation
-  const flat = Object.values(grouped).flat()
+  // Flatten for keyboard navigation — build once so indices are stable
+  const flat = useMemo(() => Object.values(grouped).flat(), [grouped])
+
+  // Build a stable index map so we never use a mutable counter during render
+  const flatIndexMap = useMemo(() => {
+    const map = new Map<string, number>()
+    flat.forEach((item, idx) => map.set(`${item.type}:${item.id}`, idx))
+    return map
+  }, [flat])
 
   useEffect(() => { setSelected(0) }, [query])
 
@@ -76,8 +84,6 @@ export default function CommandPalette({ onClose }: Props) {
     Zone: 'text-blue-400', Policy: 'text-orange-400', Controller: 'text-pink-400',
   }
 
-  let flatIdx = 0
-
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/70" onClick={onClose}>
       <div
@@ -87,7 +93,7 @@ export default function CommandPalette({ onClose }: Props) {
       >
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1e293b]">
-          <span className="text-slate-500 text-[14px]">🔍</span>
+          <span className="text-slate-500 text-[14px]">&#x1F50D;</span>
           <input
             ref={inputRef}
             value={query}
@@ -107,7 +113,7 @@ export default function CommandPalette({ onClose }: Props) {
             <div key={type}>
               <div className="px-4 py-1.5 text-[9px] uppercase tracking-wider text-slate-600 font-semibold">{type}s</div>
               {items.map(item => {
-                const idx = flatIdx++
+                const idx = flatIndexMap.get(`${item.type}:${item.id}`) ?? 0
                 const isSelected = idx === selected
                 return (
                   <button
@@ -130,8 +136,8 @@ export default function CommandPalette({ onClose }: Props) {
 
         {/* Footer hint */}
         <div className="px-4 py-2 border-t border-[#1e293b] flex gap-3 text-[9px] text-slate-600">
-          <span>↑↓ navigate</span>
-          <span>↵ go to page</span>
+          <span>&#x2191;&#x2193; navigate</span>
+          <span>&#x21B5; go to page</span>
           <span>ESC close</span>
         </div>
       </div>

@@ -35,6 +35,8 @@ export default function Sites() {
         </div>
       </div>
 
+      {sites.length === 0 && <p className="text-[12px] text-slate-600">No sites yet. Click + New to create one.</p>}
+
       <div className="space-y-4">
         {sites.map(site => {
           const siteZones = zones.filter(z => z.siteId === site.id)

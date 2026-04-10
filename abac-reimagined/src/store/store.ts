@@ -139,10 +139,17 @@ export const useStore = create<AxonStore>((set) => ({
     set(state => ({ zones: state.zones.map(z => z.id === zone.id ? zone : z) })),
 
   addArmingLog: (entry) =>
-    set(state => ({ armingLog: [entry, ...state.armingLog] })),
+    set(state => ({ armingLog: [entry, ...state.armingLog].slice(0, 100) })),
 
+  // Trade-off note: spreading the full canvasPositions record on every drag frame creates
+  // GC pressure (~660 entries). This shallow-clone approach is correct and cheap enough for
+  // a demo; a production canvas would batch drag updates or use a separate drag-state atom.
   setCanvasPosition: (key, pos) =>
-    set(state => ({ canvasPositions: { ...state.canvasPositions, [key]: pos } })),
+    set(state => {
+      const next = { ...state.canvasPositions }
+      next[key] = pos
+      return { canvasPositions: next }
+    }),
 
   setSelectedCanvasNode: (id) =>
     set({ selectedCanvasNodeId: id }),
@@ -205,6 +212,16 @@ export const useStore = create<AxonStore>((set) => ({
         groups: state.groups.map(g => ({
           ...g,
           inheritedPermissions: g.inheritedPermissions.filter(p => p !== id),
+        })),
+        // Cascade: remove deleted grant from any holiday override lists so stale
+        // grant references don't silently persist in schedule holiday config.
+        schedules: state.schedules.map(s => ({
+          ...s,
+          holidays: s.holidays.map(h =>
+            h.overrideGrantIds.includes(id)
+              ? { ...h, overrideGrantIds: h.overrideGrantIds.filter(gid => gid !== id) }
+              : h
+          ),
         })),
         canvasPositions: restPositions,
       }
@@ -276,6 +293,10 @@ export const useStore = create<AxonStore>((set) => ({
     set(state => ({
       zones: state.zones.filter(z => z.id !== id),
       doors: state.doors.map(d => d.zoneId === id ? { ...d, zoneId: undefined } : d),
+      // Cascade: clear targetId on zone-scoped grants that pointed at this zone.
+      grants: state.grants.map(g =>
+        g.scope === 'zone' && g.targetId === id ? { ...g, targetId: undefined } : g
+      ),
     })),
 
   // ── Sites ─────────────────────────────────────────────────────────────────
@@ -284,7 +305,8 @@ export const useStore = create<AxonStore>((set) => ({
 
   deleteSite: (id) =>
     set(state => {
-      const zoneIds = state.zones.filter(z => z.siteId === id).map(z => z.id)
+      // zoneIds reserved: zones don't currently have canvas positions, but if they gain
+      // them in future this is where per-zone canvas cleanup would go.
       const doorIds = state.doors.filter(d => d.siteId === id).map(d => d.id)
       const restPositions = { ...state.canvasPositions }
       doorIds.forEach(did => { delete restPositions[`door-${did}`] })
@@ -294,6 +316,10 @@ export const useStore = create<AxonStore>((set) => ({
         doors:       state.doors.filter(d => d.siteId !== id),
         policies:    state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => !doorIds.includes(d)) })),
         controllers: state.controllers.filter(c => c.siteId !== id),
+        // Cascade: clear targetId on site-scoped grants that pointed at this site.
+        grants: state.grants.map(g =>
+          g.scope === 'site' && g.targetId === id ? { ...g, targetId: undefined } : g
+        ),
         canvasPositions: restPositions,
       }
     }),

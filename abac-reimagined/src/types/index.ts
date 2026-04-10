@@ -42,6 +42,7 @@ export interface Group {
   membershipType: 'static' | 'dynamic'
   members: string[]           // userId[] — used when membershipType === 'static'
   membershipRules: Rule[]     // used when membershipType === 'dynamic'
+  membershipLogic: 'AND' | 'OR'  // how membershipRules are combined; default 'AND' for backwards compat
   subGroups: string[]         // groupId[] — members of subgroups inherit this group's grants
   inheritedPermissions: string[] // grantId[]
 }

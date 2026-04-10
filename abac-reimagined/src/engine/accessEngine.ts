@@ -1,80 +1,27 @@
 import type {
-  User, Grant, Group, Policy, Door, NamedSchedule, Rule,
+  User, Grant, Group, Policy, Door, NamedSchedule,
   NowContext, StoreSnapshot, ActionType,
   AccessResult, GrantResult, PolicyResult, ConditionResult,
 } from '../types'
+import { evalRule } from './ruleEval'
 import { resolveGroupMembership, collectGroupGrants } from './groupEngine'
 import { evaluateSchedule, matchesHoliday } from './scheduleEngine'
-
-// ── Rule evaluation for policy rules (user.* and now.*) ──────────────────────
-
-function resolveLeft(leftSide: string, user: User, now: NowContext): string | number {
-  if (leftSide.startsWith('user.')) {
-    const key = leftSide.slice(5)
-    switch (key) {
-      case 'department':    return user.department
-      case 'role':          return user.role
-      case 'clearanceLevel': return user.clearanceLevel
-      case 'type':          return user.type
-      case 'status':        return user.status
-      default:              return user.customAttributes[key] ?? ''
-    }
-  }
-  if (leftSide.startsWith('now.')) {
-    const key = leftSide.slice(4)
-    switch (key) {
-      case 'dayOfWeek': return now.dayOfWeek
-      case 'hour':      return now.hour
-      case 'minute':    return now.minute
-      case 'month':     return now.month
-      case 'day':       return now.day
-    }
-  }
-  return ''
-}
-
-function evalRule(rule: Rule, user: User, now: NowContext): ConditionResult {
-  const leftResolved = String(resolveLeft(rule.leftSide, user, now))
-  const right = rule.rightSide
-  const rightStr = Array.isArray(right) ? right.join(', ') : String(right)
-
-  let passed: boolean
-  switch (rule.operator) {
-    case '==':     passed = leftResolved === rightStr; break
-    case '!=':     passed = leftResolved !== rightStr; break
-    case '>=':     passed = Number(leftResolved) >= Number(rightStr); break
-    case '<=':     passed = Number(leftResolved) <= Number(rightStr); break
-    case '>':      passed = Number(leftResolved) > Number(rightStr); break
-    case '<':      passed = Number(leftResolved) < Number(rightStr); break
-    case 'IN':     {
-      const vals = Array.isArray(right) ? right : String(right).split(',').map(s => s.trim())
-      passed = vals.includes(leftResolved)
-      break
-    }
-    case 'NOT_IN': {
-      const vals = Array.isArray(right) ? right : String(right).split(',').map(s => s.trim())
-      passed = !vals.includes(leftResolved)
-      break
-    }
-    default: passed = false
-  }
-
-  return {
-    ruleId: rule.id,
-    leftSide: rule.leftSide,
-    operator: rule.operator,
-    rightSide: rule.rightSide,
-    leftResolved,
-    rightResolved: rightStr,
-    passed,
-  }
-}
 
 // ── Grant collection ──────────────────────────────────────────────────────────
 
 /**
  * Returns all grants that apply to this user at this moment.
  * Includes: grants from group membership + auto grants whose conditions pass.
+ *
+ * Design note — `assigned` vs `conditional` application modes:
+ *   - `assigned`:    the grant is explicitly assigned via group membership.
+ *                    Conditions are NOT evaluated here — they are purely
+ *                    informational metadata on assigned grants. The group
+ *                    membership itself is the access decision.
+ *   - `conditional`: conditions ARE evaluated and must pass for the grant to
+ *                    apply. This is the dynamic, attribute-based gate.
+ *   - `auto`:        conditions (if any) are evaluated at collection time.
+ *                    If there are no conditions the grant is always collected.
  */
 export function collectGrants(
   user: User,
@@ -97,9 +44,13 @@ export function collectGrants(
         : grant.conditions.some(c => evalRule(c, user, now).passed)
       if (condsPassed) result.push(grant)
     } else if (groupGrantIds.has(grant.id)) {
+      // `assigned` — no condition evaluation; group membership is the sole gate
       result.push(grant)
     }
   }
+
+  // Note: `schedules` parameter is kept for future use / API compatibility
+  void schedules
 
   return result
 }
@@ -134,7 +85,7 @@ export function evaluateAccess(
   for (const grant of candidateGrants) {
     if (!grant.actions.includes(action)) continue
 
-    // Check scope covers this door
+    // Check scope covers this door (C5 fix: zone scope now included)
     const scopeCovers =
       grant.scope === 'global' ||
       (grant.scope === 'site' && grant.targetId === door.siteId) ||
@@ -184,13 +135,14 @@ export function evaluateAccess(
 
   // ── ABAC layer (policies) ─────────────────────────────────────────────────
 
-  const assignedPolicies = allPolicies.filter(p => p.doorIds.includes(door.id))
+  const assignedPolicies = allPolicies.filter((p: Policy) => p.doorIds.includes(door.id))
   const policyResults: PolicyResult[] = []
 
   for (const policy of assignedPolicies) {
     const ruleResults = policy.rules.map(r => evalRule(r, user, now))
+    // H4 fix: empty policy fails closed — no rules means deny, not permit
     const passed = policy.rules.length === 0
-      ? true
+      ? false
       : policy.logicalOperator === 'AND'
         ? ruleResults.every(r => r.passed)
         : ruleResults.some(r => r.passed)
@@ -214,6 +166,9 @@ export function evaluateAccess(
 
 /**
  * Lightweight permission check (no full trace) — used by Intrusion page.
+ *
+ * C5 fix: accepts optional `zoneId` and checks zone-scoped grants in addition
+ * to global and site-scoped grants.
  */
 export function hasPermission(
   user: User,
@@ -223,10 +178,15 @@ export function hasPermission(
   now: NowContext,
   schedules: NamedSchedule[],
   siteId?: string,
+  zoneId?: string,
 ): boolean {
   const candidates = collectGrants(user, groups, grants, schedules, now)
   return candidates.some(g =>
     g.actions.includes(action) &&
-    (g.scope === 'global' || (g.scope === 'site' && g.targetId === siteId))
+    (
+      g.scope === 'global' ||
+      (g.scope === 'site' && g.targetId === siteId) ||
+      (g.scope === 'zone' && g.targetId === zoneId)
+    )
   )
 }

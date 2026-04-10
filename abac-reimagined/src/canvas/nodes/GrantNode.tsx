@@ -13,9 +13,11 @@ interface Props {
   highlighted?: boolean
   dimmed?: boolean
   onClick: () => void
+  /** H7: Total number of doors this grant logically covers (may exceed rendered edges) */
+  coveredDoorCount?: number
 }
 
-export default function GrantNode({ grant, selected, highlighted, dimmed, onClick }: Props) {
+export default function GrantNode({ grant, selected, highlighted, dimmed, onClick, coveredDoorCount = 0 }: Props) {
   const sites = useStore(s => s.sites)
   const zones = useStore(s => s.zones)
 
@@ -49,6 +51,9 @@ export default function GrantNode({ grant, selected, highlighted, dimmed, onClic
             <span className="text-[8px] text-violet-900 uppercase tracking-wide">Scope</span>
             <span className="text-[9px] text-violet-300">{grant.scope}{targetName ? ` · ${targetName}` : ''}</span>
           </div>
+          {grant.scope === 'global' && coveredDoorCount > 0 && (
+            <div className="text-[8px] text-violet-700">covers {coveredDoorCount} door{coveredDoorCount !== 1 ? 's' : ''}</div>
+          )}
           {grant.actions.length > 0 && (
             <div>
               <div className="text-[8px] text-violet-900 uppercase tracking-wide mb-0.5">Actions</div>

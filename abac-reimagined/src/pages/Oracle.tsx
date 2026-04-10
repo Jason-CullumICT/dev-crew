@@ -34,6 +34,7 @@ export default function Oracle() {
   const [simulateHoliday, setSimulateHoliday] = useState(false)
   const [results, setResults] = useState<ResultRow[] | null>(null)
   const [hasRun, setHasRun] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
 
@@ -52,30 +53,36 @@ export default function Oracle() {
   }
 
   function runQuery() {
-    const now = buildNow()
-
-    if (mode === 'who-can-access') {
-      const door = doors.find(d => d.id === selectedDoorId)
-      if (!door) return
-      const rows: ResultRow[] = users.map(user => ({
-        user,
-        door,
-        result: evaluateAccess(user, door, store, now, selectedAction),
-      }))
-      rows.sort((a, b) => (b.result.overallGranted ? 1 : 0) - (a.result.overallGranted ? 1 : 0))
-      setResults(rows)
-    } else {
-      const user = users.find(u => u.id === selectedUserId)
-      if (!user) return
-      const rows: ResultRow[] = doors.map(door => ({
-        user,
-        door,
-        result: evaluateAccess(user, door, store, now, selectedAction),
-      }))
-      rows.sort((a, b) => (b.result.overallGranted ? 1 : 0) - (a.result.overallGranted ? 1 : 0))
-      setResults(rows)
-    }
+    setLoading(true)
     setHasRun(true)
+
+    setTimeout(() => {
+      const now = buildNow()
+
+      if (mode === 'who-can-access') {
+        const door = doors.find(d => d.id === selectedDoorId)
+        if (!door) { setLoading(false); return }
+        const rows: ResultRow[] = users.map(user => ({
+          user,
+          door,
+          result: evaluateAccess(user, door, store, now, selectedAction),
+        }))
+        rows.sort((a, b) => (b.result.overallGranted ? 1 : 0) - (a.result.overallGranted ? 1 : 0))
+        setResults(rows)
+      } else {
+        const user = users.find(u => u.id === selectedUserId)
+        if (!user) { setLoading(false); return }
+        const rows: ResultRow[] = doors.map(door => ({
+          user,
+          door,
+          result: evaluateAccess(user, door, store, now, selectedAction),
+        }))
+        rows.sort((a, b) => (b.result.overallGranted ? 1 : 0) - (a.result.overallGranted ? 1 : 0))
+        setResults(rows)
+      }
+
+      setLoading(false)
+    }, 0)
   }
 
   const granted  = results?.filter(r => r.result.overallGranted) ?? []
@@ -89,12 +96,12 @@ export default function Oracle() {
     if (!result.abacPassed) {
       const failedRule = result.policyResults.flatMap(p => p.ruleResults).find(r => !r.passed)
       return failedRule
-        ? `Policy: ${failedRule.leftSide} ${failedRule.operator} ${Array.isArray(failedRule.rightSide) ? failedRule.rightSide.join(',') : failedRule.rightSide} → ${failedRule.leftResolved}`
+        ? `Policy: ${failedRule.leftSide} ${failedRule.operator} ${Array.isArray(failedRule.rightSide) ? failedRule.rightSide.join(',') : failedRule.rightSide} \u2192 ${failedRule.leftResolved}`
         : 'Policy check failed'
     }
-    const chain = result.groupChain.join(' → ')
+    const chain = result.groupChain.join(' \u2192 ')
     const grantNames = result.matchedGrants.join(', ')
-    return chain ? `${chain} → ${grantNames}` : grantNames
+    return chain ? `${chain} \u2192 ${grantNames}` : grantNames
   }
 
   return (
@@ -169,7 +176,7 @@ export default function Oracle() {
                 value={overrideHour}
                 onChange={e => setOverrideHour(Number(e.target.value))}
                 className="w-full bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-[11px] text-slate-100 focus:outline-none focus:border-violet-500"
-                placeholder="Hour (0–23)"
+                placeholder="Hour (0-23)"
               />
             )}
           </div>
@@ -191,14 +198,25 @@ export default function Oracle() {
 
           <button
             onClick={runQuery}
-            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[12px] font-bold hover:from-indigo-500 hover:to-violet-500 transition-all shadow-[0_4px_16px_rgba(99,102,241,0.25)]"
+            disabled={loading}
+            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[12px] font-bold hover:from-indigo-500 hover:to-violet-500 transition-all shadow-[0_4px_16px_rgba(99,102,241,0.25)] disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Run Query
+            {loading ? 'Evaluating...' : 'Run Query'}
           </button>
         </div>
 
         {/* Results */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          {/* Loading overlay */}
+          {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0b0e18]/80">
+              <div className="flex items-center gap-3 text-[12px] text-slate-400">
+                <div className="w-4 h-4 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                Evaluating...
+              </div>
+            </div>
+          )}
+
           {!hasRun ? (
             <div className="flex-1 flex items-center justify-center text-[#374151] text-[12px]">
               Configure a query and click Run
@@ -208,7 +226,7 @@ export default function Oracle() {
               {/* Results header */}
               <div className="px-4 py-3 border-b border-[#141828] flex items-center gap-3 shrink-0">
                 <span className="text-[11px] font-semibold text-slate-200">
-                  {results!.length} evaluated
+                  {results?.length ?? 0} evaluated
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded border bg-emerald-500/[0.08] text-emerald-400 border-emerald-500/20 font-semibold">
                   {granted.length} granted
@@ -218,7 +236,7 @@ export default function Oracle() {
                 </span>
                 {simulateHoliday && (
                   <span className="ml-auto text-[10px] text-amber-400 bg-amber-500/[0.08] border border-amber-500/20 px-2 py-0.5 rounded">
-                    🏖 Christmas Day rules in effect
+                    Christmas Day rules in effect
                   </span>
                 )}
               </div>
@@ -228,7 +246,7 @@ export default function Oracle() {
                 {granted.map(row => (
                   <div key={`${row.user.id}-${row.door.id}`}
                     className="bg-[#0f1320] border-l-2 border-emerald-500 border border-[#1e293b] rounded-lg px-3 py-2.5 flex items-center gap-3 hover:border-[#374151] transition-colors cursor-pointer"
-                    onClick={() => navigate('/reasoner')}
+                    onClick={() => navigate('/reasoner', { state: { userId: row.user.id, doorId: row.door.id } })}
                   >
                     <div className="w-7 h-7 rounded-full bg-[#0f2d1a] flex items-center justify-center text-[10px] font-bold text-emerald-400 shrink-0">
                       {row.user.name.split(' ').map(n => n[0]).join('')}
@@ -260,7 +278,7 @@ export default function Oracle() {
                 {denied.map(row => (
                   <div key={`${row.user.id}-${row.door.id}`}
                     className="bg-[#0f1320] border-l-2 border-red-900 border border-[#1e293b] rounded-lg px-3 py-2.5 flex items-center gap-3 hover:border-[#374151] transition-colors cursor-pointer"
-                    onClick={() => navigate('/reasoner')}
+                    onClick={() => navigate('/reasoner', { state: { userId: row.user.id, doorId: row.door.id } })}
                   >
                     <div className="w-7 h-7 rounded-full bg-[#1a0a0a] flex items-center justify-center text-[10px] font-bold text-red-400/50 shrink-0">
                       {row.user.name.split(' ').map(n => n[0]).join('')}

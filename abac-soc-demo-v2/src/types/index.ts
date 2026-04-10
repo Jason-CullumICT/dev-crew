@@ -33,6 +33,7 @@ export interface Group {
   membershipType: 'explicit' | 'dynamic' | 'hybrid';
   targetEntityType: 'user' | 'door' | 'zone' | 'site' | 'controller' | 'any';
   inheritedPermissions: string[];
+  scheduleId?: string;
 }
 
 export type GrantScope = 'global' | 'site' | 'zone';
@@ -130,6 +131,7 @@ export interface Policy {
   rules: Rule[];
   logicalOperator: 'AND' | 'OR';
   doorIds: string[];
+  scheduleId?: string;
 }
 
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
@@ -214,6 +216,19 @@ export interface ArmingLog {
   result: 'Success' | 'Denied';
 }
 
+export interface NamedSchedule {
+  id: string;
+  name: string;
+  description?: string;
+  daysOfWeek: string[];      // e.g. ['Mon','Tue','Wed','Thu','Fri']
+  startTime: string;         // '09:00'
+  endTime: string;           // '17:00'
+  validFrom?: string;        // ISO date string or undefined
+  validUntil?: string;       // ISO date string or undefined
+  timezone: string;
+  color: string;             // hex for timeline rendering e.g. '#4ade80'
+}
+
 export interface StoreSnapshot {
   allUsers: User[];
   allDoors: Door[];
@@ -222,6 +237,7 @@ export interface StoreSnapshot {
   allControllers: Controller[];
   allGroups: Group[];
   allGrants: Grant[];
+  allSchedules: NamedSchedule[];
 }
 
 // ── UI-only chip types (not persisted) ──────────────────────────────────────

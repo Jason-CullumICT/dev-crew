@@ -1,0 +1,134 @@
+<h2>What's the signature UX moment?</h2>
+<p class="subtitle">The one interaction that makes someone say "I've never seen an access control tool work like this." Pick the idea that excites you most.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:20px;font-family:monospace;border-bottom:1px solid #1e293b">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="width:36px;height:36px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:16px">👤</div>
+        <div>
+          <div style="color:#e2e8f0;font-weight:600;font-size:13px">Sarah Chen · Security Engineer</div>
+          <div style="color:#64748b;font-size:11px">Clearance L3 · Active · On shift</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="flex:1;background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px 12px;color:#94a3b8;font-size:12px">🚪 Server Room Alpha</div>
+        <div style="color:#475569;font-size:11px">at</div>
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px 12px;color:#94a3b8;font-size:12px">Fri 23:45</div>
+      </div>
+      <div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="color:#22c55e;font-size:14px">✓</span>
+          <span style="color:#22c55e;font-weight:700;font-size:13px">ACCESS GRANTED</span>
+        </div>
+        <div style="font-size:11px;color:#64748b;line-height:1.6">
+          <span style="color:#94a3b8">↳ Via</span> <span style="color:#60a5fa">NOC Team</span> → <span style="color:#a78bfa">Night Ops Grant</span><br/>
+          <span style="color:#94a3b8">↳ Schedule</span> <span style="color:#34d399">active</span> · <span style="color:#94a3b8">Clearance</span> <span style="color:#34d399">L3 ≥ L3 ✓</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · The Reasoner</h3>
+      <p>Pick any person + door + time. The system explains — in plain language — exactly why access is granted or denied, tracing every rule, group membership, and schedule in a readable chain. Like a debugger for your access policy.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:20px;border-bottom:1px solid #1e293b">
+      <div style="background:#111827;border:1px solid #1e293b;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <span style="color:#6366f1;font-size:14px">⌘</span>
+        <input style="background:transparent;border:none;outline:none;color:#e2e8f0;font-size:13px;width:100%;font-family:inherit" placeholder="Who can access Lab 3 on Christmas Day?" readonly />
+        <span style="color:#374151;font-size:11px">↵</span>
+      </div>
+      <div style="space-y:4px">
+        <div style="background:#1e293b;border-radius:6px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+          <span style="color:#22c55e;font-size:10px">●</span>
+          <div style="flex:1">
+            <div style="color:#e2e8f0;font-size:12px;font-weight:500">Sarah Chen</div>
+            <div style="color:#64748b;font-size:10px">Via Emergency Response → Holiday Override</div>
+          </div>
+        </div>
+        <div style="background:#1e293b;border-radius:6px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+          <span style="color:#22c55e;font-size:10px">●</span>
+          <div style="flex:1">
+            <div style="color:#e2e8f0;font-size:12px;font-weight:500">Marcus Webb</div>
+            <div style="color:#64748b;font-size:10px">Via Security Operations Group</div>
+          </div>
+        </div>
+        <div style="background:#1e293b;border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:10px">
+          <span style="color:#ef4444;font-size:10px">●</span>
+          <div style="flex:1">
+            <div style="color:#94a3b8;font-size:12px;font-weight:500">James Park</div>
+            <div style="color:#64748b;font-size:10px">Clearance L2 — requires L3 on holidays</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · The Oracle</h3>
+      <p>A command palette that answers access questions in plain English. "Who can unlock Server Room Alpha at midnight?" — instant answer with full reasoning. Reverse-query the policy model without navigating any menus.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:20px;border-bottom:1px solid #1e293b;min-height:160px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Groups</div>
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px;margin-bottom:6px">
+            <div style="color:#e2e8f0;font-size:11px;font-weight:600">NOC Team</div>
+            <div style="background:#0f172a;border:1px solid #1e293b;border-radius:4px;padding:6px;margin-top:6px">
+              <div style="color:#94a3b8;font-size:10px;font-weight:600">↳ Night Shift</div>
+              <div style="background:#0a1628;border:1px solid #1e293b;border-radius:3px;padding:4px;margin-top:4px">
+                <div style="color:#64748b;font-size:10px">↳ Weekend Crew</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="color:#334155;font-size:18px;padding-top:28px">→</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Grants</div>
+          <div style="background:#1a1a2e;border:1px solid #312e81;border-radius:6px;padding:8px;margin-bottom:6px">
+            <div style="color:#a78bfa;font-size:11px;font-weight:600">Night Ops</div>
+            <div style="color:#64748b;font-size:10px;margin-top:2px">unlock · arm · disarm</div>
+          </div>
+          <div style="background:#0a2818;border:1px solid #14532d;border-radius:6px;padding:8px">
+            <div style="color:#4ade80;font-size:11px;font-weight:600">Holiday Override</div>
+            <div style="color:#64748b;font-size:10px;margin-top:2px">unlock (L3+ only)</div>
+          </div>
+        </div>
+        <div style="color:#334155;font-size:18px;padding-top:28px">→</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Doors</div>
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px;margin-bottom:6px">
+            <div style="color:#e2e8f0;font-size:11px">🚪 Server Room Alpha</div>
+          </div>
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px">
+            <div style="color:#e2e8f0;font-size:11px">🚪 Lab 3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · The Canvas</h3>
+      <p>A visual policy canvas where groups, grants, schedules, and doors are nodes you connect. See the whole access model as a living graph. Nesting groups becomes drag-and-drop. Policy authoring becomes spatial reasoning.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="d" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:20px;border-bottom:1px solid #1e293b;min-height:160px;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center;color:#475569">
+        <div style="font-size:32px;margin-bottom:8px">✦</div>
+        <div style="font-size:12px;line-height:1.6;max-width:200px">All three — weave them together into a single cohesive experience</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>D · All Three</h3>
+      <p>Don't choose — build all three as integrated views. The canvas is how you author. The oracle is how you query. The reasoner is how you debug. Three lenses on the same model.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px">Click to select, or just tell me in the terminal.</p>

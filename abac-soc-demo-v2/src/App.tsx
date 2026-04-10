@@ -16,6 +16,7 @@ import Policies from './pages/Policies';
 import Tasks from './pages/Tasks';
 import TestAccess from './pages/TestAccess';
 import AccessMatrix from './pages/AccessMatrix';
+import Schedules from './pages/Schedules';
 
 export default function App() {
   const users = useStore((s) => s.users);
@@ -31,6 +32,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="schedules" element={<Schedules />} />
           <Route path="sites" element={<Sites />} />
           <Route path="arming" element={<Arming />} />
           <Route path="users" element={<Users />} />

@@ -4,6 +4,7 @@ import { useStore } from '../store/store';
 import type { Policy, ConditionChip, TimeWindow, Door } from '../types';
 import ConditionChips from '../components/ConditionChips';
 import TimeWindowChips from '../components/TimeWindowChips';
+import SchedulePicker from '../components/SchedulePicker';
 import {
   chipToRule,
   timeWindowToRules,
@@ -49,11 +50,13 @@ function PolicyCard({
   onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const schedules = useStore(s => s.schedules);
 
-  const peopleChips = useMemo(() => rulesToConditionChips(policy.rules, groups), [policy.rules, groups]);
-  const timeWindows = useMemo(() => rulesToTimeWindows(policy.rules), [policy.rules]);
-  const assignedDoors = useMemo(() => doors.filter(d => policy.doorIds.includes(d.id)), [doors, policy.doorIds]);
-  const isOverride = timeWindows.length === 0 && assignedDoors.length > 0 && assignedDoors.length >= doors.length;
+  const peopleChips = useMemo(() => rulesToConditionChips(policy.rules ?? [], groups), [policy.rules, groups]);
+  const timeWindows = useMemo(() => rulesToTimeWindows(policy.rules ?? []), [policy.rules]);
+  const assignedDoors = useMemo(() => doors.filter(d => (policy.doorIds ?? []).includes(d.id)), [doors, policy.doorIds]);
+  const linkedSchedule = policy.scheduleId ? schedules.find(s => s.id === policy.scheduleId) : undefined;
+  const isOverride = timeWindows.length === 0 && !policy.scheduleId && assignedDoors.length > 0 && assignedDoors.length >= doors.length;
 
   function chipLabel(tw: TimeWindow) {
     const dayPart = tw.days.length === 0 ? 'Every day' : tw.days.join('–');
@@ -96,7 +99,15 @@ function PolicyCard({
 
               {/* Time */}
               <Lane color="bg-amber-500" label="Time" accentClass="text-amber-400">
-                {timeWindows.length === 0 ? (
+                {linkedSchedule ? (
+                  <span
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: `${linkedSchedule.color}22`, color: linkedSchedule.color, border: `1px solid ${linkedSchedule.color}66` }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: linkedSchedule.color }} />
+                    {linkedSchedule.name}
+                  </span>
+                ) : timeWindows.length === 0 ? (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CHIP_COLORS.time}`}>Always (24/7)</span>
                 ) : timeWindows.map(tw => (
                   <span key={tw.id} className={`px-2 py-0.5 rounded-full text-xs font-medium ${CHIP_COLORS.time}`}>
@@ -145,10 +156,11 @@ interface PolicyDraft {
   peopleChips: ConditionChip[];
   timeWindows: TimeWindow[];
   doorIds: string[];
+  scheduleId: string | undefined;
 }
 
 function emptyDraft(): PolicyDraft {
-  return { name: '', description: '', logicalOperator: 'AND', peopleChips: [], timeWindows: [], doorIds: [] };
+  return { name: '', description: '', logicalOperator: 'AND', peopleChips: [], timeWindows: [], doorIds: [], scheduleId: undefined };
 }
 
 function policyToDraft(p: Policy, groups: { id: string; name: string }[]): PolicyDraft {
@@ -156,9 +168,10 @@ function policyToDraft(p: Policy, groups: { id: string; name: string }[]): Polic
     name: p.name,
     description: p.description,
     logicalOperator: p.logicalOperator,
-    peopleChips: rulesToConditionChips(p.rules, groups),
-    timeWindows: rulesToTimeWindows(p.rules),
-    doorIds: [...p.doorIds],
+    peopleChips: rulesToConditionChips(p.rules ?? [], groups),
+    timeWindows: rulesToTimeWindows(p.rules ?? []),
+    doorIds: [...(p.doorIds ?? [])],
+    scheduleId: p.scheduleId,
   };
 }
 
@@ -172,6 +185,7 @@ function draftToPolicy(draft: PolicyDraft, id: string): Policy {
     logicalOperator: draft.logicalOperator,
     rules: [...peopleRules, ...timeRules],
     doorIds: draft.doorIds,
+    scheduleId: draft.scheduleId,
   };
 }
 
@@ -348,12 +362,19 @@ export default function Policies() {
                   <label className="text-xs font-bold text-amber-400 uppercase tracking-widest">Time</label>
                   <span className="text-xs text-gray-600">— when is this active?</span>
                 </div>
-                <p className="text-xs text-gray-600 pl-3">Leave empty for always-on (24/7).</p>
+                <p className="text-xs text-gray-600 pl-3">Select a named schedule, or leave empty for always-on (24/7).</p>
                 <div className="pl-3">
-                  <TimeWindowChips
-                    windows={draft.timeWindows}
-                    onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
+                  <SchedulePicker
+                    value={draft.scheduleId}
+                    onChange={scheduleId => setDraft(d => ({ ...d, scheduleId }))}
+                    className="mb-3"
                   />
+                  {!draft.scheduleId && (
+                    <TimeWindowChips
+                      windows={draft.timeWindows}
+                      onChange={windows => setDraft(d => ({ ...d, timeWindows: windows }))}
+                    />
+                  )}
                 </div>
               </div>
 

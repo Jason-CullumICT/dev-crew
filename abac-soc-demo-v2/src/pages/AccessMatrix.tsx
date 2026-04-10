@@ -177,6 +177,7 @@ export default function AccessMatrix() {
   const sites = useStore((s) => s.sites);
   const zones = useStore((s) => s.zones);
   const controllers = useStore((s) => s.controllers);
+  const schedules = useStore((s) => s.schedules);
 
   const parentRef = useRef<HTMLDivElement>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -206,11 +207,12 @@ export default function AccessMatrix() {
         allControllers: controllers,
         allGroups: groups,
         allGrants: grants,
+        allSchedules: schedules,
       };
       const result = evaluateAccess(user, door, policies, groups, grants, store);
       setModal({ user, door, result });
     },
-    [users, doors, zones, sites, controllers, policies, groups, grants],
+    [users, doors, zones, sites, controllers, policies, groups, grants, schedules],
   );
 
   const resultGrid = useMemo(() => {
@@ -222,6 +224,7 @@ export default function AccessMatrix() {
       allControllers: controllers,
       allGroups: groups,
       allGrants: grants,
+      allSchedules: schedules,
     };
     const map = new Map<string, boolean>();
     for (const user of users) {
@@ -231,7 +234,7 @@ export default function AccessMatrix() {
       }
     }
     return map;
-  }, [users, doors, zones, sites, controllers, groups, policies, grants]);
+  }, [users, doors, zones, sites, controllers, groups, policies, grants, schedules]);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const virtualColumns = columnVirtualizer.getVirtualItems();

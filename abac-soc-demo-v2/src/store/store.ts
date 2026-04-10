@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { User, Group, Grant, Site, Zone, Door, Controller, Policy, Task, ArmingLog } from '../types';
+import type { User, Group, Grant, Site, Zone, Door, Controller, Policy, Task, ArmingLog, NamedSchedule } from '../types';
 
 interface AppState {
   users: User[];
@@ -13,6 +13,7 @@ interface AppState {
   policies: Policy[];
   tasks: Task[];
   armingLogs: ArmingLog[];
+  schedules: NamedSchedule[];
 
   // Users
   setUsers: (users: User[]) => void;
@@ -71,6 +72,12 @@ interface AppState {
   // ArmingLogs
   setArmingLogs: (logs: ArmingLog[]) => void;
   addArmingLog: (log: ArmingLog) => void;
+
+  // Schedules
+  setSchedules: (schedules: NamedSchedule[]) => void;
+  addSchedule: (s: NamedSchedule) => void;
+  updateSchedule: (s: NamedSchedule) => void;
+  deleteSchedule: (id: string) => void;
 }
 
 
@@ -87,6 +94,7 @@ export const useStore = create<AppState>()(
       policies: [],
       tasks: [],
       armingLogs: [],
+      schedules: [],
 
       setUsers: (users) => set({ users }),
       addUser: (user) => set((s) => ({ users: [...s.users, user] })),
@@ -135,9 +143,14 @@ export const useStore = create<AppState>()(
 
       setArmingLogs: (armingLogs) => set({ armingLogs }),
       addArmingLog: (log) => set((s) => ({ armingLogs: [log, ...s.armingLogs] })),
+
+      setSchedules: (schedules) => set({ schedules }),
+      addSchedule: (s) => set((st) => ({ schedules: [...st.schedules, s] })),
+      updateSchedule: (s) => set((st) => ({ schedules: st.schedules.map((x) => (x.id === s.id ? s : x)) })),
+      deleteSchedule: (id) => set((st) => ({ schedules: st.schedules.filter((x) => x.id !== id) })),
     }),
     {
-      name: 'soc-demo-store-v4',
+      name: 'soc-demo-store-v5',
       storage: createJSONStorage(() => sessionStorage),
     },
   ),

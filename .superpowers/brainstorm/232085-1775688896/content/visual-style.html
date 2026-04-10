@@ -1,0 +1,145 @@
+<h2>Visual design direction</h2>
+<p class="subtitle">Same features — very different feel. Which world does this live in?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#020409;padding:0;overflow:hidden;border-bottom:1px solid #0d1117">
+      <!-- Dark command center -->
+      <div style="background:#020409;padding:12px 14px;border-bottom:1px solid #0d1117;display:flex;align-items:center;gap:10px">
+        <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e"></div>
+        <span style="color:#1e3a2f;font-size:10px;font-family:monospace;letter-spacing:.1em">AXON ACCESS CONTROL</span>
+        <div style="margin-left:auto;font-family:monospace;font-size:10px;color:#1e3a2f">FRI 23:41 · ARMED</div>
+      </div>
+      <div style="display:flex;height:130px">
+        <div style="width:42px;background:#020409;border-right:1px solid #0d1117;display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:8px">
+          <div style="color:#22c55e;font-size:14px">⬡</div>
+          <div style="color:#1a2e1a;font-size:12px">◈</div>
+          <div style="color:#1a2e1a;font-size:12px">◉</div>
+          <div style="color:#1a2e1a;font-size:12px">◫</div>
+        </div>
+        <div style="flex:1;padding:10px;position:relative">
+          <!-- fake graph nodes -->
+          <div style="position:absolute;top:12px;left:14px;background:#0d1a0d;border:1px solid #14532d;border-radius:4px;padding:4px 8px;font-size:9px;color:#22c55e;font-family:monospace">NOC TEAM</div>
+          <div style="position:absolute;top:42px;left:55px;background:#0d1a0d;border:1px solid #14532d;border-radius:4px;padding:4px 8px;font-size:9px;color:#4ade80;font-family:monospace">NIGHT SHIFT</div>
+          <svg style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:.4" viewBox="0 0 200 130">
+            <line x1="60" y1="24" x2="95" y2="52" stroke="#14532d" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="140" y1="24" x2="105" y2="52" stroke="#14532d" stroke-width="1" stroke-dasharray="3,3"/>
+          </svg>
+          <div style="position:absolute;top:12px;right:14px;background:#0d1a0d;border:1px solid #14532d;border-radius:4px;padding:4px 8px;font-size:9px;color:#22c55e;font-family:monospace">NIGHT OPS</div>
+          <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#051005;border:1px solid #166534;border-radius:3px;padding:3px 10px;font-size:9px;color:#4ade80;font-family:monospace;letter-spacing:.05em">SERVER ROOM ALPHA · GRANTED</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · Command Center</h3>
+      <p>Near-black with military green on CRT-style readouts. Monospace accents. Glowing status indicators. Feels like a real SOC terminal — authoritative and focused.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:0;overflow:hidden;border-bottom:1px solid #1c1f2e">
+      <!-- Modern dark SaaS -->
+      <div style="background:#0f1117;padding:10px 14px;border-bottom:1px solid #1c1f2e;display:flex;align-items:center;gap:8px">
+        <div style="width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:10px">⬡</div>
+        <span style="color:#e2e8f0;font-size:11px;font-weight:600;letter-spacing:.02em">Axon</span>
+        <div style="margin-left:auto;display:flex;gap:14px">
+          <span style="color:#6366f1;font-size:10px;font-weight:500;border-bottom:1px solid #6366f1;padding-bottom:1px">Canvas</span>
+          <span style="color:#4b5563;font-size:10px">Oracle</span>
+          <span style="color:#4b5563;font-size:10px">Reasoner</span>
+        </div>
+      </div>
+      <div style="padding:14px;height:130px;position:relative">
+        <div style="position:absolute;top:14px;left:14px;background:#1c1f2e;border:1px solid #2d3148;border-radius:8px;padding:8px 12px;box-shadow:0 4px 12px rgba(0,0,0,.4)">
+          <div style="font-size:10px;color:#e2e8f0;font-weight:600">NOC Team</div>
+          <div style="font-size:9px;color:#4b5563;margin-top:1px">8 members · 2 subgroups</div>
+        </div>
+        <div style="position:absolute;top:14px;right:14px;background:#1a1a2e;border:1px solid #312e81;border-radius:8px;padding:8px 12px;box-shadow:0 4px 12px rgba(0,0,0,.4)">
+          <div style="font-size:10px;color:#a78bfa;font-weight:600">Night Ops Grant</div>
+          <div style="font-size:9px;color:#4b5563;margin-top:1px">unlock · arm · disarm</div>
+        </div>
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%" viewBox="0 0 300 150">
+          <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6366f1" opacity=".5"/></marker></defs>
+          <path d="M 110 38 C 150 38 150 38 190 38" stroke="#6366f1" stroke-width="1.5" fill="none" stroke-dasharray="4,3" opacity=".4" marker-end="url(#arr)"/>
+        </svg>
+        <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#1c1f2e;border:1px solid #2d3148;border-radius:8px;padding:8px 16px;white-space:nowrap">
+          <div style="font-size:10px;color:#94a3b8;text-align:center">🚪 <span style="color:#e2e8f0">Server Room Alpha</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · Modern SaaS Dark</h3>
+      <p>Deep slate, indigo/violet accents, rounded cards. Feels like Linear or Vercel's dashboard — professional dark UI that anyone would recognise as high-quality software.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:linear-gradient(135deg,#0a0a1a 0%,#0d0a1f 100%);padding:0;overflow:hidden;border-bottom:1px solid #1a1030">
+      <!-- Cinematic / atmospheric -->
+      <div style="padding:10px 14px;border-bottom:1px solid #1a1030;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.02)">
+        <div style="font-size:14px;color:#c084fc">◈</div>
+        <span style="color:#e9d5ff;font-size:11px;font-weight:300;letter-spacing:.12em">AXON</span>
+        <div style="margin-left:auto;font-size:9px;color:#581c87;letter-spacing:.08em">ACCESS INTELLIGENCE</div>
+      </div>
+      <div style="padding:14px;height:130px;position:relative;overflow:hidden">
+        <!-- Atmospheric glow -->
+        <div style="position:absolute;top:-20px;left:30%;width:120px;height:80px;background:radial-gradient(ellipse,rgba(139,92,246,.15) 0%,transparent 70%);pointer-events:none"></div>
+        <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);text-align:center">
+          <div style="font-size:9px;color:#7c3aed;text-transform:uppercase;letter-spacing:.15em;margin-bottom:8px">NOC Team → Night Shift → Weekend Crew</div>
+          <div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px">
+            <div style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 8px #8b5cf6"></div>
+            <div style="width:7px;height:7px;border-radius:50%;background:#6d28d9;box-shadow:0 0 6px #6d28d9"></div>
+            <div style="width:7px;height:7px;border-radius:50%;background:#5b21b6;box-shadow:0 0 4px #5b21b6"></div>
+          </div>
+          <div style="background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:4px 14px;display:inline-block">
+            <div style="font-size:9px;color:#c4b5fd;letter-spacing:.06em">ACCESS GRANTED · NIGHT OPS</div>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:10px;left:14px;right:14px;height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.3),transparent)"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · Cinematic Dark</h3>
+      <p>Deep purple-black, atmospheric glows, minimal chrome. Feels cinematic — like a film's idea of a future security system. Striking and memorable, trades some legibility for mood.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="d" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8fafc;padding:0;overflow:hidden;border-bottom:1px solid #e2e8f0">
+      <!-- Clean light -->
+      <div style="background:white;padding:10px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px;box-shadow:0 1px 0 #f1f5f9">
+        <div style="width:20px;height:20px;border-radius:5px;background:#0f172a;display:flex;align-items:center;justify-content:center;font-size:9px;color:white">⬡</div>
+        <span style="color:#0f172a;font-size:11px;font-weight:700">Axon</span>
+        <div style="margin-left:auto;display:flex;gap:12px">
+          <span style="color:#6366f1;font-size:10px;font-weight:600">Canvas</span>
+          <span style="color:#9ca3af;font-size:10px">Oracle</span>
+          <span style="color:#9ca3af;font-size:10px">Reasoner</span>
+        </div>
+      </div>
+      <div style="padding:14px;height:130px;position:relative;background:#f8fafc">
+        <div style="position:absolute;top:14px;left:14px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;color:#111827;font-weight:600">NOC Team</div>
+          <div style="font-size:9px;color:#9ca3af;margin-top:1px">8 members</div>
+        </div>
+        <div style="position:absolute;top:14px;right:14px;background:white;border:1px solid #e0e7ff;border-radius:8px;padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;color:#4338ca;font-weight:600">Night Ops Grant</div>
+          <div style="font-size:9px;color:#9ca3af;margin-top:1px">3 actions</div>
+        </div>
+        <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:white;border:1px solid #e2e8f0;border-radius:8px;padding:6px 14px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;color:#374151">🚪 Server Room Alpha</div>
+        </div>
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%" viewBox="0 0 300 150">
+          <path d="M 105 35 C 150 35 150 35 195 35" stroke="#c7d2fe" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+          <path d="M 150 58 L 150 108" stroke="#c7d2fe" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        </svg>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>D · Clean & Light</h3>
+      <p>White/light grey with indigo accents. Crisp, readable, presentation-ready. Looks great in a boardroom or demo screen. Familiar enterprise quality, maximum clarity.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px">Click your pick — or mix ideas in the terminal.</p>

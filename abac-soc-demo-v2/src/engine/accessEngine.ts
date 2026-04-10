@@ -3,6 +3,7 @@ import type {
   User, Group, Grant, Door, Zone, Site, Controller,
   Policy, ActionType, AccessResult, PolicyResult, RuleResult,
   Rule, Operator, StoreSnapshot, GroupMember, NowContext, GrantResult, Schedule,
+  NamedSchedule,
 } from '../types';
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -53,6 +54,33 @@ export function isScheduleActive(schedule: Schedule): boolean {
   if (schedule.validFrom && localDate < schedule.validFrom) return false;
   if (schedule.validUntil && localDate > schedule.validUntil) return false;
   return true;
+}
+
+// ── Named schedule evaluation ─────────────────────────────────────────────────
+
+export function isNamedScheduleActive(schedule: NamedSchedule): boolean {
+  const now = new Date();
+  const tzDate = new Date(now.toLocaleString('en-US', { timeZone: schedule.timezone }));
+  const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][tzDate.getDay()];
+  const h = tzDate.getHours();
+  const m = tzDate.getMinutes();
+  const localDate = `${tzDate.getFullYear()}-${String(tzDate.getMonth() + 1).padStart(2, '0')}-${String(tzDate.getDate()).padStart(2, '0')}`;
+
+  if (schedule.daysOfWeek.length > 0 && !schedule.daysOfWeek.includes(dayName)) return false;
+  if (schedule.validFrom && localDate < schedule.validFrom) return false;
+  if (schedule.validUntil && localDate > schedule.validUntil) return false;
+
+  const nowMins = h * 60 + m;
+  const [sh, sm] = schedule.startTime.split(':').map(Number);
+  const [eh, em] = schedule.endTime.split(':').map(Number);
+  const startMins = sh * 60 + sm;
+  const endMins = eh * 60 + em;
+
+  if (startMins < endMins) {
+    return nowMins >= startMins && nowMins < endMins;
+  }
+  // overnight (e.g. 20:00–06:00)
+  return nowMins >= startMins || nowMins < endMins;
 }
 
 // ── Attribute resolution ──────────────────────────────────────────────────────
@@ -175,6 +203,14 @@ export function isEntityInGroup(
   if (visitedGroupIds.has(group.id)) return false;
   const visited = new Set(visitedGroupIds);
   visited.add(group.id);
+
+  // Check named schedule gate first (v3 scheduleId approach)
+  if (group.scheduleId) {
+    const namedSchedule = ctx.store.allSchedules?.find(s => s.id === group.scheduleId);
+    if (namedSchedule && !isNamedScheduleActive(namedSchedule)) {
+      return false;
+    }
+  }
 
   const { membershipType, targetEntityType } = group;
 
@@ -350,15 +386,15 @@ function collectCandidateGrantIds(user: User, groups: Group[], ctx: EvalContext)
 
   // Inherited from groups
   for (const group of groups) {
-    if (group.inheritedPermissions.length === 0) continue;
+    if ((group.inheritedPermissions ?? []).length === 0) continue;
     if (isEntityInGroup(user.id, 'user', group, ctx)) {
-      for (const gid of group.inheritedPermissions) ids.add(gid);
+      for (const gid of (group.inheritedPermissions ?? [])) ids.add(gid);
     }
   }
 
   // Auto grants — scan all grants whose conditions match
   for (const grant of ctx.store.allGrants) {
-    if (grant.applicationMode === 'auto' && grant.conditions.length > 0) {
+    if (grant.applicationMode === 'auto' && (grant.conditions ?? []).length > 0) {
       const grantCtx: EvalContext = { ...ctx, grant };
       if (evaluateRuleSet(grant.conditions, grant.conditionLogic, grantCtx)) {
         ids.add(grant.id);
@@ -382,7 +418,7 @@ export function hasPermission(
   const { effectiveIds } = buildGrantResults(candidateIds, ctx.store.allGrants, ctx);
   for (const grantId of effectiveIds) {
     const grant = grants.find(g => g.id === grantId);
-    if (!grant || !grant.actions.includes(action)) continue;
+    if (!grant || !(grant.actions ?? []).includes(action)) continue;
     if (grant.scope === 'global') return true;
     if (grant.scope === 'site' && siteId && grant.targetId === siteId) return true;
     if (grant.scope === 'zone' && zoneId && grant.targetId === zoneId) return true;
@@ -415,7 +451,7 @@ export function evaluateAccess(
   const matchedGrants: string[] = [];
   for (const grantId of effectiveIds) {
     const grant = grants.find(g => g.id === grantId);
-    if (!grant || !grant.actions.includes('unlock')) continue;
+    if (!grant || !(grant.actions ?? []).includes('unlock')) continue;
     const scopeMatch =
       grant.scope === 'global' ||
       (grant.scope === 'site' && grant.targetId === door.siteId) ||
@@ -426,11 +462,19 @@ export function evaluateAccess(
     }
   }
 
-  const assignedPolicies = policies.filter(p => p.doorIds.includes(door.id));
+  const assignedPolicies = policies.filter(p => (p.doorIds ?? []).includes(door.id));
   const policyResults: PolicyResult[] = assignedPolicies.map(policy => {
-    const ruleResults = policy.rules.map(rule => evaluateRule(rule, ctx));
+    // Check named schedule gate for policy (v3)
+    if (policy.scheduleId) {
+      const namedSchedule = store.allSchedules?.find(s => s.id === policy.scheduleId);
+      if (namedSchedule && !isNamedScheduleActive(namedSchedule)) {
+        return { policyId: policy.id, policyName: policy.name, passed: false, ruleResults: [] };
+      }
+    }
+    const rules = policy.rules ?? [];
+    const ruleResults = rules.map(rule => evaluateRule(rule, ctx));
     const passed =
-      policy.rules.length === 0
+      rules.length === 0
         ? false
         : policy.logicalOperator === 'AND'
           ? ruleResults.every(r => r.passed)

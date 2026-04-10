@@ -480,8 +480,15 @@ export default function CanvasGraph({
 
   const visibleEdges      = edges.filter(e => edgeIsVisible(e.sourceKey, e.targetKey))
   const visibleBundled    = bundledGrantEdges.filter(be => bundledEdgeIsVisible(be))
-  // Selection edges always show when selected (they are meaningful context)
-  const visibleSelEdges   = edgeMode !== 'off' ? selectionEdges : []
+  // Selection edges: show when selected node is active. In hover mode, hide
+  // selection edges when hovering a DIFFERENT node (avoids confusing lines
+  // that look related to the hovered node but aren't).
+  const visibleSelEdges = (() => {
+    if (edgeMode === 'off') return []
+    if (!hasSelection) return []
+    if (edgeMode === 'hover' && hoveredKey && hoveredKey !== selected) return []
+    return selectionEdges
+  })()
 
   function nodeProps(key: string) {
     if (!hasSelection || key === selected) return { highlighted: false, dimmed: false }
@@ -616,8 +623,7 @@ export default function CanvasGraph({
                 stroke={color}
                 strokeWidth={isConnected ? 2.5 : 1.5}
                 fill="none"
-                strokeDasharray={isConnected ? '6 6' : '5,3'}
-                style={isConnected ? { animation: 'edgeFlow 0.6s linear infinite' } : undefined}
+                strokeDasharray={isConnected ? 'none' : '5,3'}
                 markerEnd={`url(#arr-${e.colorKey}${markerSuffix})`}
                 opacity={isDimmed ? 0.1 : isConnected ? 1 : 0.7}
               />
@@ -634,8 +640,7 @@ export default function CanvasGraph({
                 stroke={color}
                 strokeWidth={2.5}
                 fill="none"
-                strokeDasharray="6 6"
-                style={{ animation: 'edgeFlow 0.6s linear infinite' }}
+                strokeDasharray="none"
                 markerEnd={`url(#arr-${e.colorKey}-bright)`}
                 opacity={1}
               />

@@ -3,13 +3,14 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Share2, Search, Activity, Users, UsersRound,
   KeyRound, CalendarClock, DoorOpen, Building2, Shield,
-  Layers, FileText, Cpu,
+  Layers, FileText, Cpu, LayoutDashboard,
 } from 'lucide-react'
 import NowPill from './NowPill'
 import CommandPalette from './CommandPalette'
 import ErrorBoundary from './ErrorBoundary'
 
 const primaryNav = [
+  { to: '/',          icon: LayoutDashboard, label: 'Dashboard', color: '#22c55e' },
   { to: '/canvas',    icon: Share2,       label: 'Canvas',      color: '#6366f1' },
   { to: '/oracle',    icon: Search,       label: 'Oracle',      color: '#8b5cf6' },
   { to: '/reasoner',  icon: Activity,     label: 'Reasoner',    color: '#06b6d4' },

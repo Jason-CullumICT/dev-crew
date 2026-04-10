@@ -21,13 +21,6 @@ const TYPE_COLORS: Record<EntityType, string> = {
   doors:     'bg-slate-500/15 text-slate-300 border-slate-500/30 data-[active]:bg-slate-500/30 data-[active]:border-slate-400',
 }
 
-// Auto-layout column X positions
-const LAYOUT_COL = {
-  groups:    80,
-  grants:    350,
-  schedules: 620,
-  doors:     890,
-}
 // Vertical gaps per type
 const LAYOUT_GAP = {
   groups:    110,
@@ -37,8 +30,6 @@ const LAYOUT_GAP = {
 }
 // Max rows per column before wrapping to a new column
 const LAYOUT_MAX_PER_COL = 25
-// Horizontal spacing between overflow columns
-const LAYOUT_COL_SPACING = 180
 
 // Node dimensions for bounding box calculation
 const NODE_DIMS: Record<EntityType, { w: number; h: number }> = {
@@ -151,27 +142,34 @@ export default function Canvas() {
     // Track all final positions for fit-to-content computation
     const allPositions: { x: number; y: number; w: number; h: number }[] = []
 
+    // Returns the next available X position (right edge of this type's columns + gap)
     function assignPositions(
       items: { id: string }[],
       baseX: number,
       gapY: number,
       prefix: string,
       dims: { w: number; h: number },
-    ) {
+      interColumnGap = 40,
+    ): number {
+      if (items.length === 0) return baseX
+      const numCols = Math.ceil(items.length / LAYOUT_MAX_PER_COL)
       items.forEach((item, i) => {
         const col = Math.floor(i / LAYOUT_MAX_PER_COL)
         const row = i % LAYOUT_MAX_PER_COL
-        const x   = baseX + col * LAYOUT_COL_SPACING
+        const x   = baseX + col * (dims.w + interColumnGap)
         const y   = 60 + row * gapY
         setCanvasPosition(`${prefix}-${item.id}`, { x, y })
         allPositions.push({ x, y, w: dims.w, h: dims.h })
       })
+      return baseX + numCols * (dims.w + interColumnGap)
     }
 
-    assignPositions(groups,    LAYOUT_COL.groups,    LAYOUT_GAP.groups,    'group',    NODE_DIMS.groups)
-    assignPositions(grants,    LAYOUT_COL.grants,    LAYOUT_GAP.grants,    'grant',    NODE_DIMS.grants)
-    assignPositions(schedules, LAYOUT_COL.schedules, LAYOUT_GAP.schedules, 'schedule', NODE_DIMS.schedules)
-    assignPositions(doors,     LAYOUT_COL.doors,     LAYOUT_GAP.doors,     'door',     NODE_DIMS.doors)
+    // Each type's base X is computed dynamically so overflow columns don't overlap
+    const TYPE_GAP = 80  // gap between type sections
+    const groupsRight    = assignPositions(groups,    80,           LAYOUT_GAP.groups,    'group',    NODE_DIMS.groups)
+    const grantsRight    = assignPositions(grants,    groupsRight  + TYPE_GAP, LAYOUT_GAP.grants,    'grant',    NODE_DIMS.grants)
+    const schedulesRight = assignPositions(schedules, grantsRight  + TYPE_GAP, LAYOUT_GAP.schedules, 'schedule', NODE_DIMS.schedules)
+    assignPositions(doors,     schedulesRight + TYPE_GAP, LAYOUT_GAP.doors,     'door',     NODE_DIMS.doors)
 
     // Compute fit-to-content zoom/pan
     const containerEl = document.querySelector('[data-canvas-container]') as HTMLElement | null
@@ -321,7 +319,7 @@ export default function Canvas() {
           scopeFilter={scopeFilter === 'all' ? null : scopeFilter}
           visibleTypes={visibleTypes}
           onAutoLayout={handleAutoLayout}
-          initialZoom={initialFit?.zoom}
+          initialZoom={initialFit?.zoom ?? (siteFilter !== 'all' ? 0.85 : 0.65)}
           initialPan={initialFit?.pan}
         />
         {selectedNode && <DetailPanel />}

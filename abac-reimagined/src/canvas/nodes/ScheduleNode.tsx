@@ -26,10 +26,14 @@ export default function ScheduleNode({ schedule, selected, highlighted, dimmed, 
     <div
       onClick={onClick}
       onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.() }}
-      style={{ opacity: dimmed ? 0.2 : 1 }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Schedule: ${schedule.name}`}
+      style={{ opacity: dimmed ? 0.4 : 1 }}
       className={`absolute rounded-lg cursor-pointer transition-all select-none min-w-[140px] pl-3.5 pr-3.5 py-3 border-l-4 border-teal-500 ${
         selected
-          ? 'bg-[#07100e] shadow-[0_0_0_4px_rgba(20,184,166,0.12)] ring-1 ring-teal-500/60'
+          ? 'bg-[#07100e] shadow-[0_0_0_4px_rgba(20,184,166,0.2),0_0_16px_rgba(20,184,166,0.15)] ring-1 ring-teal-500/60'
           : highlighted
             ? 'bg-[#07100e] ring-1 ring-teal-400/60 shadow-[0_0_0_3px_rgba(20,184,166,0.2)]'
             : 'bg-[#07100e] hover:shadow-[0_0_0_2px_rgba(20,184,166,0.25)]'

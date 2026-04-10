@@ -193,41 +193,43 @@ export default function CanvasGraph({
     panRef.current  = { x: 20, y: 20 }
   }
 
-  // Fit-to-content: compute bounding box of all visible node positions
+  // Fit-to-content: compute bounding box of ALL visible nodes (use pos() so
+  // unpositioned nodes default to 0,0 instead of being skipped).
   function fitToContent() {
     const el = containerRef.current
     if (!el) return
 
     type NodeEntry = { key: string; w: number; h: number }
     const nodeEntries: NodeEntry[] = [
-      ...groups.map(g    => ({ key: `group-${g.id}`,    w: 148,        h: 80 })),
-      ...grants.map(g    => ({ key: `grant-${g.id}`,    w: 136,        h: 80 })),
-      ...schedules.map(s => ({ key: `schedule-${s.id}`, w: 140,        h: 80 })),
+      ...groups.map(g    => ({ key: `group-${g.id}`,    w: 148,         h: 80 })),
+      ...grants.map(g    => ({ key: `grant-${g.id}`,    w: 136,         h: 80 })),
+      ...schedules.map(s => ({ key: `schedule-${s.id}`, w: 140,         h: 80 })),
       ...doors.map(d     => ({ key: `door-${d.id}`,     w: DOOR_NODE_W, h: DOOR_NODE_H })),
     ]
 
     if (nodeEntries.length === 0) return
 
+    const padding = 40
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-    for (const { key, w, h } of nodeEntries) {
-      const p = positions[key]
-      if (!p) continue
-      minX = Math.min(minX, p.x)
-      minY = Math.min(minY, p.y)
-      maxX = Math.max(maxX, p.x + w)
-      maxY = Math.max(maxY, p.y + h)
-    }
 
-    if (!isFinite(minX)) return
+    for (const { key, w, h } of nodeEntries) {
+      // Use pos() so nodes with no explicit position default to (0,0)
+      const p = pos(key)
+      minX = Math.min(minX, p.x - padding)
+      minY = Math.min(minY, p.y - padding)
+      maxX = Math.max(maxX, p.x + w + padding)
+      maxY = Math.max(maxY, p.y + h + padding)
+    }
 
     const bbW = maxX - minX
     const bbH = maxY - minY
-    const padding = 40
+    if (bbW <= 0 || bbH <= 0) return
+
     const cW = el.clientWidth
     const cH = el.clientHeight
 
     const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN,
-      Math.min((cW - padding * 2) / bbW, (cH - padding * 2) / bbH) * 0.85
+      Math.min(cW / bbW, cH / bbH) * 0.9
     ))
     const newPan = {
       x: (cW - bbW * newZoom) / 2 - minX * newZoom,
@@ -512,11 +514,9 @@ export default function CanvasGraph({
   function makeHoverEnter(key: string) {
     return (e: React.MouseEvent) => {
       if (hoverDebounceRef.current) clearTimeout(hoverDebounceRef.current)
-      const rect = containerRef.current?.getBoundingClientRect()
-      const screenX = e.clientX - (rect?.left ?? 0)
-      const screenY = e.clientY - (rect?.top  ?? 0)
+      // Use raw viewport coordinates — HoverTooltip is position:fixed
       setHoveredKey(key)
-      setHoverScreenPos({ x: screenX, y: screenY })
+      setHoverScreenPos({ x: e.clientX, y: e.clientY })
     }
   }
 
@@ -590,6 +590,7 @@ export default function CanvasGraph({
         <svg
           className="absolute inset-0 pointer-events-none"
           style={{ width: CANVAS_W, height: CANVAS_H, overflow: 'visible' }}
+          aria-hidden="true"
         >
           <defs>
             {(Object.entries(EDGE_COLORS) as [EdgeColor, { dim: string; bright: string }][]).flatMap(([name, { dim, bright }]) => [
@@ -781,6 +782,28 @@ export default function CanvasGraph({
 
       {/* HoverTooltip — rendered outside the transform div (screen space) */}
       <HoverTooltip nodeKey={hoveredKey} screenX={hoverScreenPos.x} screenY={hoverScreenPos.y} />
+
+      {/* Node count HUD — top-right, outside transform */}
+      {totalVisible > 0 && (
+        <div
+          className="absolute top-2 right-2 pointer-events-none"
+          style={{
+            background: 'rgba(9,13,24,0.75)',
+            border: '1px solid rgba(30,45,74,0.7)',
+            borderRadius: 5,
+            padding: '3px 8px',
+          }}
+        >
+          <span className="text-[9px] text-slate-600 tracking-wide">
+            {[
+              groups.length    > 0 ? `Groups: ${groups.length}`       : null,
+              grants.length    > 0 ? `Grants: ${grants.length}`       : null,
+              schedules.length > 0 ? `Schedules: ${schedules.length}` : null,
+              doors.length     > 0 ? `Doors: ${doors.length}`         : null,
+            ].filter(Boolean).join(' · ')}
+          </span>
+        </div>
+      )}
 
       {/* Empty state */}
       {totalVisible === 0 && (

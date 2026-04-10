@@ -19,17 +19,21 @@ export default function DoorNode({ door, zone, selected, highlighted, dimmed, on
 
   return (
     <div
-      style={{ opacity: dimmed ? 0.2 : 1, width: 100, minHeight: 38, position: 'absolute' }}
+      style={{ opacity: dimmed ? 0.4 : 1, width: 100, minHeight: 38, position: 'absolute' }}
       className="relative"
     >
       {/* Base chip */}
       <div
         onClick={onClick}
         onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.() }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Door: ${door.name}${zone ? `, ${zone.type} zone` : ''}`}
         style={{ width: 100, height: 38 }}
         className={`rounded cursor-pointer transition-all select-none flex items-center gap-1.5 px-2 ${
           selected
-            ? `bg-[#0a0d14] border-2 shadow-[0_0_0_4px_rgba(239,68,68,0.08)] ${isRestricted ? 'border-red-500' : 'border-slate-500'}`
+            ? `bg-[#0a0d14] border-2 ${isRestricted ? 'border-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.12),0_0_16px_rgba(239,68,68,0.1)]' : 'border-slate-500 shadow-[0_0_0_4px_rgba(148,163,184,0.2),0_0_16px_rgba(148,163,184,0.1)]'}`
             : highlighted
               ? `bg-[#0a0d14] border-2 ${isRestricted ? 'border-red-400 shadow-[0_0_0_3px_rgba(239,68,68,0.2)]' : 'border-slate-400 shadow-[0_0_0_3px_rgba(148,163,184,0.2)]'}`
               : `bg-[#0a0d14] border ${isRestricted ? 'border-red-900/50 hover:border-red-800' : 'border-[#1e293b] hover:border-slate-600'}`

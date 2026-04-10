@@ -70,6 +70,21 @@ export default function Doors() {
           resultCount={filtered.length}
           totalCount={doors.length}
         />
+        {/* Zone color legend */}
+        <div className="mt-2 flex items-center gap-4 text-[9px] text-slate-600 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-red-900/80 border border-red-900" />
+            <span>Red border = Restricted / Secure zone</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#1e293b] border border-[#1e293b]" />
+            <span>Default = Perimeter / Interior / Public</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-red-300 font-semibold">Red name</span>
+            <span>= door in restricted/secure zone</span>
+          </div>
+        </div>
       </div>
 
       {/* Virtual scroll container — single-column for simplicity with virtualizer */}

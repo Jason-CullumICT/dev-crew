@@ -124,6 +124,10 @@ export default function Intrusion() {
   const [siteDropdownOpen, setSiteDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // Authorized users list state
+  const [userSearch, setUserSearch] = useState('')
+  const [showAllUsers, setShowAllUsers] = useState(false)
+
   // Re-render ticker so relative timestamps update each minute
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -380,22 +384,61 @@ export default function Intrusion() {
             <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-3">
               Arm/Disarm Permission — {authorizedUsers.length} users
             </div>
-            {authorizedUsers.length === 0
-              ? <p className="text-[11px] text-slate-600">No users have arm permission for this site right now.</p>
-              : (
-                <div className="space-y-2">
-                  {authorizedUsers.map(u => (
-                    <div key={u.id} className="flex items-center gap-3 text-[11px]">
-                      <div className="w-6 h-6 rounded-full bg-[#1c1f2e] border border-[#2d3148] flex items-center justify-center text-[9px] font-bold text-slate-400">
-                        {u.name.split(' ').map(n => n[0]).join('')}
+            {authorizedUsers.length === 0 ? (
+              <p className="text-[11px] text-slate-600">No users have arm permission for this site right now.</p>
+            ) : (
+              <>
+                {/* Search filter */}
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={e => { setUserSearch(e.target.value); setShowAllUsers(false) }}
+                  placeholder="Filter users…"
+                  className="w-full mb-3 bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-1.5 text-[11px] text-slate-200 placeholder-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+                {(() => {
+                  const filtered = userSearch.trim()
+                    ? authorizedUsers.filter(u =>
+                        u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        u.department.toLowerCase().includes(userSearch.toLowerCase())
+                      )
+                    : authorizedUsers
+                  const PAGE = 10
+                  const visible = showAllUsers ? filtered : filtered.slice(0, PAGE)
+                  const hasMore = filtered.length > PAGE && !showAllUsers
+
+                  return (
+                    <>
+                      <div className="space-y-2">
+                        {visible.map(u => (
+                          <div key={u.id} className="flex items-center gap-3 text-[11px]">
+                            <div className="w-6 h-6 rounded-full bg-[#1c1f2e] border border-[#2d3148] flex items-center justify-center text-[9px] font-bold text-slate-400">
+                              {u.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <span className="text-slate-300">{u.name}</span>
+                            <span className="text-slate-600 text-[9px]">{u.department}</span>
+                          </div>
+                        ))}
+                        {filtered.length === 0 && (
+                          <p className="text-[11px] text-slate-600">No users match that filter.</p>
+                        )}
                       </div>
-                      <span className="text-slate-300">{u.name}</span>
-                      <span className="text-slate-600 text-[9px]">{u.department}</span>
-                    </div>
-                  ))}
-                </div>
-              )
-            }
+                      {filtered.length > PAGE && (
+                        <button
+                          onClick={() => setShowAllUsers(v => !v)}
+                          className="mt-3 text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                          {showAllUsers
+                            ? 'Show fewer'
+                            : `Show all ${filtered.length} users`}
+                        </button>
+                      )}
+                      {!hasMore && !showAllUsers && filtered.length > 0 && filtered.length <= PAGE && null}
+                    </>
+                  )
+                })()}
+              </>
+            )}
           </div>
         </div>
 

@@ -93,7 +93,7 @@ export default function Grants() {
               : null
 
           return (
-            <div key={grant.id} className="bg-[#0c0a1e] border border-[#2e1f6b] rounded-lg p-4 space-y-3">
+            <div key={grant.id} className="bg-[#0c0a1e] border border-[#2e1f6b] rounded-lg p-4 space-y-3 min-h-[180px] flex flex-col">
               <div className="flex items-start justify-between gap-2">
                 <div className="text-[13px] font-bold text-violet-200">{grant.name}</div>
                 <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded border font-medium ${SCOPE_CLASS[grant.scope]}`}>{grant.scope}</span>
@@ -109,7 +109,7 @@ export default function Grants() {
                 {schedule && <span className="text-[9px] bg-[#07100e] border border-[#134e4a] text-teal-400 px-1.5 py-0.5 rounded">{schedule.name}</span>}
                 {targetName && <span className="text-[9px] text-slate-500">→ {targetName}</span>}
               </div>
-              <div className="flex gap-1 pt-1">
+              <div className="flex gap-1 pt-1 mt-auto">
                 <button
                   onClick={() => setEditing(grant)}
                   aria-label="Edit"

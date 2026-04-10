@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 
+const Dashboard   = lazy(() => import('./pages/Dashboard'))
 const Canvas      = lazy(() => import('./pages/Canvas'))
 const Oracle      = lazy(() => import('./pages/Oracle'))
 const Reasoner    = lazy(() => import('./pages/Reasoner'))
@@ -28,7 +29,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/canvas" replace />} />
+        <Route index element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
         <Route path="canvas"      element={<Suspense fallback={<PageLoader />}><Canvas /></Suspense>} />
         <Route path="oracle"      element={<Suspense fallback={<PageLoader />}><Oracle /></Suspense>} />
         <Route path="reasoner"    element={<Suspense fallback={<PageLoader />}><Reasoner /></Suspense>} />
@@ -42,7 +43,7 @@ export default function App() {
         <Route path="policies"    element={<Suspense fallback={<PageLoader />}><Policies /></Suspense>} />
         <Route path="controllers" element={<Suspense fallback={<PageLoader />}><Controllers /></Suspense>} />
         <Route path="intrusion"   element={<Suspense fallback={<PageLoader />}><Intrusion /></Suspense>} />
-        <Route path="*"           element={<Navigate to="/canvas" replace />} />
+        <Route path="*"           element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Share2, Search, Activity, Users, UsersRound,
   KeyRound, CalendarClock, DoorOpen, Building2, Shield,
@@ -27,6 +27,29 @@ const entityNav = [
   { to: '/controllers', icon: Cpu,          label: 'Controllers' },
 ]
 
+// Map pathname segments to display names
+const PAGE_NAMES: Record<string, string> = {
+  canvas:      'Canvas',
+  oracle:      'Oracle',
+  reasoner:    'Reasoner',
+  people:      'People',
+  groups:      'Groups',
+  grants:      'Grants',
+  schedules:   'Schedules',
+  doors:       'Doors',
+  sites:       'Sites',
+  zones:       'Zones',
+  policies:    'Policies',
+  controllers: 'Controllers',
+  intrusion:   'Intrusion',
+}
+
+function usePageTitle() {
+  const location = useLocation()
+  const segment = location.pathname.replace(/^\//, '').split('/')[0]
+  return PAGE_NAMES[segment] ?? ''
+}
+
 function SidebarItem({ to, icon: Icon, label, color }: { to: string; icon: React.ElementType; label: string; color?: string }) {
   return (
     <NavLink
@@ -34,13 +57,26 @@ function SidebarItem({ to, icon: Icon, label, color }: { to: string; icon: React
       title={label}
       className={({ isActive }) =>
         `relative group w-[38px] h-[38px] rounded-lg flex items-center justify-center transition-colors ${
-          isActive ? 'bg-white/[0.06] border border-white/10' : 'hover:bg-white/[0.04]'
+          isActive
+            ? 'bg-white/[0.06] border border-white/10'
+            : 'hover:bg-white/[0.04]'
         }`
       }
     >
       {({ isActive }) => (
         <>
-          <Icon size={17} style={{ color: isActive ? (color ?? '#94a3b8') : '#374151' }} strokeWidth={1.8} />
+          {/* Left accent bar for active state */}
+          {isActive && (
+            <span
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[18px] rounded-r bg-indigo-500"
+              aria-hidden="true"
+            />
+          )}
+          <Icon
+            size={17}
+            style={{ color: isActive ? (color ?? '#94a3b8') : '#374151' }}
+            strokeWidth={1.8}
+          />
           <div className="absolute left-[46px] bg-[#1c1f2e] border border-[#2d3148] rounded-md px-2.5 py-1 text-[11px] text-slate-200 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
             {label}
           </div>
@@ -52,6 +88,7 @@ function SidebarItem({ to, icon: Icon, label, color }: { to: string; icon: React
 
 export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const pageTitle = usePageTitle()
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -91,7 +128,15 @@ export default function Layout() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-[42px] shrink-0 bg-[#08090f] border-b border-[#141828] flex items-center px-4 gap-3">
+          {/* Page title on the left */}
+          {pageTitle && (
+            <span className="text-[12px] font-semibold text-slate-400">
+              {pageTitle}
+            </span>
+          )}
+
           <div className="flex-1" />
+
           <button
             onClick={() => setPaletteOpen(true)}
             className="flex items-center gap-1.5 text-[10px] text-slate-600 hover:text-slate-400 transition-colors"

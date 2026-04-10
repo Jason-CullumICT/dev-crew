@@ -201,8 +201,43 @@ export default function Reasoner() {
       </div>
 
       {!result ? (
-        <div className="flex-1 flex items-center justify-center text-[#374151] text-[12px]">
-          Select a person, door, and action — then click Trace
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8">
+          <div className="text-center space-y-2 max-w-md">
+            <div className="text-[13px] font-semibold text-slate-300">Step-by-step access decisions</div>
+            <div className="text-[11px] text-slate-500 leading-relaxed">
+              The Reasoner traces an access decision step-by-step, showing exactly why access is granted or denied — from group membership through grant collection, schedule evaluation, and policy checks to the final verdict.
+            </div>
+          </div>
+          <div className="space-y-2 w-full max-w-sm">
+            <div className="text-[9px] uppercase tracking-wider text-[#374151] font-semibold text-center">Try an example</div>
+            {[
+              { label: 'First user → Main Entrance (unlock)', userIdx: 0, doorName: 'Main Entrance', action: 'unlock' as const },
+              { label: 'Second user → Server Room A (unlock)', userIdx: 1, doorName: 'Server Room A', action: 'unlock' as const },
+              { label: 'Third user → Data Vault (arm)', userIdx: 2, doorName: 'Data Vault', action: 'arm' as const },
+            ].map(({ label, userIdx, doorName, action }) => {
+              const exUser = users[userIdx]
+              const exDoor = doors.find(d => d.name === doorName) ?? doors[userIdx + 3]
+              if (!exUser || !exDoor) return null
+              return (
+                <button
+                  key={label}
+                  onClick={() => {
+                    setSelectedUserId(exUser.id)
+                    setSelectedDoorId(exDoor.id)
+                    setSelectedAction(action)
+                    const now = buildNowContext()
+                    setResult(evaluateAccess(exUser, exDoor, store, now, action))
+                  }}
+                  className="w-full text-left px-4 py-2.5 rounded-lg border border-[#1e293b] bg-[#0f1320] hover:border-cyan-500/40 hover:bg-cyan-500/[0.03] transition-colors group"
+                >
+                  <div className="text-[10px] font-semibold text-slate-300 group-hover:text-cyan-300 transition-colors">
+                    {exUser.name} → {exDoor.name}
+                  </div>
+                  <div className="text-[9px] text-slate-600 mt-0.5">action: {action}</div>
+                </button>
+              )
+            })}
+          </div>
         </div>
       ) : (
         <div className="flex-1 flex flex-col overflow-hidden">

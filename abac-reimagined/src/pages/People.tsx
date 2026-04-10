@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useStore } from '../store/store'
 import UserModal from '../modals/UserModal'
+import SearchBar from '../components/SearchBar'
+import ConfirmDialog from '../components/ConfirmDialog'
 import type { User } from '../types'
 
 const STATUS_CLASS = {
@@ -20,11 +23,39 @@ export default function People() {
   const users      = useStore(s => s.users)
   const deleteUser = useStore(s => s.deleteUser)
 
-  const [editing, setEditing] = useState<User | null | 'new'>(null)
+  const [editing, setEditing]           = useState<User | null | 'new'>(null)
+  const [search, setSearch]             = useState('')
+  const [pendingDelete, setPendingDelete] = useState<User | null>(null)
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return users
+    return users.filter(u =>
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.department.toLowerCase().includes(q)
+    )
+  }, [users, search])
+
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  const rowVirtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 52, // px — accounts for py-3 + content
+    overscan: 10,
+  })
+
+  function handleDeleteConfirm() {
+    if (pendingDelete) {
+      deleteUser(pendingDelete.id)
+      setPendingDelete(null)
+    }
+  }
 
   return (
-    <div className="p-6 space-y-4 overflow-y-auto h-full">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-4 flex flex-col h-full overflow-hidden">
+      <div className="flex items-center justify-between shrink-0">
         <h1 className="text-xl font-bold text-slate-100">People</h1>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-slate-600">{users.length} users</span>
@@ -37,29 +68,75 @@ export default function People() {
         </div>
       </div>
 
-      <div className="grid gap-2">
-        {users.map(user => (
-          <div key={user.id} className="bg-[#0f1320] border border-[#1e293b] rounded-lg px-4 py-3 flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-[#1c1f2e] border border-[#2d3148] flex items-center justify-center text-[11px] font-bold text-slate-400 shrink-0">
-              {user.name.split(' ').map(n => n[0]).join('')}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-semibold text-slate-100">{user.name}</div>
-              <div className="text-[10px] text-slate-500">{user.role} · {user.department}</div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap justify-end">
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${TYPE_CLASS[user.type]}`}>{user.type}</span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${STATUS_CLASS[user.status]}`}>{user.status}</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">L{user.clearanceLevel}</span>
-              <button onClick={() => setEditing(user)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
-                <Pencil size={12} />
-              </button>
-              <button onClick={() => deleteUser(user.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                <Trash2 size={12} />
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="shrink-0">
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+          placeholder="Search by name, email, or department..."
+          resultCount={filtered.length}
+          totalCount={users.length}
+        />
+      </div>
+
+      {/* Virtual scroll container */}
+      <div
+        ref={parentRef}
+        className="flex-1 overflow-y-auto min-h-0"
+      >
+        <div
+          style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}
+        >
+          {rowVirtualizer.getVirtualItems().map(virtualRow => {
+            const user = filtered[virtualRow.index]
+            return (
+              <div
+                key={user.id}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  transform: `translateY(${virtualRow.start}px)`,
+                  paddingBottom: '8px',
+                }}
+              >
+                <div className="bg-[#0f1320] border border-[#1e293b] rounded-lg px-4 py-3 flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-[#1c1f2e] border border-[#2d3148] flex items-center justify-center text-[11px] font-bold text-slate-400 shrink-0">
+                    {user.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-semibold text-slate-100">{user.name}</div>
+                    <div className="text-[10px] text-slate-500">{user.role} · {user.department}</div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${TYPE_CLASS[user.type]}`}>{user.type}</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${STATUS_CLASS[user.status]}`}>{user.status}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">L{user.clearanceLevel}</span>
+                    <button
+                      onClick={() => setEditing(user)}
+                      aria-label="Edit"
+                      className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      onClick={() => setPendingDelete(user)}
+                      aria-label="Delete"
+                      className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        {filtered.length === 0 && (
+          <p className="text-[12px] text-slate-600 py-4">
+            {search ? 'No users match your search.' : 'No users yet.'}
+          </p>
+        )}
       </div>
 
       {editing !== null && (
@@ -68,6 +145,15 @@ export default function People() {
           onClose={() => setEditing(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete user?"
+        message={`"${pendingDelete?.name}" will be permanently deleted and removed from all groups.`}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDelete(null)}
+        variant="danger"
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import CanvasGraph from '../canvas/CanvasGraph'
 import DetailPanel from '../canvas/DetailPanel'
 import { useStore } from '../store/store'
@@ -21,19 +21,107 @@ const TYPE_COLORS: Record<EntityType, string> = {
   doors:     'bg-slate-500/15 text-slate-300 border-slate-500/30 data-[active]:bg-slate-500/30 data-[active]:border-slate-400',
 }
 
+// Auto-layout column X positions
+const LAYOUT_COL = {
+  groups:    80,
+  grants:    350,
+  schedules: 620,
+  doors:     890,
+}
+// Vertical gaps per type
+const LAYOUT_GAP = {
+  groups:    110,
+  grants:    95,
+  schedules: 85,
+  doors:     65,
+}
+// Max rows per column before wrapping to a new column
+const LAYOUT_MAX_PER_COL = 25
+// Horizontal spacing between overflow columns
+const LAYOUT_COL_SPACING = 180
+
 export default function Canvas() {
-  const selectedNode = useStore(s => s.selectedCanvasNodeId)
-  const sites        = useStore(s => s.sites)
+  const selectedNode    = useStore(s => s.selectedCanvasNodeId)
+  const sites           = useStore(s => s.sites)
+  const allGroups       = useStore(s => s.groups)
+  const allGrants       = useStore(s => s.grants)
+  const allSchedules    = useStore(s => s.schedules)
+  const allDoors        = useStore(s => s.doors)
+  const zones           = useStore(s => s.zones)
+  const setCanvasPosition = useStore(s => s.setCanvasPosition)
 
   const [siteFilter, setSiteFilter]       = useState<string>('all')
   const [scopeFilter, setScopeFilter]     = useState<string>('all')
   const [visibleTypes, setVisibleTypes]   = useState<Set<EntityType>>(new Set(ALL_TYPES))
 
+  // ── Auto-layout trigger ────────────────────────────────────────────────────
+  // We use a counter to signal CanvasGraph to reset pan/zoom after layout is applied
+  const [layoutResetKey, setLayoutResetKey] = useState(0)
+
+  const handleAutoLayout = useCallback(() => {
+    const activeSite  = siteFilter  === 'all' ? null : siteFilter
+    const activeScope = scopeFilter === 'all' ? null : scopeFilter
+
+    // Compute visible entities (same filter logic as CanvasGraph)
+    const visibleDoors = allDoors.filter(d => {
+      if (activeSite && d.siteId !== activeSite) return false
+      return true
+    })
+    const visibleDoorIds = new Set(visibleDoors.map(d => d.id))
+
+    const visibleGrants = allGrants.filter(g => {
+      if (activeScope && g.scope !== activeScope) return false
+      if (activeSite) {
+        if (g.scope === 'global') return true
+        if (g.scope === 'site'  && g.targetId !== activeSite) return false
+        if (g.scope === 'zone') {
+          const zone = zones.find(z => z.id === g.targetId)
+          if (!zone || zone.siteId !== activeSite) return false
+        }
+      }
+      return true
+    })
+    void visibleDoorIds // referenced in grant filter above
+
+    const visibleSchedules = allSchedules.filter(s => {
+      if (activeSite) return visibleGrants.some(g => g.scheduleId === s.id)
+      return true
+    })
+
+    const groups    = visibleTypes.has('groups')    ? [...allGroups].sort((a, b)    => a.name.localeCompare(b.name))    : []
+    const grants    = visibleTypes.has('grants')    ? [...visibleGrants].sort((a, b)  => a.name.localeCompare(b.name))  : []
+    const schedules = visibleTypes.has('schedules') ? [...visibleSchedules].sort((a, b) => a.name.localeCompare(b.name)) : []
+    const doors     = visibleTypes.has('doors')     ? [...visibleDoors].sort((a, b)   => a.name.localeCompare(b.name))   : []
+
+    function assignPositions(
+      items: { id: string }[],
+      baseX: number,
+      gapY: number,
+      prefix: string,
+    ) {
+      items.forEach((item, i) => {
+        const col = Math.floor(i / LAYOUT_MAX_PER_COL)
+        const row = i % LAYOUT_MAX_PER_COL
+        setCanvasPosition(`${prefix}-${item.id}`, {
+          x: baseX + col * LAYOUT_COL_SPACING,
+          y: 60 + row * gapY,
+        })
+      })
+    }
+
+    assignPositions(groups,    LAYOUT_COL.groups,    LAYOUT_GAP.groups,    'group')
+    assignPositions(grants,    LAYOUT_COL.grants,    LAYOUT_GAP.grants,    'grant')
+    assignPositions(schedules, LAYOUT_COL.schedules, LAYOUT_GAP.schedules, 'schedule')
+    assignPositions(doors,     LAYOUT_COL.doors,     LAYOUT_GAP.doors,     'door')
+
+    // Signal CanvasGraph to reset the viewport
+    setLayoutResetKey(k => k + 1)
+  }, [siteFilter, scopeFilter, visibleTypes, allGroups, allGrants, allSchedules, allDoors, zones, setCanvasPosition])
+
   function toggleType(t: EntityType) {
     setVisibleTypes(prev => {
       const next = new Set(prev)
       if (next.has(t)) {
-        // Don't allow deselecting all
         if (next.size === 1) return prev
         next.delete(t)
       } else {
@@ -134,9 +222,11 @@ export default function Canvas() {
       {/* Canvas area */}
       <div className="relative flex-1 min-h-0">
         <CanvasGraph
+          key={layoutResetKey}
           siteFilter={siteFilter === 'all' ? null : siteFilter}
           scopeFilter={scopeFilter === 'all' ? null : scopeFilter}
           visibleTypes={visibleTypes}
+          onAutoLayout={handleAutoLayout}
         />
         {selectedNode && <DetailPanel />}
       </div>

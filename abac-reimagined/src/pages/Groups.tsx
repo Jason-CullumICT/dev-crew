@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import GroupModal from '../modals/GroupModal'
+import SearchBar from '../components/SearchBar'
+import ConfirmDialog from '../components/ConfirmDialog'
 import type { Group } from '../types'
 
 export default function Groups() {
@@ -9,7 +11,34 @@ export default function Groups() {
   const grants      = useStore(s => s.grants)
   const deleteGroup = useStore(s => s.deleteGroup)
 
-  const [editing, setEditing] = useState<Group | null | 'new'>(null)
+  const [editing, setEditing]             = useState<Group | null | 'new'>(null)
+  const [search, setSearch]               = useState('')
+  const [pendingDelete, setPendingDelete] = useState<Group | null>(null)
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return groups
+    return groups.filter(g => g.name.toLowerCase().includes(q))
+  }, [groups, search])
+
+  function getCascadeDetails(group: Group): string[] {
+    const details: string[] = []
+    // Count other groups that reference this group as a subgroup
+    const subgroupRefs = groups.filter(g => g.id !== group.id && g.subGroups.includes(group.id))
+    if (subgroupRefs.length > 0) {
+      details.push(`${subgroupRefs.length} subgroup reference${subgroupRefs.length !== 1 ? 's' : ''} will be removed from other groups`)
+    }
+    return details
+  }
+
+  function handleDeleteConfirm() {
+    if (pendingDelete) {
+      deleteGroup(pendingDelete.id)
+      setPendingDelete(null)
+    }
+  }
+
+  const cascadeDetails = pendingDelete ? getCascadeDetails(pendingDelete) : []
 
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
@@ -17,14 +46,31 @@ export default function Groups() {
         <h1 className="text-xl font-bold text-slate-100">Groups</h1>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-slate-600">{groups.length} groups</span>
-          <button onClick={() => setEditing('new')} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors">+ New</button>
+          <button
+            onClick={() => setEditing('new')}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            + New
+          </button>
         </div>
       </div>
 
-      {groups.length === 0 && <p className="text-[12px] text-slate-600">No groups yet. Click + New to create one.</p>}
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by group name..."
+        resultCount={filtered.length}
+        totalCount={groups.length}
+      />
+
+      {filtered.length === 0 && (
+        <p className="text-[12px] text-slate-600">
+          {search ? 'No groups match your search.' : 'No groups yet. Click + New to create one.'}
+        </p>
+      )}
 
       <div className="grid gap-3">
-        {groups.map(group => {
+        {filtered.map(group => {
           const subGroupNames = group.subGroups.map(id => groups.find(g => g.id === id)?.name ?? id)
           const grantNames    = group.inheritedPermissions.map(id => grants.find(g => g.id === id)?.name ?? id)
           const memberCount   = group.members.length
@@ -38,10 +84,18 @@ export default function Groups() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {memberCount > 0 && <span className="text-[9px] text-slate-600">{memberCount} members</span>}
-                  <button onClick={() => setEditing(group)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                  <button
+                    onClick={() => setEditing(group)}
+                    aria-label="Edit"
+                    className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                  >
                     <Pencil size={12} />
                   </button>
-                  <button onClick={() => deleteGroup(group.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                  <button
+                    onClick={() => setPendingDelete(group)}
+                    aria-label="Delete"
+                    className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -82,6 +136,16 @@ export default function Groups() {
       {editing !== null && (
         <GroupModal group={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete group?"
+        message={`"${pendingDelete?.name}" will be permanently deleted.`}
+        details={cascadeDetails}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDelete(null)}
+        variant="danger"
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Activity } from 'lucide-react'
 import { useStore } from '../store/store'
@@ -12,6 +12,18 @@ interface ResultRow {
   user: User
   door: Door
   result: AccessResult
+}
+
+interface QueryCache {
+  userId: string
+  doorId: string
+  action: ActionType
+  mode: QueryMode
+  useNow: boolean
+  overrideHour: number
+  simulateHoliday: boolean
+  storeVersion: number
+  rows: ResultRow[]
 }
 
 export default function Oracle() {
@@ -35,6 +47,29 @@ export default function Oracle() {
   const [results, setResults] = useState<ResultRow[] | null>(null)
   const [hasRun, setHasRun] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [evaluatingLabel, setEvaluatingLabel] = useState('')
+
+  // Store version — increments whenever any store data changes so cache is invalidated
+  const storeVersionRef = useRef(0)
+  const prevStoreKeyRef = useRef('')
+
+  const storeKey = useMemo(
+    () => [users.length, doors.length, groups.length, grants.length,
+           schedules.length, policies.length, zones.length, sites.length,
+           controllers.length].join('-'),
+    [users, doors, groups, grants, schedules, policies, zones, sites, controllers]
+  )
+
+  useEffect(() => {
+    if (prevStoreKeyRef.current !== '' && prevStoreKeyRef.current !== storeKey) {
+      storeVersionRef.current += 1
+    }
+    prevStoreKeyRef.current = storeKey
+  }, [storeKey])
+
+  // Query result cache
+  const cacheRef = useRef<QueryCache | null>(null)
 
   const navigate = useNavigate()
 
@@ -52,36 +87,104 @@ export default function Oracle() {
     return { ...base, hour, ...holidayOverride }
   }
 
+  function currentCacheKey(): Omit<QueryCache, 'rows'> {
+    return {
+      userId: selectedUserId,
+      doorId: selectedDoorId,
+      action: selectedAction,
+      mode,
+      useNow,
+      overrideHour,
+      simulateHoliday,
+      storeVersion: storeVersionRef.current,
+    }
+  }
+
+  function isCacheHit(key: Omit<QueryCache, 'rows'>): ResultRow[] | null {
+    const c = cacheRef.current
+    if (!c) return null
+    if (
+      c.userId === key.userId &&
+      c.doorId === key.doorId &&
+      c.action === key.action &&
+      c.mode === key.mode &&
+      c.useNow === key.useNow &&
+      c.overrideHour === key.overrideHour &&
+      c.simulateHoliday === key.simulateHoliday &&
+      c.storeVersion === key.storeVersion
+    ) {
+      return c.rows
+    }
+    return null
+  }
+
   function runQuery() {
+    const key = currentCacheKey()
+    const cached = isCacheHit(key)
+
+    if (cached) {
+      setResults(cached)
+      setHasRun(true)
+      return
+    }
+
     setLoading(true)
     setHasRun(true)
+    setProgress(0)
+
+    const total = mode === 'who-can-access' ? users.length : doors.length
+    const label = mode === 'who-can-access'
+      ? `Evaluating ${total} users...`
+      : `Evaluating ${total} doors...`
+    setEvaluatingLabel(label)
+
+    // Animate progress bar during evaluation
+    let current = 0
+    const intervalMs = Math.max(8, Math.floor(400 / total))
+    const progressInterval = setInterval(() => {
+      current += 1
+      setProgress(Math.round((current / total) * 90))
+      if (current >= total) clearInterval(progressInterval)
+    }, intervalMs)
 
     setTimeout(() => {
+      clearInterval(progressInterval)
+
       const now = buildNow()
+      let rows: ResultRow[] = []
 
       if (mode === 'who-can-access') {
         const door = doors.find(d => d.id === selectedDoorId)
         if (!door) { setLoading(false); return }
-        const rows: ResultRow[] = users.map(user => ({
+        rows = users.map(user => ({
           user,
           door,
           result: evaluateAccess(user, door, store, now, selectedAction),
         }))
-        rows.sort((a, b) => (b.result.overallGranted ? 1 : 0) - (a.result.overallGranted ? 1 : 0))
-        setResults(rows)
       } else {
         const user = users.find(u => u.id === selectedUserId)
         if (!user) { setLoading(false); return }
-        const rows: ResultRow[] = doors.map(door => ({
+        rows = doors.map(door => ({
           user,
           door,
           result: evaluateAccess(user, door, store, now, selectedAction),
         }))
-        rows.sort((a, b) => (b.result.overallGranted ? 1 : 0) - (a.result.overallGranted ? 1 : 0))
-        setResults(rows)
       }
 
-      setLoading(false)
+      rows.sort((a, b) => (b.result.overallGranted ? 1 : 0) - (a.result.overallGranted ? 1 : 0))
+
+      // Store in cache
+      cacheRef.current = { ...key, rows }
+
+      // Flash to 100% briefly before showing results
+      setProgress(100)
+      setEvaluatingLabel(`Done — ${rows.filter(r => r.result.overallGranted).length} granted`)
+
+      setTimeout(() => {
+        setResults(rows)
+        setLoading(false)
+        setProgress(0)
+      }, 350)
     }, 0)
   }
 
@@ -207,13 +310,19 @@ export default function Oracle() {
 
         {/* Results */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* Loading overlay */}
+          {/* Progress bar overlay */}
           {loading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0b0e18]/80">
-              <div className="flex items-center gap-3 text-[12px] text-slate-400">
-                <div className="w-4 h-4 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
-                Evaluating...
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0b0e18]/90 gap-4">
+              <div className="text-[11px] text-slate-400 font-mono tracking-wide">
+                {evaluatingLabel}
               </div>
+              <div className="w-64 h-1 bg-[#1e293b] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-75"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="text-[9px] text-[#374151]">{progress}%</div>
             </div>
           )}
 

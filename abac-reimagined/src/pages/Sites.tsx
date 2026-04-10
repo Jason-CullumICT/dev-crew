@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import SiteModal from '../modals/SiteModal'
+import SearchBar from '../components/SearchBar'
+import ConfirmDialog from '../components/ConfirmDialog'
 import type { Site, SiteStatus, ZoneStatus } from '../types'
 
 const SITE_STATUS_CLASS: Record<SiteStatus, string> = {
@@ -21,9 +23,40 @@ const ZONE_STATUS_CLASS: Record<ZoneStatus, string> = {
 export default function Sites() {
   const sites      = useStore(s => s.sites)
   const zones      = useStore(s => s.zones)
+  const doors      = useStore(s => s.doors)
   const deleteSite = useStore(s => s.deleteSite)
 
-  const [editing, setEditing] = useState<Site | null | 'new'>(null)
+  const [editing, setEditing]             = useState<Site | null | 'new'>(null)
+  const [search, setSearch]               = useState('')
+  const [pendingDelete, setPendingDelete] = useState<Site | null>(null)
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return sites
+    return sites.filter(s => s.name.toLowerCase().includes(q))
+  }, [sites, search])
+
+  function getCascadeDetails(site: Site): string[] {
+    const details: string[] = []
+    const siteZoneCount = zones.filter(z => z.siteId === site.id).length
+    const siteDoorCount = doors.filter(d => d.siteId === site.id).length
+    if (siteZoneCount > 0) {
+      details.push(`${siteZoneCount} zone${siteZoneCount !== 1 ? 's' : ''} will also be deleted`)
+    }
+    if (siteDoorCount > 0) {
+      details.push(`${siteDoorCount} door${siteDoorCount !== 1 ? 's' : ''} will also be deleted`)
+    }
+    return details
+  }
+
+  function handleDeleteConfirm() {
+    if (pendingDelete) {
+      deleteSite(pendingDelete.id)
+      setPendingDelete(null)
+    }
+  }
+
+  const cascadeDetails = pendingDelete ? getCascadeDetails(pendingDelete) : []
 
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
@@ -31,14 +64,31 @@ export default function Sites() {
         <h1 className="text-xl font-bold text-slate-100">Sites & Zones</h1>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-slate-600">{sites.length} sites</span>
-          <button onClick={() => setEditing('new')} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors">+ New</button>
+          <button
+            onClick={() => setEditing('new')}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            + New
+          </button>
         </div>
       </div>
 
-      {sites.length === 0 && <p className="text-[12px] text-slate-600">No sites yet. Click + New to create one.</p>}
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by site name..."
+        resultCount={filtered.length}
+        totalCount={sites.length}
+      />
+
+      {filtered.length === 0 && (
+        <p className="text-[12px] text-slate-600">
+          {search ? 'No sites match your search.' : 'No sites yet. Click + New to create one.'}
+        </p>
+      )}
 
       <div className="space-y-4">
-        {sites.map(site => {
+        {filtered.map(site => {
           const siteZones = zones.filter(z => z.siteId === site.id)
           return (
             <div key={site.id} className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 space-y-3">
@@ -49,10 +99,18 @@ export default function Sites() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[9px] px-2 py-0.5 rounded border font-bold ${SITE_STATUS_CLASS[site.status]}`}>{site.status}</span>
-                  <button onClick={() => setEditing(site)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                  <button
+                    onClick={() => setEditing(site)}
+                    aria-label="Edit"
+                    className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                  >
                     <Pencil size={12} />
                   </button>
-                  <button onClick={() => deleteSite(site.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                  <button
+                    onClick={() => setPendingDelete(site)}
+                    aria-label="Delete"
+                    className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -78,6 +136,16 @@ export default function Sites() {
       {editing !== null && (
         <SiteModal site={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete site?"
+        message={`"${pendingDelete?.name}" will be permanently deleted.`}
+        details={cascadeDetails}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDelete(null)}
+        variant="danger"
+      />
     </div>
   )
 }

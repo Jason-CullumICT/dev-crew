@@ -11,8 +11,10 @@ interface OracleNavState {
   doorId?: string
 }
 
+type StepStatus = 'pass' | 'fail' | 'skip' | 'holiday'
+
 function StepHeader({ label, status, expanded, onToggle }: {
-  label: string; status: 'pass' | 'fail' | 'skip' | 'holiday'; expanded: boolean; onToggle: () => void
+  label: string; status: StepStatus; expanded: boolean; onToggle: () => void
 }) {
   const Icon = status === 'pass' ? CheckCircle : status === 'fail' ? XCircle : MinusCircle
   const color = { pass: 'text-emerald-400', fail: 'text-red-400', skip: 'text-slate-600', holiday: 'text-amber-400' }[status]
@@ -32,6 +34,43 @@ function StepHeader({ label, status, expanded, onToggle }: {
       {expanded ? <ChevronDown size={13} className="text-slate-600" /> : <ChevronRight size={13} className="text-slate-600" />}
     </button>
   )
+}
+
+// Returns Tailwind-compatible inline style values for step left border + background tint
+function stepContainerStyle(status: StepStatus): React.CSSProperties {
+  if (status === 'pass') {
+    return { borderLeft: '3px solid #10b981', background: 'rgba(16,185,129,0.025)' }
+  }
+  if (status === 'fail') {
+    return { borderLeft: '3px solid #ef4444', background: 'rgba(239,68,68,0.04)' }
+  }
+  if (status === 'holiday') {
+    return { borderLeft: '3px solid #f59e0b', background: 'rgba(245,158,11,0.03)' }
+  }
+  // skip — neutral
+  return { borderLeft: '3px solid #1e293b', background: 'transparent' }
+}
+
+function buildDenialReason(result: AccessResult): string {
+  if (!result.permissionGranted) {
+    if (result.grantResults.length === 0) return 'No grants cover this door and action'
+    const schedInactive = result.grantResults.find(g => g.scheduleStatus === 'inactive')
+    if (schedInactive) return `Schedule inactive on grant "${schedInactive.grantName}"`
+    return 'No matching grant — action or scope mismatch'
+  }
+  if (!result.abacPassed) {
+    const failedPolicy = result.policyResults.find(p => !p.passed)
+    if (failedPolicy) {
+      const failedRule = failedPolicy.ruleResults.find(r => !r.passed)
+      if (failedRule) {
+        const rhs = Array.isArray(failedRule.rightSide) ? failedRule.rightSide.join(', ') : failedRule.rightSide
+        return `Policy "${failedPolicy.policyName}" blocked — ${failedRule.leftSide} (${failedRule.leftResolved}) ${failedRule.operator} ${rhs}`
+      }
+      return `Policy "${failedPolicy.policyName}" blocked`
+    }
+    return 'Policy check failed'
+  }
+  return ''
 }
 
 export default function Reasoner() {
@@ -75,6 +114,24 @@ export default function Reasoner() {
     const now = buildNowContext()
     setResult(evaluateAccess(user, door, store, now, selectedAction))
   }
+
+  // Derive step statuses from result
+  const stepStatuses: StepStatus[] = result ? [
+    // Step 1: Groups
+    result.groupChain.length > 0 ? 'pass' : 'fail',
+    // Step 2: Grants
+    result.grantResults.length > 0 ? (result.permissionGranted ? 'pass' : 'fail') : 'fail',
+    // Step 3: Schedule
+    result.activeHoliday
+      ? 'holiday'
+      : result.grantResults.some(g => g.scheduleStatus === 'inactive')
+        ? 'fail'
+        : 'pass',
+    // Step 4: Policy
+    result.policyResults.length === 0 ? 'skip' : result.abacPassed ? 'pass' : 'fail',
+    // Step 5: Verdict
+    result.overallGranted ? 'pass' : 'fail',
+  ] : ['skip', 'skip', 'skip', 'skip', 'skip']
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[#0b0e18]">
@@ -135,17 +192,17 @@ export default function Reasoner() {
           <div className="flex-1 overflow-y-auto divide-y divide-[#141828]">
 
             {/* Step 1: Group Membership */}
-            <div>
+            <div style={stepContainerStyle(stepStatuses[0])}>
               <StepHeader
                 label="1 · Group Membership"
-                status={result.groupChain.length > 0 ? 'pass' : 'skip'}
+                status={stepStatuses[0]}
                 expanded={expandedSteps.has(0)}
                 onToggle={() => toggleStep(0)}
               />
               {expandedSteps.has(0) && (
                 <div className="px-6 pb-3 space-y-2">
                   {result.groupChain.length === 0 ? (
-                    <p className="text-[10px] text-slate-600">User is not a member of any group.</p>
+                    <p className="text-[10px] text-red-400/70">User is not a member of any group — access cannot be granted via group membership.</p>
                   ) : (
                     result.groupChain.map((name, i) => (
                       <div key={i} className="flex items-center gap-2 text-[10px]">
@@ -159,52 +216,74 @@ export default function Reasoner() {
             </div>
 
             {/* Step 2: Grant Collection */}
-            <div>
+            <div style={stepContainerStyle(stepStatuses[1])}>
               <StepHeader
                 label="2 · Grant Collection"
-                status={result.grantResults.length > 0 ? (result.permissionGranted ? 'pass' : 'fail') : 'skip'}
+                status={stepStatuses[1]}
                 expanded={expandedSteps.has(1)}
                 onToggle={() => toggleStep(1)}
               />
               {expandedSteps.has(1) && (
                 <div className="px-6 pb-3 space-y-2">
                   {result.grantResults.length === 0 ? (
-                    <p className="text-[10px] text-slate-600">No grants cover this door + action.</p>
+                    <p className="text-[10px] text-red-400/70">No grants cover this door and action combination.</p>
                   ) : (
-                    result.grantResults.map(gr => (
-                      <div key={gr.grantId}
-                        className={`rounded-lg border px-3 py-2 ${gr.included ? 'border-emerald-900/50 bg-emerald-500/[0.04]' : 'border-[#1e293b] bg-[#0f1117]'}`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[11px] font-semibold text-slate-200">{gr.grantName}</span>
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${gr.included ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/[0.08] text-red-400'}`}>
-                            {gr.included ? 'INCLUDED' : 'EXCLUDED'}
-                          </span>
+                    result.grantResults.map(gr => {
+                      const grantPass = gr.included
+                      return (
+                        <div key={gr.grantId}
+                          className="rounded-lg border overflow-hidden"
+                          style={{
+                            borderColor: grantPass ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.3)',
+                            background: grantPass ? 'rgba(16,185,129,0.04)' : 'rgba(239,68,68,0.04)',
+                          }}
+                        >
+                          <div className="flex items-center justify-between px-3 py-1.5">
+                            <span className="text-[11px] font-semibold text-slate-200">{gr.grantName}</span>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${grantPass ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/[0.08] text-red-400'}`}>
+                              {grantPass ? 'INCLUDED' : 'EXCLUDED'}
+                            </span>
+                          </div>
+                          <div className="px-3 pb-2 text-[9px] text-[#374151] space-y-0.5">
+                            <div>Mode: <span className="text-slate-500">{gr.applicationMode}</span></div>
+                            {gr.scheduleStatus !== null && (
+                              <div>Schedule: <span className={
+                                gr.scheduleStatus === 'active' ? 'text-emerald-400' :
+                                gr.scheduleStatus === 'override_active' ? 'text-amber-400' :
+                                'text-red-400 font-semibold'
+                              }>{gr.scheduleStatus}{gr.activeHolidayName ? ` · 🏖 ${gr.activeHolidayName}` : ''}</span></div>
+                            )}
+                            {/* Condition results for conditional grants */}
+                            {gr.conditionResults.length > 0 && (
+                              <div className="pt-0.5 space-y-0.5">
+                                {gr.conditionResults.map(cr => (
+                                  <div key={cr.ruleId} className="flex items-center gap-1.5">
+                                    {cr.passed
+                                      ? <CheckCircle size={9} className="text-emerald-400 shrink-0" />
+                                      : <XCircle size={9} className="text-red-400 shrink-0" />
+                                    }
+                                    <span className={cr.passed ? 'text-slate-500' : 'text-red-400'}>
+                                      {cr.leftSide} ({cr.leftResolved}) {cr.operator} {Array.isArray(cr.rightSide) ? cr.rightSide.join(', ') : cr.rightSide}
+                                      {!cr.passed && ' — FAILED'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-[9px] text-[#374151] space-y-0.5">
-                          <div>Mode: <span className="text-slate-500">{gr.applicationMode}</span></div>
-                          {gr.scheduleStatus !== null && (
-                            <div>Schedule: <span className={
-                              gr.scheduleStatus === 'active' ? 'text-emerald-400' :
-                              gr.scheduleStatus === 'override_active' ? 'text-amber-400' :
-                              'text-red-400'
-                            }>{gr.scheduleStatus}{gr.activeHolidayName ? ` · 🏖 ${gr.activeHolidayName}` : ''}</span></div>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
               )}
             </div>
 
             {/* Step 3: Schedule Evaluation */}
-            <div>
+            <div style={stepContainerStyle(stepStatuses[2])}>
               <StepHeader
                 label="3 · Schedule Evaluation"
-                status={
-                  result.activeHoliday ? 'holiday' :
-                  result.grantResults.some(g => g.scheduleStatus === 'inactive') ? 'fail' : 'pass'
-                }
+                status={stepStatuses[2]}
                 expanded={expandedSteps.has(2)}
                 onToggle={() => toggleStep(2)}
               />
@@ -215,19 +294,28 @@ export default function Reasoner() {
                       🏖 <span className="font-semibold">{result.activeHoliday.name}</span> in effect — holiday rules apply
                     </div>
                   )}
-                  {result.grantResults.filter(g => g.scheduleStatus !== null).map(gr => (
-                    <div key={gr.grantId} className="flex items-center gap-2 text-[10px]">
-                      {gr.scheduleStatus === 'active' || gr.scheduleStatus === 'override_active'
-                        ? <CheckCircle size={11} className="text-emerald-400 shrink-0" />
-                        : <XCircle size={11} className="text-red-400 shrink-0" />
-                      }
-                      <span className="text-slate-400">{gr.grantName}:</span>
-                      <span className={
-                        gr.scheduleStatus === 'active' ? 'text-emerald-400' :
-                        gr.scheduleStatus === 'override_active' ? 'text-amber-400' : 'text-red-400'
-                      }>{gr.scheduleStatus}</span>
-                    </div>
-                  ))}
+                  {result.grantResults.filter(g => g.scheduleStatus !== null).map(gr => {
+                    const schedPass = gr.scheduleStatus === 'active' || gr.scheduleStatus === 'override_active'
+                    return (
+                      <div key={gr.grantId}
+                        className="flex items-center gap-2 text-[10px] rounded px-2 py-1"
+                        style={{ background: schedPass ? 'rgba(16,185,129,0.04)' : 'rgba(239,68,68,0.06)' }}
+                      >
+                        {schedPass
+                          ? <CheckCircle size={11} className="text-emerald-400 shrink-0" />
+                          : <XCircle size={11} className="text-red-400 shrink-0" />
+                        }
+                        <span className="text-slate-400">{gr.grantName}:</span>
+                        <span className={
+                          gr.scheduleStatus === 'active' ? 'text-emerald-400' :
+                          gr.scheduleStatus === 'override_active' ? 'text-amber-400' : 'text-red-400 font-semibold'
+                        }>{gr.scheduleStatus}</span>
+                        {!schedPass && (
+                          <span className="text-red-400/60 ml-auto">blocks access</span>
+                        )}
+                      </div>
+                    )
+                  })}
                   {result.grantResults.every(g => g.scheduleStatus === null) && (
                     <p className="text-[10px] text-slate-600">No schedules attached to any candidate grant.</p>
                   )}
@@ -236,10 +324,10 @@ export default function Reasoner() {
             </div>
 
             {/* Step 4: Policy Check */}
-            <div>
+            <div style={stepContainerStyle(stepStatuses[3])}>
               <StepHeader
                 label="4 · Policy Check"
-                status={result.policyResults.length === 0 ? 'skip' : result.abacPassed ? 'pass' : 'fail'}
+                status={stepStatuses[3]}
                 expanded={expandedSteps.has(3)}
                 onToggle={() => toggleStep(3)}
               />
@@ -249,8 +337,16 @@ export default function Reasoner() {
                     <p className="text-[10px] text-slate-600">No policies assigned to this door.</p>
                   ) : (
                     result.policyResults.map(pr => (
-                      <div key={pr.policyId} className={`rounded-lg border overflow-hidden ${pr.passed ? 'border-emerald-900/40' : 'border-red-900/40'}`}>
-                        <div className={`flex items-center justify-between px-3 py-1.5 ${pr.passed ? 'bg-emerald-500/[0.04]' : 'bg-red-500/[0.04]'}`}>
+                      <div key={pr.policyId}
+                        className="rounded-lg border overflow-hidden"
+                        style={{
+                          borderColor: pr.passed ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.4)',
+                        }}
+                      >
+                        <div
+                          className="flex items-center justify-between px-3 py-1.5"
+                          style={{ background: pr.passed ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.07)' }}
+                        >
                           <span className="text-[11px] font-semibold text-slate-300">{pr.policyName}</span>
                           <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${pr.passed ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/[0.08] text-red-400'}`}>
                             {pr.passed ? 'PASS' : 'FAIL'}
@@ -258,13 +354,21 @@ export default function Reasoner() {
                         </div>
                         <div className="divide-y divide-[#141828]">
                           {pr.ruleResults.map(rr => (
-                            <div key={rr.ruleId} className="px-3 py-2 flex flex-wrap items-center gap-1.5 text-[10px]">
-                              <span className="font-mono text-slate-400">{rr.leftSide}</span>
+                            <div
+                              key={rr.ruleId}
+                              className="px-3 py-2 flex flex-wrap items-center gap-1.5 text-[10px]"
+                              style={{ background: rr.passed ? 'transparent' : 'rgba(239,68,68,0.05)' }}
+                            >
+                              {rr.passed
+                                ? <CheckCircle size={10} className="text-emerald-400 shrink-0" />
+                                : <XCircle size={10} className="text-red-400 shrink-0" />
+                              }
+                              <span className={`font-mono ${rr.passed ? 'text-slate-400' : 'text-red-300'}`}>{rr.leftSide}</span>
                               <span className="text-blue-400">{rr.operator}</span>
                               <span className="text-amber-300">{Array.isArray(rr.rightSide) ? rr.rightSide.join(', ') : rr.rightSide}</span>
-                              <span className="text-slate-600">→</span>
-                              <span className="text-slate-300">{rr.leftResolved}</span>
-                              <span className="text-slate-600">→</span>
+                              <span className="text-slate-600">&rarr;</span>
+                              <span className={rr.passed ? 'text-slate-300' : 'text-red-300 font-semibold'}>{rr.leftResolved}</span>
+                              <span className="text-slate-600">&rarr;</span>
                               {rr.passed
                                 ? <span className="text-emerald-400 font-bold">PASS</span>
                                 : <span className="text-red-400 font-bold">FAIL</span>
@@ -280,33 +384,58 @@ export default function Reasoner() {
             </div>
 
             {/* Step 5: Final Verdict */}
-            <div>
+            <div style={stepContainerStyle(stepStatuses[4])}>
               <StepHeader
                 label="5 · Final Verdict"
-                status={result.overallGranted ? 'pass' : 'fail'}
+                status={stepStatuses[4]}
                 expanded={expandedSteps.has(4)}
                 onToggle={() => toggleStep(4)}
               />
               {expandedSteps.has(4) && (
-                <div className="px-6 pb-4">
-                  <div className={`rounded-xl border-2 p-6 flex items-center justify-center gap-4 ${
-                    result.overallGranted
-                      ? 'bg-emerald-950/30 border-emerald-500'
-                      : 'bg-red-950/30 border-red-500'
-                  }`}>
+                <div className="px-6 pb-4 space-y-3">
+                  {/* Verdict banner */}
+                  <div
+                    className="rounded-xl border-2 p-5 flex items-center justify-center gap-4"
+                    style={result.overallGranted
+                      ? { background: 'rgba(16,185,129,0.08)', borderColor: '#10b981' }
+                      : { background: 'rgba(239,68,68,0.08)', borderColor: '#ef4444' }
+                    }
+                  >
                     {result.overallGranted
-                      ? <><CheckCircle size={28} className="text-emerald-400" /><span className="text-2xl font-black tracking-widest text-emerald-400">ACCESS GRANTED</span></>
-                      : <><XCircle size={28} className="text-red-400" /><span className="text-2xl font-black tracking-widest text-red-400">ACCESS DENIED</span></>
+                      ? <><CheckCircle size={26} className="text-emerald-400" /><span className="text-xl font-black tracking-widest text-emerald-400">ACCESS GRANTED</span></>
+                      : <><XCircle size={26} className="text-red-400" /><span className="text-xl font-black tracking-widest text-red-400">ACCESS DENIED</span></>
                     }
                   </div>
+
+                  {/* Granted summary */}
+                  {result.overallGranted && (
+                    <div className="text-[10px] text-slate-500 text-center space-y-0.5">
+                      <div>
+                        <span className="text-emerald-400 font-semibold">{result.matchedGrants.length}</span> grant{result.matchedGrants.length !== 1 ? 's' : ''} active
+                        {result.policyResults.length > 0 && (
+                          <> &middot; <span className="text-emerald-400 font-semibold">{result.policyResults.filter(p => p.passed).length}</span> / {result.policyResults.length} policies passed</>
+                        )}
+                      </div>
+                      {result.matchedGrants.length > 0 && (
+                        <div className="text-[9px] text-slate-600">{result.matchedGrants.join(', ')}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Denial reason */}
                   {!result.overallGranted && (
-                    <p className="text-[10px] text-slate-600 text-center mt-2">
-                      {!result.permissionGranted ? 'Permission layer: no matching grant' : 'ABAC layer: policy check failed'}
-                    </p>
+                    <div
+                      className="rounded-lg border px-3 py-2.5 text-[10px]"
+                      style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.05)' }}
+                    >
+                      <div className="text-[9px] uppercase tracking-wider text-red-400/60 font-semibold mb-1">Denial reason</div>
+                      <div className="text-red-300">{buildDenialReason(result)}</div>
+                    </div>
                   )}
                 </div>
               )}
             </div>
+
           </div>
         </div>
       )}

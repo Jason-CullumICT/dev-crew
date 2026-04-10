@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useStore } from '../store/store'
 import { hasPermission } from '../engine/accessEngine'
 import { buildNowContext } from '../engine/scheduleEngine'
-import type { SiteStatus, ZoneType, ZoneStatus } from '../types'
+import type { ArmingLog, SiteStatus, ZoneStatus, ZoneType } from '../types'
 
 const SITE_STATUS_BADGE: Record<SiteStatus, string> = {
   Disarmed:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -29,21 +29,107 @@ const VALID_TRANSITIONS: Record<SiteStatus, Set<SiteStatus>> = {
   Lockdown:   new Set(['Disarmed']),
 }
 
+// ── Timeline helpers ──────────────────────────────────────────────────────────
+
+function relativeTime(isoString: string): string {
+  const diffMs = Date.now() - new Date(isoString).getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  if (diffSec < 60) return `${diffSec}s ago`
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  return `${Math.floor(diffHr / 24)}d ago`
+}
+
+interface DotProps {
+  action: string
+  result: 'Success' | 'Denied'
+}
+
+function TimelineDot({ action, result }: DotProps) {
+  if (result === 'Denied') {
+    return (
+      <div
+        className="w-3 h-3 rounded-full border-2 shrink-0"
+        style={{ borderColor: '#dc2626', backgroundColor: 'transparent' }}
+      />
+    )
+  }
+  const colorMap: Record<string, string> = {
+    Armed:       '#dc2626',
+    Disarmed:    '#10b981',
+    Lockdown:    '#7c3aed',
+    'Partial Arm': '#f59e0b',
+    'Clear Alarm': '#f59e0b',
+  }
+  const color = colorMap[action] ?? '#64748b'
+  return (
+    <div
+      className="w-3 h-3 rounded-full shrink-0"
+      style={{ backgroundColor: color }}
+    />
+  )
+}
+
+// ── Zone toggle ───────────────────────────────────────────────────────────────
+
+interface ZoneToggleProps {
+  checked: boolean
+  disabled: boolean
+  onChange: () => void
+}
+
+function ZoneToggle({ checked, disabled, onChange }: ZoneToggleProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={onChange}
+      className={[
+        'relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent',
+        'transition-colors duration-200 focus:outline-none',
+        disabled ? 'opacity-40 cursor-not-allowed' : '',
+        checked ? 'bg-red-600' : 'bg-slate-700',
+      ].join(' ')}
+    >
+      <span
+        className={[
+          'pointer-events-none inline-block h-3 w-3 rounded-full bg-white shadow',
+          'transform transition-transform duration-200',
+          checked ? 'translate-x-3' : 'translate-x-0',
+        ].join(' ')}
+      />
+    </button>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function Intrusion() {
-  const sites       = useStore(s => s.sites)
-  const zones       = useStore(s => s.zones)
-  const users       = useStore(s => s.users)
-  const groups      = useStore(s => s.groups)
-  const grants      = useStore(s => s.grants)
-  const schedules   = useStore(s => s.schedules)
-  const armingLog   = useStore(s => s.armingLog)
-  const updateSite  = useStore(s => s.updateSite)
-  const updateZone  = useStore(s => s.updateZone)
+  const sites        = useStore(s => s.sites)
+  const zones        = useStore(s => s.zones)
+  const users        = useStore(s => s.users)
+  const groups       = useStore(s => s.groups)
+  const grants       = useStore(s => s.grants)
+  const schedules    = useStore(s => s.schedules)
+  const armingLog    = useStore(s => s.armingLog)
+  const updateSite   = useStore(s => s.updateSite)
+  const updateZone   = useStore(s => s.updateZone)
   const addArmingLog = useStore(s => s.addArmingLog)
 
   const [selectedSiteId, setSelectedSiteId] = useState(sites[0]?.id ?? '')
   const [siteDropdownOpen, setSiteDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Re-render ticker so relative timestamps update each minute
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -94,7 +180,6 @@ export default function Intrusion() {
   }
 
   function log(action: string, result: 'Success' | 'Denied') {
-    // Log with acting user if available; for Denied entries use a fallback label
     const userName = actingUser?.name ?? 'Unknown'
     if (!selectedSite) return
     addArmingLog({
@@ -105,9 +190,7 @@ export default function Intrusion() {
 
   function arm() {
     if (!selectedSite) return
-    // C2: check permission
     if (!canAct('arm')) { log('Armed', 'Denied'); return }
-    // C3: check valid transition
     if (!canTransitionTo('Armed')) { log('Armed', 'Denied'); return }
     updateSite({ ...selectedSite, status: 'Armed' })
     siteZones.forEach(z => updateZone({ ...z, status: 'Armed' }))
@@ -116,9 +199,7 @@ export default function Intrusion() {
 
   function disarm() {
     if (!selectedSite) return
-    // C2: check permission
     if (!canAct('disarm')) { log('Disarmed', 'Denied'); return }
-    // C3: Lockdown → Disarmed requires override or lockdown action
     if (selectedSite.status === 'Lockdown' && !canDisarmFromLockdown()) {
       log('Disarmed', 'Denied'); return
     }
@@ -154,23 +235,67 @@ export default function Intrusion() {
   function clearAlarm() {
     if (!selectedSite) return
     if (!canAct('disarm')) { log('Clear Alarm', 'Denied'); return }
-    // C3: clearAlarm only valid when status is Alarm (targets Disarmed)
     if (selectedSite.status !== 'Alarm') { log('Clear Alarm', 'Denied'); return }
     updateSite({ ...selectedSite, status: 'Disarmed' })
     siteZones.forEach(z => updateZone({ ...z, status: 'Disarmed' }))
     log('Clear Alarm', 'Success')
   }
 
+  // ── Per-zone toggle ───────────────────────────────────────────────────────
+
+  function toggleZone(zoneId: string) {
+    if (!selectedSite) return
+    if (!canAct('arm')) {
+      // Log denied with the zone name
+      const zone = siteZones.find(z => z.id === zoneId)
+      if (!selectedSite || !zone) return
+      const userName = actingUser?.name ?? 'Unknown'
+      addArmingLog({
+        id: uuidv4(), timestamp: new Date().toISOString(),
+        userName, action: `Zone: ${zone.name}`, siteName: selectedSite.name, result: 'Denied',
+      })
+      return
+    }
+
+    const zone = siteZones.find(z => z.id === zoneId)
+    if (!zone) return
+
+    const newZoneStatus: ZoneStatus = zone.status === 'Armed' ? 'Disarmed' : 'Armed'
+    updateZone({ ...zone, status: newZoneStatus })
+
+    // Compute derived site status from all zones after the toggle
+    const updatedZones = siteZones.map(z =>
+      z.id === zoneId ? { ...z, status: newZoneStatus } : z
+    )
+    const allArmed    = updatedZones.every(z => z.status === 'Armed')
+    const allDisarmed = updatedZones.every(z => z.status === 'Disarmed')
+    const newSiteStatus: SiteStatus = allArmed ? 'Armed' : allDisarmed ? 'Disarmed' : 'PartialArm'
+    updateSite({ ...selectedSite, status: newSiteStatus })
+
+    const userName = actingUser?.name ?? 'Unknown'
+    addArmingLog({
+      id: uuidv4(), timestamp: new Date().toISOString(),
+      userName,
+      action: `Zone: ${zone.name} → ${newZoneStatus}`,
+      siteName: selectedSite.name,
+      result: 'Success',
+    })
+  }
+
   // C2+C3: Compute disabled state for each button
   const noAuth = authorizedUsers.length === 0
   const currentStatus = selectedSite?.status ?? 'Disarmed'
 
-  const armDisabled     = noAuth || !selectedSite || !canTransitionTo('Armed')    || !canAct('arm')
-  const disarmDisabled  = noAuth || !selectedSite || !canTransitionTo('Disarmed') || !canAct('disarm') ||
-                          (currentStatus === 'Lockdown' && !canDisarmFromLockdown())
-  const partialDisabled = noAuth || !selectedSite || !canTransitionTo('PartialArm') || !canAct('arm')
-  const lockdownDisabled= noAuth || !selectedSite || !canTransitionTo('Lockdown') || !canAct('lockdown')
-  const clearDisabled   = noAuth || !selectedSite || currentStatus !== 'Alarm'     || !canAct('disarm')
+  const armDisabled      = noAuth || !selectedSite || !canTransitionTo('Armed')     || !canAct('arm')
+  const disarmDisabled   = noAuth || !selectedSite || !canTransitionTo('Disarmed')  || !canAct('disarm') ||
+                           (currentStatus === 'Lockdown' && !canDisarmFromLockdown())
+  const partialDisabled  = noAuth || !selectedSite || !canTransitionTo('PartialArm') || !canAct('arm')
+  const lockdownDisabled = noAuth || !selectedSite || !canTransitionTo('Lockdown')  || !canAct('lockdown')
+  const clearDisabled    = noAuth || !selectedSite || currentStatus !== 'Alarm'      || !canAct('disarm')
+  const zoneToggleDisabled = !canAct('arm')
+
+  // Log entries limited to the most recent 20
+  const recentLog: ArmingLog[] = armingLog.slice(0, 20)
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full">
@@ -222,7 +347,7 @@ export default function Intrusion() {
             )}
           </div>
 
-          {/* Zone statuses */}
+          {/* Zone statuses with per-zone toggles */}
           <div className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4">
             <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-3">Zone Statuses</div>
             {siteZones.length === 0
@@ -238,6 +363,11 @@ export default function Intrusion() {
                       <span className={`text-[9px] px-1.5 py-0.5 rounded border font-semibold ${ZONE_STATUS_BADGE[zone.status]}`}>
                         {zone.status}
                       </span>
+                      <ZoneToggle
+                        checked={zone.status === 'Armed'}
+                        disabled={zoneToggleDisabled}
+                        onChange={() => toggleZone(zone.id)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -269,16 +399,16 @@ export default function Intrusion() {
           </div>
         </div>
 
-        {/* Right: actions + log */}
+        {/* Right: actions + timeline log */}
         <div className="space-y-4">
           <div className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 space-y-3">
             <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">Actions</div>
             {[
-              { label: 'Arm Site',         fn: arm,       cls: 'bg-red-700 hover:bg-red-600',         disabled: armDisabled },
-              { label: 'Disarm Site',      fn: disarm,    cls: 'bg-emerald-700 hover:bg-emerald-600',  disabled: disarmDisabled },
-              { label: 'Partial Arm',      fn: partialArm,cls: 'bg-amber-600 hover:bg-amber-500',      disabled: partialDisabled },
-              { label: 'Trigger Lockdown', fn: lockdown,  cls: 'bg-purple-700 hover:bg-purple-600',    disabled: lockdownDisabled },
-              { label: 'Clear Alarm',      fn: clearAlarm,cls: 'bg-blue-700 hover:bg-blue-600',        disabled: clearDisabled },
+              { label: 'Arm Site',         fn: arm,        cls: 'bg-red-700 hover:bg-red-600',          disabled: armDisabled },
+              { label: 'Disarm Site',      fn: disarm,     cls: 'bg-emerald-700 hover:bg-emerald-600',   disabled: disarmDisabled },
+              { label: 'Partial Arm',      fn: partialArm, cls: 'bg-amber-600 hover:bg-amber-500',       disabled: partialDisabled },
+              { label: 'Trigger Lockdown', fn: lockdown,   cls: 'bg-purple-700 hover:bg-purple-600',     disabled: lockdownDisabled },
+              { label: 'Clear Alarm',      fn: clearAlarm, cls: 'bg-blue-700 hover:bg-blue-600',         disabled: clearDisabled },
             ].map(({ label, fn, cls, disabled }) => (
               <button
                 key={label}
@@ -295,19 +425,47 @@ export default function Intrusion() {
             }
           </div>
 
-          {/* Arming log */}
-          {armingLog.length > 0 && (
+          {/* Arming timeline log */}
+          {recentLog.length > 0 && (
             <div className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4">
-              <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-2">Log</div>
-              <div className="space-y-1.5">
-                {armingLog.slice(0, 8).map(entry => (
-                  <div key={entry.id} className="text-[9px] text-slate-600 font-mono">
-                    <span className="text-slate-500">{entry.userName}</span>
-                    {' '}→ <span className="text-slate-400">{entry.action}</span>
-                    {' · '}{entry.siteName}
-                    {' · '}<span className={entry.result === 'Success' ? 'text-emerald-600' : 'text-red-600'}>{entry.result}</span>
+              <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-3">Log</div>
+              <div className="overflow-y-auto max-h-80">
+                <div className="relative pl-5">
+                  {/* Vertical connecting line */}
+                  <div
+                    className="absolute left-[5px] top-1.5 bottom-1.5 w-px"
+                    style={{ backgroundColor: '#1e293b' }}
+                  />
+                  <div className="space-y-3">
+                    {recentLog.map(entry => (
+                      <div key={entry.id} className="flex items-start gap-3">
+                        {/* Dot sits on the vertical line */}
+                        <div className="relative z-10 -ml-5 flex items-center justify-center w-5 pt-0.5">
+                          <TimelineDot action={entry.action} result={entry.result} />
+                        </div>
+                        {/* Entry content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-[10px] font-semibold ${entry.result === 'Success' ? 'text-slate-300' : 'text-red-400'}`}>
+                              {entry.action}
+                            </span>
+                            {entry.result === 'Denied' && (
+                              <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 font-semibold">
+                                DENIED
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[9px] text-slate-600 truncate">
+                            {entry.userName} &middot; {entry.siteName}
+                          </div>
+                          <div className="text-[9px] text-slate-700">
+                            {relativeTime(entry.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           )}

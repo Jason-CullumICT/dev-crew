@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import ScheduleModal from '../modals/ScheduleModal'
+import SearchBar from '../components/SearchBar'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { buildNowContext } from '../engine/scheduleEngine'
 import type { NamedSchedule, DayOfWeek } from '../types'
 
@@ -13,7 +15,32 @@ export default function Schedules() {
   const deleteSchedule = useStore(s => s.deleteSchedule)
   const now            = buildNowContext()
 
-  const [editing, setEditing] = useState<NamedSchedule | null | 'new'>(null)
+  const [editing, setEditing]             = useState<NamedSchedule | null | 'new'>(null)
+  const [search, setSearch]               = useState('')
+  const [pendingDelete, setPendingDelete] = useState<NamedSchedule | null>(null)
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return schedules
+    return schedules.filter(s => s.name.toLowerCase().includes(q))
+  }, [schedules, search])
+
+  function getCascadeDetails(schedule: NamedSchedule): string[] {
+    const usedBy = grants.filter(g => g.scheduleId === schedule.id)
+    if (usedBy.length > 0) {
+      return [`${usedBy.length} grant${usedBy.length !== 1 ? 's' : ''} will have their schedule removed`]
+    }
+    return []
+  }
+
+  function handleDeleteConfirm() {
+    if (pendingDelete) {
+      deleteSchedule(pendingDelete.id)
+      setPendingDelete(null)
+    }
+  }
+
+  const cascadeDetails = pendingDelete ? getCascadeDetails(pendingDelete) : []
 
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
@@ -21,12 +48,25 @@ export default function Schedules() {
         <h1 className="text-xl font-bold text-slate-100">Schedules</h1>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-slate-600">{schedules.length} schedules</span>
-          <button onClick={() => setEditing('new')} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors">+ New</button>
+          <button
+            onClick={() => setEditing('new')}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            + New
+          </button>
         </div>
       </div>
 
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by schedule name..."
+        resultCount={filtered.length}
+        totalCount={schedules.length}
+      />
+
       <div className="grid gap-4">
-        {schedules.map(schedule => {
+        {filtered.map(schedule => {
           const usedBy = grants.filter(g => g.scheduleId === schedule.id)
           return (
             <div key={schedule.id} className="bg-[#07100e] border border-[#134e4a] rounded-lg p-4 space-y-4">
@@ -37,10 +77,18 @@ export default function Schedules() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {usedBy.length > 0 && <div className="text-[9px] text-teal-900">{usedBy.length} grant{usedBy.length !== 1 ? 's' : ''}</div>}
-                  <button onClick={() => setEditing(schedule)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                  <button
+                    onClick={() => setEditing(schedule)}
+                    aria-label="Edit"
+                    className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                  >
                     <Pencil size={12} />
                   </button>
-                  <button onClick={() => deleteSchedule(schedule.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                  <button
+                    onClick={() => setPendingDelete(schedule)}
+                    aria-label="Delete"
+                    className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -99,11 +147,26 @@ export default function Schedules() {
             </div>
           )
         })}
+        {filtered.length === 0 && (
+          <p className="text-[12px] text-slate-600">
+            {search ? 'No schedules match your search.' : 'No schedules yet. Click + New to create one.'}
+          </p>
+        )}
       </div>
 
       {editing !== null && (
         <ScheduleModal schedule={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete schedule?"
+        message={`"${pendingDelete?.name}" will be permanently deleted.`}
+        details={cascadeDetails}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDelete(null)}
+        variant="danger"
+      />
     </div>
   )
 }

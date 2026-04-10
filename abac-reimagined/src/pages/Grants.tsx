@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/store'
 import GrantModal from '../modals/GrantModal'
+import SearchBar from '../components/SearchBar'
+import ConfirmDialog from '../components/ConfirmDialog'
 import type { Grant } from '../types'
 
 const SCOPE_CLASS = {
@@ -18,12 +20,39 @@ const MODE_CLASS = {
 
 export default function Grants() {
   const grants      = useStore(s => s.grants)
+  const groups      = useStore(s => s.groups)
   const schedules   = useStore(s => s.schedules)
   const sites       = useStore(s => s.sites)
   const zones       = useStore(s => s.zones)
   const deleteGrant = useStore(s => s.deleteGrant)
 
-  const [editing, setEditing] = useState<Grant | null | 'new'>(null)
+  const [editing, setEditing]             = useState<Grant | null | 'new'>(null)
+  const [search, setSearch]               = useState('')
+  const [pendingDelete, setPendingDelete] = useState<Grant | null>(null)
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return grants
+    return grants.filter(g => g.name.toLowerCase().includes(q))
+  }, [grants, search])
+
+  function getCascadeDetails(grant: Grant): string[] {
+    const details: string[] = []
+    const affectedGroups = groups.filter(g => g.inheritedPermissions.includes(grant.id))
+    if (affectedGroups.length > 0) {
+      details.push(`${affectedGroups.length} group${affectedGroups.length !== 1 ? 's' : ''} will lose this permission`)
+    }
+    return details
+  }
+
+  function handleDeleteConfirm() {
+    if (pendingDelete) {
+      deleteGrant(pendingDelete.id)
+      setPendingDelete(null)
+    }
+  }
+
+  const cascadeDetails = pendingDelete ? getCascadeDetails(pendingDelete) : []
 
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
@@ -31,14 +60,31 @@ export default function Grants() {
         <h1 className="text-xl font-bold text-slate-100">Grants</h1>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-slate-600">{grants.length} grants</span>
-          <button onClick={() => setEditing('new')} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors">+ New</button>
+          <button
+            onClick={() => setEditing('new')}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            + New
+          </button>
         </div>
       </div>
 
-      {grants.length === 0 && <p className="text-[12px] text-slate-600">No grants yet. Click + New to create one.</p>}
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by grant name..."
+        resultCount={filtered.length}
+        totalCount={grants.length}
+      />
+
+      {filtered.length === 0 && (
+        <p className="text-[12px] text-slate-600">
+          {search ? 'No grants match your search.' : 'No grants yet. Click + New to create one.'}
+        </p>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {grants.map(grant => {
+        {filtered.map(grant => {
           const schedule = grant.scheduleId ? schedules.find(s => s.id === grant.scheduleId) : null
           const targetName = grant.scope === 'site'
             ? sites.find(s => s.id === grant.targetId)?.name
@@ -64,10 +110,18 @@ export default function Grants() {
                 {targetName && <span className="text-[9px] text-slate-500">→ {targetName}</span>}
               </div>
               <div className="flex gap-1 pt-1">
-                <button onClick={() => setEditing(grant)} aria-label="Edit" className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">
+                <button
+                  onClick={() => setEditing(grant)}
+                  aria-label="Edit"
+                  className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                >
                   <Pencil size={12} />
                 </button>
-                <button onClick={() => deleteGrant(grant.id)} aria-label="Delete" className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                <button
+                  onClick={() => setPendingDelete(grant)}
+                  aria-label="Delete"
+                  className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                >
                   <Trash2 size={12} />
                 </button>
               </div>
@@ -79,6 +133,16 @@ export default function Grants() {
       {editing !== null && (
         <GrantModal grant={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete grant?"
+        message={`"${pendingDelete?.name}" will be permanently deleted.`}
+        details={cascadeDetails}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDelete(null)}
+        variant="danger"
+      />
     </div>
   )
 }

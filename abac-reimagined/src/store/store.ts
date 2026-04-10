@@ -12,30 +12,48 @@ import {
 export function defaultCanvasPositions(): Record<string, CanvasPosition> {
   const positions: Record<string, CanvasPosition> = {}
 
-  // Groups: 2-column grid, 25 per column, gap 120
+  // Node widths after redesign: Group=~170px, Grant=~160px, Schedule=~170px, Door=100px
+  // Each section starts after the previous section's rightmost column + gap
+
+  // Groups: 2-column grid, 20 per column, 90px vertical gap
+  const GROUP_W = 190    // node width + inter-column gap
+  const GROUP_GAP_Y = 90
+  const GROUP_PER_COL = 20
   GROUPS.forEach((g, i) => {
-    const col = Math.floor(i / 25)
-    const row = i % 25
-    positions[`group-${g.id}`] = { x: 80 + col * 180, y: 60 + row * 120 }
+    const col = Math.floor(i / GROUP_PER_COL)
+    const row = i % GROUP_PER_COL
+    positions[`group-${g.id}`] = { x: 80 + col * GROUP_W, y: 60 + row * GROUP_GAP_Y }
   })
+  const groupCols = Math.ceil(GROUPS.length / GROUP_PER_COL)
+  const grantsStartX = 80 + groupCols * GROUP_W + 60 // 60px gap between sections
 
-  // Grants: 2-column grid, 25 per column, gap 95
+  // Grants: 2-column grid, 20 per column, 80px vertical gap
+  const GRANT_W = 180
+  const GRANT_GAP_Y = 80
+  const GRANT_PER_COL = 20
   GRANTS.forEach((g, i) => {
-    const col = Math.floor(i / 25)
-    const row = i % 25
-    positions[`grant-${g.id}`] = { x: 460 + col * 180, y: 60 + row * 95 }
+    const col = Math.floor(i / GRANT_PER_COL)
+    const row = i % GRANT_PER_COL
+    positions[`grant-${g.id}`] = { x: grantsStartX + col * GRANT_W, y: 60 + row * GRANT_GAP_Y }
   })
+  const grantCols = Math.ceil(GRANTS.length / GRANT_PER_COL)
+  const schedulesStartX = grantsStartX + grantCols * GRANT_W + 60
 
-  // Schedules: 1 column, x=840, gap 85
+  // Schedules: 1 column, 95px vertical gap
+  const SCHEDULE_GAP_Y = 95
   SCHEDULES.forEach((s, i) => {
-    positions[`schedule-${s.id}`] = { x: 840, y: 60 + i * 85 }
+    positions[`schedule-${s.id}`] = { x: schedulesStartX, y: 60 + i * SCHEDULE_GAP_Y }
   })
+  const doorsStartX = schedulesStartX + 200 + 60 // schedule tile ~200px wide + gap
 
-  // Doors: 12-column grid, 45 per column, gap 65 — covers all ~540 doors
+  // Doors: multi-column grid, 40 per column, 50px vertical gap, 120px horizontal spacing
+  const DOOR_COL_W = 120
+  const DOOR_GAP_Y = 50
+  const DOOR_PER_COL = 40
   DOORS.forEach((d, i) => {
-    const col = Math.floor(i / 45)
-    const row = i % 45
-    positions[`door-${d.id}`] = { x: 1040 + col * 140, y: 60 + row * 65 }
+    const col = Math.floor(i / DOOR_PER_COL)
+    const row = i % DOOR_PER_COL
+    positions[`door-${d.id}`] = { x: doorsStartX + col * DOOR_COL_W, y: 60 + row * DOOR_GAP_Y }
   })
 
   return positions
@@ -364,6 +382,7 @@ export const useStore = create<AxonStore>()(
     }),
     {
       name: 'axon-store',
+      version: 2, // Bump to invalidate stale canvas positions from pre-redesign layout
       partialize: (state) => {
         // Exclude ephemeral UI state from persistence
         const { selectedCanvasNodeId: _excl1, edgeMode: _excl2, ...rest } = state

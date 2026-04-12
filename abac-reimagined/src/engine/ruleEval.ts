@@ -7,12 +7,11 @@ import type { User, Rule, NowContext, ConditionResult } from '../types'
  */
 function resolveUserAttr(key: string, user: User): string | number {
   switch (key) {
-    case 'department':     return user.department
-    case 'role':           return user.role
-    case 'clearanceLevel': return user.clearanceLevel
-    case 'type':           return user.type
-    case 'status':         return user.status
-    default:               return user.customAttributes[key] ?? ''
+    case 'department': return user.department
+    case 'role':       return user.role
+    case 'type':       return user.type
+    case 'status':     return user.status
+    default:           return user.customAttributes[key] ?? ''
   }
 }
 

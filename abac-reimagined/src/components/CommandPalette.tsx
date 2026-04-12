@@ -34,7 +34,7 @@ export default function CommandPalette({ onClose }: Props) {
 
   // Memoize the full entity search index so it is not rebuilt on every keystroke
   const allResults: Result[] = useMemo(() => [
-    ...users.map(u => ({ id: u.id, label: u.name, sublabel: `${u.department} · L${u.clearanceLevel}`, type: 'User', route: '/people' })),
+    ...users.map(u => ({ id: u.id, label: u.name, sublabel: `${u.department} · L${u.customAttributes.clearanceLevel ?? '?'}`, type: 'User', route: '/people' })),
     ...groups.map(g => ({ id: g.id, label: g.name, sublabel: g.description, type: 'Group', route: '/groups' })),
     ...grants.map(g => ({ id: g.id, label: g.name, sublabel: `${g.scope} · ${g.applicationMode}`, type: 'Grant', route: '/grants' })),
     ...schedules.map(s => ({ id: s.id, label: s.name, sublabel: s.timezone, type: 'Schedule', route: '/schedules' })),

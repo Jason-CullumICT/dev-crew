@@ -22,7 +22,6 @@ export interface User {
   email: string
   department: string
   role: string
-  clearanceLevel: number
   type: 'employee' | 'contractor' | 'visitor'
   status: 'active' | 'suspended' | 'inactive'
   customAttributes: Record<string, string>
@@ -79,7 +78,6 @@ export interface Holiday {
   day: number         // 1–31
   behavior: 'deny_all' | 'allow_with_override' | 'normal'
   overrideGrantIds: string[]     // grants that remain active on this holiday
-  requiredClearance?: number     // minimum clearanceLevel to use override grants
 }
 
 export interface NamedSchedule {

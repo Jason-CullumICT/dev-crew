@@ -171,7 +171,7 @@ export function evaluateAccess(
     if (grant.scheduleId) {
       const schedule = allSchedules.find(s => s.id === grant.scheduleId)
       if (schedule) {
-        const status = evaluateSchedule(schedule, now, grant.id, user.clearanceLevel)
+        const status = evaluateSchedule(schedule, now, grant.id)
         scheduleStatus = status
         const h = matchesHoliday(now, schedule.holidays)
         if (h) activeHolidayName = h.name

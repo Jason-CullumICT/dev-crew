@@ -118,7 +118,7 @@ export default function GroupModal({ group, onClose }: Props) {
                     className="accent-indigo-500" />
                   <div className="flex-1">
                     <div className="text-[11px] text-slate-300">{u.name}</div>
-                    <div className="text-[9px] text-slate-600">{u.department} · L{u.clearanceLevel}</div>
+                    <div className="text-[9px] text-slate-600">{u.department} · L{u.customAttributes.clearanceLevel ?? '?'}</div>
                   </div>
                   <span className="text-[9px] text-slate-600">{u.status}</span>
                 </label>

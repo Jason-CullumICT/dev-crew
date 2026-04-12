@@ -4,8 +4,8 @@ import type { User, Group } from '../types'
 
 const baseUser: User = {
   id: 'u1', name: 'Test', email: 't@t.com', department: 'Operations',
-  role: 'analyst', clearanceLevel: 3, type: 'employee', status: 'active',
-  customAttributes: {},
+  role: 'analyst', type: 'employee', status: 'active',
+  customAttributes: { clearanceLevel: '3' },
 }
 
 const groups: Group[] = [
@@ -67,7 +67,7 @@ describe('resolveGroupMembership', () => {
       members: [], membershipRules: [{ id: 'r1', leftSide: 'user.clearanceLevel', operator: '>=', rightSide: '3' }],
       subGroups: [], inheritedPermissions: [], membershipLogic: 'AND',
     }]
-    expect(resolveGroupMembership({ ...baseUser, clearanceLevel: 3 }, clearanceGroups)).toContain('g-l3')
-    expect(resolveGroupMembership({ ...baseUser, clearanceLevel: 2 }, clearanceGroups)).not.toContain('g-l3')
+    expect(resolveGroupMembership({ ...baseUser, customAttributes: { clearanceLevel: '3' } }, clearanceGroups)).toContain('g-l3')
+    expect(resolveGroupMembership({ ...baseUser, customAttributes: { clearanceLevel: '2' } }, clearanceGroups)).not.toContain('g-l3')
   })
 })

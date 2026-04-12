@@ -99,16 +99,14 @@ function isInWindow(now: NowContext, schedule: NamedSchedule): boolean {
 /**
  * Evaluate whether a schedule is active at the given moment.
  *
- * @param schedule       The NamedSchedule to evaluate
- * @param now            Current time context
- * @param grantId        Optional — the grant being checked (for holiday override matching)
- * @param userClearance  Optional — the user's clearanceLevel (for holiday override requirement)
+ * @param schedule  The NamedSchedule to evaluate
+ * @param now       Current time context
+ * @param grantId   Optional — the grant being checked (for holiday override matching)
  */
 export function evaluateSchedule(
   schedule: NamedSchedule,
   now: NowContext,
   grantId?: string,
-  userClearance?: number,
 ): ScheduleStatus {
   // C1: Callers are responsible for building a timezone-aware NowContext via
   // buildNowContext(schedule.timezone) when real-time evaluation is needed.
@@ -121,10 +119,7 @@ export function evaluateSchedule(
 
     if (holiday.behavior === 'allow_with_override') {
       const grantMatches = grantId !== undefined && holiday.overrideGrantIds.includes(grantId)
-      const clearanceOk =
-        holiday.requiredClearance === undefined ||
-        (userClearance !== undefined && userClearance >= holiday.requiredClearance)
-      if (grantMatches && clearanceOk) return 'override_active'
+      if (grantMatches) return 'override_active'
       return 'inactive'
     }
     // behavior === 'normal': fall through to window check

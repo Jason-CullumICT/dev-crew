@@ -130,7 +130,6 @@ export default function Schedules() {
                         </span>
                         <span className="text-[10px] text-slate-400">{h.name}</span>
                         <span className="text-[9px] text-slate-600">{h.month}/{h.day}</span>
-                        {h.requiredClearance && <span className="text-[9px] text-amber-600">L{h.requiredClearance}+</span>}
                       </div>
                     ))}
                   </div>

@@ -180,13 +180,6 @@ export default function ScheduleModal({ schedule, onClose }: Props) {
                 {h.behavior === 'allow_with_override' && (
                   <div className="space-y-2 pt-1">
                     <div>
-                      <label className={labelCls}>Required Clearance</label>
-                      <input type="number" min={1} max={5} className={inputCls + ' w-24'}
-                        value={h.requiredClearance ?? ''}
-                        onChange={e => updateHoliday(h.id, { requiredClearance: e.target.value ? Number(e.target.value) : undefined })}
-                        placeholder="L1-L5" />
-                    </div>
-                    <div>
                       <label className={labelCls}>Override Grants</label>
                       <div className="space-y-1 max-h-32 overflow-y-auto">
                         {grants.map(g => (

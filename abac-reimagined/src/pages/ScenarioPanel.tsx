@@ -49,6 +49,64 @@ export default function ScenarioPanel({ onClose }: Props) {
     if (alarm) addAlarm(alarm)
   }
 
+  const updateZone = useStore(s => s.updateZone)
+
+  // ── Scenario: Fire Alarm — Zone Evacuation ───────────────────────────────────
+
+  function runFireAlarm() {
+    if (running) return
+    setRunning('fire')
+    const site = sites[0]
+    if (!site) { setRunning(null); return }
+    const siteZones = zones.filter(z => z.siteId === site.id)
+    const zone = siteZones[0]
+    const siteDoors = zone ? doors.filter(d => d.zoneId === zone.id) : doors.filter(d => d.siteId === site.id)
+
+    // Fire alarm event
+    const fireEvent = makeEvent({
+      eventType: 'fire_alarm',
+      severity: 'critical',
+      siteId: site.id,
+      zoneId: zone?.id,
+      message: `FIRE ALARM — Zone evacuation initiated: ${zone?.name ?? site.name}`,
+      category: 'alarm',
+    })
+    inject(fireEvent)
+
+    // Disarm the zone (evacuation = unlock all)
+    if (zone) {
+      updateZone({ ...zone, status: 'Disarmed' })
+    }
+
+    // Generate unlock events for each door in the zone
+    let delay = 500
+    siteDoors.slice(0, 9).forEach(d => {
+      const unlockEvent = makeEvent({
+        eventType: 'arm_state_change',
+        severity: 'critical',
+        siteId: site.id,
+        zoneId: zone?.id,
+        doorId: d.id,
+        message: `EVACUATION — Door unlocked: ${d.name} (${site.name})`,
+        category: 'alarm',
+      })
+      setTimeout(() => inject(unlockEvent), delay)
+      delay += 400
+    })
+
+    // Evacuation notice
+    const evacEvent = makeEvent({
+      eventType: 'arm_state_change',
+      severity: 'critical',
+      siteId: site.id,
+      zoneId: zone?.id,
+      message: `FIRE — All personnel evacuating ${zone?.name ?? site.name}`,
+      category: 'alarm',
+    })
+    setTimeout(() => inject(evacEvent), delay + 500)
+    setTimeout(() => setRunning(null), delay + 1500)
+  }
+
   // ── Scenario: After-Hours Breach ────────────────────────────────────────────
 
   function runAfterHoursBreach() {
@@ -179,7 +237,7 @@ export default function ScenarioPanel({ onClose }: Props) {
       category:
         eventType === 'access_granted' || eventType === 'access_denied'
           ? 'access'
-          : eventType === 'arm_state_change' || eventType === 'panic_button'
+          : eventType === 'arm_state_change' || eventType === 'panic_button' || eventType === 'fire_alarm'
           ? 'alarm'
           : eventType === 'controller_offline'
           ? 'system'
@@ -242,6 +300,15 @@ export default function ScenarioPanel({ onClose }: Props) {
               <div className="text-[11px] text-slate-600 mt-0.5">Arm each zone + 5 denied events, spaced 2s apart</div>
             </button>
 
+            <button
+              onClick={runFireAlarm}
+              disabled={running !== null}
+              className="w-full text-left bg-[#0f1320] border border-orange-500/20 hover:border-orange-500/40 rounded-xl p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-l-4 border-l-orange-500"
+            >
+              <div className="text-[11px] font-semibold text-orange-400">Fire Alarm — Zone Evacuation</div>
+              <div className="text-[11px] text-slate-600 mt-0.5">Fire alarm → disarm zone → unlock all doors → evacuation events</div>
+            </button>
+
             {running && (
               <div className="text-[9px] text-indigo-400 text-center animate-pulse py-1">
                 Scenario running...
@@ -300,6 +367,7 @@ export default function ScenarioPanel({ onClose }: Props) {
                 <option value="controller_offline">controller_offline</option>
                 <option value="arm_state_change">arm_state_change</option>
                 <option value="panic_button">panic_button</option>
+                <option value="fire_alarm">fire_alarm</option>
               </select>
             </div>
 

@@ -22,8 +22,10 @@ const DoorConfig  = lazy(() => import('./pages/DoorConfig'))
 const Rules       = lazy(() => import('./pages/Rules'))
 const Escalations = lazy(() => import('./pages/Escalations'))
 const Muster      = lazy(() => import('./pages/Muster'))
-const Visitors    = lazy(() => import('./pages/Visitors'))
-const Credentials = lazy(() => import('./pages/Credentials'))
+const Visitors     = lazy(() => import('./pages/Visitors'))
+const Credentials  = lazy(() => import('./pages/Credentials'))
+const Reports      = lazy(() => import('./pages/Reports'))
+const SystemHealth = lazy(() => import('./pages/SystemHealth'))
 
 function PageLoader() {
   return (
@@ -58,8 +60,10 @@ export default function App() {
         <Route path="escalations" element={<Suspense fallback={<PageLoader />}><Escalations /></Suspense>} />
         <Route path="muster"      element={<Suspense fallback={<PageLoader />}><Muster /></Suspense>} />
         <Route path="visitors"    element={<Suspense fallback={<PageLoader />}><Visitors /></Suspense>} />
-        <Route path="credentials" element={<Suspense fallback={<PageLoader />}><Credentials /></Suspense>} />
-        <Route path="*"           element={<Navigate to="/" replace />} />
+        <Route path="credentials"    element={<Suspense fallback={<PageLoader />}><Credentials /></Suspense>} />
+        <Route path="reports"        element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
+        <Route path="system-health"  element={<Suspense fallback={<PageLoader />}><SystemHealth /></Suspense>} />
+        <Route path="*"              element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   )

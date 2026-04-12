@@ -123,6 +123,7 @@ function severityFor(eventType: SecurityEventType): EventSeverity {
     case 'door_forced':
     case 'panic_button':
     case 'reader_tamper':
+    case 'fire_alarm':
       return 'critical'
     case 'access_denied':
     case 'door_held':
@@ -155,6 +156,7 @@ function categoryFor(eventType: SecurityEventType): EventCategory {
     case 'door_contact_open':
     case 'door_contact_close':
     case 'reader_tamper':
+    case 'fire_alarm':
       return 'alarm'
   }
 }
@@ -207,6 +209,8 @@ function buildMessage(
       return `Device online — ${deviceName} (${deviceType}) at ${doorName} (${siteName})`
     case 'pir_trigger':
       return `PIR motion triggered — ${deviceName} at ${zoneName} (${siteName})`
+    case 'fire_alarm':
+      return `FIRE ALARM — Zone evacuation initiated: ${zoneName} at ${siteName}`
   }
 }
 
@@ -308,6 +312,17 @@ export function generateEvent(
     metadata['deviceId']   = device.id
     metadata['deviceName'] = device.name
     metadata['deviceType'] = device.type
+  }
+  // CCTV/VMS integration — alarm-generating events include camera metadata
+  if (
+    eventType === 'door_forced' ||
+    eventType === 'sensor_trip' ||
+    eventType === 'panic_button'
+  ) {
+    const camTarget = door?.id ?? zone?.id ?? site.id
+    metadata['cameraId']   = `cam-${camTarget}`
+    metadata['recording']  = 'started'
+    metadata['ptzPreset']  = '1'
   }
 
   return {

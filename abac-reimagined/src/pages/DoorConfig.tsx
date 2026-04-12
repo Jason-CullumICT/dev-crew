@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2, Shield, Users, UserCheck, Link2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Shield, Users, UserCheck, Link2, ArrowUpDown } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../store/store'
 import DeviceModal from '../modals/DeviceModal'
@@ -163,6 +163,16 @@ export default function DoorConfig() {
           </div>
         </div>
       </div>
+
+      {/* Elevator door note */}
+      {door.isElevator && (
+        <div className="flex items-start gap-2 bg-cyan-500/5 border border-cyan-500/20 rounded-lg px-4 py-3">
+          <ArrowUpDown size={14} className="text-cyan-400 shrink-0 mt-0.5" />
+          <p className="text-[11px] text-cyan-300">
+            <span className="font-semibold">Elevator door</span> — floor access controlled by zone grants. Ensure appropriate zone-scoped grants are assigned to control which floors users can reach.
+          </p>
+        </div>
+      )}
 
       {/* SVG Wiring Diagram */}
       <div className="bg-[#080b14] border border-[#1e293b] rounded-xl p-4 overflow-x-auto">

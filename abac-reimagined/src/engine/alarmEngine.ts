@@ -22,6 +22,9 @@ export function shouldCreateAlarm(event: SecurityEvent): boolean {
     'sensor_trip',
     'controller_offline',
     'panic_button',
+    'reader_tamper',
+    'pir_trigger',
+    'device_offline',
   ]
   return alarmTypes.includes(event.eventType)
 }
@@ -45,6 +48,12 @@ function alarmTitleFor(event: SecurityEvent): string {
       return `Controller Offline — ${ctrlName}`
     case 'panic_button':
       return `Panic Button — ${location}`
+    case 'reader_tamper':
+      return `Reader Tamper — ${event.metadata['deviceName'] ?? doorName}`
+    case 'pir_trigger':
+      return `PIR Motion — ${event.metadata['deviceName'] ?? zoneName}`
+    case 'device_offline':
+      return `Device Offline — ${event.metadata['deviceName'] ?? doorName}`
     default:
       return `Security Alert — ${event.eventType}`
   }

@@ -109,6 +109,8 @@ describe('getCondition', () => {
 const ALL_EVENT_TYPES: SecurityEventType[] = [
   'access_granted', 'access_denied', 'door_forced', 'door_held',
   'sensor_trip', 'controller_offline', 'arm_state_change', 'panic_button',
+  'door_contact_open', 'door_contact_close', 'reader_tamper',
+  'device_offline', 'device_online', 'pir_trigger',
 ]
 
 describe('pickWeightedEventType', () => {
@@ -281,12 +283,17 @@ describe('generateEvent', () => {
   })
 
   it('produces correct severity for door_forced (critical)', () => {
-    // Force door_forced — in lockdown table: granted=5, denied=60, forced=5
-    // random at 0.655 → 0.655*100=65.5; after 5 → 60.5; after 60 → 0.5; after 5 → -4.5 picks forced
-    const event = generateEvent({ ...baseInput, sites: [siteLockdown] }, () => 0.655)
-    expect(event.eventType).toBe('door_forced')
-    expect(event.severity).toBe('critical')
-    expect(event.category).toBe('intrusion')
+    // Generate events until we hit door_forced (weight exists in lockdown table)
+    for (let i = 0; i < 500; i++) {
+      const event = generateEvent({ ...baseInput, sites: [siteLockdown] })
+      if (event.eventType === 'door_forced') {
+        expect(event.severity).toBe('critical')
+        expect(event.category).toBe('intrusion')
+        return
+      }
+    }
+    // door_forced has non-zero weight, so we should find one in 500 tries
+    expect.unreachable('door_forced not generated in 500 attempts')
   })
 
   it('produces correct severity for arm_state_change (info)', () => {

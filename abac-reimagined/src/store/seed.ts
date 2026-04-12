@@ -2,7 +2,7 @@
 // Procedurally generated seed data for the ABAC demo application.
 // All IDs are deterministic strings — no uuid calls.
 
-import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule } from '../types'
+import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule, InputDevice, OutputDevice, DeviceStatus } from '../types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SITES (20)
@@ -1596,3 +1596,262 @@ export const POLICIES: Policy[] = Array.from({ length: 150 }, (_, i) => {
     scheduleId,
   }
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HARDWARE I/O DEVICES
+// Generated deterministically from DOORS, ZONES, CONTROLLERS.
+//
+// Status distribution (deterministic from device index):
+//   95% online, 2% offline, 2% tamper, 1% fault
+// ─────────────────────────────────────────────────────────────────────────────
+
+function deviceStatus(idx: number): DeviceStatus {
+  const v = idx % 100
+  if (v < 95) return 'online'
+  if (v < 97) return 'offline'
+  if (v < 99) return 'tamper'
+  return 'fault'
+}
+
+// Per-controller port counter (resets per controller)
+const inputPortCounters:  Record<string, number> = {}
+const outputPortCounters: Record<string, number> = {}
+
+function nextInputPort(controllerId: string): number {
+  inputPortCounters[controllerId] = (inputPortCounters[controllerId] ?? 0) + 1
+  return inputPortCounters[controllerId]
+}
+
+function nextOutputPort(controllerId: string): number {
+  outputPortCounters[controllerId] = (outputPortCounters[controllerId] ?? 0) + 1
+  return outputPortCounters[controllerId]
+}
+
+function controllerForDoor(doorId: string): string {
+  const ctrl = CONTROLLERS.find(c => c.doorIds.includes(doorId))
+  // Fallback: assign to first controller at same site — should not occur with well-formed seed
+  if (!ctrl) {
+    const door = DOORS.find(d => d.id === doorId)
+    const fallback = CONTROLLERS.find(c => c.siteId === door?.siteId)
+    return fallback?.id ?? 'ctrl-unknown'
+  }
+  return ctrl.id
+}
+
+// Zones typed Secure or Restricted (elevated-security zones)
+function isSecureZone(zoneId: string): boolean {
+  const zone = ZONES.find(z => z.id === zoneId)
+  return zone?.type === 'Secure' || zone?.type === 'Restricted'
+}
+
+function isPerimeterZone(zoneId: string): boolean {
+  const zone = ZONES.find(z => z.id === zoneId)
+  return zone?.type === 'Perimeter'
+}
+
+// Extract siteKey from a door id: door-{siteKey}-{zoneKey}-{n}
+function siteKeyFromDoorId(doorId: string): string {
+  return doorId.split('-')[1]
+}
+
+// Global device index counters for deterministic status
+let iDevGlobalIdx = 0
+let oDevGlobalIdx = 0
+
+const INPUT_DEVICES_LIST:  InputDevice[]  = []
+const OUTPUT_DEVICES_LIST: OutputDevice[] = []
+
+DOORS.forEach((door, doorIdx) => {
+  const siteKey    = siteKeyFromDoorId(door.id)
+  const controllerId = controllerForDoor(door.id)
+  const secureZone  = door.zoneId != null && isSecureZone(door.zoneId)
+
+  // ── Per-door input devices ─────────────────────────────────────────────────
+
+  // 1. Card reader (all doors)
+  INPUT_DEVICES_LIST.push({
+    id:           `idev-${siteKey}-${doorIdx}-1`,
+    name:         `${door.name} Reader`,
+    type:         'card_reader',
+    doorId:       door.id,
+    controllerId,
+    port:         nextInputPort(controllerId),
+    status:       deviceStatus(iDevGlobalIdx++),
+    config:       { wiegandBits: '26' },
+  })
+
+  // 2. REX button (all doors)
+  INPUT_DEVICES_LIST.push({
+    id:           `idev-${siteKey}-${doorIdx}-2`,
+    name:         `${door.name} REX`,
+    type:         'rex_button',
+    doorId:       door.id,
+    controllerId,
+    port:         nextInputPort(controllerId),
+    status:       deviceStatus(iDevGlobalIdx++),
+    config:       {},
+  })
+
+  // 3. Door contact (all doors)
+  INPUT_DEVICES_LIST.push({
+    id:           `idev-${siteKey}-${doorIdx}-3`,
+    name:         `${door.name} Contact`,
+    type:         'door_contact',
+    doorId:       door.id,
+    controllerId,
+    port:         nextInputPort(controllerId),
+    status:       deviceStatus(iDevGlobalIdx++),
+    config:       { normalState: 'closed' },
+  })
+
+  // 4. PIR sensor — Secure/Restricted zones only
+  if (secureZone) {
+    INPUT_DEVICES_LIST.push({
+      id:           `idev-${siteKey}-${doorIdx}-4`,
+      name:         `${door.name} PIR`,
+      type:         'pir_sensor',
+      doorId:       door.id,
+      controllerId,
+      port:         nextInputPort(controllerId),
+      status:       deviceStatus(iDevGlobalIdx++),
+      config:       { sensitivity: 'high' },
+    })
+  }
+
+  // ── Per-door output devices ────────────────────────────────────────────────
+
+  // 1. Lock (electric_strike for normal, mag_lock for Secure/Restricted)
+  OUTPUT_DEVICES_LIST.push({
+    id:           `odev-${siteKey}-${doorIdx}-1`,
+    name:         `${door.name} Lock`,
+    type:         secureZone ? 'mag_lock' : 'electric_strike',
+    doorId:       door.id,
+    controllerId,
+    port:         nextOutputPort(controllerId),
+    status:       deviceStatus(oDevGlobalIdx++),
+    config:       {
+      lockType: secureZone ? 'fail-secure' : 'fail-safe',
+      holdTime: '5',
+    },
+  })
+
+  // 2. Camera trigger — Secure/Restricted zones only
+  if (secureZone) {
+    OUTPUT_DEVICES_LIST.push({
+      id:           `odev-${siteKey}-${doorIdx}-2`,
+      name:         `${door.name} Cam`,
+      type:         'camera_trigger',
+      doorId:       door.id,
+      controllerId,
+      port:         nextOutputPort(controllerId),
+      status:       deviceStatus(oDevGlobalIdx++),
+      config:       { preRecordSec: '10' },
+    })
+  }
+})
+
+// ── Zone-level devices ─────────────────────────────────────────────────────
+// Perimeter zones: 2 PIR inputs + siren + strobe (zone-level, no doorId)
+// Secure/Restricted zones: 1 glass_break input + siren + strobe
+
+ZONES.forEach((zone, zoneIdx) => {
+  const siteKey   = zone.siteId.replace('site-', '')
+  const doorsInZone = DOORS.filter(d => d.zoneId === zone.id)
+  const firstDoor  = doorsInZone[0]
+
+  // All zone-level devices are assigned to the controller managing the first door in the zone
+  const zoneControllerId = firstDoor ? controllerForDoor(firstDoor.id) : CONTROLLERS.find(c => c.siteId === zone.siteId)?.id ?? 'ctrl-unknown'
+
+  if (isPerimeterZone(zone.id)) {
+    const anchorDoorId = firstDoor?.id ?? ''
+
+    // 2 PIR sensors
+    INPUT_DEVICES_LIST.push({
+      id:           `idev-${siteKey}-zone-${zoneIdx}-1`,
+      name:         `${zone.name} PIR 1`,
+      type:         'pir_sensor',
+      doorId:       anchorDoorId,
+      controllerId: zoneControllerId,
+      port:         nextInputPort(zoneControllerId),
+      status:       deviceStatus(iDevGlobalIdx++),
+      config:       { sensitivity: 'medium' },
+    })
+    INPUT_DEVICES_LIST.push({
+      id:           `idev-${siteKey}-zone-${zoneIdx}-2`,
+      name:         `${zone.name} PIR 2`,
+      type:         'pir_sensor',
+      doorId:       anchorDoorId,
+      controllerId: zoneControllerId,
+      port:         nextInputPort(zoneControllerId),
+      status:       deviceStatus(iDevGlobalIdx++),
+      config:       { sensitivity: 'medium' },
+    })
+
+    // Siren (zone-level)
+    OUTPUT_DEVICES_LIST.push({
+      id:           `odev-${siteKey}-zone-${zoneIdx}-1`,
+      name:         `${zone.name} Siren`,
+      type:         'siren',
+      zoneId:       zone.id,
+      controllerId: zoneControllerId,
+      port:         nextOutputPort(zoneControllerId),
+      status:       deviceStatus(oDevGlobalIdx++),
+      config:       {},
+    })
+
+    // Strobe (zone-level)
+    OUTPUT_DEVICES_LIST.push({
+      id:           `odev-${siteKey}-zone-${zoneIdx}-2`,
+      name:         `${zone.name} Strobe`,
+      type:         'strobe',
+      zoneId:       zone.id,
+      controllerId: zoneControllerId,
+      port:         nextOutputPort(zoneControllerId),
+      status:       deviceStatus(oDevGlobalIdx++),
+      config:       {},
+    })
+  }
+
+  if (isSecureZone(zone.id)) {
+    const anchorDoorId = firstDoor?.id ?? ''
+
+    // Glass break (zone-level, anchored to first door)
+    INPUT_DEVICES_LIST.push({
+      id:           `idev-${siteKey}-zone-${zoneIdx}-1`,
+      name:         `${zone.name} Glass Break`,
+      type:         'glass_break',
+      doorId:       anchorDoorId,
+      controllerId: zoneControllerId,
+      port:         nextInputPort(zoneControllerId),
+      status:       deviceStatus(iDevGlobalIdx++),
+      config:       {},
+    })
+
+    // Siren (zone-level)
+    OUTPUT_DEVICES_LIST.push({
+      id:           `odev-${siteKey}-zone-${zoneIdx}-1`,
+      name:         `${zone.name} Siren`,
+      type:         'siren',
+      zoneId:       zone.id,
+      controllerId: zoneControllerId,
+      port:         nextOutputPort(zoneControllerId),
+      status:       deviceStatus(oDevGlobalIdx++),
+      config:       {},
+    })
+
+    // Strobe (zone-level)
+    OUTPUT_DEVICES_LIST.push({
+      id:           `odev-${siteKey}-zone-${zoneIdx}-2`,
+      name:         `${zone.name} Strobe`,
+      type:         'strobe',
+      zoneId:       zone.id,
+      controllerId: zoneControllerId,
+      port:         nextOutputPort(zoneControllerId),
+      status:       deviceStatus(oDevGlobalIdx++),
+      config:       {},
+    })
+  }
+})
+
+export const INPUT_DEVICES:  InputDevice[]  = INPUT_DEVICES_LIST
+export const OUTPUT_DEVICES: OutputDevice[] = OUTPUT_DEVICES_LIST

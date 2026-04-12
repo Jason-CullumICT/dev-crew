@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Settings2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useStore } from '../store/store'
 import DoorModal from '../modals/DoorModal'
@@ -116,6 +117,13 @@ export default function Doors() {
                     <div className={`text-[12px] font-semibold ${isRestricted ? 'text-red-300' : 'text-slate-200'}`}>{door.name}</div>
                     <div className="text-[10px] text-slate-600">{site?.name} {zone ? `· ${zone.name} (${zone.type})` : ''}</div>
                   </div>
+                  <Link
+                    to={`/doors/${door.id}`}
+                    aria-label="Configure"
+                    className="p-1.5 rounded text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                  >
+                    <Settings2 size={12} />
+                  </Link>
                   <button
                     onClick={() => setEditing(door)}
                     aria-label="Edit"

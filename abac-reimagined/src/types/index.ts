@@ -130,6 +130,50 @@ export interface Controller {
   customAttributes: Record<string, string>
 }
 
+// ── Hardware I/O types ───────────────────────────────────────────────────────
+
+export type InputDeviceType =
+  | 'card_reader'
+  | 'rex_button'
+  | 'door_contact'
+  | 'pir_sensor'
+  | 'glass_break'
+  | 'panic_button'
+  | 'intercom'
+
+export type OutputDeviceType =
+  | 'electric_strike'
+  | 'mag_lock'
+  | 'siren'
+  | 'strobe'
+  | 'camera_trigger'
+  | 'relay_output'
+
+export type DeviceStatus = 'online' | 'offline' | 'tamper' | 'fault' | 'low_battery'
+
+export interface InputDevice {
+  id: string
+  name: string
+  type: InputDeviceType
+  doorId: string
+  controllerId: string
+  port: number
+  status: DeviceStatus
+  config: Record<string, string>
+}
+
+export interface OutputDevice {
+  id: string
+  name: string
+  type: OutputDeviceType
+  doorId?: string
+  zoneId?: string
+  controllerId: string
+  port: number
+  status: DeviceStatus
+  config: Record<string, string>
+}
+
 export interface ArmingLog {
   id: string
   timestamp: string
@@ -225,6 +269,12 @@ export type SecurityEventType =
   | 'controller_offline'
   | 'arm_state_change'
   | 'panic_button'
+  | 'door_contact_open'
+  | 'door_contact_close'
+  | 'reader_tamper'
+  | 'device_offline'
+  | 'device_online'
+  | 'pir_trigger'
 
 export interface SecurityEvent {
   id: string

@@ -16,6 +16,7 @@ const Zones       = lazy(() => import('./pages/Zones'))
 const Policies    = lazy(() => import('./pages/Policies'))
 const Controllers = lazy(() => import('./pages/Controllers'))
 const Intrusion   = lazy(() => import('./pages/Intrusion'))
+const Monitor     = lazy(() => import('./pages/Monitor'))
 
 function PageLoader() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="policies"    element={<Suspense fallback={<PageLoader />}><Policies /></Suspense>} />
         <Route path="controllers" element={<Suspense fallback={<PageLoader />}><Controllers /></Suspense>} />
         <Route path="intrusion"   element={<Suspense fallback={<PageLoader />}><Intrusion /></Suspense>} />
+        <Route path="monitor"     element={<Suspense fallback={<PageLoader />}><Monitor /></Suspense>} />
         <Route path="*"           element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

@@ -8,6 +8,8 @@ import { useStore } from '../store/store'
 import { buildNowContext } from '../engine/scheduleEngine'
 import { evaluateSchedule } from '../engine/scheduleEngine'
 import type { ArmingLog } from '../types'
+import EventFeed from '../components/EventFeed'
+import AlarmCard from '../components/AlarmCard'
 
 // ── Timeline helpers (mirrored from Intrusion) ────────────────────────────────
 
@@ -83,6 +85,7 @@ function QuickLink({ to, icon: Icon, label, description, iconColor }: QuickLinkP
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  const navigate    = useNavigate()
   const users     = useStore(s => s.users)
   const doors     = useStore(s => s.doors)
   const zones     = useStore(s => s.zones)
@@ -90,6 +93,8 @@ export default function Dashboard() {
   const schedules = useStore(s => s.schedules)
   const armingLog = useStore(s => s.armingLog)
   const resetToSeed = useStore(s => s.resetToSeed)
+  const events    = useStore(s => s.events)
+  const alarms    = useStore(s => s.alarms)
 
   // Ticker so relative timestamps refresh each minute
   const [, setTick] = useState(0)
@@ -188,24 +193,30 @@ export default function Dashboard() {
           value={activeSchedules}
           breakdown={`${schedules.length - activeSchedules} inactive of ${schedules.length} total`}
         />
-        <StatCard
-          icon={ShieldAlert}
-          iconColor={sitesInAlarm > 0 ? '#ef4444' : '#10b981'}
-          label="Sites in Alarm"
-          value={sitesInAlarm}
-          breakdown={sitesInAlarm > 0 ? 'Alarm or Lockdown status active' : 'All sites nominal'}
-        />
+        <div className={sitesInAlarm > 0 ? 'rounded-xl ring-2 ring-red-500/50 animate-pulse' : ''}>
+          <StatCard
+            icon={ShieldAlert}
+            iconColor={sitesInAlarm > 0 ? '#ef4444' : '#10b981'}
+            label="Sites in Alarm"
+            value={sitesInAlarm}
+            breakdown={sitesInAlarm > 0 ? 'Alarm or Lockdown status active' : 'All sites nominal'}
+          />
+        </div>
       </div>
 
       {/* Bottom 2-column layout */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left: Recent Intrusion Events */}
-        <div className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4">
-          <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-3">
-            Recent Intrusion Events
+        {/* Left: Recent Events (EventFeed when events exist, else intrusion log) */}
+        <div className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 flex flex-col" style={{ minHeight: 220 }}>
+          <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-3 shrink-0">
+            Recent Events
           </div>
-          {recentLog.length === 0 ? (
-            <p className="text-[11px] text-slate-600">No intrusion events yet.</p>
+          {events.length > 0 ? (
+            <div className="flex-1 min-h-0">
+              <EventFeed compact />
+            </div>
+          ) : recentLog.length === 0 ? (
+            <p className="text-[11px] text-slate-600">No events yet.</p>
           ) : (
             <div className="relative pl-5">
               <div
@@ -243,8 +254,29 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Right: Quick Links + Reset */}
+        {/* Right: Active Alarms + Quick Links + Reset */}
         <div className="space-y-3">
+          {/* Active Alarms — up to 3, compact cards */}
+          {alarms.filter(a => a.state !== 'cleared').length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">
+                Active Alarms
+              </div>
+              {alarms
+                .filter(a => a.state !== 'cleared')
+                .slice(0, 3)
+                .map(alarm => (
+                  <AlarmCard key={alarm.id} alarm={alarm} compact />
+                ))}
+              <button
+                onClick={() => navigate('/monitor')}
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                View all in Monitor →
+              </button>
+            </div>
+          )}
+
           <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">
             Quick Links
           </div>

@@ -4,16 +4,21 @@ import {
   Share2, Search, Activity, Users, UsersRound,
   KeyRound, CalendarClock, DoorOpen, Building2, Shield,
   Layers, FileText, Cpu, LayoutDashboard,
+  Monitor as MonitorIcon,
 } from 'lucide-react'
 import NowPill from './NowPill'
 import CommandPalette from './CommandPalette'
 import ErrorBoundary from './ErrorBoundary'
+import SimulationToggle from './SimulationToggle'
+import { useStore } from '../store/store'
+import { useSimulation } from '../hooks/useSimulation'
 
 const primaryNav = [
   { to: '/',          icon: LayoutDashboard, label: 'Dashboard', color: '#22c55e' },
-  { to: '/canvas',    icon: Share2,       label: 'Canvas',      color: '#6366f1' },
-  { to: '/oracle',    icon: Search,       label: 'Oracle',      color: '#8b5cf6' },
-  { to: '/reasoner',  icon: Activity,     label: 'Reasoner',    color: '#06b6d4' },
+  { to: '/canvas',    icon: Share2,          label: 'Canvas',    color: '#6366f1' },
+  { to: '/monitor',   icon: MonitorIcon,     label: 'Monitor',   color: '#ef4444' },
+  { to: '/oracle',    icon: Search,          label: 'Oracle',    color: '#8b5cf6' },
+  { to: '/reasoner',  icon: Activity,        label: 'Reasoner',  color: '#06b6d4' },
 ]
 
 const entityNav = [
@@ -31,6 +36,7 @@ const entityNav = [
 // Map pathname segments to display names
 const PAGE_NAMES: Record<string, string> = {
   canvas:      'Canvas',
+  monitor:     'Monitor',
   oracle:      'Oracle',
   reasoner:    'Reasoner',
   people:      'People',
@@ -51,7 +57,7 @@ function usePageTitle() {
   return PAGE_NAMES[segment] ?? ''
 }
 
-function SidebarItem({ to, icon: Icon, label, color }: { to: string; icon: React.ElementType; label: string; color?: string }) {
+function SidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon: React.ElementType; label: string; color?: string; badge?: number }) {
   return (
     <NavLink
       to={to}
@@ -78,6 +84,12 @@ function SidebarItem({ to, icon: Icon, label, color }: { to: string; icon: React
             style={{ color: isActive ? (color ?? '#94a3b8') : '#374151' }}
             strokeWidth={1.8}
           />
+          {/* Red dot badge for unacknowledged alarms */}
+          {badge != null && badge > 0 && (
+            <span className="absolute top-0.5 right-0.5 w-[14px] h-[14px] rounded-full bg-red-500 flex items-center justify-center text-[8px] font-bold text-white leading-none">
+              {badge > 9 ? '9+' : badge}
+            </span>
+          )}
           <div className="absolute left-[46px] bg-[#1c1f2e] border border-[#2d3148] rounded-md px-2.5 py-1 text-[11px] text-slate-200 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
             {label}
           </div>
@@ -90,6 +102,13 @@ function SidebarItem({ to, icon: Icon, label, color }: { to: string; icon: React
 export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const pageTitle = usePageTitle()
+
+  // Start simulation engine
+  useSimulation()
+
+  // Unacknowledged alarm count for badge
+  const alarms = useStore(s => s.alarms)
+  const unacknowledgedCount = alarms.filter(a => a.state === 'active').length
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -111,7 +130,13 @@ export default function Layout() {
           <span className="text-white text-base font-bold leading-none">A</span>
         </div>
 
-        {primaryNav.map(item => <SidebarItem key={item.to} {...item} />)}
+        {primaryNav.map(item => (
+          <SidebarItem
+            key={item.to}
+            {...item}
+            badge={item.to === '/monitor' ? unacknowledgedCount : undefined}
+          />
+        ))}
 
         <div className="w-7 h-px bg-[#141828] my-1.5 shrink-0" />
 
@@ -137,6 +162,8 @@ export default function Layout() {
           )}
 
           <div className="flex-1" />
+
+          <SimulationToggle />
 
           <button
             onClick={() => setPaletteOpen(true)}

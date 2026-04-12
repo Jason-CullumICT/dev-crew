@@ -122,6 +122,7 @@ export interface Door {
   siteId: string
   zoneId?: string
   description: string
+  isElevator?: boolean
   customAttributes: Record<string, string>
 }
 
@@ -279,6 +280,7 @@ export type SecurityEventType =
   | 'device_offline'
   | 'device_online'
   | 'pir_trigger'
+  | 'fire_alarm'
 
 export interface SecurityEvent {
   id: string

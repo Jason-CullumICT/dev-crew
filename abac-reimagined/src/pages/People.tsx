@@ -1,11 +1,160 @@
 import { useState, useMemo, useRef } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, RefreshCw } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useStore } from '../store/store'
 import UserModal from '../modals/UserModal'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
-import type { User } from '../types'
+import type { User, Credential } from '../types'
+
+// ── HR Sync names pool ────────────────────────────────────────────────────────
+
+const FIRST_NAMES = [
+  'Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Drew', 'Quinn',
+  'Avery', 'Blake', 'Cameron', 'Dana', 'Elliot', 'Frankie', 'Glen', 'Harley',
+]
+const LAST_NAMES = [
+  'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis',
+  'Wilson', 'Moore', 'Anderson', 'Taylor', 'Thomas', 'Jackson', 'White', 'Harris',
+]
+const DEPARTMENTS = ['Engineering', 'Security', 'Finance', 'HR', 'Operations', 'Legal', 'Sales']
+const ROLES = ['Analyst', 'Manager', 'Director', 'Engineer', 'Specialist', 'Coordinator']
+
+function randPick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function makeId(): string {
+  return Math.random().toString(36).slice(2, 10)
+}
+
+// ── Toast component ───────────────────────────────────────────────────────────
+
+function Toast({ message, onDone }: { message: string; onDone: () => void }) {
+  useState(() => {
+    const t = setTimeout(onDone, 4000)
+    return () => clearTimeout(t)
+  })
+  return (
+    <div className="fixed bottom-6 right-6 z-50 bg-[#1c1f2e] border border-indigo-500/30 rounded-xl px-4 py-3 text-[11px] text-slate-200 shadow-xl max-w-[320px]">
+      {message}
+    </div>
+  )
+}
+
+// ── HRSync panel ──────────────────────────────────────────────────────────────
+
+function HRSyncPanel() {
+  const users        = useStore(s => s.users)
+  const groups       = useStore(s => s.groups)
+  const addUser      = useStore(s => s.addUser)
+  const updateUser   = useStore(s => s.updateUser)
+  const addCredential = useStore(s => s.addCredential)
+  const suspendCredential = useStore(s => s.suspendCredential)
+  const credentials  = useStore(s => s.credentials)
+  const updateGroup  = useStore(s => s.updateGroup)
+
+  const [toast, setToast] = useState<string | null>(null)
+
+  function showToast(msg: string) {
+    setToast(msg)
+  }
+
+  function handleNewStarter() {
+    const firstName = randPick(FIRST_NAMES)
+    const lastName  = randPick(LAST_NAMES)
+    const name      = `${firstName} ${lastName}`
+    const dept      = randPick(DEPARTMENTS)
+    const role      = randPick(ROLES)
+    const id        = `user-hr-${makeId()}`
+
+    const newUser: User = {
+      id,
+      name,
+      email:          `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com`,
+      department:     dept,
+      role,
+      clearanceLevel: Math.floor(Math.random() * 3) + 1,
+      type:           'employee',
+      status:         'active',
+      customAttributes: { source: 'hr_sync' },
+    }
+    addUser(newUser)
+
+    // Auto-assign to department-matching group if one exists
+    const deptGroup = groups.find(g =>
+      g.name.toLowerCase().includes(dept.toLowerCase()) && g.membershipType === 'static'
+    )
+    if (deptGroup) {
+      updateGroup({ ...deptGroup, members: [...deptGroup.members, id] })
+    }
+
+    // Issue a proximity card credential
+    const cred: Credential = {
+      id:         `cred-hr-${makeId()}`,
+      userId:     id,
+      type:       'proximity_card',
+      status:     'active',
+      cardNumber: String(100000 + Math.floor(Math.random() * 900000)),
+      facilityCode: 101,
+      issuedAt:   new Date().toISOString(),
+    }
+    addCredential(cred)
+
+    showToast(`HR Sync: New starter "${name}" (${dept}) added. Credential issued. ${deptGroup ? `Assigned to "${deptGroup.name}".` : 'No matching group found.'}`)
+  }
+
+  function handleLeaver() {
+    const activeUsers = users.filter(u => u.status === 'active' && !u.customAttributes['hr_offboarded'])
+    if (activeUsers.length === 0) {
+      showToast('No active users to offboard.')
+      return
+    }
+    const target = randPick(activeUsers)
+
+    // Suspend user
+    updateUser({ ...target, status: 'inactive', customAttributes: { ...target.customAttributes, hr_offboarded: 'true' } })
+
+    // Suspend all their credentials
+    const userCreds = credentials.filter(c => c.userId === target.id && c.status === 'active')
+    userCreds.forEach(c => suspendCredential(c.id))
+
+    // Remove from all static groups
+    groups.filter(g => g.membershipType === 'static' && g.members.includes(target.id)).forEach(g => {
+      updateGroup({ ...g, members: g.members.filter(m => m !== target.id) })
+    })
+
+    showToast(`HR Sync: "${target.name}" marked inactive. ${userCreds.length} credential(s) suspended. Removed from all groups.`)
+  }
+
+  return (
+    <div className="bg-[#080b14] border border-[#1e293b] rounded-lg p-4 space-y-3 shrink-0">
+      <div className="flex items-center gap-2">
+        <RefreshCw size={12} className="text-indigo-400" />
+        <span className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">HR Sync</span>
+        <span className="text-[9px] text-slate-700">(simulated)</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleNewStarter}
+          className="px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold hover:bg-emerald-600/30 transition-colors"
+        >
+          + New Starter
+        </button>
+        <button
+          onClick={handleLeaver}
+          className="px-3 py-1.5 rounded-lg bg-red-600/20 border border-red-500/20 text-red-400 text-[10px] font-semibold hover:bg-red-600/30 transition-colors"
+        >
+          Process Leaver
+        </button>
+        <span className="text-[9px] text-slate-700 ml-2">
+          New Starter: creates user, assigns to group, issues credential. Leaver: deactivates user, suspends credentials, removes from groups.
+        </span>
+      </div>
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+    </div>
+  )
+}
 
 const STATUS_CLASS: Record<string, string> = {
   active:    'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
@@ -68,6 +217,9 @@ export default function People() {
           </button>
         </div>
       </div>
+
+      {/* HR Sync */}
+      <HRSyncPanel />
 
       {/* Search */}
       <div className="shrink-0">

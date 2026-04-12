@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Pencil, Trash2, Settings2 } from 'lucide-react'
+import { Pencil, Trash2, Settings2, ArrowUpDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useStore } from '../store/store'
@@ -114,7 +114,18 @@ export default function Doors() {
                 <div className={`bg-[#0a0d14] border rounded-lg px-4 py-3 flex items-center gap-3 ${isRestricted ? 'border-red-900/40' : 'border-[#1e293b]'}`}>
                   <span className="text-[18px] shrink-0">🚪</span>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-[12px] font-semibold ${isRestricted ? 'text-red-300' : 'text-slate-200'}`}>{door.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[12px] font-semibold ${isRestricted ? 'text-red-300' : 'text-slate-200'}`}>{door.name}</span>
+                      {door.isElevator && (
+                        <span
+                          title="Elevator door — floor access controlled by zone grants"
+                          className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-[8px] text-cyan-400 font-semibold"
+                        >
+                          <ArrowUpDown size={8} />
+                          LIFT
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[10px] text-slate-600">{site?.name} {zone ? `· ${zone.name} (${zone.type})` : ''}</div>
                   </div>
                   <Link

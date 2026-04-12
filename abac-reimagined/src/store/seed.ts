@@ -89,6 +89,7 @@ function makeDoors(siteId: string, zoneId: string, namePool: string[]): Door[] {
     siteId,
     zoneId,
     description: `${name} access point at ${siteKey.toUpperCase()} ${zoneKey} zone`,
+    isElevator:  name === 'Lift Lobby',
     customAttributes: {},
   }))
 }

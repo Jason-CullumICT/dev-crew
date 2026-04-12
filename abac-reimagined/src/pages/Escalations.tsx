@@ -307,11 +307,12 @@ function ChainCard({
 
       {deleting && (
         <ConfirmDialog
+          open={true}
           title="Delete Escalation Chain"
           message={`Delete "${chain.name}"? This cannot be undone.`}
-          confirmLabel="Delete"
           onConfirm={() => { onDelete(); setDeleting(false) }}
           onCancel={() => setDeleting(false)}
+          variant="danger"
         />
       )}
     </div>

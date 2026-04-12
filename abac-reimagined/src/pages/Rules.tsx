@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import { Plus, Pencil, Trash2, ChevronDown, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { useStore } from '../store/store'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -57,11 +57,6 @@ function emptyAction(): ResponseAction {
   return { type: 'send_notification', params: {} }
 }
 
-function severityColor(s: EventSeverity): string {
-  if (s === 'critical') return 'text-red-400 bg-red-500/10 border-red-500/20'
-  if (s === 'warning')  return 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-  return 'text-sky-400 bg-sky-500/10 border-sky-500/20'
-}
 
 // ── Multi-select chip component ───────────────────────────────────────────────
 
@@ -574,11 +569,12 @@ export default function Rules() {
       {/* Delete confirm */}
       {deleting && (
         <ConfirmDialog
+          open={true}
           title="Delete Rule"
           message={`Delete "${deleting.name}"? This cannot be undone.`}
-          confirmLabel="Delete"
           onConfirm={() => { deleteRule(deleting.id); setDeleting(null) }}
           onCancel={() => setDeleting(null)}
+          variant="danger"
         />
       )}
     </div>

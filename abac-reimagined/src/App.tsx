@@ -17,6 +17,8 @@ const Policies    = lazy(() => import('./pages/Policies'))
 const Controllers = lazy(() => import('./pages/Controllers'))
 const Intrusion   = lazy(() => import('./pages/Intrusion'))
 const Monitor     = lazy(() => import('./pages/Monitor'))
+const Hardware    = lazy(() => import('./pages/Hardware'))
+const DoorConfig  = lazy(() => import('./pages/DoorConfig'))
 
 function PageLoader() {
   return (
@@ -39,12 +41,14 @@ export default function App() {
         <Route path="grants"      element={<Suspense fallback={<PageLoader />}><Grants /></Suspense>} />
         <Route path="schedules"   element={<Suspense fallback={<PageLoader />}><Schedules /></Suspense>} />
         <Route path="doors"       element={<Suspense fallback={<PageLoader />}><Doors /></Suspense>} />
+        <Route path="doors/:doorId" element={<Suspense fallback={<PageLoader />}><DoorConfig /></Suspense>} />
         <Route path="sites"       element={<Suspense fallback={<PageLoader />}><Sites /></Suspense>} />
         <Route path="zones"       element={<Suspense fallback={<PageLoader />}><Zones /></Suspense>} />
         <Route path="policies"    element={<Suspense fallback={<PageLoader />}><Policies /></Suspense>} />
         <Route path="controllers" element={<Suspense fallback={<PageLoader />}><Controllers /></Suspense>} />
         <Route path="intrusion"   element={<Suspense fallback={<PageLoader />}><Intrusion /></Suspense>} />
         <Route path="monitor"     element={<Suspense fallback={<PageLoader />}><Monitor /></Suspense>} />
+        <Route path="hardware"    element={<Suspense fallback={<PageLoader />}><Hardware /></Suspense>} />
         <Route path="*"           element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

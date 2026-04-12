@@ -3,11 +3,12 @@ import { persist } from 'zustand/middleware'
 import type {
   User, Group, Grant, NamedSchedule, Policy,
   Door, Zone, Site, Controller, ArmingLog, CanvasPosition,
-  SecurityEvent, Alarm,
+  SecurityEvent, Alarm, InputDevice, OutputDevice,
 } from '../types'
 import {
   USERS, GROUPS, GRANTS, SCHEDULES, POLICIES,
   DOORS, ZONES, SITES, CONTROLLERS,
+  INPUT_DEVICES, OUTPUT_DEVICES,
 } from './seed'
 
 export function defaultCanvasPositions(): Record<string, CanvasPosition> {
@@ -70,16 +71,18 @@ function nextY(positions: Record<string, CanvasPosition>, prefix: string, gap: n
 
 interface AxonStore {
   // ── Entities ──────────────────────────────────────────────────────────────
-  users:       User[]
-  groups:      Group[]
-  grants:      Grant[]
-  schedules:   NamedSchedule[]
-  policies:    Policy[]
-  doors:       Door[]
-  zones:       Zone[]
-  sites:       Site[]
-  controllers: Controller[]
-  armingLog:   ArmingLog[]
+  users:         User[]
+  groups:        Group[]
+  grants:        Grant[]
+  schedules:     NamedSchedule[]
+  policies:      Policy[]
+  doors:         Door[]
+  zones:         Zone[]
+  sites:         Site[]
+  controllers:   Controller[]
+  armingLog:     ArmingLog[]
+  inputDevices:  InputDevice[]
+  outputDevices: OutputDevice[]
 
   // ── SOC Monitoring state ──────────────────────────────────────────────────
   events:          SecurityEvent[]   // capped at 500, newest first
@@ -153,22 +156,34 @@ interface AxonStore {
   // ── Controllers ───────────────────────────────────────────────────────────
   addController:    (controller: Controller) => void
   updateController: (controller: Controller) => void
-  deleteController: (id: string)             => void
+  deleteController: (id: string)             => void   // cascade: remove devices where controllerId matches
+
+  // ── Input Devices ─────────────────────────────────────────────────────────
+  addInputDevice:    (device: InputDevice)  => void
+  updateInputDevice: (device: InputDevice)  => void
+  deleteInputDevice: (id: string)           => void
+
+  // ── Output Devices ────────────────────────────────────────────────────────
+  addOutputDevice:    (device: OutputDevice) => void
+  updateOutputDevice: (device: OutputDevice) => void
+  deleteOutputDevice: (id: string)           => void
 }
 
 export const useStore = create<AxonStore>()(
   persist(
     (set) => ({
-      users:       USERS,
-      groups:      GROUPS,
-      grants:      GRANTS,
-      schedules:   SCHEDULES,
-      policies:    POLICIES,
-      doors:       DOORS,
-      zones:       ZONES,
-      sites:       SITES,
-      controllers: CONTROLLERS,
-      armingLog:   [],
+      users:         USERS,
+      groups:        GROUPS,
+      grants:        GRANTS,
+      schedules:     SCHEDULES,
+      policies:      POLICIES,
+      doors:         DOORS,
+      zones:         ZONES,
+      sites:         SITES,
+      controllers:   CONTROLLERS,
+      armingLog:     [],
+      inputDevices:  INPUT_DEVICES,
+      outputDevices: OUTPUT_DEVICES,
 
       events:          [],
       alarms:          [],
@@ -256,19 +271,21 @@ export const useStore = create<AxonStore>()(
       // ── Seed reset ────────────────────────────────────────────────────────────
       resetToSeed: () =>
         set({
-          users:       USERS,
-          groups:      GROUPS,
-          grants:      GRANTS,
-          schedules:   SCHEDULES,
-          policies:    POLICIES,
-          doors:       DOORS,
-          zones:       ZONES,
-          sites:       SITES,
-          controllers: CONTROLLERS,
+          users:         USERS,
+          groups:        GROUPS,
+          grants:        GRANTS,
+          schedules:     SCHEDULES,
+          policies:      POLICIES,
+          doors:         DOORS,
+          zones:         ZONES,
+          sites:         SITES,
+          controllers:   CONTROLLERS,
+          inputDevices:  INPUT_DEVICES,
+          outputDevices: OUTPUT_DEVICES,
           canvasPositions: defaultCanvasPositions(),
-          armingLog:   [],
-          events:      [],
-          alarms:      [],
+          armingLog:     [],
+          events:        [],
+          alarms:        [],
         }),
 
       // ── Users ─────────────────────────────────────────────────────────────────
@@ -395,9 +412,11 @@ export const useStore = create<AxonStore>()(
         set(state => {
           const { [`door-${id}`]: _removed, ...restPositions } = state.canvasPositions
           return {
-            doors:       state.doors.filter(d => d.id !== id),
-            policies:    state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => d !== id) })),
-            controllers: state.controllers.map(c => ({ ...c, doorIds: c.doorIds.filter(d => d !== id) })),
+            doors:         state.doors.filter(d => d.id !== id),
+            policies:      state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => d !== id) })),
+            controllers:   state.controllers.map(c => ({ ...c, doorIds: c.doorIds.filter(d => d !== id) })),
+            inputDevices:  state.inputDevices.filter(dev => dev.doorId !== id),
+            outputDevices: state.outputDevices.filter(dev => dev.doorId !== id),
             canvasPositions: restPositions,
           }
         }),
@@ -428,11 +447,13 @@ export const useStore = create<AxonStore>()(
           const restPositions = { ...state.canvasPositions }
           doorIds.forEach(did => { delete restPositions[`door-${did}`] })
           return {
-            sites:       state.sites.filter(s => s.id !== id),
-            zones:       state.zones.filter(z => z.siteId !== id),
-            doors:       state.doors.filter(d => d.siteId !== id),
-            policies:    state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => !doorIds.includes(d)) })),
-            controllers: state.controllers.filter(c => c.siteId !== id),
+            sites:         state.sites.filter(s => s.id !== id),
+            zones:         state.zones.filter(z => z.siteId !== id),
+            doors:         state.doors.filter(d => d.siteId !== id),
+            policies:      state.policies.map(p => ({ ...p, doorIds: p.doorIds.filter(d => !doorIds.includes(d)) })),
+            controllers:   state.controllers.filter(c => c.siteId !== id),
+            inputDevices:  state.inputDevices.filter(dev => !doorIds.includes(dev.doorId)),
+            outputDevices: state.outputDevices.filter(dev => dev.doorId == null || !doorIds.includes(dev.doorId)),
             // Cascade: clear targetId on site-scoped grants that pointed at this site.
             grants: state.grants.map(g =>
               g.scope === 'site' && g.targetId === id ? { ...g, targetId: undefined } : g
@@ -449,11 +470,35 @@ export const useStore = create<AxonStore>()(
         set(state => ({ controllers: state.controllers.map(c => c.id === controller.id ? controller : c) })),
 
       deleteController: (id) =>
-        set(state => ({ controllers: state.controllers.filter(c => c.id !== id) })),
+        set(state => ({
+          controllers:   state.controllers.filter(c => c.id !== id),
+          inputDevices:  state.inputDevices.filter(dev => dev.controllerId !== id),
+          outputDevices: state.outputDevices.filter(dev => dev.controllerId !== id),
+        })),
+
+      // ── Input Devices ─────────────────────────────────────────────────────────
+      addInputDevice: (device) =>
+        set(state => ({ inputDevices: [...state.inputDevices, device] })),
+
+      updateInputDevice: (device) =>
+        set(state => ({ inputDevices: state.inputDevices.map(d => d.id === device.id ? device : d) })),
+
+      deleteInputDevice: (id) =>
+        set(state => ({ inputDevices: state.inputDevices.filter(d => d.id !== id) })),
+
+      // ── Output Devices ────────────────────────────────────────────────────────
+      addOutputDevice: (device) =>
+        set(state => ({ outputDevices: [...state.outputDevices, device] })),
+
+      updateOutputDevice: (device) =>
+        set(state => ({ outputDevices: state.outputDevices.map(d => d.id === device.id ? device : d) })),
+
+      deleteOutputDevice: (id) =>
+        set(state => ({ outputDevices: state.outputDevices.filter(d => d.id !== id) })),
     }),
     {
       name: 'axon-store',
-      version: 3, // Bump to add SOC monitoring state
+      version: 4, // Bump to add hardware I/O device state
       partialize: (state) => {
         // Exclude ephemeral UI state and ephemeral SOC data from persistence
         const { selectedCanvasNodeId: _excl1, edgeMode: _excl2, events: _excl3, alarms: _excl4, ...rest } = state

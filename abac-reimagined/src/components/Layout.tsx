@@ -4,7 +4,7 @@ import {
   Share2, Search, Activity, Users, UsersRound,
   KeyRound, CalendarClock, DoorOpen, Building2, Shield,
   Layers, FileText, Cpu, LayoutDashboard,
-  Monitor as MonitorIcon,
+  Monitor as MonitorIcon, CircuitBoard,
 } from 'lucide-react'
 import NowPill from './NowPill'
 import CommandPalette from './CommandPalette'
@@ -31,6 +31,7 @@ const entityNav = [
   { to: '/zones',       icon: Layers,       label: 'Zones' },
   { to: '/policies',    icon: FileText,     label: 'Policies' },
   { to: '/controllers', icon: Cpu,          label: 'Controllers' },
+  { to: '/hardware',    icon: CircuitBoard, label: 'Hardware' },
 ]
 
 // Map pathname segments to display names
@@ -48,6 +49,7 @@ const PAGE_NAMES: Record<string, string> = {
   zones:       'Zones',
   policies:    'Policies',
   controllers: 'Controllers',
+  hardware:    'Hardware',
   intrusion:   'Intrusion',
 }
 

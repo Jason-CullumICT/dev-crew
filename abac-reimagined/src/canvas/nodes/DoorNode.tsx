@@ -9,9 +9,10 @@ interface Props {
   dimmed?: boolean
   onClick: () => void
   onDoubleClick?: () => void
+  deviceCount?: { inputs: number; outputs: number; hasUnhealthy: boolean }
 }
 
-export default function DoorNode({ door, zone, selected, highlighted, dimmed, onClick, onDoubleClick }: Props) {
+export default function DoorNode({ door, zone, selected, highlighted, dimmed, onClick, onDoubleClick, deviceCount }: Props) {
   const sites = useStore(s => s.sites)
   const isRestricted = zone?.type === 'Restricted' || zone?.type === 'Secure'
   const siteName = sites.find(s => s.id === door.siteId)?.name
@@ -45,8 +46,15 @@ export default function DoorNode({ door, zone, selected, highlighted, dimmed, on
           <line x1="2" y1="13" x2="12" y2="13" stroke={iconStroke} strokeWidth="1.2" strokeLinecap="round"/>
           <circle cx="9.5" cy="7" r="0.9" fill={iconStroke}/>
         </svg>
-        <div className={`text-[11px] font-medium truncate flex-1 ${isRestricted ? 'text-red-300' : 'text-slate-300'}`}>
-          {door.name}
+        <div className="flex flex-col flex-1 min-w-0">
+          <div className={`text-[11px] font-medium truncate ${isRestricted ? 'text-red-300' : 'text-slate-300'}`}>
+            {door.name}
+          </div>
+          {deviceCount !== undefined && (deviceCount.inputs > 0 || deviceCount.outputs > 0) && (
+            <div className={`text-[8px] leading-none mt-0.5 ${deviceCount.hasUnhealthy ? 'text-amber-500' : 'text-slate-600'}`}>
+              {deviceCount.inputs}I/{deviceCount.outputs}O
+            </div>
+          )}
         </div>
       </div>
 

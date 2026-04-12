@@ -29,11 +29,13 @@ export function useSimulation(): void {
       const state = useStore.getState()
 
       const event = generateEvent({
-        users:       state.users,
-        doors:       state.doors,
-        zones:       state.zones,
-        sites:       state.sites,
-        controllers: state.controllers,
+        users:         state.users,
+        doors:         state.doors,
+        zones:         state.zones,
+        sites:         state.sites,
+        controllers:   state.controllers,
+        inputDevices:  state.inputDevices,
+        outputDevices: state.outputDevices,
       })
 
       state.addEvent(event)

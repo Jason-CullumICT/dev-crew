@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/store'
 import { useCanvasLayout } from './useCanvasLayout'
@@ -76,15 +76,42 @@ export default function CanvasGraph({
 }: Props) {
   const navigate = useNavigate()
 
-  const allGroups    = useStore(s => s.groups)
-  const allGrants    = useStore(s => s.grants)
-  const allDoors     = useStore(s => s.doors)
-  const zones        = useStore(s => s.zones)
-  const allSchedules = useStore(s => s.schedules)
-  const allSites     = useStore(s => s.sites)
-  const selected     = useStore(s => s.selectedCanvasNodeId)
-  const setSelected  = useStore(s => s.setSelectedCanvasNode)
-  const edgeMode     = useStore(s => s.edgeMode)
+  const allGroups     = useStore(s => s.groups)
+  const allGrants     = useStore(s => s.grants)
+  const allDoors      = useStore(s => s.doors)
+  const zones         = useStore(s => s.zones)
+  const allSchedules  = useStore(s => s.schedules)
+  const allSites      = useStore(s => s.sites)
+  const selected      = useStore(s => s.selectedCanvasNodeId)
+  const setSelected   = useStore(s => s.setSelectedCanvasNode)
+  const edgeMode      = useStore(s => s.edgeMode)
+  const inputDevices  = useStore(s => s.inputDevices)
+  const outputDevices = useStore(s => s.outputDevices)
+
+  // Compute device counts per door for badge display
+  const deviceCountByDoor = useMemo(() => {
+    const map = new Map<string, { inputs: number; outputs: number; hasUnhealthy: boolean }>()
+    for (const d of inputDevices) {
+      const existing = map.get(d.doorId) ?? { inputs: 0, outputs: 0, hasUnhealthy: false }
+      const unhealthy = d.status === 'offline' || d.status === 'tamper' || d.status === 'fault'
+      map.set(d.doorId, {
+        inputs: existing.inputs + 1,
+        outputs: existing.outputs,
+        hasUnhealthy: existing.hasUnhealthy || unhealthy,
+      })
+    }
+    for (const d of outputDevices) {
+      if (!d.doorId) continue
+      const existing = map.get(d.doorId) ?? { inputs: 0, outputs: 0, hasUnhealthy: false }
+      const unhealthy = d.status === 'offline' || d.status === 'tamper' || d.status === 'fault'
+      map.set(d.doorId, {
+        inputs: existing.inputs,
+        outputs: existing.outputs + 1,
+        hasUnhealthy: existing.hasUnhealthy || unhealthy,
+      })
+    }
+    return map
+  }, [inputDevices, outputDevices])
 
   // ── Hover state ────────────────────────────────────────────────────────────
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
@@ -763,6 +790,7 @@ export default function CanvasGraph({
           const key  = `door-${door.id}`
           const zone = zones.find(z => z.id === door.zoneId)
           const { highlighted, dimmed } = nodeProps(key)
+          const deviceCount = deviceCountByDoor.get(door.id)
           return (
             <div
               key={door.id}
@@ -779,6 +807,7 @@ export default function CanvasGraph({
                 dimmed={dimmed}
                 onClick={() => setSelected(key)}
                 onDoubleClick={() => navigate('/doors')}
+                deviceCount={deviceCount}
               />
             </div>
           )

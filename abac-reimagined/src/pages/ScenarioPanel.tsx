@@ -218,28 +218,28 @@ export default function ScenarioPanel({ onClose }: Props) {
             <button
               onClick={runAfterHoursBreach}
               disabled={running !== null}
-              className="w-full text-left bg-[#0f1320] border border-red-500/20 hover:border-red-500/40 rounded-xl p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-left bg-[#0f1320] border border-red-500/20 hover:border-red-500/40 rounded-xl p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-l-4 border-l-red-500"
             >
-              <div className="text-[11px] font-semibold text-red-400">After-Hours Breach</div>
-              <div className="text-[9px] text-slate-600 mt-0.5">Door forced → sensor trip → 4x denied → controller offline (~16s)</div>
+              <div className="text-[11px] font-semibold text-red-400">🚨 After-Hours Breach</div>
+              <div className="text-[11px] text-slate-600 mt-0.5">Door forced → sensor trip → 4x denied → controller offline (~16s)</div>
             </button>
 
             <button
               onClick={runNormalDay}
               disabled={running !== null}
-              className="w-full text-left bg-[#0f1320] border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-left bg-[#0f1320] border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-l-4 border-l-blue-500"
             >
-              <div className="text-[11px] font-semibold text-emerald-400">Normal Business Day</div>
-              <div className="text-[9px] text-slate-600 mt-0.5">30 events over 60s — 90% granted, some denied, one door held</div>
+              <div className="text-[11px] font-semibold text-emerald-400">📋 Normal Business Day</div>
+              <div className="text-[11px] text-slate-600 mt-0.5">30 events over 60s — 90% granted, some denied, one door held</div>
             </button>
 
             <button
               onClick={runFullLockdown}
               disabled={running !== null}
-              className="w-full text-left bg-[#0f1320] border border-violet-500/20 hover:border-violet-500/40 rounded-xl p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-left bg-[#0f1320] border border-violet-500/20 hover:border-violet-500/40 rounded-xl p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-l-4 border-l-purple-500"
             >
-              <div className="text-[11px] font-semibold text-violet-400">Full Lockdown</div>
-              <div className="text-[9px] text-slate-600 mt-0.5">Arm each zone + 5 denied events, spaced 2s apart</div>
+              <div className="text-[11px] font-semibold text-violet-400">🔒 Full Lockdown</div>
+              <div className="text-[11px] text-slate-600 mt-0.5">Arm each zone + 5 denied events, spaced 2s apart</div>
             </button>
 
             {running && (

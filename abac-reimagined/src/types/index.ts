@@ -305,3 +305,57 @@ export interface Alarm {
   clearedAt?: string
   notes: string[]
 }
+
+// ── Phase 3 — Response Rules Engine ─────────────────────────────────────────
+
+export type ResponseActionType =
+  | 'lock_door'
+  | 'lock_zone'
+  | 'lock_site'
+  | 'unlock_door'
+  | 'unlock_zone'
+  | 'activate_siren'
+  | 'activate_strobe'
+  | 'trigger_camera'
+  | 'send_notification'
+  | 'escalate_alarm'
+  | 'change_threat_level'
+  | 'arm_zone'
+  | 'disarm_zone'
+
+export interface ResponseAction {
+  type: ResponseActionType
+  targetId?: string              // doorId, zoneId, or siteId depending on type
+  params: Record<string, string> // action-specific (e.g., notifyEmail, cameraPreset)
+}
+
+export interface ResponseRule {
+  id: string
+  name: string
+  enabled: boolean
+  priority: number               // lower = higher priority (evaluated first)
+  trigger: {
+    eventTypes: SecurityEventType[]
+    severities?: EventSeverity[]
+  }
+  conditions: {
+    siteIds?: string[]           // empty/undefined = all sites
+    zoneTypes?: ZoneType[]
+    armStates?: ZoneStatus[]
+    scheduleId?: string          // rule only active during this schedule
+    threatLevels?: ThreatLevel[]
+  }
+  actions: ResponseAction[]
+}
+
+export interface EscalationStep {
+  delayMinutes: number
+  notifyUserIds: string[]
+  autoActions: ResponseAction[]
+}
+
+export interface EscalationChain {
+  id: string
+  name: string
+  steps: EscalationStep[]
+}

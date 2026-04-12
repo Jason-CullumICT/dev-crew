@@ -2,7 +2,7 @@
 // Procedurally generated seed data for the ABAC demo application.
 // All IDs are deterministic strings — no uuid calls.
 
-import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule, InputDevice, OutputDevice, DeviceStatus } from '../types'
+import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule, InputDevice, OutputDevice, DeviceStatus, ResponseRule, EscalationChain } from '../types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SITES (20)
@@ -1855,3 +1855,210 @@ ZONES.forEach((zone, zoneIdx) => {
 
 export const INPUT_DEVICES:  InputDevice[]  = INPUT_DEVICES_LIST
 export const OUTPUT_DEVICES: OutputDevice[] = OUTPUT_DEVICES_LIST
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESPONSE RULES (Phase 3)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const RESPONSE_RULES: ResponseRule[] = [
+  {
+    id: 'rule-door-forced',
+    name: 'Door Forced — Lock Zone + Siren',
+    enabled: true,
+    priority: 1,
+    trigger: { eventTypes: ['door_forced'] },
+    conditions: {},
+    actions: [
+      { type: 'lock_zone',       params: {} },
+      { type: 'activate_siren',  params: { duration: '30' } },
+      { type: 'trigger_camera',  params: { preset: 'incident' } },
+    ],
+  },
+  {
+    id: 'rule-panic-button',
+    name: 'Panic Button — Lock Site + Escalate',
+    enabled: true,
+    priority: 1,
+    trigger: { eventTypes: ['panic_button'] },
+    conditions: {},
+    actions: [
+      { type: 'lock_site',       params: {} },
+      { type: 'escalate_alarm',  params: { chainId: 'chain-critical-response' } },
+      { type: 'activate_siren',  params: { duration: '60' } },
+      { type: 'activate_strobe', params: { duration: '60' } },
+    ],
+  },
+  {
+    id: 'rule-sensor-trip-armed',
+    name: 'Sensor Trip (Armed Zone) — Lock + Camera',
+    enabled: true,
+    priority: 2,
+    trigger: { eventTypes: ['sensor_trip', 'pir_trigger'] },
+    conditions: { armStates: ['Armed'] },
+    actions: [
+      { type: 'lock_zone',      params: {} },
+      { type: 'trigger_camera', params: { preset: 'intrusion' } },
+    ],
+  },
+  {
+    id: 'rule-reader-tamper',
+    name: 'Reader Tamper — Lock Door + Camera',
+    enabled: true,
+    priority: 2,
+    trigger: { eventTypes: ['reader_tamper'] },
+    conditions: {},
+    actions: [
+      { type: 'lock_door',      params: {} },
+      { type: 'trigger_camera', params: { preset: 'tamper' } },
+    ],
+  },
+  {
+    id: 'rule-pir-after-hours',
+    name: 'PIR Trigger After Hours — Siren + Strobe',
+    enabled: true,
+    priority: 3,
+    trigger: { eventTypes: ['pir_trigger'] },
+    conditions: { zoneTypes: ['Restricted', 'Secure'] },
+    actions: [
+      { type: 'activate_siren',  params: { duration: '20' } },
+      { type: 'activate_strobe', params: { duration: '20' } },
+    ],
+  },
+  {
+    id: 'rule-repeated-denied',
+    name: 'Repeated Access Denied — Trigger Camera',
+    enabled: true,
+    priority: 3,
+    trigger: { eventTypes: ['access_denied'], severities: ['warning', 'critical'] },
+    conditions: {},
+    actions: [
+      { type: 'trigger_camera',      params: { preset: 'denied-access' } },
+      { type: 'send_notification',   params: { message: 'Repeated access denial detected', channel: 'security-team' } },
+    ],
+  },
+  {
+    id: 'rule-multi-alarm-threat',
+    name: '3+ Alarms in 5 Min — Raise Threat Level',
+    enabled: true,
+    priority: 4,
+    trigger: { eventTypes: ['door_forced', 'sensor_trip', 'panic_button'], severities: ['critical'] },
+    conditions: { threatLevels: ['normal'] },
+    actions: [
+      { type: 'change_threat_level', params: { level: 'elevated' } },
+      { type: 'send_notification',   params: { message: 'Threat level elevated due to multiple critical alarms', channel: 'soc' } },
+    ],
+  },
+  {
+    id: 'rule-controller-offline',
+    name: 'Controller Offline — Send Notification',
+    enabled: true,
+    priority: 5,
+    trigger: { eventTypes: ['controller_offline', 'device_offline'] },
+    conditions: {},
+    actions: [
+      { type: 'send_notification', params: { message: 'Controller or device offline — maintenance required', channel: 'it-ops' } },
+    ],
+  },
+  {
+    id: 'rule-lockdown-arm-all',
+    name: 'Lockdown — Arm All Zones',
+    enabled: true,
+    priority: 1,
+    trigger: { eventTypes: ['arm_state_change'] },
+    conditions: { threatLevels: ['lockdown'] },
+    actions: [
+      { type: 'lock_site',         params: {} },
+      { type: 'arm_zone',          params: {} },
+      { type: 'send_notification', params: { message: 'Site placed in lockdown — all zones armed', channel: 'all' } },
+    ],
+  },
+  {
+    id: 'rule-door-held-notify',
+    name: 'Door Held Open — Notify + Strobe',
+    enabled: true,
+    priority: 5,
+    trigger: { eventTypes: ['door_held'] },
+    conditions: { zoneTypes: ['Restricted', 'Secure'] },
+    actions: [
+      { type: 'activate_strobe',   params: { duration: '10' } },
+      { type: 'send_notification', params: { message: 'Door held open in restricted zone', channel: 'security-team' } },
+    ],
+  },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ESCALATION CHAINS (Phase 3)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const ESCALATION_CHAINS: EscalationChain[] = [
+  {
+    id: 'chain-critical-response',
+    name: 'Critical Incident Response',
+    steps: [
+      {
+        delayMinutes: 0,
+        notifyUserIds: ['user-syd-1', 'user-nyc-1'],
+        autoActions: [
+          { type: 'activate_siren', params: { duration: '30' } },
+        ],
+      },
+      {
+        delayMinutes: 5,
+        notifyUserIds: ['user-lon-1', 'user-sfo-1'],
+        autoActions: [
+          { type: 'lock_site',       params: {} },
+          { type: 'change_threat_level', params: { level: 'high' } },
+        ],
+      },
+      {
+        delayMinutes: 15,
+        notifyUserIds: ['user-syd-2', 'user-nyc-2'],
+        autoActions: [
+          { type: 'change_threat_level', params: { level: 'critical' } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'chain-after-hours-breach',
+    name: 'After-Hours Security Breach',
+    steps: [
+      {
+        delayMinutes: 0,
+        notifyUserIds: ['user-syd-1'],
+        autoActions: [
+          { type: 'trigger_camera',    params: { preset: 'incident' } },
+          { type: 'activate_strobe',   params: { duration: '15' } },
+        ],
+      },
+      {
+        delayMinutes: 3,
+        notifyUserIds: ['user-syd-1', 'user-syd-2'],
+        autoActions: [
+          { type: 'lock_zone',         params: {} },
+          { type: 'change_threat_level', params: { level: 'elevated' } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'chain-device-failure',
+    name: 'Device Failure Response',
+    steps: [
+      {
+        delayMinutes: 0,
+        notifyUserIds: ['user-syd-3'],
+        autoActions: [
+          { type: 'send_notification', params: { message: 'Device failure — automatic failover initiated', channel: 'it-ops' } },
+        ],
+      },
+      {
+        delayMinutes: 10,
+        notifyUserIds: ['user-syd-1', 'user-syd-3'],
+        autoActions: [
+          { type: 'send_notification', params: { message: 'Device still offline after 10 minutes — escalating', channel: 'management' } },
+        ],
+      },
+    ],
+  },
+]

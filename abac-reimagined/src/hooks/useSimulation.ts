@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { useStore } from '../store/store'
 import { generateEvent } from '../engine/eventSimulator'
 import { processEventForAlarm } from '../engine/alarmEngine'
+import { evaluateRules, executeAction } from '../engine/responseEngine'
 
 /**
  * Registers and manages the simulation timer based on simulationSpeed.
@@ -44,6 +45,17 @@ export function useSimulation(): void {
       const alarm = processEventForAlarm(event, freshState.events, freshState.alarms)
       if (alarm !== null) {
         freshState.addAlarm(alarm)
+      }
+
+      // Phase 3: Evaluate response rules and execute matching actions
+      const actions = evaluateRules(event, freshState.responseRules, {
+        zones:         freshState.zones,
+        sites:         freshState.sites,
+        threatLevel:   freshState.threatLevel,
+        responseRules: freshState.responseRules,
+      })
+      for (const action of actions) {
+        executeAction(action, event, { getState: () => useStore.getState() })
       }
 
       // Schedule the next tick

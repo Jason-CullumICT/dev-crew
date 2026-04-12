@@ -4,11 +4,13 @@ import type {
   User, Group, Grant, NamedSchedule, Policy,
   Door, Zone, Site, Controller, ArmingLog, CanvasPosition,
   SecurityEvent, Alarm, InputDevice, OutputDevice,
+  ResponseRule, EscalationChain, ThreatLevel,
 } from '../types'
 import {
   USERS, GROUPS, GRANTS, SCHEDULES, POLICIES,
   DOORS, ZONES, SITES, CONTROLLERS,
   INPUT_DEVICES, OUTPUT_DEVICES,
+  RESPONSE_RULES, ESCALATION_CHAINS,
 } from './seed'
 
 export function defaultCanvasPositions(): Record<string, CanvasPosition> {
@@ -89,6 +91,11 @@ interface AxonStore {
   alarms:          Alarm[]           // persists until cleared (no cap)
   simulationSpeed: 0 | 1 | 10       // 0 = paused
 
+  // ── Phase 3 — Response Rules Engine ──────────────────────────────────────
+  responseRules:     ResponseRule[]
+  escalationChains:  EscalationChain[]
+  threatLevel:       ThreatLevel
+
   // ── Canvas state ──────────────────────────────────────────────────────────
   canvasPositions:      Record<string, CanvasPosition>
   selectedCanvasNodeId: string | null
@@ -103,6 +110,15 @@ interface AxonStore {
   addAlarmNote:       (id: string, note: string)                  => void
   setSimulationSpeed: (speed: 0 | 1 | 10)                        => void
   clearAllEvents:     ()                                          => void
+
+  // ── Phase 3 — Response Rules Engine ──────────────────────────────────────
+  addResponseRule:    (rule: ResponseRule)       => void
+  updateResponseRule: (rule: ResponseRule)       => void
+  deleteResponseRule: (id: string)               => void
+  addEscalationChain:    (chain: EscalationChain) => void
+  updateEscalationChain: (chain: EscalationChain) => void
+  deleteEscalationChain: (id: string)             => void
+  setThreatLevel:     (level: ThreatLevel)       => void
 
   // ── Plan 1 actions ────────────────────────────────────────────────────────
   updateSite:            (site: Site)            => void
@@ -189,6 +205,10 @@ export const useStore = create<AxonStore>()(
       alarms:          [],
       simulationSpeed: 0 as const,
 
+      responseRules:    RESPONSE_RULES,
+      escalationChains: ESCALATION_CHAINS,
+      threatLevel:      'normal' as ThreatLevel,
+
       canvasPositions:      defaultCanvasPositions(),
       selectedCanvasNodeId: null,
       edgeMode:             'hover' as const,
@@ -242,6 +262,28 @@ export const useStore = create<AxonStore>()(
       clearAllEvents: () =>
         set({ events: [] }),
 
+      // ── Phase 3 — Response Rules Engine ──────────────────────────────────────
+      addResponseRule: (rule) =>
+        set(state => ({ responseRules: [...state.responseRules, rule] })),
+
+      updateResponseRule: (rule) =>
+        set(state => ({ responseRules: state.responseRules.map(r => r.id === rule.id ? rule : r) })),
+
+      deleteResponseRule: (id) =>
+        set(state => ({ responseRules: state.responseRules.filter(r => r.id !== id) })),
+
+      addEscalationChain: (chain) =>
+        set(state => ({ escalationChains: [...state.escalationChains, chain] })),
+
+      updateEscalationChain: (chain) =>
+        set(state => ({ escalationChains: state.escalationChains.map(c => c.id === chain.id ? chain : c) })),
+
+      deleteEscalationChain: (id) =>
+        set(state => ({ escalationChains: state.escalationChains.filter(c => c.id !== id) })),
+
+      setThreatLevel: (level) =>
+        set({ threatLevel: level }),
+
       // ── Plan 1 ────────────────────────────────────────────────────────────────
       updateSite: (site) =>
         set(state => ({ sites: state.sites.map(s => s.id === site.id ? site : s) })),
@@ -286,6 +328,9 @@ export const useStore = create<AxonStore>()(
           armingLog:     [],
           events:        [],
           alarms:        [],
+          responseRules:    RESPONSE_RULES,
+          escalationChains: ESCALATION_CHAINS,
+          threatLevel:      'normal' as ThreatLevel,
         }),
 
       // ── Users ─────────────────────────────────────────────────────────────────
@@ -498,7 +543,7 @@ export const useStore = create<AxonStore>()(
     }),
     {
       name: 'axon-store',
-      version: 4, // Bump to add hardware I/O device state
+      version: 5, // Bump to add Phase 3 response rules, escalation chains, threat level
       partialize: (state) => {
         // Exclude ephemeral UI state and ephemeral SOC data from persistence
         const { selectedCanvasNodeId: _excl1, edgeMode: _excl2, events: _excl3, alarms: _excl4, ...rest } = state

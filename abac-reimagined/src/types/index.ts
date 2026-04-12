@@ -407,3 +407,42 @@ export interface ZoneOccupancy {
   userIds: string[]
   lastUpdated: string
 }
+
+// ── Phase 5 — Visitor & Credential Management ────────────────────────────────
+
+export type CredentialType = 'proximity_card' | 'smart_card' | 'pin' | 'mobile' | 'biometric'
+export type CredentialStatus = 'active' | 'suspended' | 'revoked' | 'expired'
+
+export interface Credential {
+  id: string
+  userId: string
+  type: CredentialType
+  status: CredentialStatus
+  cardNumber?: string
+  facilityCode?: number
+  pin?: string
+  issuedAt: string
+  expiresAt?: string
+  suspendedAt?: string
+  revokedAt?: string
+}
+
+export type VisitorStatus = 'pre_registered' | 'checked_in' | 'checked_out' | 'cancelled'
+
+export interface VisitorRegistration {
+  id: string
+  visitorName: string
+  visitorEmail: string
+  visitorCompany: string
+  hostUserId: string          // who they're visiting
+  escortUserId?: string       // assigned escort
+  purpose: string
+  scheduledDate: string       // ISO date YYYY-MM-DD
+  scheduledTime: string       // HH:MM
+  status: VisitorStatus
+  checkInTime?: string
+  checkOutTime?: string
+  credentialId?: string       // temp credential issued at check-in
+  allowedDoorIds: string[]    // which doors they can access
+  notes: string
+}

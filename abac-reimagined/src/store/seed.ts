@@ -2,7 +2,7 @@
 // Procedurally generated seed data for the ABAC demo application.
 // All IDs are deterministic strings — no uuid calls.
 
-import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule, InputDevice, OutputDevice, DeviceStatus, ResponseRule, EscalationChain, AntiPassbackConfig, TwoPersonRule, EscortConfig, DoorInterlock } from '../types'
+import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule, InputDevice, OutputDevice, DeviceStatus, ResponseRule, EscalationChain, AntiPassbackConfig, TwoPersonRule, EscortConfig, DoorInterlock, Credential, VisitorRegistration } from '../types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SITES (20)
@@ -2128,3 +2128,226 @@ export const DOOR_INTERLOCKS: DoorInterlock[] = SERVER_ROOM_A_DOORS
       name:    `Server Room Mantrap — ${doorA.siteId.replace('site-', '').toUpperCase()}`,
     }]
   })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREDENTIALS (Phase 5)
+// Generation rules:
+//   employees  → 1 proximity_card + 1 mobile (every 3rd employee)
+//   contractors → 1 pin
+//   first 2500 credentials total, deterministic
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildCredentials(): Credential[] {
+  const creds: Credential[] = []
+  let credIdx = 0
+
+  for (const user of USERS) {
+    if (credIdx >= 2500) break
+
+    if (user.type === 'employee') {
+      const siteIdx = seededInt(credIdx * 7 + 1, SITES.length)
+      creds.push({
+        id:           `cred-${String(credIdx + 1).padStart(6, '0')}`,
+        userId:       user.id,
+        type:         'proximity_card',
+        status:       user.status === 'suspended' ? 'suspended' : 'active',
+        cardNumber:   `C-${String(credIdx + 1).padStart(6, '0')}`,
+        facilityCode: siteIdx + 1,
+        issuedAt:     '2024-01-15T09:00:00Z',
+        suspendedAt:  user.status === 'suspended' ? '2024-06-01T00:00:00Z' : undefined,
+      })
+      credIdx++
+
+      // Every 3rd employee also gets a mobile credential
+      if (credIdx < 2500 && seededInt(credIdx * 13, 3) === 0) {
+        creds.push({
+          id:       `cred-${String(credIdx + 1).padStart(6, '0')}`,
+          userId:   user.id,
+          type:     'mobile',
+          status:   'active',
+          issuedAt: '2024-03-01T09:00:00Z',
+          expiresAt: '2027-01-01T00:00:00Z',
+        })
+        credIdx++
+      }
+    } else if (user.type === 'contractor') {
+      if (credIdx >= 2500) break
+      const pin = String(1000 + seededInt(credIdx * 17, 9000))
+      creds.push({
+        id:       `cred-${String(credIdx + 1).padStart(6, '0')}`,
+        userId:   user.id,
+        type:     'pin',
+        status:   user.status === 'inactive' ? 'expired' : 'active',
+        pin,
+        issuedAt: '2024-02-01T09:00:00Z',
+        expiresAt: '2026-12-31T23:59:59Z',
+      })
+      credIdx++
+    }
+    // visitor-type users in the main user table don't get persistent credentials
+  }
+
+  return creds
+}
+
+export const CREDENTIALS: Credential[] = buildCredentials()
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISITOR REGISTRATIONS (Phase 5) — 10 seed visitors
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Pick some deterministic host user IDs from employees
+const HOST_USER_IDS = USERS.filter(u => u.type === 'employee' && u.status === 'active').slice(0, 10).map(u => u.id)
+const ESCORT_USER_IDS = USERS.filter(u => u.type === 'employee' && u.status === 'active' && u.department === 'Security').slice(0, 5).map(u => u.id)
+
+// Pick some perimeter doors for visitor access
+const VISITOR_DOOR_IDS = DOORS.filter(d => d.name === 'Visitor Reception').slice(0, 3).map(d => d.id)
+
+export const VISITOR_REGISTRATIONS: VisitorRegistration[] = [
+  {
+    id: 'visit-001',
+    visitorName: 'Marcus Aldridge',
+    visitorEmail: 'marcus.aldridge@techpartners.io',
+    visitorCompany: 'TechPartners Ltd',
+    hostUserId: HOST_USER_IDS[0] ?? 'u-0001',
+    escortUserId: ESCORT_USER_IDS[0],
+    purpose: 'Quarterly security audit review',
+    scheduledDate: '2026-04-14',
+    scheduledTime: '09:00',
+    status: 'pre_registered',
+    allowedDoorIds: VISITOR_DOOR_IDS,
+    notes: 'NDA signed. Provide visitor badge on arrival.',
+  },
+  {
+    id: 'visit-002',
+    visitorName: 'Sophie Beaumont',
+    visitorEmail: 's.beaumont@globalconsult.eu',
+    visitorCompany: 'Global Consult EU',
+    hostUserId: HOST_USER_IDS[1] ?? 'u-0002',
+    purpose: 'GDPR compliance workshop',
+    scheduledDate: '2026-04-14',
+    scheduledTime: '10:30',
+    status: 'pre_registered',
+    allowedDoorIds: VISITOR_DOOR_IDS.slice(0, 2),
+    notes: 'Attending legal training session — conference room 3B.',
+  },
+  {
+    id: 'visit-003',
+    visitorName: 'Ravi Anantharaman',
+    visitorEmail: 'ravi.a@netwatch.sg',
+    visitorCompany: 'NetWatch Singapore',
+    hostUserId: HOST_USER_IDS[2] ?? 'u-0003',
+    escortUserId: ESCORT_USER_IDS[1],
+    purpose: 'Network infrastructure assessment',
+    scheduledDate: '2026-04-14',
+    scheduledTime: '13:00',
+    status: 'pre_registered',
+    allowedDoorIds: VISITOR_DOOR_IDS,
+    notes: 'Requires temporary network access. IT to prepare guest VLAN.',
+  },
+  {
+    id: 'visit-004',
+    visitorName: 'Claire Mossberry',
+    visitorEmail: 'claire@mossberry-legal.com',
+    visitorCompany: 'Mossberry Legal',
+    hostUserId: HOST_USER_IDS[3] ?? 'u-0004',
+    purpose: 'Contract negotiation — vendor agreement',
+    scheduledDate: '2026-04-10',
+    scheduledTime: '09:30',
+    status: 'checked_in',
+    checkInTime: '2026-04-10T09:28:00Z',
+    credentialId: 'cred-temp-001',
+    allowedDoorIds: VISITOR_DOOR_IDS.slice(0, 1),
+    notes: '',
+  },
+  {
+    id: 'visit-005',
+    visitorName: 'Daniel Obrecht',
+    visitorEmail: 'd.obrecht@bsec-systems.de',
+    visitorCompany: 'BSec Systems GmbH',
+    hostUserId: HOST_USER_IDS[4] ?? 'u-0005',
+    escortUserId: ESCORT_USER_IDS[2],
+    purpose: 'Physical security equipment demonstration',
+    scheduledDate: '2026-04-10',
+    scheduledTime: '11:00',
+    status: 'checked_in',
+    checkInTime: '2026-04-10T11:05:00Z',
+    credentialId: 'cred-temp-002',
+    allowedDoorIds: VISITOR_DOOR_IDS,
+    notes: 'Bringing demo hardware — approved by facilities.',
+  },
+  {
+    id: 'visit-006',
+    visitorName: 'Amara Osei',
+    visitorEmail: 'a.osei@cloudbridge.io',
+    visitorCompany: 'CloudBridge Inc',
+    hostUserId: HOST_USER_IDS[5] ?? 'u-0006',
+    purpose: 'Cloud migration planning session',
+    scheduledDate: '2026-04-10',
+    scheduledTime: '14:00',
+    status: 'checked_in',
+    checkInTime: '2026-04-10T14:02:00Z',
+    credentialId: 'cred-temp-003',
+    allowedDoorIds: VISITOR_DOOR_IDS.slice(0, 2),
+    notes: 'Executive-level visit — meet and greet with CTO.',
+  },
+  {
+    id: 'visit-007',
+    visitorName: 'Yuki Tanaka',
+    visitorEmail: 'y.tanaka@axiom-jp.co',
+    visitorCompany: 'Axiom Japan',
+    hostUserId: HOST_USER_IDS[6] ?? 'u-0007',
+    escortUserId: ESCORT_USER_IDS[3],
+    purpose: 'APAC partnership alignment',
+    scheduledDate: '2026-04-10',
+    scheduledTime: '15:30',
+    status: 'checked_in',
+    checkInTime: '2026-04-10T15:28:00Z',
+    credentialId: 'cred-temp-004',
+    allowedDoorIds: VISITOR_DOOR_IDS,
+    notes: 'Requires Japanese interpreter — booked separately.',
+  },
+  {
+    id: 'visit-008',
+    visitorName: 'Felix Grunewald',
+    visitorEmail: 'f.grunewald@infragem.eu',
+    visitorCompany: 'InfraGem EU',
+    hostUserId: HOST_USER_IDS[7] ?? 'u-0008',
+    purpose: 'Infrastructure review — Frankfurt site',
+    scheduledDate: '2026-04-09',
+    scheduledTime: '10:00',
+    status: 'checked_out',
+    checkInTime: '2026-04-09T10:03:00Z',
+    checkOutTime: '2026-04-09T15:45:00Z',
+    allowedDoorIds: VISITOR_DOOR_IDS.slice(0, 1),
+    notes: 'Completed site tour. Badge returned.',
+  },
+  {
+    id: 'visit-009',
+    visitorName: 'Ingrid Halverson',
+    visitorEmail: 'i.halverson@nordictech.no',
+    visitorCompany: 'NordicTech AS',
+    hostUserId: HOST_USER_IDS[8] ?? 'u-0009',
+    purpose: 'Software vendor evaluation',
+    scheduledDate: '2026-04-08',
+    scheduledTime: '13:00',
+    status: 'checked_out',
+    checkInTime: '2026-04-08T13:01:00Z',
+    checkOutTime: '2026-04-08T17:00:00Z',
+    allowedDoorIds: VISITOR_DOOR_IDS.slice(0, 2),
+    notes: 'Positive evaluation — follow-up demo scheduled.',
+  },
+  {
+    id: 'visit-010',
+    visitorName: 'Kwame Asante',
+    visitorEmail: 'k.asante@securelink.gh',
+    visitorCompany: 'SecureLink Ghana',
+    hostUserId: HOST_USER_IDS[9] ?? 'u-0010',
+    purpose: 'Partnership discussion',
+    scheduledDate: '2026-04-07',
+    scheduledTime: '09:00',
+    status: 'cancelled',
+    allowedDoorIds: [],
+    notes: 'Cancelled — host unavailable due to emergency travel.',
+  },
+]

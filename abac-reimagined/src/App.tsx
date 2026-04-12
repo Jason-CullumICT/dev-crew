@@ -22,6 +22,8 @@ const DoorConfig  = lazy(() => import('./pages/DoorConfig'))
 const Rules       = lazy(() => import('./pages/Rules'))
 const Escalations = lazy(() => import('./pages/Escalations'))
 const Muster      = lazy(() => import('./pages/Muster'))
+const Visitors    = lazy(() => import('./pages/Visitors'))
+const Credentials = lazy(() => import('./pages/Credentials'))
 
 function PageLoader() {
   return (
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="rules"       element={<Suspense fallback={<PageLoader />}><Rules /></Suspense>} />
         <Route path="escalations" element={<Suspense fallback={<PageLoader />}><Escalations /></Suspense>} />
         <Route path="muster"      element={<Suspense fallback={<PageLoader />}><Muster /></Suspense>} />
+        <Route path="visitors"    element={<Suspense fallback={<PageLoader />}><Visitors /></Suspense>} />
+        <Route path="credentials" element={<Suspense fallback={<PageLoader />}><Credentials /></Suspense>} />
         <Route path="*"           element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

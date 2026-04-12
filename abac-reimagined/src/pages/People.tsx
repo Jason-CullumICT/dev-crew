@@ -74,10 +74,10 @@ function HRSyncPanel() {
       email:          `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com`,
       department:     dept,
       role,
-      clearanceLevel: Math.floor(Math.random() * 3) + 1,
       type:           'employee',
       status:         'active',
-      customAttributes: { source: 'hr_sync' },
+      // clearanceLevel is stored as a customAttribute (string)
+      customAttributes: { source: 'hr_sync', clearanceLevel: String(Math.floor(Math.random() * 3) + 1) },
     }
     addUser(newUser)
 
@@ -274,7 +274,7 @@ export default function People() {
             const statusClass = STATUS_CLASS[user.status] ?? 'bg-slate-700 text-slate-500 border border-slate-600'
             const typeLabel  = user.type   || '—'
             const statusLabel = user.status || '—'
-            const clLabel    = user.clearanceLevel != null ? `L${user.clearanceLevel}` : '—'
+            const clLabel    = user.customAttributes.clearanceLevel ? `L${user.customAttributes.clearanceLevel}` : '—'
             const dept       = user.department || '—'
 
             return (

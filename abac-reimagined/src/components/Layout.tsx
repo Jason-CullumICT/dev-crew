@@ -14,6 +14,7 @@ import SimulationToggle from './SimulationToggle'
 import ThreatLevelPill from './ThreatLevelPill'
 import { useStore } from '../store/store'
 import { useSimulation } from '../hooks/useSimulation'
+import { useDesignSystem } from '../contexts/DesignSystemContext'
 
 const primaryNav = [
   { to: '/',          icon: LayoutDashboard, label: 'Dashboard', color: '#22c55e' },
@@ -120,6 +121,7 @@ function SidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon
 export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const pageTitle = usePageTitle()
+  const { designSystem, toggle: toggleDesignSystem } = useDesignSystem()
 
   // Start simulation engine
   useSimulation()
@@ -180,6 +182,14 @@ export default function Layout() {
           )}
 
           <div className="flex-1" />
+
+          <button
+            onClick={toggleDesignSystem}
+            title="Toggle design system"
+            className="flex items-center gap-1 px-2 py-1 rounded border border-[#1e293b] bg-[#0d1117] text-[9px] font-semibold text-slate-500 hover:text-slate-300 hover:border-indigo-500/50 transition-colors"
+          >
+            {designSystem === 'classic' ? 'Classic' : 'Shadcn'}
+          </button>
 
           <SimulationToggle />
 

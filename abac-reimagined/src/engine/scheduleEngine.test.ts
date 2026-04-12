@@ -16,7 +16,6 @@ const schedule: NamedSchedule = {
     {
       id: 'h2', name: 'ANZAC Day', month: 4, day: 25,
       behavior: 'allow_with_override', overrideGrantIds: ['grant-emergency'],
-      requiredClearance: 3,
     },
   ],
 }
@@ -55,12 +54,12 @@ describe('evaluateSchedule', () => {
     expect(evaluateSchedule(schedule, anzacDay)).toBe('inactive')
   })
 
-  it('returns override_active on ANZAC Day with correct override grant and clearance', () => {
-    expect(evaluateSchedule(schedule, anzacDay, 'grant-emergency', 3)).toBe('override_active')
+  it('returns override_active on ANZAC Day with matching override grant', () => {
+    expect(evaluateSchedule(schedule, anzacDay, 'grant-emergency')).toBe('override_active')
   })
 
-  it('returns inactive on ANZAC Day with override grant but insufficient clearance', () => {
-    expect(evaluateSchedule(schedule, anzacDay, 'grant-emergency', 2)).toBe('inactive')
+  it('returns inactive on ANZAC Day with non-matching override grant', () => {
+    expect(evaluateSchedule(schedule, anzacDay, 'grant-other')).toBe('inactive')
   })
 
   it('handles overnight windows (22:00–06:00)', () => {

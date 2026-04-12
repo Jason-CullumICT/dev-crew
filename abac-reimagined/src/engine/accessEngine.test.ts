@@ -5,8 +5,8 @@ import type { User, Group, Grant, Policy, Door, StoreSnapshot } from '../types'
 
 const user: User = {
   id: 'u1', name: 'Sarah Chen', email: 's@co.com', department: 'Operations',
-  role: 'analyst', clearanceLevel: 3, type: 'employee', status: 'active',
-  customAttributes: {},
+  role: 'analyst', type: 'employee', status: 'active',
+  customAttributes: { clearanceLevel: '3' },
 }
 
 const group: Group = {
@@ -83,7 +83,7 @@ describe('evaluateAccess', () => {
   })
 
   it('denies when user clearance is too low for the policy', () => {
-    const lowUser: User = { ...user, clearanceLevel: 2 }
+    const lowUser: User = { ...user, customAttributes: { clearanceLevel: '2' } }
     const result = evaluateAccess(lowUser, door, store, now)
     expect(result.abacPassed).toBe(false)
     expect(result.overallGranted).toBe(false)

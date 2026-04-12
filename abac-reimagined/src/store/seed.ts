@@ -115,9 +115,9 @@ export const SCHEDULES: NamedSchedule[] = [
     timezone: 'Australia/Sydney',
     windows: [{ id: 'tw-aest-1', days: ['Mon','Tue','Wed','Thu','Fri'], startTime: '08:00', endTime: '18:00' }],
     holidays: [
-      { id: 'hol-anzac',  name: 'ANZAC Day',     month: 4,  day: 25, behavior: 'deny_all',            overrideGrantIds: [],                           requiredClearance: undefined },
-      { id: 'hol-xmas',   name: 'Christmas Day',  month: 12, day: 25, behavior: 'deny_all',            overrideGrantIds: [],                           requiredClearance: undefined },
-      { id: 'hol-ausday', name: 'Australia Day',  month: 1,  day: 26, behavior: 'allow_with_override', overrideGrantIds: ['grant-emergency-override'], requiredClearance: 3 },
+      { id: 'hol-anzac',  name: 'ANZAC Day',     month: 4,  day: 25, behavior: 'deny_all',            overrideGrantIds: [] },
+      { id: 'hol-xmas',   name: 'Christmas Day',  month: 12, day: 25, behavior: 'deny_all',            overrideGrantIds: [] },
+      { id: 'hol-ausday', name: 'Australia Day',  month: 1,  day: 26, behavior: 'allow_with_override', overrideGrantIds: ['grant-emergency-override'] },
     ],
   },
   {
@@ -847,7 +847,7 @@ export const USERS: User[] = Array.from({ length: 2000 }, (_, i) => {
 
   // clearanceLevel: L1 35%, L2 30%, L3 20%, L4 10%, L5 5%
   const clrRoll = seededInt(idx * 23, 100)
-  const clearanceLevel =
+  const clearanceLevel: number =
     clrRoll < 35 ? 1 :
     clrRoll < 65 ? 2 :
     clrRoll < 85 ? 3 :
@@ -866,9 +866,13 @@ export const USERS: User[] = Array.from({ length: 2000 }, (_, i) => {
     statusRoll < 95 ? 'inactive' : 'suspended'
 
   const emailLocal = `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(/[^a-z]/g, '')}.${idx}`
-  const customAttributes: Record<string, string> = userType === 'contractor'
+  const baseAttrs: Record<string, string> = userType === 'contractor'
     ? { contractExpiry: '2026-12-31', company: `ExtCo-${(idx % 50) + 1}` }
     : {}
+  const customAttributes: Record<string, string> = {
+    ...baseAttrs,
+    clearanceLevel: String(clearanceLevel),
+  }
 
   return {
     id:               `u-${String(idx).padStart(4, '0')}`,
@@ -876,7 +880,6 @@ export const USERS: User[] = Array.from({ length: 2000 }, (_, i) => {
     email:            `${emailLocal}@axon-global.io`,
     department:       dept,
     role,
-    clearanceLevel,
     type:             userType,
     status,
     customAttributes,
@@ -1198,7 +1201,7 @@ export const GROUPS: Group[] = [
     description: 'Handpicked crisis response team — 8 members with clearance 4+.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => u.clearanceLevel >= 4 && u.type === 'employee', 8),
+    members: firstUserIds(u => Number(u.customAttributes.clearanceLevel) >= 4 && u.type === 'employee', 8),
     membershipRules: [],
     subGroups: ['group-security-operations'],
     inheritedPermissions: ['grant-emergency-override', 'grant-lockdown-authority'],
@@ -1209,7 +1212,7 @@ export const GROUPS: Group[] = [
     description: 'Top executive leadership team — 5 members.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => u.clearanceLevel === 5, 5),
+    members: firstUserIds(u => Number(u.customAttributes.clearanceLevel) === 5, 5),
     membershipRules: [],
     subGroups: ['group-executives'],
     inheritedPermissions: ['grant-global-admin', 'grant-lockdown-authority'],
@@ -1231,7 +1234,7 @@ export const GROUPS: Group[] = [
     description: 'Core data centre operations team — 12 members.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => (u.department === 'IT' || u.department === 'Engineering') && u.clearanceLevel >= 3, 12),
+    members: firstUserIds(u => (u.department === 'IT' || u.department === 'Engineering') && Number(u.customAttributes.clearanceLevel) >= 3, 12),
     membershipRules: [],
     subGroups: ['group-datacentre-ops'],
     inheritedPermissions: ['grant-zone-den-restricted', 'grant-basic-unlock'],
@@ -1255,7 +1258,7 @@ export const GROUPS: Group[] = [
     description: 'Incident response team — 7 members across security and IT.',
     membershipType: 'static',
     membershipLogic: 'OR',
-    members: firstUserIds(u => (u.department === 'Security' || u.department === 'IT') && u.clearanceLevel >= 3, 7),
+    members: firstUserIds(u => (u.department === 'Security' || u.department === 'IT') && Number(u.customAttributes.clearanceLevel) >= 3, 7),
     membershipRules: [],
     subGroups: ['group-soc'],
     inheritedPermissions: ['grant-emergency-override', 'grant-audit-log-access'],
@@ -1288,7 +1291,7 @@ export const GROUPS: Group[] = [
     description: 'Core research team — 9 members.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => u.department === 'Research' && u.clearanceLevel >= 3, 9),
+    members: firstUserIds(u => u.department === 'Research' && Number(u.customAttributes.clearanceLevel) >= 3, 9),
     membershipRules: [],
     subGroups: ['group-research'],
     inheritedPermissions: ['grant-zone-bos-secure', 'grant-zone-sfo-secure'],
@@ -1310,7 +1313,7 @@ export const GROUPS: Group[] = [
     description: 'Network operations center — 8 members.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => u.department === 'IT' && u.clearanceLevel >= 2 && u.status === 'active', 8),
+    members: firstUserIds(u => u.department === 'IT' && Number(u.customAttributes.clearanceLevel) >= 2 && u.status === 'active', 8),
     membershipRules: [],
     subGroups: [],
     inheritedPermissions: ['grant-basic-unlock', 'grant-zone-den-restricted'],
@@ -1321,7 +1324,7 @@ export const GROUPS: Group[] = [
     description: 'Senior HR leadership team — 4 members.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => u.department === 'HR' && u.clearanceLevel >= 3, 4),
+    members: firstUserIds(u => u.department === 'HR' && Number(u.customAttributes.clearanceLevel) >= 3, 4),
     membershipRules: [],
     subGroups: [],
     inheritedPermissions: ['grant-basic-unlock'],
@@ -1332,7 +1335,7 @@ export const GROUPS: Group[] = [
     description: 'Finance oversight committee — 6 members.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => u.department === 'Finance' && u.clearanceLevel >= 3, 6),
+    members: firstUserIds(u => u.department === 'Finance' && Number(u.customAttributes.clearanceLevel) >= 3, 6),
     membershipRules: [],
     subGroups: [],
     inheritedPermissions: ['grant-audit-log-access', 'grant-basic-unlock'],
@@ -1343,7 +1346,7 @@ export const GROUPS: Group[] = [
     description: 'Core legal team — 5 members.',
     membershipType: 'static',
     membershipLogic: 'AND',
-    members: firstUserIds(u => u.department === 'Legal' && u.clearanceLevel >= 3, 5),
+    members: firstUserIds(u => u.department === 'Legal' && Number(u.customAttributes.clearanceLevel) >= 3, 5),
     membershipRules: [],
     subGroups: ['group-compliance'],
     inheritedPermissions: ['grant-audit-log-access'],
@@ -1356,7 +1359,7 @@ export const GROUPS: Group[] = [
     description: 'Cross-functional DevOps guild — 10 members.',
     membershipType: 'static',
     membershipLogic: 'OR',
-    members: firstUserIds(u => (u.department === 'Engineering' || u.department === 'IT') && u.clearanceLevel >= 2 && u.status === 'active', 10),
+    members: firstUserIds(u => (u.department === 'Engineering' || u.department === 'IT') && Number(u.customAttributes.clearanceLevel) >= 2 && u.status === 'active', 10),
     membershipRules: [],
     subGroups: ['group-it-ops'],
     inheritedPermissions: ['grant-basic-unlock', 'grant-zone-den-restricted'],

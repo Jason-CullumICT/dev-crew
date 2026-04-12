@@ -13,10 +13,9 @@ function blankUser(): User {
   return {
     id: uuidv4(),
     name: '', email: '', department: '', role: '',
-    clearanceLevel: 1,
     type: 'employee',
     status: 'active',
-    customAttributes: {},
+    customAttributes: { clearanceLevel: '1' },
   }
 }
 
@@ -77,14 +76,14 @@ export default function UserModal({ user, onClose }: Props) {
           </div>
         </div>
 
-        {/* Clearance */}
+        {/* Clearance — stored in customAttributes.clearanceLevel */}
         <div>
           <label className={labelCls}>Clearance Level</label>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map(n => (
-              <button key={n} onClick={() => set('clearanceLevel', n)}
+              <button key={n} onClick={() => setDraft(d => ({ ...d, customAttributes: { ...d.customAttributes, clearanceLevel: String(n) } }))}
                 className={`flex-1 py-1.5 rounded text-[11px] font-bold transition-colors ${
-                  draft.clearanceLevel === n ? 'bg-indigo-600 text-white' : 'bg-[#111827] text-slate-500 hover:text-slate-300 border border-[#1e293b]'
+                  draft.customAttributes.clearanceLevel === String(n) ? 'bg-indigo-600 text-white' : 'bg-[#111827] text-slate-500 hover:text-slate-300 border border-[#1e293b]'
                 }`}>
                 L{n}
               </button>

@@ -48,7 +48,6 @@ const user: User = {
   email: 'alice@test.com',
   department: 'Engineering',
   role: 'engineer',
-  clearanceLevel: 2,
   type: 'employee',
   status: 'active',
   customAttributes: {},

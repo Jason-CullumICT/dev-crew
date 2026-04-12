@@ -2,7 +2,7 @@
 // Procedurally generated seed data for the ABAC demo application.
 // All IDs are deterministic strings — no uuid calls.
 
-import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule, InputDevice, OutputDevice, DeviceStatus, ResponseRule, EscalationChain } from '../types'
+import type { Site, Zone, Door, User, NamedSchedule, Grant, Group, Controller, Policy, Rule, InputDevice, OutputDevice, DeviceStatus, ResponseRule, EscalationChain, AntiPassbackConfig, TwoPersonRule, EscortConfig, DoorInterlock } from '../types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SITES (20)
@@ -2062,3 +2062,69 @@ export const ESCALATION_CHAINS: EscalationChain[] = [
     ],
   },
 ]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 4 — ADVANCED ACCESS CONTROL SEED DATA
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Anti-passback configurations (one per zone type category) ────────────────
+// Perimeter zones: soft mode — log warning but allow, 3-minute reset
+// Interior zones:  off — no anti-passback enforcement
+// Secure/Restricted zones: hard mode — deny entry, 5-minute reset
+export const ANTI_PASSBACK_CONFIGS: AntiPassbackConfig[] = ZONES.map(zone => {
+  if (zone.type === 'Perimeter' || zone.type === 'Public') {
+    return { zoneId: zone.id, mode: 'soft' as const, resetMinutes: 3 }
+  }
+  if (zone.type === 'Secure' || zone.type === 'Restricted') {
+    return { zoneId: zone.id, mode: 'hard' as const, resetMinutes: 5 }
+  }
+  // Interior and others: off
+  return { zoneId: zone.id, mode: 'off' as const, resetMinutes: 0 }
+})
+
+// ── Two-person rules ─────────────────────────────────────────────────────────
+// Enabled for "Data Vault" and "Safe Room" doors at a sample of sites.
+// SECURE_DOOR_NAMES index 5 = "Data Vault", index 8 = "Safe Room"
+// door id format: door-{siteKey}-{zoneKey}-{n+1}
+const TWO_PERSON_DOOR_NAMES = ['Data Vault', 'Safe Room']
+
+export const TWO_PERSON_RULES: TwoPersonRule[] = DOORS
+  .filter(door => TWO_PERSON_DOOR_NAMES.includes(door.name))
+  .filter((_, i) => i < 6) // limit to first 6 matching doors for a tidy demo
+  .map(door => ({
+    doorId:         door.id,
+    enabled:        true,
+    timeoutSeconds: 30,
+  }))
+
+// ── Escort configurations ─────────────────────────────────────────────────────
+// Enabled for "Visitor Reception" and "Executive Suite" doors
+const ESCORT_DOOR_NAMES = ['Visitor Reception', 'Executive Suite']
+
+export const ESCORT_CONFIGS: EscortConfig[] = DOORS
+  .filter(door => ESCORT_DOOR_NAMES.includes(door.name))
+  .filter((_, i) => i < 6) // limit to first 6 matching doors
+  .map(door => ({
+    doorId:                door.id,
+    enabled:               true,
+    escortTimeoutSeconds:  15,
+  }))
+
+// ── Door interlocks (mantrap pairs) ──────────────────────────────────────────
+// Create pairs from "Server Room A" + "Server Room B" at the same site.
+// SECURE_DOOR_NAMES index 0 = "Server Room A", index 1 = "Server Room B"
+const SERVER_ROOM_A_DOORS = DOORS.filter(d => d.name === 'Server Room A')
+const SERVER_ROOM_B_DOORS = DOORS.filter(d => d.name === 'Server Room B')
+
+export const DOOR_INTERLOCKS: DoorInterlock[] = SERVER_ROOM_A_DOORS
+  .slice(0, 2) // create 2 mantrap pairs (first 2 sites that have both doors)
+  .flatMap((doorA, i) => {
+    const doorB = SERVER_ROOM_B_DOORS.find(d => d.siteId === doorA.siteId)
+    if (!doorB) return []
+    return [{
+      id:      `interlock-serverroom-${i + 1}`,
+      doorAId: doorA.id,
+      doorBId: doorB.id,
+      name:    `Server Room Mantrap — ${doorA.siteId.replace('site-', '').toUpperCase()}`,
+    }]
+  })

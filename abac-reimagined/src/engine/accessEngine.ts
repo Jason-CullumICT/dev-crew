@@ -2,6 +2,7 @@ import type {
   User, Grant, Group, Policy, Door, NamedSchedule,
   NowContext, StoreSnapshot, ActionType,
   AccessResult, GrantResult, PolicyResult, ConditionResult,
+  AntiPassbackConfig, SecurityEvent,
 } from '../types'
 import { evalRule } from './ruleEval'
 import { resolveGroupMembership, collectGroupGrants } from './groupEngine'
@@ -23,6 +24,21 @@ import { evaluateSchedule, matchesHoliday } from './scheduleEngine'
  *   - `auto`:        conditions (if any) are evaluated at collection time.
  *                    If there are no conditions the grant is always collected.
  */
+/**
+ * Returns true if the grant's time-limited date window allows access at the
+ * given now context. A grant with no validFrom/validUntil is always valid.
+ */
+function isGrantTemporallyValid(grant: Grant, now: NowContext): boolean {
+  if (grant.validFrom) {
+    // Compare ISO date strings lexicographically — valid because 'YYYY-MM-DD' sorts correctly
+    if (now.date < grant.validFrom.slice(0, 10)) return false
+  }
+  if (grant.validUntil) {
+    if (now.date > grant.validUntil.slice(0, 10)) return false
+  }
+  return true
+}
+
 export function collectGrants(
   user: User,
   groups: Group[],
@@ -34,6 +50,9 @@ export function collectGrants(
   const result: Grant[] = []
 
   for (const grant of grants) {
+    // Phase 4: skip expired or not-yet-valid time-limited grants
+    if (!isGrantTemporallyValid(grant, now)) continue
+
     if (grant.applicationMode === 'auto') {
       if (grant.conditions.length === 0) {
         result.push(grant)
@@ -53,6 +72,59 @@ export function collectGrants(
   void schedules
 
   return result
+}
+
+// ── Anti-passback evaluation ──────────────────────────────────────────────────
+
+export type AntiPassbackResult =
+  | { outcome: 'clear' }
+  | { outcome: 'violation'; mode: AntiPassbackConfig['mode']; message: string }
+
+/**
+ * Checks anti-passback for a user attempting to access a door in a zone.
+ *
+ * The rule: if the user's most recent event in this zone was an `access_granted`
+ * (entry) with no subsequent exit event, they are "inside" — re-entry violates
+ * anti-passback. The implementation uses the SecurityEvent log in the store.
+ *
+ * @param userId       The user attempting access
+ * @param zoneId       The zone the door belongs to
+ * @param events       The current SecurityEvent log (newest first)
+ * @param config       The AntiPassbackConfig for the zone (undefined = off)
+ */
+export function evaluateAntiPassback(
+  userId: string,
+  zoneId: string,
+  events: SecurityEvent[],
+  config: AntiPassbackConfig | undefined,
+): AntiPassbackResult {
+  if (!config || config.mode === 'off') return { outcome: 'clear' }
+
+  // Find the most recent access event for this user in this zone
+  const userZoneEvents = events.filter(
+    e => e.userId === userId && e.zoneId === zoneId &&
+    (e.eventType === 'access_granted' || e.eventType === 'access_denied')
+  )
+
+  if (userZoneEvents.length === 0) return { outcome: 'clear' }
+
+  const mostRecent = userZoneEvents[0] // events are newest-first
+  const resetMs = config.resetMinutes * 60 * 1000
+  const eventAge = Date.now() - new Date(mostRecent.timestamp).getTime()
+
+  // If the reset window has elapsed, forgive the violation
+  if (config.resetMinutes > 0 && eventAge > resetMs) return { outcome: 'clear' }
+
+  // If the last event was an access_granted in this zone → they are "inside" → violation
+  if (mostRecent.eventType === 'access_granted') {
+    return {
+      outcome: 'violation',
+      mode:    config.mode,
+      message: `Anti-passback: user already recorded as inside zone. Mode: ${config.mode}.`,
+    }
+  }
+
+  return { outcome: 'clear' }
 }
 
 // ── Access evaluation ─────────────────────────────────────────────────────────

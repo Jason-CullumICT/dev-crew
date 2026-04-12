@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Shield, Users, UserCheck, Link2 } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../store/store'
 import DeviceModal from '../modals/DeviceModal'
@@ -78,6 +78,17 @@ export default function DoorConfig() {
   const deleteInputDevice  = useStore(s => s.deleteInputDevice)
   const deleteOutputDevice = useStore(s => s.deleteOutputDevice)
 
+  // Phase 4 — Advanced Access Control
+  const antiPassbackConfigs = useStore(s => s.antiPassbackConfigs)
+  const twoPersonRules      = useStore(s => s.twoPersonRules)
+  const escortConfigs       = useStore(s => s.escortConfigs)
+  const doorInterlocks      = useStore(s => s.doorInterlocks)
+  const updateAntiPassbackConfig = useStore(s => s.updateAntiPassbackConfig)
+  const updateTwoPersonRule      = useStore(s => s.updateTwoPersonRule)
+  const addTwoPersonRule         = useStore(s => s.addTwoPersonRule)
+  const updateEscortConfig       = useStore(s => s.updateEscortConfig)
+  const addEscortConfig          = useStore(s => s.addEscortConfig)
+
   const [editingDevice, setEditingDevice] = useState<AnyDevice | null>(null)
   const [pendingDelete, setPendingDelete] = useState<AnyDevice | null>(null)
 
@@ -85,6 +96,12 @@ export default function DoorConfig() {
   const zone       = zones.find(z => z.id === door?.zoneId)
   const site       = sites.find(s => s.id === door?.siteId)
   const controller = controllers.find(c => c.doorIds.includes(doorId ?? ''))
+
+  // Phase 4 derived data
+  const antiPassbackCfg = antiPassbackConfigs.find(c => c.zoneId === door?.zoneId)
+  const twoPersonRule   = twoPersonRules.find(r => r.doorId === doorId)
+  const escortCfg       = escortConfigs.find(c => c.doorId === doorId)
+  const interlock       = doorInterlocks.find(i => i.doorAId === doorId || i.doorBId === doorId)
 
   const doorInputs:  AnyDevice[] = inputDevices
     .filter(d => d.doorId === doorId)
@@ -305,6 +322,170 @@ export default function DoorConfig() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* ── Phase 4 — Advanced Access Control ────────────────────────────────── */}
+      <div>
+        <div className="text-[11px] font-semibold text-slate-400 mb-3 flex items-center gap-2">
+          <Shield size={13} className="text-indigo-400" />
+          Advanced Access Control
+        </div>
+        <div className="grid gap-3">
+
+          {/* Anti-passback */}
+          <div className="bg-[#0a0d14] border border-[#1e293b] rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield size={12} className="text-amber-400" />
+              <span className="text-[11px] font-semibold text-slate-300">Anti-Passback</span>
+              <span className="text-[9px] text-slate-600 ml-1">(zone-level)</span>
+            </div>
+            {antiPassbackCfg ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="text-slate-500 w-24">Mode</span>
+                  <div className="flex gap-1">
+                    {(['hard', 'soft', 'off'] as const).map(mode => (
+                      <button
+                        key={mode}
+                        onClick={() => updateAntiPassbackConfig({ ...antiPassbackCfg, mode })}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors ${
+                          antiPassbackCfg.mode === mode
+                            ? mode === 'hard'
+                              ? 'bg-red-900/50 border-red-700 text-red-300'
+                              : mode === 'soft'
+                                ? 'bg-amber-900/50 border-amber-700 text-amber-300'
+                                : 'bg-slate-800 border-slate-600 text-slate-300'
+                            : 'bg-transparent border-[#1e293b] text-slate-600 hover:border-slate-600'
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="text-slate-500 w-24">Reset</span>
+                  <span className="text-slate-400">{antiPassbackCfg.resetMinutes} min</span>
+                  {antiPassbackCfg.mode === 'off' && (
+                    <span className="text-[10px] text-slate-600 italic">— no reset (mode is off)</span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-600">Zone not configured for anti-passback.</p>
+            )}
+          </div>
+
+          {/* Two-person rule */}
+          <div className="bg-[#0a0d14] border border-[#1e293b] rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Users size={12} className="text-blue-400" />
+              <span className="text-[11px] font-semibold text-slate-300">Two-Person Rule</span>
+            </div>
+            {twoPersonRule ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="text-slate-500 w-24">Enabled</span>
+                  <button
+                    onClick={() => updateTwoPersonRule({ ...twoPersonRule, enabled: !twoPersonRule.enabled })}
+                    className={`relative w-8 h-4 rounded-full transition-colors ${twoPersonRule.enabled ? 'bg-blue-600' : 'bg-slate-700'}`}
+                  >
+                    <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${twoPersonRule.enabled ? 'left-[18px]' : 'left-0.5'}`} />
+                  </button>
+                  <span className={`text-[10px] font-semibold ${twoPersonRule.enabled ? 'text-blue-400' : 'text-slate-600'}`}>
+                    {twoPersonRule.enabled ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="text-slate-500 w-24">Timeout</span>
+                  <span className="text-slate-400">{twoPersonRule.timeoutSeconds}s</span>
+                  <span className="text-[10px] text-slate-600">— second person must badge within this window</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <p className="text-[11px] text-slate-600 flex-1">Not configured for this door.</p>
+                <button
+                  onClick={() => addTwoPersonRule({ doorId: doorId ?? '', enabled: true, timeoutSeconds: 30 })}
+                  className="px-2 py-0.5 rounded text-[10px] text-blue-400 border border-blue-800/50 hover:bg-blue-900/20 transition-colors"
+                >
+                  + Enable
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Escort mode */}
+          <div className="bg-[#0a0d14] border border-[#1e293b] rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <UserCheck size={12} className="text-emerald-400" />
+              <span className="text-[11px] font-semibold text-slate-300">Escort Mode</span>
+            </div>
+            {escortCfg ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="text-slate-500 w-24">Enabled</span>
+                  <button
+                    onClick={() => updateEscortConfig({ ...escortCfg, enabled: !escortCfg.enabled })}
+                    className={`relative w-8 h-4 rounded-full transition-colors ${escortCfg.enabled ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                  >
+                    <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${escortCfg.enabled ? 'left-[18px]' : 'left-0.5'}`} />
+                  </button>
+                  <span className={`text-[10px] font-semibold ${escortCfg.enabled ? 'text-emerald-400' : 'text-slate-600'}`}>
+                    {escortCfg.enabled ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="text-slate-500 w-24">Visitor timeout</span>
+                  <span className="text-slate-400">{escortCfg.escortTimeoutSeconds}s</span>
+                  <span className="text-[10px] text-slate-600">— visitor must badge after escort badges</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <p className="text-[11px] text-slate-600 flex-1">Not configured for this door.</p>
+                <button
+                  onClick={() => addEscortConfig({ doorId: doorId ?? '', enabled: true, escortTimeoutSeconds: 15 })}
+                  className="px-2 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-800/50 hover:bg-emerald-900/20 transition-colors"
+                >
+                  + Enable
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Door interlock / mantrap */}
+          <div className="bg-[#0a0d14] border border-[#1e293b] rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Link2 size={12} className="text-violet-400" />
+              <span className="text-[11px] font-semibold text-slate-300">Door Interlock (Mantrap)</span>
+            </div>
+            {interlock ? (
+              <div className="space-y-1 text-[11px]">
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-500 w-24">Pair name</span>
+                  <span className="text-violet-300 font-medium">{interlock.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-500 w-24">Door A</span>
+                  <span className="text-slate-400 font-mono text-[10px]">{interlock.doorAId}</span>
+                  {interlock.doorAId === doorId && <span className="text-violet-400 text-[9px] font-semibold">(this door)</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-500 w-24">Door B</span>
+                  <span className="text-slate-400 font-mono text-[10px]">{interlock.doorBId}</span>
+                  {interlock.doorBId === doorId && <span className="text-violet-400 text-[9px] font-semibold">(this door)</span>}
+                </div>
+                <div className="mt-2 text-[10px] text-slate-600 italic">
+                  One door must fully close before the other can open.
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-600">This door is not part of a mantrap pair.</p>
+            )}
+          </div>
+
+        </div>
       </div>
 
       {editingDevice !== null && (

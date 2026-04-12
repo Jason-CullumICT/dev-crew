@@ -59,6 +59,10 @@ export interface Grant {
   conditionLogic: 'AND' | 'OR'
   scheduleId?: string
   customAttributes: Record<string, string>
+  /** ISO 8601 date string — grant is not valid before this date */
+  validFrom?: string
+  /** ISO 8601 date string — grant is not valid after this date */
+  validUntil?: string
 }
 
 export interface TimeWindow {
@@ -358,4 +362,48 @@ export interface EscalationChain {
   id: string
   name: string
   steps: EscalationStep[]
+}
+
+// ── Phase 4 — Advanced Access Control ───────────────────────────────────────
+
+/** Anti-passback configuration per zone */
+export interface AntiPassbackConfig {
+  zoneId: string
+  /** hard = deny entry if last event was an entry without exit; soft = grant but log warning */
+  mode: 'hard' | 'soft' | 'off'
+  /** Number of minutes after which the passback violation is forgiven */
+  resetMinutes: number
+}
+
+/** Two-person rule configuration per door */
+export interface TwoPersonRule {
+  doorId: string
+  enabled: boolean
+  /** Second person must badge within this many seconds of the first */
+  timeoutSeconds: number
+}
+
+/** Escort mode configuration per door */
+export interface EscortConfig {
+  doorId: string
+  enabled: boolean
+  /** Visitor must badge within this many seconds after the escort */
+  escortTimeoutSeconds: number
+}
+
+/** Door interlock (mantrap) pair — one must close before the other opens */
+export interface DoorInterlock {
+  id: string
+  doorAId: string
+  doorBId: string
+  /** Human-readable label, e.g. "Server Room Mantrap" */
+  name: string
+}
+
+/** Zone occupancy derived from badge-in/badge-out events */
+export interface ZoneOccupancy {
+  zoneId: string
+  /** User IDs currently inside the zone based on badge events */
+  userIds: string[]
+  lastUpdated: string
 }

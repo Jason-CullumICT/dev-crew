@@ -15,6 +15,8 @@ import ThreatLevelPill from './ThreatLevelPill'
 import { useStore } from '../store/store'
 import { useSimulation } from '../hooks/useSimulation'
 import { useDesignSystem } from '../contexts/DesignSystemContext'
+import { Button } from '../ui/button'
+import { cn } from '../lib/utils'
 
 const primaryNav = [
   { to: '/',          icon: LayoutDashboard, label: 'Dashboard', color: '#22c55e' },
@@ -76,7 +78,8 @@ function usePageTitle() {
   return PAGE_NAMES[segment] ?? ''
 }
 
-function SidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon: React.ElementType; label: string; color?: string; badge?: number }) {
+// Classic sidebar item — unchanged
+function ClassicSidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon: React.ElementType; label: string; color?: string; badge?: number }) {
   return (
     <NavLink
       to={to}
@@ -91,7 +94,6 @@ function SidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon
     >
       {({ isActive }) => (
         <>
-          {/* Left accent bar for active state */}
           {isActive && (
             <span
               className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[18px] rounded-r bg-indigo-500"
@@ -103,7 +105,6 @@ function SidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon
             style={{ color: isActive ? (color ?? '#94a3b8') : '#374151' }}
             strokeWidth={1.8}
           />
-          {/* Red dot badge for unacknowledged alarms */}
           {badge != null && badge > 0 && (
             <span className="absolute top-0.5 right-0.5 w-[14px] h-[14px] rounded-full bg-red-500 flex items-center justify-center text-[8px] font-bold text-white leading-none">
               {badge > 9 ? '9+' : badge}
@@ -118,10 +119,49 @@ function SidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon
   )
 }
 
+// Shadcn sidebar item — uses Button ghost variant
+function ShadcnSidebarItem({ to, icon: Icon, label, color, badge }: { to: string; icon: React.ElementType; label: string; color?: string; badge?: number }) {
+  return (
+    <NavLink
+      to={to}
+      title={label}
+      className="relative group w-full"
+    >
+      {({ isActive }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            'w-full justify-start gap-3 px-3 h-9 font-medium text-sm rounded-lg',
+            isActive
+              ? 'bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] border-l-2 border-[hsl(var(--primary))]'
+              : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+          )}
+          asChild={false}
+        >
+          <Icon
+            size={16}
+            style={{ color: isActive ? (color ?? 'hsl(var(--primary))') : undefined }}
+            strokeWidth={1.8}
+            className="shrink-0"
+          />
+          <span className="truncate">{label}</span>
+          {badge != null && badge > 0 && (
+            <span className="ml-auto w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-bold text-white leading-none shrink-0">
+              {badge > 9 ? '9+' : badge}
+            </span>
+          )}
+        </Button>
+      )}
+    </NavLink>
+  )
+}
+
 export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const pageTitle = usePageTitle()
   const { designSystem, toggle: toggleDesignSystem } = useDesignSystem()
+  const isShadcn = designSystem === 'shadcn'
 
   // Start simulation engine
   useSimulation()
@@ -141,6 +181,95 @@ export default function Layout() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  // ── Shadcn layout ─────────────────────────────────────────────────────────────
+  if (isShadcn) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-[hsl(var(--background))]">
+        {/* Shadcn Sidebar — wider with labels */}
+        <aside className="w-52 shrink-0 bg-[hsl(var(--card))] border-r border-[hsl(var(--border))] flex flex-col py-4 overflow-y-auto">
+          {/* Logo */}
+          <div className="px-3 mb-5 flex items-center gap-2.5 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+              <span className="text-white text-sm font-bold leading-none">A</span>
+            </div>
+            <span className="text-sm font-bold text-[hsl(var(--foreground))]">Axon ABAC</span>
+          </div>
+
+          <div className="px-2 space-y-0.5">
+            {primaryNav.map(item => (
+              <ShadcnSidebarItem
+                key={item.to}
+                {...item}
+                badge={item.to === '/monitor' ? unacknowledgedCount : undefined}
+              />
+            ))}
+          </div>
+
+          <div className="mx-3 my-3 h-px bg-[hsl(var(--border))]" />
+
+          <div className="px-2 space-y-0.5">
+            {entityNav.map(item => <ShadcnSidebarItem key={item.to} {...item} />)}
+          </div>
+
+          <div className="mx-3 my-3 h-px bg-[hsl(var(--border))]" />
+
+          <div className="px-2">
+            <ShadcnSidebarItem to="/intrusion" icon={Shield} label="Intrusion" />
+          </div>
+
+          <div className="mt-auto px-3 pt-3">
+            <div className="w-8 h-8 rounded-full bg-[hsl(var(--secondary))] border border-[hsl(var(--border))] flex items-center justify-center text-[11px] text-[hsl(var(--muted-foreground))] font-semibold cursor-pointer hover:border-[hsl(var(--primary))] transition-colors">
+              SC
+            </div>
+          </div>
+        </aside>
+
+        {/* Main */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <header className="h-12 shrink-0 bg-[hsl(var(--card))] border-b border-[hsl(var(--border))] flex items-center px-5 gap-3">
+            {pageTitle && (
+              <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                {pageTitle}
+              </span>
+            )}
+
+            <div className="flex-1" />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleDesignSystem}
+              title="Toggle design system"
+              className="text-xs h-7 px-3"
+            >
+              Shadcn
+            </Button>
+
+            <SimulationToggle />
+            <ThreatLevelPill />
+
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="flex items-center gap-1.5 text-[10px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+            >
+              <span>⌘K</span>
+            </button>
+            <NowPill />
+          </header>
+
+          <main className="flex-1 overflow-hidden">
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </main>
+        </div>
+
+        {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      </div>
+    )
+  }
+
+  // ── Classic layout — unchanged ────────────────────────────────────────────────
   return (
     <div className="flex h-screen overflow-hidden bg-[#060912]">
       {/* Sidebar */}
@@ -151,7 +280,7 @@ export default function Layout() {
         </div>
 
         {primaryNav.map(item => (
-          <SidebarItem
+          <ClassicSidebarItem
             key={item.to}
             {...item}
             badge={item.to === '/monitor' ? unacknowledgedCount : undefined}
@@ -160,11 +289,11 @@ export default function Layout() {
 
         <div className="w-7 h-px bg-[#141828] my-1.5 shrink-0" />
 
-        {entityNav.map(item => <SidebarItem key={item.to} {...item} />)}
+        {entityNav.map(item => <ClassicSidebarItem key={item.to} {...item} />)}
 
         <div className="w-7 h-px bg-[#141828] my-1.5 shrink-0" />
 
-        <SidebarItem to="/intrusion" icon={Shield} label="Intrusion" />
+        <ClassicSidebarItem to="/intrusion" icon={Shield} label="Intrusion" />
 
         <div className="mt-auto w-[30px] h-[30px] rounded-full bg-[#1c1f2e] border border-[#2d3148] flex items-center justify-center text-[11px] text-slate-400 font-semibold cursor-pointer hover:border-indigo-500 transition-colors">
           SC

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type {
   User, Group, Grant, NamedSchedule, Policy,
   Door, Zone, Site, Controller, ArmingLog, CanvasPosition,
+  SecurityEvent, Alarm,
 } from '../types'
 import {
   USERS, GROUPS, GRANTS, SCHEDULES, POLICIES,
@@ -80,10 +81,25 @@ interface AxonStore {
   controllers: Controller[]
   armingLog:   ArmingLog[]
 
+  // ── SOC Monitoring state ──────────────────────────────────────────────────
+  events:          SecurityEvent[]   // capped at 500, newest first
+  alarms:          Alarm[]           // persists until cleared (no cap)
+  simulationSpeed: 0 | 1 | 10       // 0 = paused
+
   // ── Canvas state ──────────────────────────────────────────────────────────
   canvasPositions:      Record<string, CanvasPosition>
   selectedCanvasNodeId: string | null
   edgeMode:             'always' | 'hover' | 'off'
+
+  // ── SOC Monitoring actions ────────────────────────────────────────────────
+  addEvent:           (event: SecurityEvent)                      => void
+  addAlarm:           (alarm: Alarm)                              => void
+  acknowledgeAlarm:   (id: string, userId: string)                => void
+  escalateAlarm:      (id: string)                                => void
+  clearAlarm:         (id: string)                                => void
+  addAlarmNote:       (id: string, note: string)                  => void
+  setSimulationSpeed: (speed: 0 | 1 | 10)                        => void
+  clearAllEvents:     ()                                          => void
 
   // ── Plan 1 actions ────────────────────────────────────────────────────────
   updateSite:            (site: Site)            => void
@@ -154,9 +170,62 @@ export const useStore = create<AxonStore>()(
       controllers: CONTROLLERS,
       armingLog:   [],
 
+      events:          [],
+      alarms:          [],
+      simulationSpeed: 0 as const,
+
       canvasPositions:      defaultCanvasPositions(),
       selectedCanvasNodeId: null,
       edgeMode:             'hover' as const,
+
+      // ── SOC Monitoring ────────────────────────────────────────────────────────
+      addEvent: (event) =>
+        set(state => ({ events: [event, ...state.events].slice(0, 500) })),
+
+      addAlarm: (alarm) =>
+        set(state => ({ alarms: [...state.alarms, alarm] })),
+
+      acknowledgeAlarm: (id, userId) =>
+        set(state => ({
+          alarms: state.alarms.map(a =>
+            a.id === id
+              ? { ...a, state: 'acknowledged' as const, acknowledgedBy: userId, acknowledgedAt: new Date().toISOString() }
+              : a
+          ),
+        })),
+
+      escalateAlarm: (id) =>
+        set(state => ({
+          alarms: state.alarms.map(a =>
+            a.id === id
+              ? { ...a, state: 'escalated' as const, escalatedAt: new Date().toISOString() }
+              : a
+          ),
+        })),
+
+      clearAlarm: (id) =>
+        set(state => ({
+          alarms: state.alarms.map(a =>
+            a.id === id
+              ? { ...a, state: 'cleared' as const, clearedAt: new Date().toISOString() }
+              : a
+          ),
+        })),
+
+      addAlarmNote: (id, note) =>
+        set(state => ({
+          alarms: state.alarms.map(a =>
+            a.id === id
+              ? { ...a, notes: [...a.notes, note] }
+              : a
+          ),
+        })),
+
+      setSimulationSpeed: (speed) =>
+        set({ simulationSpeed: speed }),
+
+      clearAllEvents: () =>
+        set({ events: [] }),
 
       // ── Plan 1 ────────────────────────────────────────────────────────────────
       updateSite: (site) =>
@@ -198,6 +267,8 @@ export const useStore = create<AxonStore>()(
           controllers: CONTROLLERS,
           canvasPositions: defaultCanvasPositions(),
           armingLog:   [],
+          events:      [],
+          alarms:      [],
         }),
 
       // ── Users ─────────────────────────────────────────────────────────────────
@@ -382,10 +453,10 @@ export const useStore = create<AxonStore>()(
     }),
     {
       name: 'axon-store',
-      version: 2, // Bump to invalidate stale canvas positions from pre-redesign layout
+      version: 3, // Bump to add SOC monitoring state
       partialize: (state) => {
-        // Exclude ephemeral UI state from persistence
-        const { selectedCanvasNodeId: _excl1, edgeMode: _excl2, ...rest } = state
+        // Exclude ephemeral UI state and ephemeral SOC data from persistence
+        const { selectedCanvasNodeId: _excl1, edgeMode: _excl2, events: _excl3, alarms: _excl4, ...rest } = state
         return rest
       },
     }

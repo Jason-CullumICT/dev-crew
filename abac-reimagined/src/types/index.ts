@@ -208,3 +208,50 @@ export interface AccessResult {
   nowContext: NowContext
   activeHoliday?: Holiday
 }
+
+// ── SOC Monitoring types ─────────────────────────────────────────────────────
+
+export type EventSeverity = 'critical' | 'warning' | 'info'
+export type EventCategory = 'access' | 'alarm' | 'system' | 'intrusion'
+export type AlarmState = 'active' | 'acknowledged' | 'escalated' | 'cleared'
+export type ThreatLevel = 'normal' | 'elevated' | 'high' | 'critical' | 'lockdown'
+
+export type SecurityEventType =
+  | 'access_granted'
+  | 'access_denied'
+  | 'door_forced'
+  | 'door_held'
+  | 'sensor_trip'
+  | 'controller_offline'
+  | 'arm_state_change'
+  | 'panic_button'
+
+export interface SecurityEvent {
+  id: string
+  timestamp: string              // ISO 8601
+  category: EventCategory
+  severity: EventSeverity
+  eventType: SecurityEventType
+  siteId: string
+  zoneId?: string
+  doorId?: string
+  userId?: string
+  message: string
+  metadata: Record<string, string>
+}
+
+export interface Alarm {
+  id: string
+  triggerEventId: string
+  severity: EventSeverity
+  state: AlarmState
+  siteId: string
+  zoneId?: string
+  doorId?: string
+  title: string
+  acknowledgedBy?: string        // userId
+  acknowledgedAt?: string
+  escalatedAt?: string
+  clearedAt?: string
+  notes: string[]
+}

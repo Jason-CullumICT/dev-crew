@@ -6,6 +6,7 @@ import type {
   SecurityEvent, Alarm, InputDevice, OutputDevice,
   ResponseRule, EscalationChain, ThreatLevel,
   AntiPassbackConfig, TwoPersonRule, EscortConfig, DoorInterlock, ZoneOccupancy,
+  Credential, VisitorRegistration,
 } from '../types'
 import {
   USERS, GROUPS, GRANTS, SCHEDULES, POLICIES,
@@ -13,6 +14,7 @@ import {
   INPUT_DEVICES, OUTPUT_DEVICES,
   RESPONSE_RULES, ESCALATION_CHAINS,
   ANTI_PASSBACK_CONFIGS, TWO_PERSON_RULES, ESCORT_CONFIGS, DOOR_INTERLOCKS,
+  CREDENTIALS, VISITOR_REGISTRATIONS,
 } from './seed'
 
 export function defaultCanvasPositions(): Record<string, CanvasPosition> {
@@ -106,6 +108,10 @@ interface AxonStore {
   zoneOccupancy:       ZoneOccupancy[]
   musterActive:        boolean
 
+  // ── Phase 5 — Visitor & Credential Management ─────────────────────────────
+  credentials:          Credential[]
+  visitorRegistrations: VisitorRegistration[]
+
   // ── Canvas state ──────────────────────────────────────────────────────────
   canvasPositions:      Record<string, CanvasPosition>
   selectedCanvasNodeId: string | null
@@ -145,6 +151,20 @@ interface AxonStore {
   deleteDoorInterlock: (id: string)               => void
   setMusterActive:      (active: boolean)         => void
   updateZoneOccupancy:  (zoneId: string, userIds: string[]) => void
+
+  // ── Phase 5 — Visitor & Credential Management ─────────────────────────────
+  addCredential:         (cred: Credential)      => void
+  updateCredential:      (cred: Credential)      => void
+  deleteCredential:      (id: string)            => void
+  suspendCredential:     (id: string)            => void
+  revokeCredential:      (id: string)            => void
+  reactivateCredential:  (id: string)            => void
+
+  addVisitorRegistration:    (reg: VisitorRegistration) => void
+  updateVisitorRegistration: (reg: VisitorRegistration) => void
+  deleteVisitorRegistration: (id: string)               => void
+  checkInVisitor:            (id: string, credentialId: string) => void
+  checkOutVisitor:           (id: string)                       => void
 
   // ── Plan 1 actions ────────────────────────────────────────────────────────
   updateSite:            (site: Site)            => void
@@ -241,6 +261,9 @@ export const useStore = create<AxonStore>()(
       doorInterlocks:      DOOR_INTERLOCKS,
       zoneOccupancy:       [],
       musterActive:        false,
+
+      credentials:          CREDENTIALS,
+      visitorRegistrations: VISITOR_REGISTRATIONS,
 
       canvasPositions:      defaultCanvasPositions(),
       selectedCanvasNodeId: null,
@@ -376,6 +399,66 @@ export const useStore = create<AxonStore>()(
           }
         }),
 
+      // ── Phase 5 — Visitor & Credential Management ────────────────────────────
+      addCredential: (cred) =>
+        set(state => ({ credentials: [...state.credentials, cred] })),
+
+      updateCredential: (cred) =>
+        set(state => ({ credentials: state.credentials.map(c => c.id === cred.id ? cred : c) })),
+
+      deleteCredential: (id) =>
+        set(state => ({ credentials: state.credentials.filter(c => c.id !== id) })),
+
+      suspendCredential: (id) =>
+        set(state => ({
+          credentials: state.credentials.map(c =>
+            c.id === id ? { ...c, status: 'suspended' as const, suspendedAt: new Date().toISOString() } : c
+          ),
+        })),
+
+      revokeCredential: (id) =>
+        set(state => ({
+          credentials: state.credentials.map(c =>
+            c.id === id ? { ...c, status: 'revoked' as const, revokedAt: new Date().toISOString() } : c
+          ),
+        })),
+
+      reactivateCredential: (id) =>
+        set(state => ({
+          credentials: state.credentials.map(c =>
+            c.id === id ? { ...c, status: 'active' as const, suspendedAt: undefined, revokedAt: undefined } : c
+          ),
+        })),
+
+      addVisitorRegistration: (reg) =>
+        set(state => ({ visitorRegistrations: [...state.visitorRegistrations, reg] })),
+
+      updateVisitorRegistration: (reg) =>
+        set(state => ({
+          visitorRegistrations: state.visitorRegistrations.map(r => r.id === reg.id ? reg : r),
+        })),
+
+      deleteVisitorRegistration: (id) =>
+        set(state => ({ visitorRegistrations: state.visitorRegistrations.filter(r => r.id !== id) })),
+
+      checkInVisitor: (id, credentialId) =>
+        set(state => ({
+          visitorRegistrations: state.visitorRegistrations.map(r =>
+            r.id === id
+              ? { ...r, status: 'checked_in' as const, checkInTime: new Date().toISOString(), credentialId }
+              : r
+          ),
+        })),
+
+      checkOutVisitor: (id) =>
+        set(state => ({
+          visitorRegistrations: state.visitorRegistrations.map(r =>
+            r.id === id
+              ? { ...r, status: 'checked_out' as const, checkOutTime: new Date().toISOString() }
+              : r
+          ),
+        })),
+
       // ── Plan 1 ────────────────────────────────────────────────────────────────
       updateSite: (site) =>
         set(state => ({ sites: state.sites.map(s => s.id === site.id ? site : s) })),
@@ -429,6 +512,8 @@ export const useStore = create<AxonStore>()(
           doorInterlocks:      DOOR_INTERLOCKS,
           zoneOccupancy:       [],
           musterActive:        false,
+          credentials:          CREDENTIALS,
+          visitorRegistrations: VISITOR_REGISTRATIONS,
         }),
 
       // ── Users ─────────────────────────────────────────────────────────────────
@@ -641,7 +726,7 @@ export const useStore = create<AxonStore>()(
     }),
     {
       name: 'axon-store',
-      version: 6, // Bump to add Phase 4 advanced access control
+      version: 7, // Bump to add Phase 5 visitor & credential management
       partialize: (state) => {
         // Exclude ephemeral UI state and ephemeral SOC data from persistence
         // zoneOccupancy and musterActive are ephemeral (reset on reload)

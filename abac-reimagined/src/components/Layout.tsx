@@ -4,7 +4,7 @@ import {
   Share2, Search, Activity, Users, UsersRound,
   KeyRound, CalendarClock, DoorOpen, Building2, Shield,
   Layers, FileText, Cpu, LayoutDashboard,
-  Monitor as MonitorIcon, CircuitBoard, Workflow, GitBranch,
+  Monitor as MonitorIcon, CircuitBoard, Workflow, GitBranch, UserCheck,
 } from 'lucide-react'
 import NowPill from './NowPill'
 import CommandPalette from './CommandPalette'
@@ -35,6 +35,7 @@ const entityNav = [
   { to: '/hardware',    icon: CircuitBoard, label: 'Hardware' },
   { to: '/rules',       icon: Workflow,     label: 'Rules' },
   { to: '/escalations', icon: GitBranch,    label: 'Escalations' },
+  { to: '/muster',      icon: UserCheck,    label: 'Muster' },
 ]
 
 // Map pathname segments to display names
@@ -56,6 +57,7 @@ const PAGE_NAMES: Record<string, string> = {
   intrusion:   'Intrusion',
   rules:       'Response Rules',
   escalations: 'Escalation Chains',
+  muster:      'Muster Report',
 }
 
 function usePageTitle() {

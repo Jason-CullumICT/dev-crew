@@ -5,12 +5,14 @@ import type {
   Door, Zone, Site, Controller, ArmingLog, CanvasPosition,
   SecurityEvent, Alarm, InputDevice, OutputDevice,
   ResponseRule, EscalationChain, ThreatLevel,
+  AntiPassbackConfig, TwoPersonRule, EscortConfig, DoorInterlock, ZoneOccupancy,
 } from '../types'
 import {
   USERS, GROUPS, GRANTS, SCHEDULES, POLICIES,
   DOORS, ZONES, SITES, CONTROLLERS,
   INPUT_DEVICES, OUTPUT_DEVICES,
   RESPONSE_RULES, ESCALATION_CHAINS,
+  ANTI_PASSBACK_CONFIGS, TWO_PERSON_RULES, ESCORT_CONFIGS, DOOR_INTERLOCKS,
 } from './seed'
 
 export function defaultCanvasPositions(): Record<string, CanvasPosition> {
@@ -96,6 +98,14 @@ interface AxonStore {
   escalationChains:  EscalationChain[]
   threatLevel:       ThreatLevel
 
+  // ── Phase 4 — Advanced Access Control ────────────────────────────────────
+  antiPassbackConfigs: AntiPassbackConfig[]
+  twoPersonRules:      TwoPersonRule[]
+  escortConfigs:       EscortConfig[]
+  doorInterlocks:      DoorInterlock[]
+  zoneOccupancy:       ZoneOccupancy[]
+  musterActive:        boolean
+
   // ── Canvas state ──────────────────────────────────────────────────────────
   canvasPositions:      Record<string, CanvasPosition>
   selectedCanvasNodeId: string | null
@@ -119,6 +129,22 @@ interface AxonStore {
   updateEscalationChain: (chain: EscalationChain) => void
   deleteEscalationChain: (id: string)             => void
   setThreatLevel:     (level: ThreatLevel)       => void
+
+  // ── Phase 4 — Advanced Access Control ────────────────────────────────────
+  addAntiPassbackConfig:    (cfg: AntiPassbackConfig) => void
+  updateAntiPassbackConfig: (cfg: AntiPassbackConfig) => void
+  deleteAntiPassbackConfig: (zoneId: string)          => void
+  addTwoPersonRule:    (rule: TwoPersonRule) => void
+  updateTwoPersonRule: (rule: TwoPersonRule) => void
+  deleteTwoPersonRule: (doorId: string)      => void
+  addEscortConfig:    (cfg: EscortConfig) => void
+  updateEscortConfig: (cfg: EscortConfig) => void
+  deleteEscortConfig: (doorId: string)    => void
+  addDoorInterlock:    (interlock: DoorInterlock) => void
+  updateDoorInterlock: (interlock: DoorInterlock) => void
+  deleteDoorInterlock: (id: string)               => void
+  setMusterActive:      (active: boolean)         => void
+  updateZoneOccupancy:  (zoneId: string, userIds: string[]) => void
 
   // ── Plan 1 actions ────────────────────────────────────────────────────────
   updateSite:            (site: Site)            => void
@@ -209,6 +235,13 @@ export const useStore = create<AxonStore>()(
       escalationChains: ESCALATION_CHAINS,
       threatLevel:      'normal' as ThreatLevel,
 
+      antiPassbackConfigs: ANTI_PASSBACK_CONFIGS,
+      twoPersonRules:      TWO_PERSON_RULES,
+      escortConfigs:       ESCORT_CONFIGS,
+      doorInterlocks:      DOOR_INTERLOCKS,
+      zoneOccupancy:       [],
+      musterActive:        false,
+
       canvasPositions:      defaultCanvasPositions(),
       selectedCanvasNodeId: null,
       edgeMode:             'hover' as const,
@@ -284,6 +317,65 @@ export const useStore = create<AxonStore>()(
       setThreatLevel: (level) =>
         set({ threatLevel: level }),
 
+      // ── Phase 4 — Advanced Access Control ────────────────────────────────────
+      addAntiPassbackConfig: (cfg) =>
+        set(state => ({ antiPassbackConfigs: [...state.antiPassbackConfigs, cfg] })),
+
+      updateAntiPassbackConfig: (cfg) =>
+        set(state => ({
+          antiPassbackConfigs: state.antiPassbackConfigs.map(c => c.zoneId === cfg.zoneId ? cfg : c),
+        })),
+
+      deleteAntiPassbackConfig: (zoneId) =>
+        set(state => ({ antiPassbackConfigs: state.antiPassbackConfigs.filter(c => c.zoneId !== zoneId) })),
+
+      addTwoPersonRule: (rule) =>
+        set(state => ({ twoPersonRules: [...state.twoPersonRules, rule] })),
+
+      updateTwoPersonRule: (rule) =>
+        set(state => ({
+          twoPersonRules: state.twoPersonRules.map(r => r.doorId === rule.doorId ? rule : r),
+        })),
+
+      deleteTwoPersonRule: (doorId) =>
+        set(state => ({ twoPersonRules: state.twoPersonRules.filter(r => r.doorId !== doorId) })),
+
+      addEscortConfig: (cfg) =>
+        set(state => ({ escortConfigs: [...state.escortConfigs, cfg] })),
+
+      updateEscortConfig: (cfg) =>
+        set(state => ({
+          escortConfigs: state.escortConfigs.map(c => c.doorId === cfg.doorId ? cfg : c),
+        })),
+
+      deleteEscortConfig: (doorId) =>
+        set(state => ({ escortConfigs: state.escortConfigs.filter(c => c.doorId !== doorId) })),
+
+      addDoorInterlock: (interlock) =>
+        set(state => ({ doorInterlocks: [...state.doorInterlocks, interlock] })),
+
+      updateDoorInterlock: (interlock) =>
+        set(state => ({
+          doorInterlocks: state.doorInterlocks.map(i => i.id === interlock.id ? interlock : i),
+        })),
+
+      deleteDoorInterlock: (id) =>
+        set(state => ({ doorInterlocks: state.doorInterlocks.filter(i => i.id !== id) })),
+
+      setMusterActive: (active) =>
+        set({ musterActive: active }),
+
+      updateZoneOccupancy: (zoneId, userIds) =>
+        set(state => {
+          const existing = state.zoneOccupancy.find(o => o.zoneId === zoneId)
+          const updated: ZoneOccupancy = { zoneId, userIds, lastUpdated: new Date().toISOString() }
+          return {
+            zoneOccupancy: existing
+              ? state.zoneOccupancy.map(o => o.zoneId === zoneId ? updated : o)
+              : [...state.zoneOccupancy, updated],
+          }
+        }),
+
       // ── Plan 1 ────────────────────────────────────────────────────────────────
       updateSite: (site) =>
         set(state => ({ sites: state.sites.map(s => s.id === site.id ? site : s) })),
@@ -331,6 +423,12 @@ export const useStore = create<AxonStore>()(
           responseRules:    RESPONSE_RULES,
           escalationChains: ESCALATION_CHAINS,
           threatLevel:      'normal' as ThreatLevel,
+          antiPassbackConfigs: ANTI_PASSBACK_CONFIGS,
+          twoPersonRules:      TWO_PERSON_RULES,
+          escortConfigs:       ESCORT_CONFIGS,
+          doorInterlocks:      DOOR_INTERLOCKS,
+          zoneOccupancy:       [],
+          musterActive:        false,
         }),
 
       // ── Users ─────────────────────────────────────────────────────────────────
@@ -543,10 +641,19 @@ export const useStore = create<AxonStore>()(
     }),
     {
       name: 'axon-store',
-      version: 5, // Bump to add Phase 3 response rules, escalation chains, threat level
+      version: 6, // Bump to add Phase 4 advanced access control
       partialize: (state) => {
         // Exclude ephemeral UI state and ephemeral SOC data from persistence
-        const { selectedCanvasNodeId: _excl1, edgeMode: _excl2, events: _excl3, alarms: _excl4, ...rest } = state
+        // zoneOccupancy and musterActive are ephemeral (reset on reload)
+        const {
+          selectedCanvasNodeId: _excl1,
+          edgeMode: _excl2,
+          events: _excl3,
+          alarms: _excl4,
+          zoneOccupancy: _excl5,
+          musterActive: _excl6,
+          ...rest
+        } = state
         return rest
       },
     }

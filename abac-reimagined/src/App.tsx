@@ -21,6 +21,7 @@ const Hardware    = lazy(() => import('./pages/Hardware'))
 const DoorConfig  = lazy(() => import('./pages/DoorConfig'))
 const Rules       = lazy(() => import('./pages/Rules'))
 const Escalations = lazy(() => import('./pages/Escalations'))
+const Muster      = lazy(() => import('./pages/Muster'))
 
 function PageLoader() {
   return (
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="hardware"    element={<Suspense fallback={<PageLoader />}><Hardware /></Suspense>} />
         <Route path="rules"       element={<Suspense fallback={<PageLoader />}><Rules /></Suspense>} />
         <Route path="escalations" element={<Suspense fallback={<PageLoader />}><Escalations /></Suspense>} />
+        <Route path="muster"      element={<Suspense fallback={<PageLoader />}><Muster /></Suspense>} />
         <Route path="*"           element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

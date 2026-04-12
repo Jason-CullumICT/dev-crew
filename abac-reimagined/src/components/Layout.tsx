@@ -4,12 +4,13 @@ import {
   Share2, Search, Activity, Users, UsersRound,
   KeyRound, CalendarClock, DoorOpen, Building2, Shield,
   Layers, FileText, Cpu, LayoutDashboard,
-  Monitor as MonitorIcon, CircuitBoard,
+  Monitor as MonitorIcon, CircuitBoard, Workflow, GitBranch,
 } from 'lucide-react'
 import NowPill from './NowPill'
 import CommandPalette from './CommandPalette'
 import ErrorBoundary from './ErrorBoundary'
 import SimulationToggle from './SimulationToggle'
+import ThreatLevelPill from './ThreatLevelPill'
 import { useStore } from '../store/store'
 import { useSimulation } from '../hooks/useSimulation'
 
@@ -32,6 +33,8 @@ const entityNav = [
   { to: '/policies',    icon: FileText,     label: 'Policies' },
   { to: '/controllers', icon: Cpu,          label: 'Controllers' },
   { to: '/hardware',    icon: CircuitBoard, label: 'Hardware' },
+  { to: '/rules',       icon: Workflow,     label: 'Rules' },
+  { to: '/escalations', icon: GitBranch,    label: 'Escalations' },
 ]
 
 // Map pathname segments to display names
@@ -51,6 +54,8 @@ const PAGE_NAMES: Record<string, string> = {
   controllers: 'Controllers',
   hardware:    'Hardware',
   intrusion:   'Intrusion',
+  rules:       'Response Rules',
+  escalations: 'Escalation Chains',
 }
 
 function usePageTitle() {
@@ -166,6 +171,8 @@ export default function Layout() {
           <div className="flex-1" />
 
           <SimulationToggle />
+
+          <ThreatLevelPill />
 
           <button
             onClick={() => setPaletteOpen(true)}

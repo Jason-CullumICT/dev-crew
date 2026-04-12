@@ -19,6 +19,8 @@ const Intrusion   = lazy(() => import('./pages/Intrusion'))
 const Monitor     = lazy(() => import('./pages/Monitor'))
 const Hardware    = lazy(() => import('./pages/Hardware'))
 const DoorConfig  = lazy(() => import('./pages/DoorConfig'))
+const Rules       = lazy(() => import('./pages/Rules'))
+const Escalations = lazy(() => import('./pages/Escalations'))
 
 function PageLoader() {
   return (
@@ -49,6 +51,8 @@ export default function App() {
         <Route path="intrusion"   element={<Suspense fallback={<PageLoader />}><Intrusion /></Suspense>} />
         <Route path="monitor"     element={<Suspense fallback={<PageLoader />}><Monitor /></Suspense>} />
         <Route path="hardware"    element={<Suspense fallback={<PageLoader />}><Hardware /></Suspense>} />
+        <Route path="rules"       element={<Suspense fallback={<PageLoader />}><Rules /></Suspense>} />
+        <Route path="escalations" element={<Suspense fallback={<PageLoader />}><Escalations /></Suspense>} />
         <Route path="*"           element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

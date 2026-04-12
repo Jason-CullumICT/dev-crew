@@ -24,6 +24,12 @@ const SEVERITY_DOT: Record<string, string> = {
   info:     'bg-blue-500',
 }
 
+const SEVERITY_ROW_BG: Record<string, string> = {
+  critical: 'bg-red-500/[0.06]',
+  warning:  'bg-amber-500/[0.04]',
+  info:     '',
+}
+
 const SEVERITY_LABEL: Record<string, string> = {
   critical: 'text-red-400',
   warning:  'text-amber-400',
@@ -129,26 +135,26 @@ export default function EventFeed({ compact = false, maxEvents }: Props) {
           displayed.map(event => (
             <div
               key={event.id}
-              className="flex items-start gap-2 py-1.5 px-2 rounded hover:bg-white/[0.02] transition-colors"
+              className={`flex items-start gap-2 py-2 px-2 rounded hover:bg-white/[0.02] transition-colors ${SEVERITY_ROW_BG[event.severity] ?? ''}`}
             >
               {/* Severity dot */}
-              <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${SEVERITY_DOT[event.severity] ?? 'bg-slate-500'}`} />
+              <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1.5 ${SEVERITY_DOT[event.severity] ?? 'bg-slate-500'} ${event.severity === 'critical' ? 'animate-pulse' : ''}`} />
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`text-[9px] font-semibold uppercase tracking-wider ${SEVERITY_LABEL[event.severity] ?? 'text-slate-400'}`}>
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${SEVERITY_LABEL[event.severity] ?? 'text-slate-400'}`}>
                     {event.severity}
                   </span>
-                  <span className="text-[10px] text-slate-300 truncate">{event.message}</span>
+                  <span className="text-[11px] text-slate-300 truncate">{event.message}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[9px] text-slate-600">{relativeTime(event.timestamp)}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#1e293b] text-slate-500">
+                  <span className="text-[10px] text-slate-600">{relativeTime(event.timestamp)}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#1e293b] text-slate-500">
                     {siteLabel(event.siteId)}
                   </span>
                   {event.userId && (
-                    <span className="text-[9px] text-slate-600 truncate">{event.userId}</span>
+                    <span className="text-[10px] text-slate-600 truncate">{event.userId}</span>
                   )}
                 </div>
               </div>

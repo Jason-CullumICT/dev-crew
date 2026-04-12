@@ -256,26 +256,41 @@ export default function Dashboard() {
 
         {/* Right: Active Alarms + Quick Links + Reset */}
         <div className="space-y-3">
-          {/* Active Alarms — up to 3, compact cards */}
-          {alarms.filter(a => a.state !== 'cleared').length > 0 && (
-            <div className="space-y-2">
-              <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">
-                Active Alarms
+          {/* Active Alarms — always visible, prominent red-tinted card */}
+          {(() => {
+            const activeAlarms = alarms.filter(a => a.state !== 'cleared')
+            return (
+              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="text-[10px] uppercase tracking-wider text-red-400/80 font-semibold">
+                      Active Alarms
+                    </div>
+                    {activeAlarms.length > 0 && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                        {activeAlarms.length}
+                      </span>
+                    )}
+                  </div>
+                  {activeAlarms.length > 0 && (
+                    <button
+                      onClick={() => navigate('/monitor')}
+                      className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      View all →
+                    </button>
+                  )}
+                </div>
+                {activeAlarms.length === 0 ? (
+                  <p className="text-[11px] text-emerald-400/80 font-medium">No active alarms — all clear</p>
+                ) : (
+                  activeAlarms.slice(0, 3).map(alarm => (
+                    <AlarmCard key={alarm.id} alarm={alarm} compact />
+                  ))
+                )}
               </div>
-              {alarms
-                .filter(a => a.state !== 'cleared')
-                .slice(0, 3)
-                .map(alarm => (
-                  <AlarmCard key={alarm.id} alarm={alarm} compact />
-                ))}
-              <button
-                onClick={() => navigate('/monitor')}
-                className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                View all in Monitor →
-              </button>
-            </div>
-          )}
+            )
+          })()}
 
           <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">
             Quick Links

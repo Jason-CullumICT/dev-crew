@@ -3,15 +3,10 @@ import { CreditCard, Search } from 'lucide-react'
 import { useStore } from '../store/store'
 import type { Credential, CredentialStatus, CredentialType } from '../types'
 import CredentialModal from '../modals/CredentialModal'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<CredentialStatus, string> = {
-  active:    'bg-green-500/15 text-green-400 border-green-500/30',
-  suspended: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  revoked:   'bg-red-500/15 text-red-400 border-red-500/30',
-  expired:   'bg-slate-500/15 text-slate-500 border-slate-600/30',
-}
 
 const TYPE_LABELS: Record<CredentialType, string> = {
   proximity_card: 'Prox Card',
@@ -23,10 +18,16 @@ const TYPE_LABELS: Record<CredentialType, string> = {
 
 function StatusBadge({ status }: { status: CredentialStatus }) {
   const label = status.charAt(0).toUpperCase() + status.slice(1)
+  const variantMap: Record<CredentialStatus, 'success' | 'warning' | 'destructive' | 'outline'> = {
+    active:    'success',
+    suspended: 'warning',
+    revoked:   'destructive',
+    expired:   'outline',
+  }
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${STATUS_STYLES[status]}`}>
+    <Badge variant={variantMap[status]} className="text-[10px]">
       {label}
-    </span>
+    </Badge>
   )
 }
 
@@ -88,13 +89,14 @@ export default function Credentials() {
           />
         </div>
 
-        <button
+        <Button
+          size="sm"
           onClick={() => setModalCred(null)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-medium hover:bg-indigo-500 transition-colors"
+          className="gap-1.5"
         >
           <CreditCard size={13} />
           Issue Credential
-        </button>
+        </Button>
       </div>
 
       {/* Table */}

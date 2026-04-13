@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Plus, Trash2, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useStore } from '../store/store'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { Button } from '../ui/button'
 import type {
   EscalationChain,
   EscalationStep,
@@ -336,20 +337,17 @@ export default function Escalations() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#141828] shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))] shrink-0">
         <div>
-          <div className="text-[11px] text-slate-400 font-medium">Escalation Chains</div>
-          <div className="text-[10px] text-slate-600 mt-0.5">
+          <div className="text-sm font-medium text-[hsl(var(--foreground))]">Escalation Chains</div>
+          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
             Define step-by-step response workflows. Each step fires after a delay with notifications and auto-actions.
           </div>
         </div>
-        <button
-          onClick={() => addChain(emptyChain())}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-[11px] text-white font-medium transition-colors"
-        >
+        <Button size="sm" onClick={() => addChain(emptyChain())} className="gap-1.5">
           <Plus size={12} />
           New Chain
-        </button>
+        </Button>
       </div>
 
       {/* Chain list */}

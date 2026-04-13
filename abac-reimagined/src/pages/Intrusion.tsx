@@ -303,7 +303,7 @@ export default function Intrusion() {
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full">
-      <h1 className="text-xl font-bold text-slate-100">Intrusion Control</h1>
+      <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">Intrusion Control</h1>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left: site + zones + authorized users */}

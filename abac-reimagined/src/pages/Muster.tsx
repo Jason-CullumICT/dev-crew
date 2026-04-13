@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react'
 import { UserCheck, ChevronDown, ChevronRight, AlertTriangle, Users } from 'lucide-react'
 import { useStore } from '../store/store'
+import { Button } from '../ui/button'
+import { Card, CardContent } from '../ui/card'
+import { Badge } from '../ui/badge'
 
 export default function Muster() {
   const zones         = useStore(s => s.zones)
@@ -75,25 +78,19 @@ export default function Muster() {
         <div className="flex items-center gap-3">
           <UserCheck size={20} className="text-emerald-400" />
           <div>
-            <h1 className="text-xl font-bold text-slate-100">Muster Report</h1>
-            <p className="text-[10px] text-slate-500 mt-0.5">Zone occupancy tracking and evacuation accountability</p>
+            <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">Muster Report</h1>
+            <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">Zone occupancy tracking and evacuation accountability</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {musterActive ? (
-            <button
-              onClick={handleEndMuster}
-              className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-[11px] font-semibold hover:bg-slate-600 transition-colors border border-slate-500"
-            >
+            <Button variant="outline" size="sm" onClick={handleEndMuster}>
               End Muster
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={handleStartMuster}
-              className="px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-[11px] font-semibold hover:bg-emerald-600 transition-colors"
-            >
+            <Button size="sm" onClick={handleStartMuster} className="bg-emerald-700 hover:bg-emerald-600 text-white">
               Start Muster
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -113,22 +110,28 @@ export default function Muster() {
 
       {/* Summary cards */}
       <div className="shrink-0 grid grid-cols-3 gap-3">
-        <div className="bg-[#0a0d14] border border-[#1e293b] rounded-lg px-4 py-3">
-          <div className="text-[9px] uppercase tracking-wider text-slate-600 mb-1">Total Zones</div>
-          <div className="text-2xl font-bold text-slate-200">{zones.length}</div>
-        </div>
-        <div className="bg-[#0a0d14] border border-[#1e293b] rounded-lg px-4 py-3">
-          <div className="text-[9px] uppercase tracking-wider text-slate-600 mb-1">Occupied Zones</div>
-          <div className={`text-2xl font-bold ${zonesWithPeople > 0 && musterActive ? 'text-amber-400' : 'text-slate-200'}`}>
-            {zonesWithPeople}
-          </div>
-        </div>
-        <div className="bg-[#0a0d14] border border-[#1e293b] rounded-lg px-4 py-3">
-          <div className="text-[9px] uppercase tracking-wider text-slate-600 mb-1">People Inside</div>
-          <div className={`text-2xl font-bold ${totalInside > 0 && musterActive ? 'text-red-400' : 'text-slate-200'}`}>
-            {totalInside}
-          </div>
-        </div>
+        <Card>
+          <CardContent className="px-4 py-3">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Total Zones</div>
+            <div className="text-2xl font-bold text-[hsl(var(--foreground))]">{zones.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="px-4 py-3">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Occupied Zones</div>
+            <div className={`text-2xl font-bold ${zonesWithPeople > 0 && musterActive ? 'text-amber-400' : 'text-[hsl(var(--foreground))]'}`}>
+              {zonesWithPeople}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="px-4 py-3">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">People Inside</div>
+            <div className={`text-2xl font-bold ${totalInside > 0 && musterActive ? 'text-red-400' : 'text-[hsl(var(--foreground))]'}`}>
+              {totalInside}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Zone grid by site */}
@@ -139,7 +142,7 @@ export default function Muster() {
 
           return (
             <div key={site.id}>
-              <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
+              <div className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold mb-2">
                 {site.name}
               </div>
               <div className="grid gap-2">
@@ -162,15 +165,18 @@ export default function Muster() {
                         onClick={() => count > 0 && toggleExpand(zone.id)}
                         disabled={count === 0}
                       >
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${
-                          zone.type === 'Restricted' || zone.type === 'Secure'
-                            ? 'text-red-300 border-red-800/50 bg-red-900/20'
-                            : zone.type === 'Perimeter'
-                              ? 'text-blue-300 border-blue-800/50 bg-blue-900/20'
-                              : 'text-slate-400 border-slate-700/50 bg-slate-800/20'
-                        }`}>
+                        <Badge
+                          variant={
+                            zone.type === 'Restricted' || zone.type === 'Secure'
+                              ? 'destructive'
+                              : zone.type === 'Perimeter'
+                                ? 'info'
+                                : 'secondary'
+                          }
+                          className="text-[9px]"
+                        >
                           {zone.type}
-                        </span>
+                        </Badge>
 
                         <span className={`flex-1 text-[12px] font-medium ${isAlert ? 'text-amber-200' : 'text-slate-200'}`}>
                           {zone.name}

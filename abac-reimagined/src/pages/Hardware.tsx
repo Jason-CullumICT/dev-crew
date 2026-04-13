@@ -6,53 +6,36 @@ import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
 import DeviceModal from '../modals/DeviceModal'
 import type { InputDevice, OutputDevice, DeviceStatus } from '../types'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
 
 type AnyDevice = (InputDevice & { io: 'Input' }) | (OutputDevice & { io: 'Output' })
 
 const GRID_COLS = '2fr 60px 1fr 1.5fr 1.5fr 1.5fr 60px 1fr 80px'
 
 function StatusBadge({ status }: { status: DeviceStatus }) {
-  if (status === 'online') {
-    return (
-      <span className="flex items-center gap-1">
-        <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-        <span className="text-[10px] text-green-400">online</span>
-      </span>
-    )
-  }
-  if (status === 'offline') {
-    return (
-      <span className="flex items-center gap-1">
-        <span className="w-2 h-2 rounded-full bg-red-500 shrink-0 animate-pulse" />
-        <span className="text-[10px] text-red-400">offline</span>
-      </span>
-    )
-  }
-  if (status === 'tamper') {
-    return (
-      <span className="flex items-center gap-1">
-        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse" />
-        <span className="text-[10px] text-amber-400">tamper</span>
-      </span>
-    )
-  }
-  if (status === 'fault') {
-    return (
-      <span className="flex items-center gap-1">
-        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse" />
-        <span className="text-[10px] text-amber-400">fault</span>
-      </span>
-    )
-  }
-  if (status === 'low_battery') {
-    return (
-      <span className="flex items-center gap-1">
-        <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-        <span className="text-[10px] text-amber-300">low_battery</span>
-      </span>
-    )
-  }
-  return <span className="text-[10px] text-slate-600">{status}</span>
+  const dotClass = {
+    online:      'bg-emerald-500',
+    offline:     'bg-red-500 animate-pulse',
+    tamper:      'bg-amber-500 animate-pulse',
+    fault:       'bg-amber-500 animate-pulse',
+    low_battery: 'bg-amber-400',
+  }[status] ?? 'bg-[hsl(var(--muted-foreground))]'
+
+  const textClass = {
+    online:      'text-emerald-400',
+    offline:     'text-red-400',
+    tamper:      'text-amber-400',
+    fault:       'text-amber-400',
+    low_battery: 'text-amber-300',
+  }[status] ?? 'text-[hsl(var(--muted-foreground))]'
+
+  return (
+    <span className="flex items-center gap-1">
+      <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass}`} />
+      <span className={`text-[10px] ${textClass}`}>{status}</span>
+    </span>
+  )
 }
 
 export default function Hardware() {
@@ -68,7 +51,6 @@ export default function Hardware() {
   const [editingDevice, setEditingDevice] = useState<AnyDevice | null | 'new-input' | 'new-output'>(null)
   const [pendingDelete, setPendingDelete] = useState<AnyDevice | null>(null)
 
-  // Combine devices into unified list
   const combined = useMemo<AnyDevice[]>(() => {
     const inputs:  AnyDevice[] = inputDevices.map(d  => ({ ...d, io: 'Input'  as const }))
     const outputs: AnyDevice[] = outputDevices.map(d => ({ ...d, io: 'Output' as const }))
@@ -108,28 +90,29 @@ export default function Hardware() {
   }
 
   return (
-    <div className="p-6 space-y-4 flex flex-col h-full overflow-hidden">
+    <div className="p-6 space-y-4 flex flex-col h-full overflow-hidden bg-[hsl(var(--background))]">
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-slate-100">Hardware</h1>
-          <span className="px-2 py-0.5 rounded-full bg-[#111827] border border-[#1e293b] text-[10px] text-slate-400 font-semibold">
+          <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Hardware</h1>
+          <Badge variant="secondary" className="text-xs font-semibold">
             {combined.length.toLocaleString()} devices
-          </span>
+          </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setEditingDevice('new-input')}
-            className="px-3 py-1.5 rounded-lg bg-[#111827] border border-[#1e293b] text-white text-[11px] font-semibold hover:bg-[#1a2035] transition-colors"
           >
             + Input
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={() => setEditingDevice('new-output')}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
           >
             + Output
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -146,7 +129,7 @@ export default function Hardware() {
 
       {/* Table header */}
       <div
-        className="shrink-0 grid text-[9px] uppercase tracking-wider text-slate-600 font-semibold px-3 py-1.5"
+        className="shrink-0 grid text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold px-3 py-1.5 border-b border-[hsl(var(--border))]"
         style={{ gridTemplateColumns: GRID_COLS }}
       >
         <span>Name</span>
@@ -172,7 +155,7 @@ export default function Hardware() {
             return (
               <div
                 key={`${device.io}-${device.id}`}
-                className="grid items-center px-3 border-b border-[#0d1221] hover:bg-[#0a0d18] transition-colors text-[11px]"
+                className="grid items-center px-3 border-b border-[hsl(var(--border))]/50 hover:bg-[hsl(var(--accent))] transition-colors text-[11px]"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -183,35 +166,38 @@ export default function Hardware() {
                   gridTemplateColumns: GRID_COLS,
                 }}
               >
-                <span className="text-slate-200 font-medium truncate pr-2">{device.name}</span>
-                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border w-fit ${
-                  device.io === 'Input'
-                    ? 'text-blue-300 border-blue-800/50 bg-blue-900/20'
-                    : 'text-violet-300 border-violet-800/50 bg-violet-900/20'
-                }`}>
+                <span className="text-[hsl(var(--foreground))] font-medium truncate pr-2">{device.name}</span>
+                <Badge
+                  variant={device.io === 'Input' ? 'info' : 'violet'}
+                  className="text-[9px] w-fit"
+                >
                   {device.io}
-                </span>
-                <span className="text-slate-400 truncate pr-2">{device.type.replace(/_/g, ' ')}</span>
-                <span className="text-slate-400 truncate pr-2">{door?.name ?? '—'}</span>
-                <span className="text-slate-500 truncate pr-2">{site?.name ?? '—'}</span>
-                <span className="text-slate-500 truncate pr-2">{controller?.name ?? '—'}</span>
-                <span className="text-center text-slate-500">{device.port}</span>
+                </Badge>
+                <span className="text-[hsl(var(--muted-foreground))] truncate pr-2">{device.type.replace(/_/g, ' ')}</span>
+                <span className="text-[hsl(var(--muted-foreground))] truncate pr-2">{door?.name ?? '—'}</span>
+                <span className="text-[hsl(var(--muted-foreground))]/70 truncate pr-2">{site?.name ?? '—'}</span>
+                <span className="text-[hsl(var(--muted-foreground))]/70 truncate pr-2">{controller?.name ?? '—'}</span>
+                <span className="text-center text-[hsl(var(--muted-foreground))]">{device.port}</span>
                 <StatusBadge status={device.status} />
                 <div className="flex items-center justify-end gap-1">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setEditingDevice(device)}
                     aria-label="Edit"
-                    className="p-1.5 rounded text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                    className="h-6 w-6 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
                   >
                     <Pencil size={11} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setPendingDelete(device)}
                     aria-label="Delete"
-                    className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="h-6 w-6 text-[hsl(var(--muted-foreground))] hover:text-red-400"
                   >
                     <Trash2 size={11} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )
@@ -219,7 +205,7 @@ export default function Hardware() {
         </div>
 
         {filtered.length === 0 && (
-          <p className="text-[12px] text-slate-600 py-8 text-center">
+          <p className="text-sm text-[hsl(var(--muted-foreground))] py-8 text-center">
             {search ? 'No devices match your search.' : 'No hardware devices configured.'}
           </p>
         )}

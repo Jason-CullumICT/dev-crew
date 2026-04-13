@@ -258,7 +258,7 @@ export default function SystemHealth() {
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <HeartPulse size={18} className={hasCritical ? 'text-red-400' : 'text-emerald-400'} />
-          <h1 className="text-xl font-bold text-slate-100">System Health</h1>
+          <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">System Health</h1>
         </div>
         {hasCritical && (
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] text-red-400">

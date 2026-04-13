@@ -5,6 +5,8 @@ import SeverityBar from '../components/SeverityBar'
 import EventFeed from '../components/EventFeed'
 import AlarmCard from '../components/AlarmCard'
 import ScenarioPanel from './ScenarioPanel'
+import { Button } from '../ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import type { Alarm } from '../types'
 
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 }
@@ -25,7 +27,7 @@ export default function Monitor() {
   const activeAlarms = sortAlarms(alarms.filter(a => a.state !== 'cleared'))
 
   return (
-    <div className="h-full flex flex-col p-4 gap-4 overflow-hidden">
+    <div className="h-full flex flex-col p-4 gap-4 overflow-hidden bg-[hsl(var(--background))]">
       {/* Top: Severity summary bar */}
       <div className="shrink-0">
         <SeverityBar />
@@ -34,41 +36,47 @@ export default function Monitor() {
       {/* Main: Event feed + Alarm queue */}
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Left 2/3: Event Feed */}
-        <div className="flex-[2] bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 flex flex-col min-h-0">
-          <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-3 shrink-0">
-            Event Stream
-          </div>
-          <EventFeed />
-        </div>
+        <Card className="flex-[2] flex flex-col min-h-0">
+          <CardHeader className="pb-2 shrink-0">
+            <CardTitle className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">
+              Event Stream
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 min-h-0 overflow-hidden">
+            <EventFeed />
+          </CardContent>
+        </Card>
 
         {/* Right 1/3: Alarm Queue */}
-        <div className="flex-1 bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 flex flex-col min-h-0">
-          <div className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold mb-3 shrink-0">
-            Alarm Queue
-            {activeAlarms.length > 0 && (
-              <span className="ml-2 text-red-400">{activeAlarms.length}</span>
-            )}
-          </div>
-          <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+        <Card className="flex-1 flex flex-col min-h-0">
+          <CardHeader className="pb-2 shrink-0">
+            <CardTitle className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold flex items-center gap-2">
+              Alarm Queue
+              {activeAlarms.length > 0 && (
+                <span className="text-red-400">{activeAlarms.length}</span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto space-y-2 min-h-0">
             {activeAlarms.length === 0 ? (
-              <p className="text-[11px] text-slate-600">No active alarms.</p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">No active alarms.</p>
             ) : (
               activeAlarms.map(alarm => (
                 <AlarmCard key={alarm.id} alarm={alarm} />
               ))
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* FAB — bottom right */}
-      <button
+      <Button
         onClick={() => setPanelOpen(true)}
         title="Open Scenario Panel"
-        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 transition-colors z-40"
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full shadow-lg z-40 p-0"
       >
-        <Zap size={20} className="text-white" />
-      </button>
+        <Zap size={20} />
+      </Button>
 
       {/* Scenario slide-out */}
       {panelOpen && <ScenarioPanel onClose={() => setPanelOpen(false)} />}

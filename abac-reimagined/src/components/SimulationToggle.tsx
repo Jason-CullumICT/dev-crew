@@ -1,4 +1,5 @@
 import { useStore } from '../store/store'
+import { Button } from '../ui/button'
 
 export default function SimulationToggle() {
   const speed    = useStore(s => s.simulationSpeed)
@@ -18,35 +19,36 @@ export default function SimulationToggle() {
   return (
     <div className="flex items-center gap-1.5">
       {/* Play / Pause button */}
-      <button
+      <Button
+        variant="outline"
+        size="icon"
         onClick={togglePlay}
         title={isRunning ? 'Pause simulation' : 'Start simulation'}
-        className="w-[26px] h-[26px] rounded-md flex items-center justify-center border transition-colors
-          border-[#1e293b] bg-[#0b0f1a] hover:border-slate-600 text-slate-400 hover:text-slate-200"
+        className="w-7 h-7"
       >
         {isRunning ? (
-          /* Pause icon */
           <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
             <rect x="1.5" y="1" width="2.5" height="8" rx="0.5" />
             <rect x="6"   y="1" width="2.5" height="8" rx="0.5" />
           </svg>
         ) : (
-          /* Play icon */
           <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
             <path d="M2 1.5 L9 5 L2 8.5 Z" />
           </svg>
         )}
-      </button>
+      </Button>
 
       {/* Speed toggle — only shown when running */}
       {isRunning && (
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={toggleSpeed}
           title={`Speed: ${speed}x — click to toggle`}
-          className="text-[9px] font-semibold px-1.5 py-0.5 rounded border border-[#1e293b] bg-[#0b0f1a] text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-colors"
+          className="h-7 px-1.5 text-[9px] font-semibold"
         >
           {speed}x
-        </button>
+        </Button>
       )}
 
       {/* LIVE indicator */}

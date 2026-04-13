@@ -7,6 +7,8 @@ import DoorModal from '../modals/DoorModal'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { Door } from '../types'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
 
 export default function Doors() {
   const doors      = useStore(s => s.doors)
@@ -37,7 +39,7 @@ export default function Doors() {
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 60, // px — accounts for gap between cards
+    estimateSize: () => 60,
     overscan: 10,
   })
 
@@ -49,21 +51,18 @@ export default function Doors() {
   }
 
   return (
-    <div className="p-6 space-y-4 flex flex-col h-full overflow-hidden">
+    <div className="p-6 space-y-4 flex flex-col h-full overflow-hidden bg-[hsl(var(--background))]">
       <div className="flex items-center justify-between shrink-0">
-        <h1 className="text-xl font-bold text-slate-100">Doors</h1>
+        <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Doors</h1>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-slate-600">{doors.length} doors</span>
-          <button
-            onClick={() => setEditing('new')}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
-          >
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">{doors.length} doors</span>
+          <Button size="sm" onClick={() => setEditing('new')}>
             + New
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="shrink-0">
+      <div className="shrink-0 space-y-2">
         <SearchBar
           value={search}
           onChange={setSearch}
@@ -72,27 +71,20 @@ export default function Doors() {
           totalCount={doors.length}
         />
         {/* Zone color legend */}
-        <div className="mt-2 flex items-center gap-4 text-[9px] text-slate-600 flex-wrap">
+        <div className="flex items-center gap-4 text-[9px] text-[hsl(var(--muted-foreground))] flex-wrap">
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-red-900/80 border border-red-900" />
+            <span className="inline-block w-2 h-2 rounded-full bg-red-500/40 border border-red-500/40" />
             <span>Red border = Restricted / Secure zone</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#1e293b] border border-[#1e293b]" />
+            <span className="inline-block w-2 h-2 rounded-full bg-[hsl(var(--border))] border border-[hsl(var(--border))]" />
             <span>Default = Perimeter / Interior / Public</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-red-300 font-semibold">Red name</span>
-            <span>= door in restricted/secure zone</span>
           </div>
         </div>
       </div>
 
-      {/* Virtual scroll container — single-column for simplicity with virtualizer */}
-      <div
-        ref={parentRef}
-        className="flex-1 overflow-y-auto min-h-0"
-      >
+      {/* Virtual scroll container */}
+      <div ref={parentRef} className="flex-1 overflow-y-auto min-h-0">
         <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
           {rowVirtualizer.getVirtualItems().map(virtualRow => {
             const door = filtered[virtualRow.index]
@@ -111,51 +103,59 @@ export default function Doors() {
                   paddingBottom: '8px',
                 }}
               >
-                <div className={`bg-[#0a0d14] border rounded-lg px-4 py-3 flex items-center gap-3 ${isRestricted ? 'border-red-900/40' : 'border-[#1e293b]'}`}>
+                <div className={`bg-[hsl(var(--card))] border rounded-lg px-4 py-3 flex items-center gap-3 ${isRestricted ? 'border-red-500/40' : 'border-[hsl(var(--border))]'}`}>
                   <span className="text-[18px] shrink-0">🚪</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-[12px] font-semibold ${isRestricted ? 'text-red-300' : 'text-slate-200'}`}>{door.name}</span>
+                      <span className={`text-sm font-semibold ${isRestricted ? 'text-red-400' : 'text-[hsl(var(--foreground))]'}`}>
+                        {door.name}
+                      </span>
                       {door.isElevator && (
-                        <span
-                          title="Elevator door — floor access controlled by zone grants"
-                          className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-[8px] text-cyan-400 font-semibold"
-                        >
+                        <Badge variant="info" className="text-[8px] px-1 py-0 flex items-center gap-0.5">
                           <ArrowUpDown size={8} />
                           LIFT
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                    <div className="text-[10px] text-slate-600">{site?.name} {zone ? `· ${zone.name} (${zone.type})` : ''}</div>
+                    <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {site?.name} {zone ? `· ${zone.name} (${zone.type})` : ''}
+                    </div>
                   </div>
-                  <Link
-                    to={`/doors/${door.id}`}
-                    aria-label="Configure"
-                    className="p-1.5 rounded text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-cyan-400"
                   >
-                    <Settings2 size={12} />
-                  </Link>
-                  <button
+                    <Link to={`/doors/${door.id}`} aria-label="Configure">
+                      <Settings2 size={12} />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setEditing(door)}
                     aria-label="Edit"
-                    className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                    className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
                   >
                     <Pencil size={12} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setPendingDelete(door)}
                     aria-label="Delete"
-                    className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-red-400"
                   >
                     <Trash2 size={12} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )
           })}
         </div>
         {filtered.length === 0 && (
-          <p className="text-[12px] text-slate-600 py-4">
+          <p className="text-sm text-[hsl(var(--muted-foreground))] py-4">
             {search ? 'No doors match your search.' : 'No doors yet. Click + New to create one.'}
           </p>
         )}

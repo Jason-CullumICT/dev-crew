@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { useStore } from '../store/store'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { Button } from '../ui/button'
 import type {
   ResponseRule,
   ResponseAction,
@@ -514,17 +515,14 @@ export default function Rules() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#141828] shrink-0">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[hsl(var(--border))] shrink-0">
         <SearchBar value={query} onChange={setQuery} placeholder="Search rules..." />
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-[10px] text-slate-600">{filtered.length} rules</span>
-          <button
-            onClick={() => setEditing(emptyRule())}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-[11px] text-white font-medium transition-colors"
-          >
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">{filtered.length} rules</span>
+          <Button size="sm" onClick={() => setEditing(emptyRule())} className="gap-1.5">
             <Plus size={12} />
             New Rule
-          </button>
+          </Button>
         </div>
       </div>
 

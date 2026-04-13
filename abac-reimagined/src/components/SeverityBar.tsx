@@ -1,5 +1,6 @@
 import { useStore } from '../store/store'
 import type { Alarm } from '../types'
+import { Card, CardContent } from '../ui/card'
 
 function countActive(alarms: Alarm[], severity: string): number {
   return alarms.filter(a => a.state !== 'cleared' && a.severity === severity).length
@@ -19,40 +20,50 @@ export default function SeverityBar() {
   return (
     <div className="grid grid-cols-4 gap-3">
       {/* Critical */}
-      <div className="bg-[#0f1320] border border-red-500/40 rounded-xl p-3 flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Critical</div>
-          <div className="text-xl font-bold text-red-400">{critical}</div>
-        </div>
-      </div>
+      <Card className="border-red-500/40">
+        <CardContent className="p-3 flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Critical</div>
+            <div className="text-xl font-bold text-red-400">{critical}</div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Warning */}
-      <div className="bg-[#0f1320] border border-amber-500/40 rounded-xl p-3 flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Warning</div>
-          <div className="text-xl font-bold text-amber-400">{warning}</div>
-        </div>
-      </div>
+      <Card className="border-amber-500/40">
+        <CardContent className="p-3 flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Warning</div>
+            <div className="text-xl font-bold text-amber-400">{warning}</div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Info */}
-      <div className="bg-[#0f1320] border border-blue-500/40 rounded-xl p-3 flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Info</div>
-          <div className="text-xl font-bold text-blue-400">{info}</div>
-        </div>
-      </div>
+      <Card className="border-blue-500/40">
+        <CardContent className="p-3 flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Info</div>
+            <div className="text-xl font-bold text-blue-400">{info}</div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Sites OK */}
-      <div className="bg-[#0f1320] border border-emerald-500/40 rounded-xl p-3 flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Sites OK</div>
-          <div className="text-xl font-bold text-emerald-400">{ok}<span className="text-[12px] text-slate-500">/{total}</span></div>
-        </div>
-      </div>
+      <Card className="border-emerald-500/40">
+        <CardContent className="p-3 flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Sites OK</div>
+            <div className="text-xl font-bold text-emerald-400">
+              {ok}<span className="text-[12px] text-[hsl(var(--muted-foreground))]">/{total}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

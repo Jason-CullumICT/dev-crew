@@ -5,19 +5,21 @@ import ZoneModal from '../modals/ZoneModal'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { Zone, ZoneType, ZoneStatus } from '../types'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
 
-const TYPE_CLASS: Record<ZoneType, string> = {
-  Perimeter:  'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  Interior:   'bg-slate-700 text-slate-400 border-slate-600',
-  Restricted: 'bg-red-500/10 text-red-400 border-red-500/20',
-  Public:     'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  Secure:     'bg-purple-500/10 text-purple-400 border-purple-500/20',
+const TYPE_VARIANT: Record<ZoneType, 'info' | 'secondary' | 'destructive' | 'success' | 'violet'> = {
+  Perimeter:  'info',
+  Interior:   'secondary',
+  Restricted: 'destructive',
+  Public:     'success',
+  Secure:     'violet',
 }
 
-const STATUS_CLASS: Record<ZoneStatus, string> = {
-  Armed:    'bg-red-500/10 text-red-400 border-red-500/20',
-  Disarmed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  Alarm:    'bg-red-600/20 text-red-300 border-red-600/30',
+const STATUS_VARIANT: Record<ZoneStatus, 'destructive' | 'success' | 'outline'> = {
+  Armed:    'destructive',
+  Disarmed: 'success',
+  Alarm:    'destructive',
 }
 
 export default function Zones() {
@@ -55,17 +57,14 @@ export default function Zones() {
   const cascadeDetails = pendingDelete ? getCascadeDetails(pendingDelete) : []
 
   return (
-    <div className="p-6 space-y-4 overflow-y-auto h-full">
+    <div className="p-6 space-y-4 overflow-y-auto h-full bg-[hsl(var(--background))]">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-100">Zones</h1>
+        <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Zones</h1>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-slate-600">{zones.length} zones</span>
-          <button
-            onClick={() => setEditing('new')}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
-          >
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">{zones.length} zones</span>
+          <Button size="sm" onClick={() => setEditing('new')}>
             + New
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -78,7 +77,7 @@ export default function Zones() {
       />
 
       {filtered.length === 0 && (
-        <p className="text-[12px] text-slate-600">
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">
           {search ? 'No zones match your search.' : 'No zones yet. Click + New to create one.'}
         </p>
       )}
@@ -87,27 +86,31 @@ export default function Zones() {
         {filtered.map(zone => {
           const site = sites.find(s => s.id === zone.siteId)
           return (
-            <div key={zone.id} className="bg-[#0f1320] border border-[#1e293b] rounded-lg px-4 py-3 flex items-center gap-3">
+            <div key={zone.id} className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg px-4 py-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-semibold text-slate-100">{zone.name}</div>
-                <div className="text-[10px] text-slate-500">{site?.name ?? zone.siteId}</div>
+                <div className="text-sm font-semibold text-[hsl(var(--foreground))]">{zone.name}</div>
+                <div className="text-xs text-[hsl(var(--muted-foreground))]">{site?.name ?? zone.siteId}</div>
               </div>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${TYPE_CLASS[zone.type]}`}>{zone.type}</span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${STATUS_CLASS[zone.status]}`}>{zone.status}</span>
-              <button
+              <Badge variant={TYPE_VARIANT[zone.type]} className="text-[9px]">{zone.type}</Badge>
+              <Badge variant={STATUS_VARIANT[zone.status]} className="text-[9px]">{zone.status}</Badge>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setEditing(zone)}
                 aria-label="Edit"
-                className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
               >
                 <Pencil size={12} />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setPendingDelete(zone)}
                 aria-label="Delete"
-                className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-red-400"
               >
                 <Trash2 size={12} />
-              </button>
+              </Button>
             </div>
           )
         })}

@@ -5,6 +5,9 @@ import PolicyModal from '../modals/PolicyModal'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { Policy } from '../types'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
 
 export default function Policies() {
   const policies     = useStore(s => s.policies)
@@ -30,17 +33,14 @@ export default function Policies() {
   }
 
   return (
-    <div className="p-6 space-y-4 overflow-y-auto h-full">
+    <div className="p-6 space-y-4 overflow-y-auto h-full bg-[hsl(var(--background))]">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-100">Policies</h1>
+        <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Policies</h1>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-slate-600">{policies.length} policies</span>
-          <button
-            onClick={() => setEditing('new')}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
-          >
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">{policies.length} policies</span>
+          <Button size="sm" onClick={() => setEditing('new')}>
             + New
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -56,7 +56,6 @@ export default function Policies() {
         {filtered.map(policy => {
           const schedule = policy.scheduleId ? schedules.find(s => s.id === policy.scheduleId) : null
 
-          // Build a compact rule summary string (max 2 rules shown inline, then "…")
           const ruleSummaryParts = policy.rules.map(r => {
             const rhs = Array.isArray(r.rightSide) ? r.rightSide.join(', ') : r.rightSide
             return `${r.leftSide} ${r.operator} '${rhs}'`
@@ -67,65 +66,77 @@ export default function Policies() {
             : ruleSummaryParts.slice(0, 2).join(logicSep) + ` ${policy.logicalOperator} …`
 
           return (
-            <div key={policy.id} className="bg-[#0f1320] border border-[#1e293b] rounded-lg p-4 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="text-[13px] font-bold text-slate-100">{policy.name}</div>
-                    {/* AND/OR logic operator badge */}
-                    {policy.rules.length > 1 && (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded border font-bold ${
-                        policy.logicalOperator === 'AND'
-                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/25'
-                          : 'bg-orange-500/10 text-orange-400 border-orange-500/25'
-                      }`}>{policy.logicalOperator}</span>
+            <Card key={policy.id}>
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CardTitle className="text-sm">{policy.name}</CardTitle>
+                      {policy.rules.length > 1 && (
+                        <Badge
+                          variant={policy.logicalOperator === 'AND' ? 'info' : 'warning'}
+                          className="text-[9px]"
+                        >
+                          {policy.logicalOperator}
+                        </Badge>
+                      )}
+                    </div>
+                    {policy.rules.length > 0 && (
+                      <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1 font-mono truncate" title={ruleSummaryParts.join(logicSep)}>
+                        {ruleSummary}
+                      </div>
+                    )}
+                    {policy.description && (
+                      <div className="text-[10px] text-[hsl(var(--muted-foreground))]/70 mt-0.5 truncate">{policy.description}</div>
                     )}
                   </div>
-                  {/* Rule summary */}
-                  {policy.rules.length > 0 && (
-                    <div className="text-[10px] text-slate-500 mt-1 font-mono truncate" title={ruleSummaryParts.join(logicSep)}>
-                      {ruleSummary}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-[hsl(var(--muted-foreground))]">{policy.rules.length} rule{policy.rules.length !== 1 ? 's' : ''}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditing(policy)}
+                      aria-label="Edit"
+                      className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
+                    >
+                      <Pencil size={12} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setPendingDelete(policy)}
+                      aria-label="Delete"
+                      className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+
+              {(policy.doorIds.length > 0 || schedule) && (
+                <CardContent className="space-y-2">
+                  {policy.doorIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {policy.doorIds.map(id => (
+                        <Badge key={id} variant="secondary" className="text-[9px]">
+                          🚪 {doors.find(d => d.id === id)?.name ?? id}
+                        </Badge>
+                      ))}
                     </div>
                   )}
-                  {policy.description && (
-                    <div className="text-[10px] text-slate-600 mt-0.5 truncate">{policy.description}</div>
+                  {schedule && (
+                    <Badge variant="outline" className="text-[9px] text-teal-400 border-teal-500/30">
+                      {schedule.name}
+                    </Badge>
                   )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[9px] text-slate-600">{policy.rules.length} rule{policy.rules.length !== 1 ? 's' : ''}</span>
-                  <button
-                    onClick={() => setEditing(policy)}
-                    aria-label="Edit"
-                    className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  <button
-                    onClick={() => setPendingDelete(policy)}
-                    aria-label="Delete"
-                    className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
-              {policy.doorIds.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {policy.doorIds.map(id => (
-                    <span key={id} className="text-[9px] bg-[#111827] border border-[#1e293b] text-slate-500 px-1.5 py-0.5 rounded">
-                      &#x1F6AA; {doors.find(d => d.id === id)?.name ?? id}
-                    </span>
-                  ))}
-                </div>
+                </CardContent>
               )}
-              {schedule && (
-                <span className="text-[9px] bg-[#07100e] border border-[#134e4a] text-teal-400 px-1.5 py-0.5 rounded inline-block">{schedule.name}</span>
-              )}
-            </div>
+            </Card>
           )
         })}
         {filtered.length === 0 && (
-          <p className="text-[12px] text-slate-600">
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
             {search ? 'No policies match your search.' : 'No policies yet. Click + New to create one.'}
           </p>
         )}

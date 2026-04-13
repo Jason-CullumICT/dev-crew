@@ -1,34 +1,23 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+// Design system is now permanently shadcn. This file is kept as a no-op
+// to avoid breaking any remaining imports during migration cleanup.
 
-type DesignSystem = 'classic' | 'shadcn'
+import { createContext, useContext, type ReactNode } from 'react'
 
 interface DesignSystemContextValue {
-  designSystem: DesignSystem
-  setDesignSystem: (ds: DesignSystem) => void
+  designSystem: 'shadcn'
+  setDesignSystem: () => void
   toggle: () => void
 }
 
 const Ctx = createContext<DesignSystemContextValue>({
-  designSystem: 'classic',
+  designSystem: 'shadcn',
   setDesignSystem: () => {},
   toggle: () => {},
 })
 
 export function DesignSystemProvider({ children }: { children: ReactNode }) {
-  const [designSystem, setDesignSystem] = useState<DesignSystem>(
-    () => (localStorage.getItem('axon-design-system') as DesignSystem) ?? 'classic'
-  )
-
-  function toggle() {
-    setDesignSystem(prev => {
-      const next = prev === 'classic' ? 'shadcn' : 'classic'
-      localStorage.setItem('axon-design-system', next)
-      return next
-    })
-  }
-
   return (
-    <Ctx.Provider value={{ designSystem, setDesignSystem, toggle }}>
+    <Ctx.Provider value={{ designSystem: 'shadcn', setDesignSystem: () => {}, toggle: () => {} }}>
       {children}
     </Ctx.Provider>
   )

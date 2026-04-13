@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useStore } from '../store/store'
 import { processEventForAlarm } from '../engine/alarmEngine'
 import type { SecurityEvent, EventSeverity, SecurityEventType } from '../types'
+import { Button } from '../ui/button'
 
 interface Props {
   onClose: () => void
@@ -259,12 +260,9 @@ export default function ScenarioPanel({ onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e293b] shrink-0">
           <span className="text-[12px] font-semibold text-slate-200">Scenario Panel</span>
-          <button
-            onClick={onClose}
-            className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] transition-colors"
-          >
+          <Button variant="ghost" size="icon" onClick={onClose} className="w-6 h-6 text-slate-500 hover:text-slate-200 hover:bg-white/[0.06]">
             <X size={14} />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -385,12 +383,9 @@ export default function ScenarioPanel({ onClose }: Props) {
               </select>
             </div>
 
-            <button
-              onClick={triggerCustom}
-              className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition-colors"
-            >
+            <Button onClick={triggerCustom} className="w-full">
               Trigger Event
-            </button>
+            </Button>
           </div>
         </div>
       </div>

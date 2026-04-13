@@ -5,19 +5,22 @@ import SiteModal from '../modals/SiteModal'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { Site, SiteStatus, ZoneStatus } from '../types'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
 
-const SITE_STATUS_CLASS: Record<SiteStatus, string> = {
-  Disarmed:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  Armed:      'bg-red-500/10 text-red-400 border-red-500/20',
-  PartialArm: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  Alarm:      'bg-red-600/20 text-red-300 border-red-600/30',
-  Lockdown:   'bg-purple-500/10 text-purple-400 border-purple-500/20',
+const SITE_STATUS_VARIANT: Record<SiteStatus, 'success' | 'destructive' | 'warning' | 'violet' | 'outline'> = {
+  Disarmed:   'success',
+  Armed:      'destructive',
+  PartialArm: 'warning',
+  Alarm:      'destructive',
+  Lockdown:   'violet',
 }
 
-const ZONE_STATUS_CLASS: Record<ZoneStatus, string> = {
-  Armed:    'bg-red-500/10 text-red-400 border-red-500/20',
-  Disarmed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  Alarm:    'bg-red-600/20 text-red-300 border-red-600/30',
+const ZONE_STATUS_VARIANT: Record<ZoneStatus, 'destructive' | 'success' | 'outline'> = {
+  Armed:    'destructive',
+  Disarmed: 'success',
+  Alarm:    'destructive',
 }
 
 export default function Sites() {
@@ -59,17 +62,14 @@ export default function Sites() {
   const cascadeDetails = pendingDelete ? getCascadeDetails(pendingDelete) : []
 
   return (
-    <div className="p-6 space-y-4 overflow-y-auto h-full">
+    <div className="p-6 space-y-4 overflow-y-auto h-full bg-[hsl(var(--background))]">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-100">Sites & Zones</h1>
+        <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Sites & Zones</h1>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-slate-600">{sites.length} sites</span>
-          <button
-            onClick={() => setEditing('new')}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
-          >
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">{sites.length} sites</span>
+          <Button size="sm" onClick={() => setEditing('new')}>
             + New
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -82,7 +82,7 @@ export default function Sites() {
       />
 
       {filtered.length === 0 && (
-        <p className="text-[12px] text-slate-600">
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">
           {search ? 'No sites match your search.' : 'No sites yet. Click + New to create one.'}
         </p>
       )}
@@ -91,44 +91,57 @@ export default function Sites() {
         {filtered.map(site => {
           const siteZones = zones.filter(z => z.siteId === site.id)
           return (
-            <div key={site.id} className="bg-[#0f1320] border border-[#1e293b] rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[13px] font-bold text-slate-100">{site.name}</div>
-                  <div className="text-[10px] text-slate-500">{site.address}</div>
+            <Card key={site.id}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm">{site.name}</CardTitle>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{site.address}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={SITE_STATUS_VARIANT[site.status]} className="text-[9px]">
+                      {site.status}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditing(site)}
+                      aria-label="Edit"
+                      className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
+                    >
+                      <Pencil size={12} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setPendingDelete(site)}
+                      aria-label="Delete"
+                      className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[9px] px-2 py-0.5 rounded border font-bold ${SITE_STATUS_CLASS[site.status]}`}>{site.status}</span>
-                  <button
-                    onClick={() => setEditing(site)}
-                    aria-label="Edit"
-                    className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  <button
-                    onClick={() => setPendingDelete(site)}
-                    aria-label="Delete"
-                    className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
+              </CardHeader>
+
               {siteZones.length > 0 && (
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {siteZones.map(zone => (
-                    <div key={zone.id} className="bg-[#080b10] border border-[#141828] rounded-lg px-3 py-2 flex items-center justify-between">
-                      <div>
-                        <div className="text-[11px] font-medium text-slate-300">{zone.name}</div>
-                        <div className="text-[9px] text-slate-600">{zone.type}</div>
+                <CardContent>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {siteZones.map(zone => (
+                      <div key={zone.id} className="bg-[hsl(var(--secondary))] border border-[hsl(var(--border))] rounded-lg px-3 py-2 flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-[hsl(var(--foreground))]">{zone.name}</div>
+                          <div className="text-[9px] text-[hsl(var(--muted-foreground))]">{zone.type}</div>
+                        </div>
+                        <Badge variant={ZONE_STATUS_VARIANT[zone.status]} className="text-[8px]">
+                          {zone.status}
+                        </Badge>
                       </div>
-                      <span className={`text-[8px] px-1.5 py-0.5 rounded border font-semibold ${ZONE_STATUS_CLASS[zone.status]}`}>{zone.status}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </CardContent>
               )}
-            </div>
+            </Card>
           )
         })}
       </div>

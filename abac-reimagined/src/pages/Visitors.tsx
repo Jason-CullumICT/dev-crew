@@ -3,15 +3,10 @@ import { UserPlus, LogIn, LogOut, Monitor, Search, X } from 'lucide-react'
 import { useStore } from '../store/store'
 import type { VisitorRegistration, VisitorStatus } from '../types'
 import VisitorModal from '../modals/VisitorModal'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
 
 // ── Status badge ─────────────────────────────────────────────────────────────
-
-const STATUS_COLORS: Record<VisitorStatus, string> = {
-  pre_registered: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  checked_in:     'bg-green-500/15 text-green-400 border-green-500/30',
-  checked_out:    'bg-slate-500/15 text-slate-400 border-slate-500/30',
-  cancelled:      'bg-red-500/15 text-red-400 border-red-500/30',
-}
 
 const STATUS_LABELS: Record<VisitorStatus, string> = {
   pre_registered: 'Pre-registered',
@@ -21,10 +16,16 @@ const STATUS_LABELS: Record<VisitorStatus, string> = {
 }
 
 function StatusBadge({ status }: { status: VisitorStatus }) {
+  const variantMap: Record<VisitorStatus, 'info' | 'success' | 'secondary' | 'destructive'> = {
+    pre_registered: 'info',
+    checked_in:     'success',
+    checked_out:    'secondary',
+    cancelled:      'destructive',
+  }
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${STATUS_COLORS[status]}`}>
+    <Badge variant={variantMap[status]} className="text-[10px]">
       {STATUS_LABELS[status]}
-    </span>
+    </Badge>
   )
 }
 
@@ -277,21 +278,24 @@ export default function Visitors() {
           </p>
         </div>
 
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setKiosk(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0d1017] border border-[#1e253a] text-[11px] text-slate-300 hover:border-indigo-500/50 transition-colors"
+          className="gap-1.5"
         >
           <Monitor size={13} />
           Kiosk Mode
-        </button>
+        </Button>
 
-        <button
+        <Button
+          size="sm"
           onClick={() => setModalReg(null)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-medium hover:bg-indigo-500 transition-colors"
+          className="gap-1.5"
         >
           <UserPlus size={13} />
           New Registration
-        </button>
+        </Button>
       </div>
 
       {/* Tab bar */}

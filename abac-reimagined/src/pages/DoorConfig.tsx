@@ -5,6 +5,7 @@ import { useStore } from '../store/store'
 import DeviceModal from '../modals/DeviceModal'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { InputDevice, OutputDevice, DeviceStatus } from '../types'
+import { Button } from '../ui/button'
 
 type AnyDevice = (InputDevice & { io: 'Input' }) | (OutputDevice & { io: 'Output' })
 
@@ -151,7 +152,7 @@ export default function DoorConfig() {
         </Link>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-100">{door.name}</h1>
+            <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">{door.name}</h1>
             <div className="text-[11px] text-slate-500 mt-1 space-x-3">
               {site       && <span>Site: <span className="text-slate-400">{site.name}</span></span>}
               {zone       && <span>Zone: <span className="text-slate-400">{zone.name} ({zone.type})</span></span>}
@@ -261,18 +262,19 @@ export default function DoorConfig() {
         <div className="flex items-center justify-between mb-3">
           <div className="text-[11px] font-semibold text-slate-400">Attached Devices ({allDevices.length})</div>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setEditingDevice({ io: 'Input', id: '', name: '', type: 'card_reader', doorId: door.id, controllerId: controller?.id ?? '', port: 1, status: 'online', config: {} })}
-              className="px-2.5 py-1 rounded-lg bg-[#111827] border border-[#1e293b] text-[10px] text-slate-300 hover:bg-[#1a2035] transition-colors"
             >
               + Input device
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setEditingDevice({ io: 'Output', id: '', name: '', type: 'electric_strike', doorId: door.id, controllerId: controller?.id ?? '', port: 1, status: 'online', config: {} })}
-              className="px-2.5 py-1 rounded-lg bg-indigo-600/20 border border-indigo-800/50 text-[10px] text-indigo-300 hover:bg-indigo-600/30 transition-colors"
             >
               + Output device
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -313,20 +315,24 @@ export default function DoorConfig() {
                   {device.status}
                 </span>
                 <div className="flex items-center justify-end gap-1">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setEditingDevice(device)}
                     aria-label="Edit"
-                    className="p-1.5 rounded text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                    className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-indigo-400"
                   >
                     <Pencil size={11} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setPendingDelete(device)}
                     aria-label="Remove"
-                    className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-red-400"
                   >
                     <Trash2 size={11} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}

@@ -4,6 +4,7 @@ import { useStore } from '../store/store'
 import { evaluateAccess } from '../engine/accessEngine'
 import { buildNowContext } from '../engine/scheduleEngine'
 import type { StoreSnapshot } from '../types'
+import { Button } from '../ui/button'
 
 // ── Tab type ──────────────────────────────────────────────────────────────────
 
@@ -181,13 +182,10 @@ function AccessAuditTab() {
       {/* Results header */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-slate-500">{filtered.length} events (of {auditEvents.length} access events)</span>
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold hover:bg-emerald-600/30 transition-colors"
-        >
+        <Button variant="outline" size="sm" onClick={handleExport} className="gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/20 hover:text-emerald-400">
           <Download size={11} />
           Export CSV
-        </button>
+        </Button>
       </div>
 
       {/* Table */}
@@ -525,14 +523,10 @@ function AccessMatrixTab() {
           Matrix: first {matrixUsers.length} active users x first {matrixDoors.length} doors.
           Computationally expensive — generated on demand.
         </div>
-        <button
-          onClick={generate}
-          disabled={generating}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 text-[10px] font-semibold hover:bg-indigo-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <Button variant="outline" size="sm" onClick={generate} disabled={generating} className="gap-1.5">
           <RefreshCw size={11} className={generating ? 'animate-spin' : ''} />
           {generating ? 'Generating...' : 'Generate'}
-        </button>
+        </Button>
       </div>
 
       {!matrix && !generating && (
@@ -610,11 +604,11 @@ export default function Reports() {
       {/* Header */}
       <div className="flex items-center gap-2 shrink-0">
         <BarChart3 size={18} className="text-indigo-400" />
-        <h1 className="text-xl font-bold text-slate-100">Compliance Reports</h1>
+        <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">Compliance Reports</h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-[#1e293b] shrink-0">
+      <div className="flex items-center gap-1 border-b border-[hsl(var(--border))] shrink-0">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -622,7 +616,7 @@ export default function Reports() {
             className={`px-4 py-2 text-[11px] font-semibold transition-colors border-b-2 -mb-px ${
               activeTab === tab.id
                 ? 'border-indigo-500 text-indigo-400'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
+                : 'border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
             }`}
           >
             {tab.label}

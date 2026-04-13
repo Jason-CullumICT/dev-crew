@@ -5,6 +5,9 @@ import ControllerModal from '../modals/ControllerModal'
 import SearchBar from '../components/SearchBar'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { Controller } from '../types'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
 
 export default function Controllers() {
   const controllers      = useStore(s => s.controllers)
@@ -33,17 +36,14 @@ export default function Controllers() {
   }
 
   return (
-    <div className="p-6 space-y-4 overflow-y-auto h-full">
+    <div className="p-6 space-y-4 overflow-y-auto h-full bg-[hsl(var(--background))]">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-100">Controllers</h1>
+        <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Controllers</h1>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-slate-600">{controllers.length} controllers</span>
-          <button
-            onClick={() => setEditing('new')}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 transition-colors"
-          >
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">{controllers.length} controllers</span>
+          <Button size="sm" onClick={() => setEditing('new')}>
             + New
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -59,43 +59,53 @@ export default function Controllers() {
         {filtered.map(ctrl => {
           const site = sites.find(s => s.id === ctrl.siteId)
           return (
-            <div key={ctrl.id} className="bg-[#0f1320] border border-[#1e293b] rounded-lg p-4 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-[12px] font-bold text-slate-100">{ctrl.name}</div>
-                  <div className="text-[10px] text-slate-500">{site?.name} · {ctrl.location}</div>
+            <Card key={ctrl.id}>
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-sm">{ctrl.name}</CardTitle>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      {site?.name} · {ctrl.location}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditing(ctrl)}
+                      aria-label="Edit"
+                      className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
+                    >
+                      <Pencil size={12} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setPendingDelete(ctrl)}
+                      aria-label="Delete"
+                      className="h-7 w-7 text-[hsl(var(--muted-foreground))] hover:text-red-400"
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setEditing(ctrl)}
-                    aria-label="Edit"
-                    className="p-1.5 rounded text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  <button
-                    onClick={() => setPendingDelete(ctrl)}
-                    aria-label="Delete"
-                    className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
+              </CardHeader>
               {ctrl.doorIds.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {ctrl.doorIds.map(id => (
-                    <span key={id} className="text-[9px] bg-[#111827] border border-[#1e293b] text-slate-500 px-1.5 py-0.5 rounded">
-                      &#x1F6AA; {doors.find(d => d.id === id)?.name ?? id}
-                    </span>
-                  ))}
-                </div>
+                <CardContent>
+                  <div className="flex flex-wrap gap-1">
+                    {ctrl.doorIds.map(id => (
+                      <Badge key={id} variant="secondary" className="text-[9px]">
+                        🚪 {doors.find(d => d.id === id)?.name ?? id}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
               )}
-            </div>
+            </Card>
           )
         })}
         {filtered.length === 0 && (
-          <p className="text-[12px] text-slate-600">
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
             {search ? 'No controllers match your search.' : 'No controllers yet.'}
           </p>
         )}

@@ -175,7 +175,7 @@ Severity: ${bug.severity}`,
   const isHidden = HIDDEN_STATUSES.includes(bug.status)
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-5">
+    <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-5 overflow-hidden">
       {/* Verifies: FR-DUP-10 — Duplicate banner */}
       {bug.status === 'duplicate' && bug.duplicate_of && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 text-sm text-purple-800">
@@ -194,9 +194,9 @@ Severity: ${bug.severity}`,
       )}
 
       <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <span className="text-xs font-mono text-gray-400">{bug.id}</span>
-          <h3 className="text-lg font-semibold text-gray-900 mt-0.5">{bug.title}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mt-0.5 break-words">{bug.title}</h3>
         </div>
         <div className="flex items-center gap-2">
           <span

@@ -45,6 +45,7 @@ env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheATeam"
   TASK: ${{ inputs.task_description }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 
@@ -181,7 +182,7 @@ jobs:
           git commit -m "Requirements review complete
 
           Co-Authored-By: agent:requirements-reviewer <agent@dev-crew>" || true
-          git pull --rebase origin HEAD
+          git pull --rebase origin ${{ needs.plan.outputs.branch }}
           git push origin HEAD
 
   api-contract:
@@ -232,7 +233,7 @@ jobs:
           git commit -m "API contract generated
 
           Co-Authored-By: agent:api-contract <agent@dev-crew>" || true
-          git pull --rebase origin HEAD
+          git pull --rebase origin ${{ needs.plan.outputs.branch }}
           git push origin HEAD
 
   # ---------------------------------------------------------------------------
@@ -286,7 +287,7 @@ jobs:
           git commit -m "Backend implementation
 
           Co-Authored-By: agent:backend-coder <agent@dev-crew>" || true
-          git pull --rebase origin HEAD
+          git pull --rebase origin ${{ needs.plan.outputs.branch }}
           git push origin HEAD
 
   frontend:
@@ -337,7 +338,7 @@ jobs:
           git commit -m "Frontend implementation
 
           Co-Authored-By: agent:frontend-coder <agent@dev-crew>" || true
-          git pull --rebase origin HEAD
+          git pull --rebase origin ${{ needs.plan.outputs.branch }}
           git push origin HEAD
 
   # ---------------------------------------------------------------------------
@@ -391,7 +392,7 @@ jobs:
           git commit -m "QA review and tests
 
           Co-Authored-By: agent:qa-review <agent@dev-crew>" || true
-          git pull --rebase origin HEAD
+          git pull --rebase origin ${{ needs.plan.outputs.branch }}
           git push origin HEAD
 
   security-qa:

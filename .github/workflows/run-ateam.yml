@@ -45,7 +45,6 @@ env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheATeam"
   TASK: ${{ inputs.task_description }}
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 

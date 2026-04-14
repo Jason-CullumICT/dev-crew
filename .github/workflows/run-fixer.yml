@@ -36,7 +36,6 @@ env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheFixer"
   FIX_DESC: ${{ inputs.fix_description }}
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 

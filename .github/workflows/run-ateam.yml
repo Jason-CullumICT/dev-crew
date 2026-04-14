@@ -80,32 +80,33 @@ jobs:
             --metrics "$(cat /tmp/ateam-metrics.json)")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
-      - name: Run Team Leader — produce dispatch plan
+      - name: Generate dispatch plan
         run: |
-          PLAN_FLAG=""
-          SPEC_FLAG=""
-          if [ -n "${{ inputs.plan_file }}" ]; then
-            PLAN_FLAG="Plan file: ${{ inputs.plan_file }}"
-          fi
-          if [ -n "${{ inputs.spec_file }}" ]; then
-            SPEC_FLAG="Specs: ${{ inputs.spec_file }}"
-          fi
-
-          claude --model claude-sonnet-4-6 \
-            --print \
-            --dangerously-skip-permissions \
-            --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
-            "Task: $TASK
-          $PLAN_FLAG
-          $SPEC_FLAG
-          Complexity: ${{ inputs.complexity }}
-          Team folder: $TEAM_DIR
-
-          Produce a dispatch plan. For each pipeline stage, output:
-          - agent_id (from the team)
-          - task description (high-level, pointing to files)
-          - dependencies (which stages must complete first)
-          - model to use" > dispatch-plan.json
+          TASK_TITLE=$(printf '%s' "$TASK" | head -1)
+          jq -n \
+            --arg task "$TASK_TITLE" \
+            --arg plan "${{ inputs.plan_file }}" \
+            --arg spec "${{ inputs.spec_file }}" \
+            --arg complexity "${{ inputs.complexity }}" \
+            '{
+              task_title: $task,
+              plan_file: $plan,
+              spec_file: $spec,
+              complexity: $complexity,
+              stages: [
+                {name:"requirements-reviewer", model:"sonnet", depends_on:[]},
+                {name:"api-contract",          model:"haiku",  depends_on:["requirements-reviewer"]},
+                {name:"backend-coder",         model:"sonnet", depends_on:["api-contract"]},
+                {name:"frontend-coder",        model:"sonnet", depends_on:["api-contract"]},
+                {name:"qa-review-and-tests",   model:"sonnet", depends_on:["backend-coder","frontend-coder"]},
+                {name:"security-qa",           model:"sonnet", depends_on:["backend-coder","frontend-coder"]},
+                {name:"chaos-tester",          model:"sonnet", depends_on:["backend-coder","frontend-coder"]},
+                {name:"traceability",          model:"sonnet", depends_on:["backend-coder","frontend-coder"]},
+                {name:"visual-playwright",     model:"sonnet", depends_on:["backend-coder","frontend-coder"]},
+                {name:"design-critic",         model:"sonnet", depends_on:["qa-review-and-tests","security-qa","chaos-tester","traceability","visual-playwright"]},
+                {name:"integration-reviewer",  model:"haiku",  depends_on:["design-critic"]}
+              ]
+            }' > dispatch-plan.json
 
       - name: Upload dispatch plan
         uses: actions/upload-artifact@v4

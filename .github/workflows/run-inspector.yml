@@ -102,11 +102,37 @@ jobs:
           if [ "${{ inputs.mode }}" = "dynamic" ]; then
             echo "    ✓ Performance Profiler (dynamic mode)"
             echo "    ✓ Chaos Monkey         (dynamic mode)"
+            echo ""
+            echo "  Pre-flight: will verify docker-compose.test.yml starts before"
+            echo "  spawning dynamic agents — fails fast if services cannot start."
           else
             echo "    — Performance Profiler (skipped — static mode, no live services)"
             echo "    — Chaos Monkey         (skipped — static mode, no live services)"
           fi
           echo "========================================"
+
+      - name: Pre-flight check (dynamic mode)
+        if: inputs.mode == 'dynamic'
+        run: |
+          if [ ! -f docker-compose.test.yml ]; then
+            echo "ERROR: docker-compose.test.yml not found — dynamic mode requires this file to start live services"
+            exit 1
+          fi
+          echo "Starting services for pre-flight check..."
+          docker compose -f docker-compose.test.yml up -d
+          echo "Waiting 20s for services to become ready..."
+          sleep 20
+          RUNNING=$(docker compose -f docker-compose.test.yml ps --status running --quiet | wc -l)
+          if [ "$RUNNING" -eq 0 ]; then
+            echo "ERROR: No services came up. Cannot run dynamic agents."
+            echo ""
+            docker compose -f docker-compose.test.yml logs
+            docker compose -f docker-compose.test.yml down -v
+            exit 1
+          fi
+          echo "Pre-flight OK — $RUNNING service(s) running:"
+          docker compose -f docker-compose.test.yml ps
+          docker compose -f docker-compose.test.yml down -v
 
       - name: Run Spec-Drift Audit
         run: python3 tools/spec-drift-audit.py || true

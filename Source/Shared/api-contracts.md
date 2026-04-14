@@ -1,15 +1,21 @@
-# API Contracts — Orchestrator Workflow Engine
+# API Contracts — Orchestrator Workflow Engine & Platform
 
-This document defines the shared API contract for all clients of the orchestrator workflow engine. Both frontend and backend must implement these endpoints exactly as specified.
+This document defines the shared API contracts for clients of the orchestrator platform. It covers two layers:
+- **Workflow Engine API** — Manages work items, assessments, and dependencies (application logic)
+- **Orchestrator API** — Submits work requests with GitHub integration and pre-flight validation (platform infrastructure)
 
-**Status:** WIP — dependency tracking feature [FR-070 through FR-085]
+**Status:** Updated — pre-flight validation feature [FR-preflight-validator, FR-preflight-gating, FR-preflight-tests]
 
 ---
 
 ## Endpoint Categories
 
+### Workflow Engine API
 - [Work Items](#work-items)
 - [Dependencies](#dependencies)
+
+### Orchestrator API
+- [Work Submission](#work-submission)
 
 ---
 
@@ -311,6 +317,94 @@ ReadinessCheckResponse {
 
 ---
 
+## Work Submission
+
+### Submit Work Request
+
+**Verifies:** FR-preflight-validator, FR-preflight-gating, FR-preflight-tests — Pre-flight validation on work submission
+
+```
+POST /api/work
+```
+
+**Request Body:**
+
+```typescript
+{
+  task: string;                    // Required: work description/prompt
+  planFile?: string;               // Optional: path to plan file
+  team?: string;                   // Optional: force assignment to 'TheATeam' or 'TheFixer'
+  repo?: string;                   // Optional: GitHub repo (owner/name); falls back to config.githubRepo
+  repoBranch?: string;             // Optional: git branch; falls back to config.githubBranch
+  claudeSessionToken?: string;     // Optional: Anthropic API token
+  tokenLabel?: string;             // Optional: label for token pool
+  pipelineMode?: string;           // Optional: 'local' (default) or 'github_actions'
+  images?: Array<{name, data}>;    // Optional: base64-encoded images or multipart form-data
+}
+```
+
+**Response (201 Created):**
+
+```typescript
+{
+  id: string;                      // Unique run ID (run-{timestamp}-{randomId})
+  status: string;                  // Always "team_selecting" on submission
+  message: string;                 // Status message
+  statusUrl: string;               // URL to poll: /api/runs/:id
+  attachments: number;             // Count of uploaded images
+  ports?: object;                  // Port mappings (if available)
+  branch?: string;                 // Git branch (if available)
+}
+```
+
+**Pre-Flight Validation (before run is saved):**
+
+1. **Repository Access Check** (if `resolvedRepo` is non-empty AND `config.githubToken` is set):
+   - `GET https://api.github.com/repos/{resolvedRepo}` with `Authorization: token {githubToken}`
+   - On success: proceed to branch check
+   - On 401 Unauthorized: return 401 (token invalid)
+   - On 403 Forbidden: return 401 (token lacks permission)
+   - On 404 Not Found: return 404 (repo not found or no access)
+   - On other errors: return 500 (GitHub API error)
+
+2. **Branch Existence Check** (if repo validation passed):
+   - `GET https://api.github.com/repos/{resolvedRepo}/branches/{resolvedBranch}`
+   - On success: create and save run, return 201
+   - On 404 Not Found: return 404 (branch not found)
+   - On other errors: return 500 (GitHub API error)
+
+3. **Backwards Compatibility**:
+   - If `resolvedRepo` is empty or `config.githubToken` is not set, skip validation and proceed directly to saving the run
+
+**Error Responses:**
+
+| Status | Body | Trigger | Notes |
+|--------|------|---------|-------|
+| 400 | `{error: "Missing required field: task"}` | No `task` in request | Validation error |
+| 401 | `{error: "GitHub token invalid or not provided"}` | Token missing/invalid; GitHub returns 401 or 403 on repo check | Pre-flight: token access denied |
+| 404 | `{error: "Repo 'owner/repo' not found or token lacks access"}` | GitHub returns 404 on repo check | Pre-flight: repo not found |
+| 404 | `{error: "Branch 'branch-name' not found in 'owner/repo'"}` | GitHub returns 404 on branch check | Pre-flight: branch does not exist |
+| 500 | `{error: "GitHub API error: {status}"}` | GitHub returns 5xx or unexpected 4xx | Pre-flight: GitHub service error |
+| 503 | `{error: "Orchestrator not initialized — Docker not available"}` | Orchestrator not ready | Infrastructure error |
+
+**Implementation Notes:**
+
+- **Token Resolution:** Uses `config.githubToken` (env: `GITHUB_TOKEN`). Per-request tokens are not supported for GitHub validation; only for Anthropic session tokens.
+- **Resolver Chain:** 
+  - `repo` = `req.body.repo` || `config.githubRepo`
+  - `repoBranch` = `req.body.repoBranch` || `config.githubBranch`
+- **No Side Effects:** Validation functions never create repos or branches — they only read repo metadata from GitHub API.
+- **Run Creation:** Only after all pre-flight checks pass, the run object is created with status "team_selecting" and saved.
+- **Async Execution:** After 201 response, the orchestrator begins async team selection and pipeline execution.
+
+**Links:**
+
+- Library: `platform/orchestrator/lib/github-validator.js` — exports `validateRepoAccess()`, `validateBranchExists()`
+- Handler: `platform/orchestrator/server.js:350` — `POST /api/work` implementation
+- Frontend: `portal/Frontend/src/components/bugs/BugDetail.tsx:290` — error display with pre-flight distinction
+
+---
+
 ## Error Response Format
 
 All error responses follow this format:
@@ -394,6 +488,7 @@ export interface ApproveWorkItemRequest { ... }
 export interface RejectWorkItemRequest { ... }
 export interface DispatchWorkItemRequest { ... }
 export interface DependencyActionRequest { ... }
+export interface WorkSubmissionRequest { ... }  // Orchestrator API: POST /api/work
 
 // Response Types
 export interface PaginatedWorkItemsResponse { ... }
@@ -401,6 +496,7 @@ export interface ReadinessCheckResponse { ... }
 export interface DashboardSummaryResponse { ... }
 export interface DashboardActivityResponse { ... }
 export interface ApiErrorResponse { ... }
+export interface WorkSubmissionResponse { ... }  // Orchestrator API: POST /api/work
 
 // Constants
 export const VALID_STATUS_TRANSITIONS: Record<WorkItemStatus, WorkItemStatus[]>;
@@ -453,4 +549,5 @@ export const DISPATCH_TRIGGER_STATUSES = [
 
 | Date | Change | Notes |
 |------|--------|-------|
+| 2026-04-14 | Add Orchestrator API section | Pre-flight validation on work submission [FR-preflight-validator, FR-preflight-gating, FR-preflight-tests] |
 | 2026-04-14 | Initial contract | Dependency tracking feature [FR-070–FR-085] |

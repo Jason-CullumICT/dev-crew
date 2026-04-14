@@ -363,6 +363,12 @@ jobs:
           CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
         run: bash tools/setup-claude-credentials.sh
 
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-guardians
+          path: tools/
+
       - name: Synthesize Security Report
         run: |
           printf 'Synthesize all security agent reports.\nRead: static-analyzer-report.md, pen-tester-report.md, red-teamer-report.md, compliance-auditor-report.md.\nGrade: A-F based on critical/high findings + compliance pass rate.\nGenerate guardians-report.md.' > /tmp/prompt.txt

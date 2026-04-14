@@ -388,6 +388,12 @@ jobs:
           CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
         run: bash tools/setup-claude-credentials.sh
 
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-inspector
+          path: tools/
+
       - name: Synthesize Report
         run: |
           printf 'Synthesize all agent reports into a graded report (A-F).\nRead: quality-oracle-report.md, dependency-auditor-report.md, and any performance-profiler-report.md / chaos-monkey-report.md if present.\nGenerate inspector-report.md with JSON bug backlog. Escalate P1 findings.' > /tmp/prompt.txt

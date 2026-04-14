@@ -77,8 +77,9 @@ if [ "$CURRENT_TOKEN" = "${ANTHROPIC_API_KEY:-}" ]; then
   echo "[token-refresh] Exporting current token to ensure it's set for next steps"
 fi
 
+echo "::add-mask::$CURRENT_TOKEN"
 echo "ANTHROPIC_API_KEY=$CURRENT_TOKEN" >> "$GITHUB_ENV"
-echo "[token-refresh] ANTHROPIC_API_KEY refreshed in GITHUB_ENV (${#CURRENT_TOKEN} chars)"
+echo "[token-refresh] ANTHROPIC_API_KEY refreshed in GITHUB_ENV (${#CURRENT_TOKEN} chars, masked in logs)"
 
 # Reset the marker so the next 30-min window starts from now
 date +%s > "$MARKER_FILE"

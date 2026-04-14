@@ -56,8 +56,9 @@ if [ -z "$TOKEN" ]; then
   exit 1
 fi
 
+echo "::add-mask::$TOKEN"
 echo "ANTHROPIC_API_KEY=$TOKEN" >> "$GITHUB_ENV"
-echo "[claude-setup] ANTHROPIC_API_KEY exported (${#TOKEN} chars)"
+echo "[claude-setup] ANTHROPIC_API_KEY exported (${#TOKEN} chars, masked in logs)"
 
 # Record job start time for 30-min refresh checks
 date +%s > "$MARKER_FILE"

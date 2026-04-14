@@ -1,48 +1,159 @@
-name: Run TheInspector
+# =============================================================================
+# TheInspector — System Health Audit Pipeline
+# =============================================================================
+# 5 agents. Config-driven spec-drift, performance, chaos, dependency auditing.
+# Output: HTML report (A-F grade) + JSON bug backlog.
+# Runs nightly or on demand.
+# =============================================================================
+
+name: "Run TheInspector"
 
 on:
-  # Scheduled: nightly health audit
   schedule:
-    - cron: '0 2 * * *'   # 02:00 UTC daily — adjust to suit
+    - cron: "0 2 * * *"  # 02:00 UTC daily
 
-  # Manual: trigger from a PR badge button or the Actions tab
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to audit (leave blank for default branch)'
+        description: "Branch to audit (leave blank for default)"
         required: false
-        default: ''
+        default: ""
       focus:
-        description: 'Optional focus areas (e.g. "auth routes, work item state machine")'
+        description: "Optional focus areas (e.g. 'auth routes, state machine')"
         required: false
-        default: ''
+        default: ""
+      mode:
+        description: "Audit mode"
+        required: false
+        type: choice
+        default: "static"
+        options:
+          - static    # no live environment needed
+          - dynamic   # spins up services for perf/chaos
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  TEAM_DIR: "Teams/TheInspector"
 
 jobs:
-  inspect:
+
+  audit:
+    name: "Inspector Audit"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch || github.ref }}
 
-      # TODO: add your orchestrator invocation here.
-      # TheInspector can run in static mode without a live environment.
-      # For dynamic mode (performance-profiler, chaos-monkey), spin up services first.
-      #
-      # Example skeleton:
-      #   - name: Run TheInspector
-      #     run: |
-      #       # Invoke Claude Code / your orchestrator with:
-      #       # "Read Teams/TheInspector/team-leader.md and follow it exactly.
-      #       #  Audit: System Health Audit
-      #       #  Focus: ${{ inputs.focus }}
-      #       #  Team folder: Teams/TheInspector
-      #       #  Config: Teams/TheInspector/inspector.config.yml"
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
 
-      - name: Placeholder
+      - name: Initialize dashboard
+        id: init
         run: |
-          echo "TheInspector workflow stub — wire up your orchestrator above."
-          echo "Branch: ${{ inputs.branch || github.ref }}"
-          echo "Focus: ${{ inputs.focus }}"
+          RUN_ID=$(bash tools/pipeline-update.sh --team TheInspector --action init \
+            --metrics "{\"task_title\": \"Health Audit\", \"focus\": \"${{ inputs.focus }}\"}")
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: Start services (dynamic mode only)
+        if: inputs.mode == 'dynamic'
+        run: |
+          docker compose -f docker-compose.test.yml up -d || true
+          sleep 10
+
+      - name: Run Spec-Drift Audit
+        run: |
+          python3 tools/spec-drift-audit.py || true
+
+      - name: Run Quality Oracle
+        run: |
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+            --agent quality-oracle --action start --name "Quality Oracle" --model sonnet
+
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/quality-oracle.md)" \
+            --allowedTools "Read,Glob,Grep,Bash" \
+            "Spec-drift analysis and pattern enforcement.
+            Config: $TEAM_DIR/inspector.config.yml
+            Focus: ${{ inputs.focus || 'full audit' }}"
+
+      - name: Run Dependency Auditor
+        run: |
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+            --agent dependency-auditor --action start --name "Dependency Auditor" --model haiku
+
+          claude --model claude-haiku-4-5 \
+            --system-prompt "$(cat $TEAM_DIR/dependency-auditor.md)" \
+            --allowedTools "Read,Bash,Glob,Grep" \
+            "CVE scanning, license compliance, outdated package check.
+            Config: $TEAM_DIR/inspector.config.yml"
+
+      - name: Run Performance Profiler (dynamic only)
+        if: inputs.mode == 'dynamic'
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/performance-profiler.md)" \
+            --allowedTools "Read,Bash,Glob,Grep" \
+            "Performance profiling against live services.
+            Config: $TEAM_DIR/inspector.config.yml"
+
+      - name: Run Chaos Monkey (dynamic only)
+        if: inputs.mode == 'dynamic'
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/chaos-monkey.md)" \
+            --allowedTools "Read,Bash,Glob,Grep" \
+            "Fault injection and invariant analysis.
+            Config: $TEAM_DIR/inspector.config.yml"
+
+      - name: Synthesize Report
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
+            --allowedTools "Read,Write,Glob,Grep" \
+            --print \
+            "Synthesize all agent outputs into a graded report (A-F).
+            Generate HTML report and JSON bug backlog.
+            Escalate P1 findings." > inspector-report.md
+
+      - name: Tear down services (dynamic only)
+        if: always() && inputs.mode == 'dynamic'
+        run: docker compose -f docker-compose.test.yml down -v || true
+
+      - name: Dashboard — finalize
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+            --agent team-leader --action complete --verdict "Audit complete"
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspector-report
+          path: |
+            inspector-report.md
+            spec-drift-report.json
+
+      - name: Create issue for findings
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report = '';
+            try { report = fs.readFileSync('inspector-report.md', 'utf8'); } catch {}
+
+            if (report.includes('Grade: F') || report.includes('Grade: D') || report.includes('P1')) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Inspector] Health audit findings — ${new Date().toISOString().split('T')[0]}`,
+                body: report.substring(0, 65000),
+                labels: ['audit', 'agent:fix']
+              });
+            }

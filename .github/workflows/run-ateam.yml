@@ -1,0 +1,546 @@
+# =============================================================================
+# TheATeam — Feature Implementation Pipeline
+# =============================================================================
+# 12 agents. Greenfield implementation with max parallelism.
+# Pipeline: Requirements → API Contract → Build (parallel) → QA Tier 1 (parallel) → QA Tier 2
+# =============================================================================
+
+name: "Run TheATeam"
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "GitHub issue number (for context and PR linking)"
+        required: false
+        default: ""
+      task_description:
+        description: "High-level description of what to build"
+        required: true
+      plan_file:
+        description: "Path to plan file (e.g. Plans/my-feature/plan.md)"
+        required: false
+        default: ""
+      spec_file:
+        description: "Path to spec file (e.g. Specifications/my-spec.md)"
+        required: false
+        default: ""
+      complexity:
+        description: "Complexity (S/M/L/XL) — scales coder instances"
+        required: false
+        type: choice
+        default: "M"
+        options: ["S", "M", "L", "XL"]
+
+concurrency:
+  group: ateam-${{ github.event.inputs.issue_number || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  TEAM_DIR: "Teams/TheATeam"
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Stage 1: Team Leader produces dispatch plan
+  # ---------------------------------------------------------------------------
+  plan:
+    name: "Team Leader — Plan"
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.branch.outputs.name }}
+      run_id: ${{ steps.init.outputs.run_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Create feature branch
+        id: branch
+        run: |
+          BRANCH="agent/ateam-$(date +%s)-$(echo $RANDOM | md5sum | head -c 8)"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Initialize dashboard
+        id: init
+        run: |
+          RUN_ID=$(bash tools/pipeline-update.sh --team TheATeam --action init \
+            --metrics "{\"task_title\": \"${{ inputs.task_description }}\"}")
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: Run Team Leader — produce dispatch plan
+        run: |
+          PLAN_FLAG=""
+          SPEC_FLAG=""
+          if [ -n "${{ inputs.plan_file }}" ]; then
+            PLAN_FLAG="Plan file: ${{ inputs.plan_file }}"
+          fi
+          if [ -n "${{ inputs.spec_file }}" ]; then
+            SPEC_FLAG="Specs: ${{ inputs.spec_file }}"
+          fi
+
+          claude --model claude-sonnet-4-6 \
+            --print \
+            --system-prompt "You are a pipeline planner. Read Teams/TheATeam/team-leader.md and follow the dispatch pattern. Produce a structured plan with discrete tasks for each agent. Output as JSON." \
+            "Read the role file at $TEAM_DIR/team-leader.md.
+
+          Task: ${{ inputs.task_description }}
+          $PLAN_FLAG
+          $SPEC_FLAG
+          Complexity: ${{ inputs.complexity }}
+          Team folder: $TEAM_DIR
+
+          Produce a dispatch plan. For each pipeline stage, output:
+          - agent_id (from the team)
+          - task description (high-level, pointing to files)
+          - dependencies (which stages must complete first)
+          - model to use" > dispatch-plan.json
+
+      - name: Upload dispatch plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: dispatch-plan
+          path: dispatch-plan.json
+
+      - name: Push branch
+        run: |
+          git add -A
+          git commit -m "Agent pipeline: initialize for ${{ inputs.task_description }}
+
+          Co-Authored-By: agent:team-leader <agent@dev-crew>" || true
+          git push origin ${{ steps.branch.outputs.name }}
+
+  # ---------------------------------------------------------------------------
+  # Stage 2: Requirements Review + API Contract
+  # ---------------------------------------------------------------------------
+  requirements:
+    name: "Requirements Reviewer"
+    needs: plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent requirements-reviewer --action start --name "Requirements Reviewer" --model sonnet
+
+      - name: Run Requirements Reviewer
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/requirements-reviewer.md)" \
+            --allowedTools "Read,Write,Edit,Glob,Grep" \
+            "Task: ${{ inputs.task_description }}
+            Decompose requirements. Apply Autonomous Scoping + Bin-Packing.
+            Read specs and plans. Produce structured requirements for the coders."
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent requirements-reviewer --action complete --verdict "Requirements decomposed"
+
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "Requirements review complete
+
+          Co-Authored-By: agent:requirements-reviewer <agent@dev-crew>" || true
+          git push origin HEAD
+
+  api-contract:
+    name: "API Contract"
+    needs: [plan, requirements]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent api-contract --action start --name "API Contract" --model haiku
+
+      - name: Run API Contract
+        run: |
+          claude --model claude-haiku-4-5 \
+            --system-prompt "$(cat $TEAM_DIR/api-contract.md)" \
+            --allowedTools "Read,Write,Edit,Glob,Grep" \
+            "Generate shared API types and endpoint specs based on the requirements.
+            Update Source/Shared/ with type definitions."
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent api-contract --action complete --verdict "API contract generated"
+
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "API contract generated
+
+          Co-Authored-By: agent:api-contract <agent@dev-crew>" || true
+          git push origin HEAD
+
+  # ---------------------------------------------------------------------------
+  # Stage 3: Implementation (parallel backend + frontend)
+  # ---------------------------------------------------------------------------
+  backend:
+    name: "Backend Coder"
+    needs: [plan, api-contract]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent backend-coder --action start --name "Backend Coder" --model sonnet
+
+      - name: Run Backend Coder
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/backend-coder.md)" \
+            --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+            "Implement the backend for: ${{ inputs.task_description }}
+            Follow CLAUDE.md conventions. Test-first. Max 3 fix cycles.
+            Stay within Source/Backend/. Run tests before completing."
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent backend-coder --action complete
+
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "Backend implementation
+
+          Co-Authored-By: agent:backend-coder <agent@dev-crew>" || true
+          git push origin HEAD
+
+  frontend:
+    name: "Frontend Coder"
+    needs: [plan, api-contract]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent frontend-coder --action start --name "Frontend Coder" --model sonnet
+
+      - name: Run Frontend Coder
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/frontend-coder.md)" \
+            --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+            "Implement the frontend for: ${{ inputs.task_description }}
+            Follow CLAUDE.md conventions. Test-first + wiring audit. Max 3 fix cycles.
+            Stay within Source/Frontend/. Run tests before completing."
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent frontend-coder --action complete
+
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "Frontend implementation
+
+          Co-Authored-By: agent:frontend-coder <agent@dev-crew>" || true
+          git push origin HEAD
+
+  # ---------------------------------------------------------------------------
+  # Stage 4: QA Tier 1 (parallel)
+  # ---------------------------------------------------------------------------
+  qa-tests:
+    name: "QA Review & Tests"
+    needs: [plan, backend, frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent qa-review-and-tests --action start --name "QA Review" --model sonnet
+
+      - name: Run QA Agent
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/qa-review-and-tests.md)" \
+            --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+            "Review and test the implementation for: ${{ inputs.task_description }}
+            Run all tests. Grade coverage. Report gaps."
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent qa-review-and-tests --action complete
+
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "QA review and tests
+
+          Co-Authored-By: agent:qa-review <agent@dev-crew>" || true
+          git push origin HEAD
+
+  security-qa:
+    name: "Security QA"
+    needs: [plan, backend, frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent security-qa --action start --name "Security QA" --model sonnet
+
+      - name: Run Security QA
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/security-qa.md)" \
+            --allowedTools "Read,Glob,Grep" \
+            "Security review of new/changed code for: ${{ inputs.task_description }}
+            Check for OWASP Top 10, injection, auth gaps, secrets, insecure patterns."
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent security-qa --action complete
+
+  chaos-test:
+    name: "Chaos Tester"
+    needs: [plan, backend, frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Chaos Tester
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat Teams/Shared/chaos-tester.md)" \
+            --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+            "Adversarial invariant testing for: ${{ inputs.task_description }}
+            Find edge cases, race conditions, invalid states."
+
+  traceability:
+    name: "Traceability Reporter"
+    needs: [plan, backend, frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Traceability Check
+        run: |
+          python3 tools/traceability-enforcer.py || true
+
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/traceability-reporter.md)" \
+            --allowedTools "Read,Write,Glob,Grep,Bash" \
+            "Generate FR traceability report. Verify every requirement has a
+            '// Verifies: FR-XXX' comment in source."
+
+  visual-playwright:
+    name: "Visual Playwright"
+    needs: [plan, backend, frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Visual Playwright
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/visual-playwright.md)" \
+            --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+            "Write and run Playwright browser tests for: ${{ inputs.task_description }}
+            Ephemeral tests. Validate UI flows work end-to-end."
+
+  # ---------------------------------------------------------------------------
+  # Stage 5: QA Tier 2 (sequential — after Tier 1)
+  # ---------------------------------------------------------------------------
+  design-critic:
+    name: "Design Critic"
+    needs: [plan, qa-tests, security-qa, chaos-test, traceability, visual-playwright]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Design Critic
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat Teams/Shared/design-critic.md)" \
+            --allowedTools "Read,Glob,Grep,Bash" \
+            "Multimodal visual validation for: ${{ inputs.task_description }}
+            Review UI implementation against design specs."
+
+  integration-review:
+    name: "Integration Reviewer"
+    needs: [plan, design-critic]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Integration Reviewer
+        run: |
+          claude --model claude-haiku-4-5 \
+            --system-prompt "$(cat $TEAM_DIR/integration-reviewer.md)" \
+            --allowedTools "Read,Bash,Glob,Grep" \
+            "Final code review + smoke testing for: ${{ inputs.task_description }}
+            Verify integration points. Run full test suite. Report verdict."
+
+  # ---------------------------------------------------------------------------
+  # Stage 6: Create PR
+  # ---------------------------------------------------------------------------
+  create-pr:
+    name: "Create PR"
+    needs: [plan, integration-review]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Dashboard — finalize
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent team-leader --action complete \
+            --verdict "Pipeline complete. PR created."
+
+      - name: Create Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = '${{ needs.plan.outputs.branch }}';
+            const task = `${{ inputs.task_description }}`;
+            const issueNum = '${{ inputs.issue_number }}';
+
+            const body = [
+              '## Summary',
+              `Built by **TheATeam** agent pipeline.`,
+              `**Task:** ${task}`,
+              '',
+              '## Pipeline Stages',
+              '- [x] Requirements Review',
+              '- [x] API Contract',
+              '- [x] Backend Implementation',
+              '- [x] Frontend Implementation',
+              '- [x] QA Review & Tests',
+              '- [x] Security QA',
+              '- [x] Chaos Testing',
+              '- [x] Traceability Report',
+              '- [x] Visual Playwright Tests',
+              '- [x] Design Critic',
+              '- [x] Integration Review',
+              '',
+              issueNum ? `Closes #${issueNum}` : '',
+              '',
+              '---',
+              '🤖 Generated by dev-crew TheATeam pipeline',
+            ].join('\n');
+
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[TheATeam] ${task.substring(0, 60)}`,
+              head: branch,
+              base: 'master',
+              body: body,
+            });
+
+            console.log(`PR created: #${pr.data.number}`);
+
+            if (issueNum) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNum),
+                body: `## 🚀 TheATeam — Complete\n\nPR created: #${pr.data.number}\nReady for human review.`
+              });
+            }

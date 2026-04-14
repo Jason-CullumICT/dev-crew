@@ -1,0 +1,233 @@
+# =============================================================================
+# DISPATCH — Routes work to the right agent team
+# =============================================================================
+# Central entry point. Classifies the task and dispatches to the appropriate
+# team workflow. Knows all teams, their strengths, and when to use each.
+#
+# Trigger: GitHub issue labeled 'agent:build', or manual dispatch.
+# =============================================================================
+
+name: "Dispatch to Agent Team"
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "GitHub issue number to process"
+        required: true
+        type: number
+      team_override:
+        description: "Force a specific team (or 'auto' to classify)"
+        required: false
+        type: choice
+        default: "auto"
+        options:
+          - auto
+          - TheATeam
+          - TheFixer
+          - TheDesigners
+          - TheInspector
+          - TheGuardians
+
+concurrency:
+  group: dispatch-${{ github.event.issue.number || github.event.inputs.issue_number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  classify-and-dispatch:
+    name: "Classify & Route"
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event.label.name == 'agent:build') ||
+      (github.event.label.name == 'agent:fix') ||
+      (github.event.label.name == 'agent:audit') ||
+      (github.event.label.name == 'agent:security') ||
+      (github.event.label.name == 'agent:design')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine team from label or input
+        id: route
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.payload.issue?.number
+              || ${{ github.event.inputs.issue_number || 0 }};
+            const override = '${{ github.event.inputs.team_override || 'auto' }}';
+            const label = context.payload.label?.name || '';
+
+            let team = 'auto';
+            let reason = '';
+
+            // Direct label routing
+            const labelMap = {
+              'agent:build':    'TheATeam',
+              'agent:fix':      'TheFixer',
+              'agent:design':   'TheDesigners',
+              'agent:audit':    'TheInspector',
+              'agent:security': 'TheGuardians',
+            };
+
+            if (override !== 'auto') {
+              team = override;
+              reason = `Manual override: ${override}`;
+            } else if (labelMap[label]) {
+              team = labelMap[label];
+              reason = `Label: ${label}`;
+            } else {
+              // Auto-classify from issue content
+              const issue = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+
+              const title = (issue.data.title || '').toLowerCase();
+              const body = (issue.data.body || '').toLowerCase();
+              const text = title + ' ' + body;
+              const labels = issue.data.labels.map(l => l.name);
+
+              if (labels.includes('bug') || /\b(fix|bug|broken|error|crash|regression)\b/.test(text)) {
+                team = 'TheFixer';
+                reason = 'Auto: bug/fix keywords detected';
+              } else if (/\b(design|mockup|wireframe|ui\/ux|visual)\b/.test(text)) {
+                team = 'TheDesigners';
+                reason = 'Auto: design keywords detected';
+              } else if (/\b(audit|health|drift|performance|benchmark)\b/.test(text)) {
+                team = 'TheInspector';
+                reason = 'Auto: audit keywords detected';
+              } else if (/\b(security|pentest|vulnerability|compliance|soc2|owasp)\b/.test(text)) {
+                team = 'TheGuardians';
+                reason = 'Auto: security keywords detected';
+              } else {
+                team = 'TheATeam';
+                reason = 'Auto: default to feature implementation';
+              }
+            }
+
+            core.setOutput('team', team);
+            core.setOutput('reason', reason);
+            core.setOutput('issue_number', issueNumber);
+
+            console.log(`Routing to ${team}: ${reason}`);
+
+      - name: Post routing decision
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const team = '${{ steps.route.outputs.team }}';
+            const reason = '${{ steps.route.outputs.reason }}';
+            const issueNumber = ${{ steps.route.outputs.issue_number }};
+
+            const teamInfo = {
+              TheATeam:     { emoji: '🚀', desc: 'Feature implementation (12 agents)', time: '~25 min' },
+              TheFixer:     { emoji: '🔧', desc: 'Bug fixes & changes (8 agents)', time: '~5 min' },
+              TheDesigners: { emoji: '🎨', desc: 'Pre-implementation design (6 agents)', time: '~15 min' },
+              TheInspector: { emoji: '🔍', desc: 'System health audit (5 agents)', time: '~10 min' },
+              TheGuardians: { emoji: '🛡️', desc: 'Security & compliance (5 agents)', time: '~15 min' },
+            };
+
+            const info = teamInfo[team];
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: [
+                `## ${info.emoji} Dispatching to **${team}**`,
+                '',
+                `**${info.desc}**`,
+                `**Estimated time:** ${info.time}`,
+                `**Reason:** ${reason}`,
+                '',
+                `Workflow dispatching now...`,
+              ].join('\n')
+            });
+
+      - name: Dispatch TheATeam
+        if: steps.route.outputs.team == 'TheATeam'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-ateam.yml',
+              ref: 'master',
+              inputs: {
+                issue_number: String(${{ steps.route.outputs.issue_number }}),
+                task_description: context.payload.issue?.title || 'Feature implementation'
+              }
+            });
+
+      - name: Dispatch TheFixer
+        if: steps.route.outputs.team == 'TheFixer'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-fixer.yml',
+              ref: 'master',
+              inputs: {
+                fix_description: context.payload.issue?.title || 'Address findings'
+              }
+            });
+
+      - name: Dispatch TheDesigners
+        if: steps.route.outputs.team == 'TheDesigners'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-designers.yml',
+              ref: 'master',
+              inputs: {
+                issue_number: String(${{ steps.route.outputs.issue_number }}),
+                design_brief: context.payload.issue?.title || 'Design task'
+              }
+            });
+
+      - name: Dispatch TheInspector
+        if: steps.route.outputs.team == 'TheInspector'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-inspector.yml',
+              ref: 'master',
+              inputs: {
+                focus: context.payload.issue?.title || ''
+              }
+            });
+
+      - name: Dispatch TheGuardians
+        if: steps.route.outputs.team == 'TheGuardians'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-guardians.yml',
+              ref: 'master',
+              inputs: {}
+            });

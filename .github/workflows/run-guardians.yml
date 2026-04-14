@@ -1,45 +1,155 @@
-name: Run TheGuardians
+# =============================================================================
+# TheGuardians — Security & Compliance Pipeline
+# =============================================================================
+# 5 agents. Pen testing, SAST, compliance auditing.
+# Red-teamer ONLY runs on ephemeral isolated environments.
+# =============================================================================
+
+name: "Run TheGuardians"
 
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to audit (leave blank for current default branch)'
+        description: "Branch to audit"
         required: false
-        default: ''
+        default: ""
+      scope:
+        description: "Audit scope (full / targeted)"
+        required: false
+        type: choice
+        default: "full"
+        options:
+          - full
+          - targeted
+      focus:
+        description: "Focus area for targeted audit (e.g. 'auth endpoints')"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  TEAM_DIR: "Teams/TheGuardians"
 
 jobs:
-  audit:
+
+  security-audit:
+    name: "Security Audit"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch || github.ref }}
 
-      # TODO: add your orchestrator invocation here.
-      # TheGuardians requires an ephemeral isolated environment —
-      # spin up a Docker Compose stack before invoking the team leader.
-      #
-      # Example skeleton:
-      #   - name: Start ephemeral environment
-      #     run: docker compose -f docker-compose.test.yml up -d
-      #
-      #   - name: Run TheGuardians
-      #     run: |
-      #       # Invoke Claude Code / your orchestrator with:
-      #       # "Read Teams/TheGuardians/team-leader.md and follow it exactly.
-      #       #  Audit: Security and Compliance Review
-      #       #  Target: Ephemeral isolated environment (confirmed)
-      #       #  Team folder: Teams/TheGuardians
-      #       #  Config: Teams/TheGuardians/security.config.yml"
-      #
-      #   - name: Tear down ephemeral environment
-      #     if: always()
-      #     run: docker compose -f docker-compose.test.yml down -v
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
 
-      - name: Placeholder
+      - name: Initialize dashboard
+        id: init
         run: |
-          echo "TheGuardians workflow stub — wire up your orchestrator above."
-          echo "Branch: ${{ inputs.branch || github.ref }}"
+          RUN_ID=$(bash tools/pipeline-update.sh --team TheGuardians --action init \
+            --metrics "{\"task_title\": \"Security Audit\", \"scope\": \"${{ inputs.scope }}\"}")
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: Start ephemeral environment
+        run: |
+          docker compose -f docker-compose.test.yml up -d || true
+          sleep 15
+
+      - name: Run Static Analyzer
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent static-analyzer --action start --name "Static Analyzer" --model sonnet
+
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/static-analyzer.md)" \
+            --allowedTools "Read,Glob,Grep,Bash" \
+            "SAST scan: CWEs, hardcoded secrets, insecure APIs.
+            Config: $TEAM_DIR/security.config.yml
+            Scope: ${{ inputs.scope }}
+            Focus: ${{ inputs.focus || 'all' }}"
+
+      - name: Run Pen Tester
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent pen-tester --action start --name "Pen Tester" --model sonnet
+
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/pen-tester.md)" \
+            --allowedTools "Read,Glob,Grep,Bash" \
+            "White-box static analysis. Attack surface mapping.
+            Config: $TEAM_DIR/security.config.yml"
+
+      - name: Run Red Teamer (ephemeral env only)
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent red-teamer --action start --name "Red Teamer" --model sonnet
+
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/red-teamer.md)" \
+            --allowedTools "Read,Bash,Glob,Grep" \
+            "Active exploitation against ephemeral isolated environment ONLY.
+            Target: localhost services from docker-compose.test.yml
+            NEVER target dev/staging/production.
+            Config: $TEAM_DIR/security.config.yml"
+
+      - name: Run Compliance Auditor
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent compliance-auditor --action start --name "Compliance Auditor" --model sonnet
+
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/compliance-auditor.md)" \
+            --allowedTools "Read,Glob,Grep" \
+            "SOC2, GDPR, ISO27001, OWASP ASVS compliance audit.
+            Config: $TEAM_DIR/security.config.yml"
+
+      - name: Tear down ephemeral environment
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v || true
+
+      - name: Synthesize Security Report
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
+            --allowedTools "Read,Write,Glob,Grep" \
+            --print \
+            "Synthesize all security agent outputs.
+            Grade: A-F based on critical/high findings + compliance pass rate.
+            Generate report." > guardians-report.md
+
+      - name: Dashboard — finalize
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent team-leader --action complete --verdict "Security audit complete"
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardians-report
+          path: guardians-report.md
+
+      - name: Create issue for critical findings
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report = '';
+            try { report = fs.readFileSync('guardians-report.md', 'utf8'); } catch {}
+
+            if (report.includes('CRITICAL') || report.includes('Grade: F')) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Guardians] Critical security findings — ${new Date().toISOString().split('T')[0]}`,
+                body: report.substring(0, 65000),
+                labels: ['security', 'critical', 'agent:fix']
+              });
+            }

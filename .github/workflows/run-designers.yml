@@ -1,0 +1,194 @@
+# =============================================================================
+# TheDesigners — Pre-Implementation Design Pipeline
+# =============================================================================
+# 6 agents. Converts specs into approved, screenshot-backed design artifacts.
+# Human approval is a HARD GATE — no design committed without approval.
+# =============================================================================
+
+name: "Run TheDesigners"
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "GitHub issue number"
+        required: false
+        default: ""
+      design_brief:
+        description: "What needs designing"
+        required: true
+      spec_file:
+        description: "Path to spec file"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  TEAM_DIR: "Teams/TheDesigners"
+
+jobs:
+
+  ux-research:
+    name: "UX Researcher"
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.branch.outputs.name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Create design branch
+        id: branch
+        run: |
+          BRANCH="design/designers-$(date +%s)-$(echo $RANDOM | md5sum | head -c 8)"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Run UX Researcher
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/ux-researcher.md)" \
+            --allowedTools "Read,Write,Glob,Grep" \
+            "Design brief: ${{ inputs.design_brief }}
+            Produce UX brief: personas, flows, constraints, information architecture."
+
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "UX research brief
+
+          Co-Authored-By: agent:ux-researcher <agent@dev-crew>" || true
+          git push origin ${{ steps.branch.outputs.name }}
+
+  visual-design:
+    name: "Visual Designer"
+    needs: ux-research
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ux-research.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Visual Designer
+        run: |
+          claude --model claude-sonnet-4-6 \
+            --system-prompt "$(cat $TEAM_DIR/visual-designer.md)" \
+            --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+            "Create 2-3 design options with screenshots.
+            Design brief: ${{ inputs.design_brief }}
+            Read UX research brief. Use browser automation for mockups.
+            Save artifacts to Teams/TheDesigners/artifacts/"
+
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "Visual design options
+
+          Co-Authored-By: agent:visual-designer <agent@dev-crew>" || true
+          git push origin HEAD
+
+  design-systems-check:
+    name: "Design Systems"
+    needs: [ux-research, visual-design]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ux-research.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Design Systems Check
+        run: |
+          claude --model claude-haiku-4-5 \
+            --system-prompt "$(cat $TEAM_DIR/design-systems.md)" \
+            --allowedTools "Read,Glob,Grep" \
+            --print \
+            "Validate design options against Tailwind tokens and component conventions." > design-systems-report.md
+
+  accessibility-audit:
+    name: "Accessibility Auditor"
+    needs: [ux-research, visual-design]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ux-research.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Accessibility Audit
+        run: |
+          claude --model claude-haiku-4-5 \
+            --system-prompt "$(cat $TEAM_DIR/accessibility-auditor.md)" \
+            --allowedTools "Read,Glob,Grep" \
+            --print \
+            "WCAG 2.1 AA review of design options before implementation." > accessibility-report.md
+
+  create-design-pr:
+    name: "Create Design PR (awaiting approval)"
+    needs: [ux-research, visual-design, design-systems-check, accessibility-audit]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ux-research.outputs.branch }}
+
+      - name: Create Design PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = '${{ needs.ux-research.outputs.branch }}';
+            const issueNum = '${{ inputs.issue_number }}';
+
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Design] ${{ inputs.design_brief }}`.substring(0, 70),
+              head: branch,
+              base: 'master',
+              body: [
+                '## Design Options',
+                `**Brief:** ${{ inputs.design_brief }}`,
+                '',
+                '## Pipeline',
+                '- [x] UX Research',
+                '- [x] Visual Design (2-3 options with screenshots)',
+                '- [x] Design Systems Validation',
+                '- [x] Accessibility Audit (WCAG 2.1 AA)',
+                '',
+                '## ⚠️ HARD GATE: Human Approval Required',
+                'Review the design options in `Teams/TheDesigners/artifacts/`.',
+                '**Approve this PR to unlock implementation by TheATeam.**',
+                '',
+                issueNum ? `Related: #${issueNum}` : '',
+                '',
+                '🎨 Generated by dev-crew TheDesigners pipeline',
+              ].join('\n'),
+            });
+
+            if (issueNum) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNum),
+                body: `## 🎨 Design Options Ready\n\nPR #${pr.data.number} has 2-3 design options for review.\n**Your approval is required before implementation begins.**`
+              });
+            }

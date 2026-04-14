@@ -449,6 +449,16 @@ export const orchestrator = {
 
 // --- Team Dispatch (non-build teams) ---
 
+export interface TeamDispatchRecord {
+  id: string
+  team: string
+  inputs: Record<string, string>
+  dispatched_at: string
+  actions_url: string
+  workflow: string
+  repo: string
+}
+
 export const teams = {
   dispatch(team: string, inputs: Record<string, string>): Promise<{
     dispatched: boolean
@@ -461,6 +471,18 @@ export const teams = {
       method: 'POST',
       body: JSON.stringify({ team, inputs }),
     })
+  },
+
+  recordDispatch(payload: Omit<TeamDispatchRecord, 'id' | 'dispatched_at'>): Promise<TeamDispatchRecord> {
+    return apiFetch('/api/team-dispatches', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  listDispatches(team?: string): Promise<{ data: TeamDispatchRecord[] }> {
+    const qs = team ? `?team=${encodeURIComponent(team)}` : ''
+    return apiFetch(`/api/team-dispatches${qs}`)
   },
 }
 

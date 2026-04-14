@@ -1,9 +1,14 @@
-import React, { useState } from 'react'
-import { teams } from '../api/client'
+import React, { useState, useEffect, useCallback } from 'react'
+import { teams, TeamDispatchRecord } from '../api/client'
 
 interface DispatchResult {
   actionsUrl: string
+  workflow: string
+  repo: string
+  team: string
 }
+
+// ── Shared helpers ────────────────────────────────────────────────
 
 function TeamCard({ title, icon, description, children }: {
   title: string
@@ -46,9 +51,33 @@ function StatusBanner({ result, error }: { result: DispatchResult | null; error:
   return null
 }
 
+const TEAM_META: Record<string, { label: string; color: string }> = {
+  TheInspector: { label: 'Inspector', color: 'bg-blue-100 text-blue-800' },
+  TheGuardians: { label: 'Guardians', color: 'bg-red-100 text-red-800' },
+  TheDesigners: { label: 'Designers', color: 'bg-purple-100 text-purple-800' },
+}
+
+function relativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
+function inputsSummary(inputs: Record<string, string>): string {
+  return Object.entries(inputs)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(' · ') || '—'
+}
+
 // ── Inspector ────────────────────────────────────────────────────
 
-function InspectorPanel() {
+function InspectorPanel({ onDispatched }: { onDispatched: (r: DispatchResult, inputs: Record<string, string>) => void }) {
   const [focus, setFocus] = useState('')
   const [mode, setMode] = useState<'static' | 'dynamic'>('static')
   const [loading, setLoading] = useState(false)
@@ -60,7 +89,10 @@ function InspectorPanel() {
     try {
       const inputs: Record<string, string> = { mode }
       if (focus.trim()) inputs.focus = focus.trim()
-      setResult(await teams.dispatch('TheInspector', inputs))
+      const r = await teams.dispatch('TheInspector', inputs)
+      const dr: DispatchResult = { actionsUrl: r.actionsUrl, workflow: r.workflow, repo: r.repo, team: r.team }
+      setResult(dr)
+      onDispatched(dr, inputs)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Dispatch failed')
     } finally {
@@ -118,7 +150,7 @@ function InspectorPanel() {
 
 // ── Guardians ────────────────────────────────────────────────────
 
-function GuardiansPanel() {
+function GuardiansPanel({ onDispatched }: { onDispatched: (r: DispatchResult, inputs: Record<string, string>) => void }) {
   const [scope, setScope] = useState<'full' | 'targeted'>('full')
   const [focus, setFocus] = useState('')
   const [loading, setLoading] = useState(false)
@@ -130,7 +162,10 @@ function GuardiansPanel() {
     try {
       const inputs: Record<string, string> = { scope }
       if (focus.trim()) inputs.focus = focus.trim()
-      setResult(await teams.dispatch('TheGuardians', inputs))
+      const r = await teams.dispatch('TheGuardians', inputs)
+      const dr: DispatchResult = { actionsUrl: r.actionsUrl, workflow: r.workflow, repo: r.repo, team: r.team }
+      setResult(dr)
+      onDispatched(dr, inputs)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Dispatch failed')
     } finally {
@@ -188,7 +223,7 @@ function GuardiansPanel() {
 
 // ── Designers ────────────────────────────────────────────────────
 
-function DesignersPanel() {
+function DesignersPanel({ onDispatched }: { onDispatched: (r: DispatchResult, inputs: Record<string, string>) => void }) {
   const [brief, setBrief] = useState('')
   const [issueNumber, setIssueNumber] = useState('')
   const [loading, setLoading] = useState(false)
@@ -201,7 +236,10 @@ function DesignersPanel() {
     try {
       const inputs: Record<string, string> = { design_brief: brief.trim() }
       if (issueNumber.trim()) inputs.issue_number = issueNumber.trim()
-      setResult(await teams.dispatch('TheDesigners', inputs))
+      const r = await teams.dispatch('TheDesigners', inputs)
+      const dr: DispatchResult = { actionsUrl: r.actionsUrl, workflow: r.workflow, repo: r.repo, team: r.team }
+      setResult(dr)
+      onDispatched(dr, inputs)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Dispatch failed')
     } finally {
@@ -254,11 +292,98 @@ function DesignersPanel() {
   )
 }
 
+// ── History ───────────────────────────────────────────────────────
+
+function DispatchHistory({ dispatches, loading }: { dispatches: TeamDispatchRecord[]; loading: boolean }) {
+  if (loading) {
+    return <p className="text-sm text-gray-400">Loading history…</p>
+  }
+  if (dispatches.length === 0) {
+    return <p className="text-sm text-gray-400">No dispatches yet. Run a team above to get started.</p>
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-xs text-gray-500 border-b border-gray-100">
+            <th className="text-left pb-2 pr-4 font-medium">Team</th>
+            <th className="text-left pb-2 pr-4 font-medium">When</th>
+            <th className="text-left pb-2 pr-4 font-medium">Inputs</th>
+            <th className="text-left pb-2 font-medium">Workflow</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dispatches.map((d) => {
+            const meta = TEAM_META[d.team] ?? { label: d.team, color: 'bg-gray-100 text-gray-700' }
+            return (
+              <tr key={d.id} className="border-b border-gray-50 last:border-0">
+                <td className="py-2 pr-4">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${meta.color}`}>
+                    {meta.label}
+                  </span>
+                </td>
+                <td className="py-2 pr-4 text-gray-500 whitespace-nowrap">
+                  {relativeTime(d.dispatched_at)}
+                </td>
+                <td className="py-2 pr-4 text-gray-600 max-w-xs truncate">
+                  {inputsSummary(d.inputs)}
+                </td>
+                <td className="py-2">
+                  <a
+                    href={d.actions_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:underline text-xs"
+                  >
+                    View run →
+                  </a>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────────
 
 export function TeamsPage() {
+  const [dispatches, setDispatches] = useState<TeamDispatchRecord[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const { data } = await teams.listDispatches()
+      setDispatches(data)
+    } catch {
+      // history is non-critical — fail silently
+    } finally {
+      setHistoryLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchHistory() }, [fetchHistory])
+
+  const handleDispatched = useCallback(async (result: DispatchResult, inputs: Record<string, string>) => {
+    try {
+      await teams.recordDispatch({
+        team: result.team,
+        inputs,
+        actions_url: result.actionsUrl,
+        workflow: result.workflow,
+        repo: result.repo,
+      })
+      fetchHistory()
+    } catch {
+      // recording is best-effort
+    }
+  }, [fetchHistory])
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Support Teams</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -267,9 +392,14 @@ export function TeamsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-        <InspectorPanel />
-        <GuardiansPanel />
-        <DesignersPanel />
+        <InspectorPanel onDispatched={handleDispatched} />
+        <GuardiansPanel onDispatched={handleDispatched} />
+        <DesignersPanel onDispatched={handleDispatched} />
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Dispatches</h2>
+        <DispatchHistory dispatches={dispatches} loading={historyLoading} />
       </div>
     </div>
   )

@@ -256,5 +256,23 @@ export function runMigrations(db: Database.Database): void {
     db.exec(`ALTER TABLE bugs ADD COLUMN target_repo TEXT`);
   }
 
+  // --- Team dispatch history (support teams: Inspector, Guardians, Designers) ---
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS team_dispatches (
+      id TEXT PRIMARY KEY,
+      team TEXT NOT NULL,
+      inputs TEXT NOT NULL DEFAULT '{}',
+      dispatched_at TEXT NOT NULL,
+      actions_url TEXT NOT NULL,
+      workflow TEXT NOT NULL,
+      repo TEXT NOT NULL
+    );
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_team_dispatches_team
+      ON team_dispatches(team, dispatched_at DESC);
+  `);
+
   logger.info('Database migrations complete');
 }

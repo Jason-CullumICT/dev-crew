@@ -11,9 +11,19 @@
         "task_title": "Implement feature: Dependency tracking between bugs and feature requests in the orchestrator — allow a work item to declare it depends_on another item, blocking submission until dependencies are complete"
       },
       "stages": [],
-      "agents": {},
+      "agents": {
+        "requirements-reviewer": {
+          "status": "complete",
+          "started_at": "2026-04-14T03:17:32Z",
+          "name": "Requirements Reviewer",
+          "model": "sonnet",
+          "completed_at": "2026-04-14T03:25:18Z",
+          "duration_s": 466,
+          "verdict": "Requirements decomposed"
+        }
+      },
       "feedback_loops": [],
-      "updated_at": "2026-04-14T03:17:22Z"
+      "updated_at": "2026-04-14T03:25:18Z"
     }
   }
 }

@@ -90,10 +90,9 @@ jobs:
 
           claude --model claude-sonnet-4-6 \
             --print \
-            --system-prompt "You are a pipeline planner. Read Teams/TheATeam/team-leader.md and follow the dispatch pattern. Produce a structured plan with discrete tasks for each agent. Output as JSON." \
-            "Read the role file at $TEAM_DIR/team-leader.md.
-
-          Task: ${{ inputs.task_description }}
+            --dangerously-skip-permissions \
+            --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
+            "Task: ${{ inputs.task_description }}
           $PLAN_FLAG
           $SPEC_FLAG
           Complexity: ${{ inputs.complexity }}

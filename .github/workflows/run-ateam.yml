@@ -114,8 +114,16 @@ jobs:
           name: dispatch-plan
           path: dispatch-plan.json
 
+      - name: Upload pipeline state
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/pipeline-state-TheATeam.json
+
       - name: Push branch
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "Agent pipeline: initialize for $TASK
 
@@ -137,6 +145,12 @@ jobs:
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
 
       - name: Dashboard — start
         run: |
@@ -160,6 +174,8 @@ jobs:
 
       - name: Push
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "Requirements review complete
 
@@ -178,6 +194,12 @@ jobs:
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
 
       - name: Dashboard — start
         run: |
@@ -200,6 +222,8 @@ jobs:
 
       - name: Push
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "API contract generated
 
@@ -221,6 +245,12 @@ jobs:
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
 
       - name: Dashboard — start
         run: |
@@ -244,6 +274,8 @@ jobs:
 
       - name: Push
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "Backend implementation
 
@@ -262,6 +294,12 @@ jobs:
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
 
       - name: Dashboard — start
         run: |
@@ -285,6 +323,8 @@ jobs:
 
       - name: Push
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "Frontend implementation
 
@@ -307,6 +347,12 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
+
       - name: Dashboard — start
         run: |
           bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
@@ -328,6 +374,8 @@ jobs:
 
       - name: Push
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "QA review and tests
 
@@ -346,6 +394,12 @@ jobs:
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
 
       - name: Dashboard — start
         run: |
@@ -489,6 +543,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.plan.outputs.branch }}
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
 
       - name: Dashboard — finalize
         run: |

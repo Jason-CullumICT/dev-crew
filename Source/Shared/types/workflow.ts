@@ -12,6 +12,7 @@ export enum WorkItemStatus {
   InProgress = 'in-progress',
   Completed = 'completed',
   Failed = 'failed',
+  PendingDependencies = 'pending-dependencies',
 }
 
 export enum WorkItemType {
@@ -73,6 +74,16 @@ export interface AssessmentRecord {
   timestamp: string;
 }
 
+// Verifies: FR-dependency-linking
+export interface DependencyLink {
+  id: string;
+  blockerItemId: string;
+  blockerItemType: WorkItemType;
+  blockerTitle: string;
+  blockerStatus: WorkItemStatus;
+  createdAt: string;
+}
+
 export interface WorkItem {
   id: string;
   docId: string;
@@ -87,6 +98,10 @@ export interface WorkItem {
   assignedTeam?: string;
   changeHistory: ChangeHistoryEntry[];
   assessments: AssessmentRecord[];
+  // Verifies: FR-dependency-linking
+  blockedBy?: DependencyLink[];
+  blocks?: DependencyLink[];
+  hasUnresolvedBlockers?: boolean;
   createdAt: string;
   updatedAt: string;
   deleted?: boolean;
@@ -132,6 +147,16 @@ export interface DispatchWorkItemRequest {
   team: string;
 }
 
+// Verifies: FR-dependency-linking
+export interface AddDependencyRequest {
+  blockerItemId: string;
+}
+
+// Verifies: FR-dependency-linking
+export interface UpdateDependenciesRequest {
+  blockedBy?: string[];
+}
+
 // --- API Response Types ---
 
 export interface PaginatedWorkItemsResponse {
@@ -162,6 +187,25 @@ export interface QueueGroup {
   items: WorkItem[];
 }
 
+// Verifies: FR-dependency-linking
+export interface DependenciesResponse {
+  data: DependencyLink[];
+}
+
+// Verifies: FR-dependency-ready-check
+export interface DependencyReadyResponse {
+  ready: boolean;
+  unresolvedBlockers?: DependencyLink[];
+  reason?: string;
+}
+
+// Verifies: FR-dependency-linking
+export interface ApiErrorResponse {
+  error: string;
+  code?: string;
+  details?: unknown;
+}
+
 // --- Query Types ---
 
 export interface WorkItemFilters {
@@ -178,13 +222,15 @@ export interface PaginationParams {
 }
 
 // Verifies: FR-WF-006 — Valid status transitions
+// Verifies: FR-dependency-dispatch-gating — PendingDependencies blocks progression to InProgress
 export const VALID_STATUS_TRANSITIONS: Record<WorkItemStatus, WorkItemStatus[]> = {
   [WorkItemStatus.Backlog]: [WorkItemStatus.Routing],
   [WorkItemStatus.Routing]: [WorkItemStatus.Proposed, WorkItemStatus.Approved],
-  [WorkItemStatus.Proposed]: [WorkItemStatus.Reviewing, WorkItemStatus.Approved, WorkItemStatus.Rejected],
-  [WorkItemStatus.Reviewing]: [WorkItemStatus.Approved, WorkItemStatus.Rejected],
-  [WorkItemStatus.Approved]: [WorkItemStatus.InProgress],
+  [WorkItemStatus.Proposed]: [WorkItemStatus.Reviewing, WorkItemStatus.Approved, WorkItemStatus.Rejected, WorkItemStatus.PendingDependencies],
+  [WorkItemStatus.Reviewing]: [WorkItemStatus.Approved, WorkItemStatus.Rejected, WorkItemStatus.PendingDependencies],
+  [WorkItemStatus.Approved]: [WorkItemStatus.InProgress, WorkItemStatus.PendingDependencies],
   [WorkItemStatus.Rejected]: [WorkItemStatus.Backlog],
+  [WorkItemStatus.PendingDependencies]: [WorkItemStatus.Proposed, WorkItemStatus.Approved],
   [WorkItemStatus.InProgress]: [WorkItemStatus.Completed, WorkItemStatus.Failed],
   [WorkItemStatus.Completed]: [],
   [WorkItemStatus.Failed]: [WorkItemStatus.Backlog],

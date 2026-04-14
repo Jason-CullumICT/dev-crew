@@ -58,6 +58,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
       - name: Initialize dashboard
         id: init
         run: |
@@ -92,6 +97,10 @@ jobs:
           bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
             --agent quality-oracle --action complete
 
+      - name: Refresh Claude token if needed
+        if: always()
+        run: bash tools/refresh-claude-token.sh
+
       - name: Run Dependency Auditor
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
@@ -109,6 +118,10 @@ jobs:
 
           bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
             --agent dependency-auditor --action complete
+
+      - name: Refresh Claude token if needed
+        if: always()
+        run: bash tools/refresh-claude-token.sh
 
       - name: Run Performance Profiler (dynamic only)
         if: inputs.mode == 'dynamic'
@@ -133,6 +146,10 @@ jobs:
             --print \
             --dangerously-skip-permissions \
             "$(cat /tmp/prompt.txt)"
+
+      - name: Refresh Claude token if needed
+        if: always()
+        run: bash tools/refresh-claude-token.sh
 
       - name: Synthesize Report
         run: |

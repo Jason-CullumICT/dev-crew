@@ -47,6 +47,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
       - name: Create design branch
         id: branch
         run: |
@@ -89,6 +94,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
       - name: Run Visual Designer
         run: |
           printf 'Create 2-3 design options with screenshots.\nDesign brief: %s\nRead UX research brief. Use browser automation for mockups.\nSave artifacts to Teams/TheDesigners/artifacts/' \
@@ -125,6 +135,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
       - name: Run Design Systems Check
         run: |
           claude --model claude-haiku-4-5 \
@@ -146,6 +161,11 @@ jobs:
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
 
       - name: Run Accessibility Audit
         run: |

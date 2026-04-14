@@ -57,6 +57,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
       - name: Initialize dashboard
         id: init
         run: |
@@ -87,6 +92,10 @@ jobs:
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent static-analyzer --action complete
 
+      - name: Refresh Claude token if needed
+        if: always()
+        run: bash tools/refresh-claude-token.sh
+
       - name: Run Pen Tester
         run: |
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
@@ -104,6 +113,10 @@ jobs:
 
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent pen-tester --action complete
+
+      - name: Refresh Claude token if needed
+        if: always()
+        run: bash tools/refresh-claude-token.sh
 
       - name: Run Red Teamer (ephemeral env only)
         run: |
@@ -123,6 +136,10 @@ jobs:
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent red-teamer --action complete
 
+      - name: Refresh Claude token if needed
+        if: always()
+        run: bash tools/refresh-claude-token.sh
+
       - name: Run Compliance Auditor
         run: |
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
@@ -140,6 +157,10 @@ jobs:
 
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent compliance-auditor --action complete
+
+      - name: Refresh Claude token if needed
+        if: always()
+        run: bash tools/refresh-claude-token.sh
 
       - name: Tear down ephemeral environment
         if: always()

@@ -12,18 +12,18 @@
       },
       "stages": [],
       "agents": {
-        "requirements-reviewer": {
+        "api-contract": {
           "status": "complete",
-          "started_at": "2026-04-14T03:17:32Z",
-          "name": "Requirements Reviewer",
-          "model": "sonnet",
-          "completed_at": "2026-04-14T03:25:18Z",
-          "duration_s": 466,
-          "verdict": "Requirements decomposed"
+          "started_at": "2026-04-14T03:25:30Z",
+          "name": "API Contract",
+          "model": "haiku",
+          "completed_at": "2026-04-14T03:27:30Z",
+          "duration_s": 120,
+          "verdict": "API contract generated"
         }
       },
       "feedback_loops": [],
-      "updated_at": "2026-04-14T03:25:18Z"
+      "updated_at": "2026-04-14T03:27:30Z"
     }
   }
 }

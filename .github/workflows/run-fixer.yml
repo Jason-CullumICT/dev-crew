@@ -35,6 +35,7 @@ permissions:
 env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheFixer"
+  FIX_DESC: ${{ inputs.fix_description }}
 
 jobs:
 
@@ -64,7 +65,7 @@ jobs:
         id: init
         run: |
           RUN_ID=$(bash tools/pipeline-update.sh --team TheFixer --action init \
-            --metrics "{\"task_title\": \"${{ inputs.fix_description }}\"}")
+            --metrics "$(jq -n --arg t "$FIX_DESC" '{"task_title": $t}')")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       - name: Run Planner
@@ -80,13 +81,13 @@ jobs:
             --print \
             --dangerously-skip-permissions \
             "Read the codebase. Produce a fix plan with scope tags.
-            Fix: ${{ inputs.fix_description }}
+            Fix: $FIX_DESC
             $PLAN_FLAG" > fix-plan.md
 
       - name: Push
         run: |
           git add -A
-          git commit -m "Fix plan: ${{ inputs.fix_description }}
+          git commit -m "Fix plan: $FIX_DESC
 
           Co-Authored-By: agent:planner <agent@dev-crew>" || true
           git push origin ${{ steps.branch.outputs.name }}
@@ -114,7 +115,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/backend-fixer.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Apply backend fixes for: ${{ inputs.fix_description }}
+            "Apply backend fixes for: $FIX_DESC
             Read fix-plan.md for scope. Max 5 fix cycles. Update tests.
             Stay within Source/Backend/."
 
@@ -155,7 +156,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/frontend-fixer.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Apply frontend fixes for: ${{ inputs.fix_description }}
+            "Apply frontend fixes for: $FIX_DESC
             Read fix-plan.md for scope. Max 5 fix cycles. Wiring audit.
             Stay within Source/Frontend/."
 
@@ -192,7 +193,7 @@ jobs:
             --system-prompt "$(cat $TEAM_DIR/verify-reporter.md)" \
             --allowedTools "Read,Write,Bash,Glob,Grep" \
             "Run full test suite. Smoke test. Generate traceability report.
-            Verify fix for: ${{ inputs.fix_description }}"
+            Verify fix for: $FIX_DESC"
 
       - name: Run Security Spot-Check
         run: |
@@ -202,7 +203,7 @@ jobs:
             --print \
             --dangerously-skip-permissions \
             "Read-only security spot-check on the diff.
-            Focus on the changes made for: ${{ inputs.fix_description }}" > security-check.md
+            Focus on the changes made for: $FIX_DESC" > security-check.md
 
       - name: Push
         run: |
@@ -220,12 +221,12 @@ jobs:
             const pr = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `[TheFixer] ${{ inputs.fix_description }}`.substring(0, 70),
+              title: `[TheFixer] ${process.env.FIX_DESC || ""}`.substring(0, 70),
               head: branch,
               base: 'master',
               body: [
                 '## Fix Summary',
-                `**Fix:** ${{ inputs.fix_description }}`,
+                `**Fix:** ${process.env.FIX_DESC || ""}`,
                 '',
                 '## Pipeline',
                 '- [x] Planner',

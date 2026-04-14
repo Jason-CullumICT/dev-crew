@@ -44,6 +44,7 @@ permissions:
 env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheATeam"
+  TASK: ${{ inputs.task_description }}
 
 jobs:
 
@@ -74,7 +75,7 @@ jobs:
         id: init
         run: |
           RUN_ID=$(bash tools/pipeline-update.sh --team TheATeam --action init \
-            --metrics "{\"task_title\": \"${{ inputs.task_description }}\"}")
+            --metrics "$(jq -n --arg t "$TASK" '{"task_title": $t}')")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       - name: Run Team Leader — produce dispatch plan
@@ -92,7 +93,7 @@ jobs:
             --print \
             --dangerously-skip-permissions \
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
-            "Task: ${{ inputs.task_description }}
+            "Task: $TASK
           $PLAN_FLAG
           $SPEC_FLAG
           Complexity: ${{ inputs.complexity }}
@@ -113,7 +114,7 @@ jobs:
       - name: Push branch
         run: |
           git add -A
-          git commit -m "Agent pipeline: initialize for ${{ inputs.task_description }}
+          git commit -m "Agent pipeline: initialize for $TASK
 
           Co-Authored-By: agent:team-leader <agent@dev-crew>" || true
           git push origin ${{ steps.branch.outputs.name }}
@@ -144,7 +145,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/requirements-reviewer.md)" \
             --allowedTools "Read,Write,Edit,Glob,Grep" \
-            "Task: ${{ inputs.task_description }}
+            "Task: $TASK
             Decompose requirements. Apply Autonomous Scoping + Bin-Packing.
             Read specs and plans. Produce structured requirements for the coders."
 
@@ -228,7 +229,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/backend-coder.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Implement the backend for: ${{ inputs.task_description }}
+            "Implement the backend for: $TASK
             Follow CLAUDE.md conventions. Test-first. Max 3 fix cycles.
             Stay within Source/Backend/. Run tests before completing."
 
@@ -269,7 +270,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/frontend-coder.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Implement the frontend for: ${{ inputs.task_description }}
+            "Implement the frontend for: $TASK
             Follow CLAUDE.md conventions. Test-first + wiring audit. Max 3 fix cycles.
             Stay within Source/Frontend/. Run tests before completing."
 
@@ -313,7 +314,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/qa-review-and-tests.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Review and test the implementation for: ${{ inputs.task_description }}
+            "Review and test the implementation for: $TASK
             Run all tests. Grade coverage. Report gaps."
 
       - name: Dashboard — complete
@@ -353,7 +354,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/security-qa.md)" \
             --allowedTools "Read,Glob,Grep" \
-            "Security review of new/changed code for: ${{ inputs.task_description }}
+            "Security review of new/changed code for: $TASK
             Check for OWASP Top 10, injection, auth gaps, secrets, insecure patterns."
 
       - name: Dashboard — complete
@@ -380,7 +381,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat Teams/Shared/chaos-tester.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Adversarial invariant testing for: ${{ inputs.task_description }}
+            "Adversarial invariant testing for: $TASK
             Find edge cases, race conditions, invalid states."
 
   traceability:
@@ -424,7 +425,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/visual-playwright.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Write and run Playwright browser tests for: ${{ inputs.task_description }}
+            "Write and run Playwright browser tests for: $TASK
             Ephemeral tests. Validate UI flows work end-to-end."
 
   # ---------------------------------------------------------------------------
@@ -448,7 +449,7 @@ jobs:
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat Teams/Shared/design-critic.md)" \
             --allowedTools "Read,Glob,Grep,Bash" \
-            "Multimodal visual validation for: ${{ inputs.task_description }}
+            "Multimodal visual validation for: $TASK
             Review UI implementation against design specs."
 
   integration-review:
@@ -469,7 +470,7 @@ jobs:
           claude --model claude-haiku-4-5 \
             --system-prompt "$(cat $TEAM_DIR/integration-reviewer.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
-            "Final code review + smoke testing for: ${{ inputs.task_description }}
+            "Final code review + smoke testing for: $TASK
             Verify integration points. Run full test suite. Report verdict."
 
   # ---------------------------------------------------------------------------
@@ -497,7 +498,7 @@ jobs:
         with:
           script: |
             const branch = '${{ needs.plan.outputs.branch }}';
-            const task = `${{ inputs.task_description }}`;
+            const task = process.env.TASK || "";
             const issueNum = '${{ inputs.issue_number }}';
 
             const body = [

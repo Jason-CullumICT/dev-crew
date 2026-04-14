@@ -88,6 +88,26 @@ jobs:
           name: pipeline-state-inspector
           path: tools/pipeline-state-TheInspector.json
 
+      - name: Audit plan
+        run: |
+          echo "========================================"
+          echo "  TheInspector — Audit Plan"
+          echo "========================================"
+          echo "  Mode  : ${{ inputs.mode || 'static' }}"
+          echo "  Focus : ${{ inputs.focus || 'full audit' }}"
+          echo ""
+          echo "  Agents:"
+          echo "    ✓ Quality Oracle       (always)"
+          echo "    ✓ Dependency Auditor   (always)"
+          if [ "${{ inputs.mode }}" = "dynamic" ]; then
+            echo "    ✓ Performance Profiler (dynamic mode)"
+            echo "    ✓ Chaos Monkey         (dynamic mode)"
+          else
+            echo "    — Performance Profiler (skipped — static mode, no live services)"
+            echo "    — Chaos Monkey         (skipped — static mode, no live services)"
+          fi
+          echo "========================================"
+
       - name: Run Spec-Drift Audit
         run: python3 tools/spec-drift-audit.py || true
 

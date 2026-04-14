@@ -73,6 +73,19 @@ export interface AssessmentRecord {
   timestamp: string;
 }
 
+export enum DependencyBlockageReason {
+  UnresolvedDependency = 'unresolved-dependency',
+  WaitingForBlocker = 'waiting-for-blocker',
+}
+
+export interface DependencyLink {
+  blockedItemId: string;
+  blockedItemDocId: string;
+  blockerItemId: string;
+  blockerItemDocId: string;
+  createdAt: string;
+}
+
 export interface WorkItem {
   id: string;
   docId: string;
@@ -87,6 +100,9 @@ export interface WorkItem {
   assignedTeam?: string;
   changeHistory: ChangeHistoryEntry[];
   assessments: AssessmentRecord[];
+  blockedBy?: DependencyLink[];
+  blocks?: DependencyLink[];
+  hasUnresolvedBlockers?: boolean;
   createdAt: string;
   updatedAt: string;
   deleted?: boolean;
@@ -110,6 +126,7 @@ export interface UpdateWorkItemRequest {
   type?: WorkItemType;
   priority?: WorkItemPriority;
   complexity?: WorkItemComplexity;
+  blockedBy?: string[];
 }
 
 export interface RouteWorkItemRequest {
@@ -132,6 +149,16 @@ export interface DispatchWorkItemRequest {
   team: string;
 }
 
+export interface DependencyActionRequest {
+  action: 'add' | 'remove';
+  blockerId: string;
+}
+
+export interface ReadinessCheckResponse {
+  ready: boolean;
+  unresolvedBlockers?: DependencyLink[];
+}
+
 // --- API Response Types ---
 
 export interface PaginatedWorkItemsResponse {
@@ -140,6 +167,11 @@ export interface PaginatedWorkItemsResponse {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+export interface ApiErrorResponse {
+  error: string;
+  code?: string;
 }
 
 export interface DashboardSummaryResponse {
@@ -178,6 +210,7 @@ export interface PaginationParams {
 }
 
 // Verifies: FR-WF-006 — Valid status transitions
+// Verifies: FR-dependency-dispatch-gating — Support for pending_dependencies blocking
 export const VALID_STATUS_TRANSITIONS: Record<WorkItemStatus, WorkItemStatus[]> = {
   [WorkItemStatus.Backlog]: [WorkItemStatus.Routing],
   [WorkItemStatus.Routing]: [WorkItemStatus.Proposed, WorkItemStatus.Approved],
@@ -189,3 +222,16 @@ export const VALID_STATUS_TRANSITIONS: Record<WorkItemStatus, WorkItemStatus[]> 
   [WorkItemStatus.Completed]: [],
   [WorkItemStatus.Failed]: [WorkItemStatus.Backlog],
 };
+
+// Verifies: FR-dependency-dispatch-gating — Resolved statuses (no longer blocking dependents)
+export const RESOLVED_STATUSES: WorkItemStatus[] = [
+  WorkItemStatus.Completed,
+  WorkItemStatus.Rejected,
+  WorkItemStatus.Failed,
+];
+
+// Verifies: FR-dependency-dispatch-gating — Dispatch trigger statuses (unblock dependents on these transitions)
+export const DISPATCH_TRIGGER_STATUSES: WorkItemStatus[] = [
+  WorkItemStatus.Completed,
+  WorkItemStatus.Rejected,
+];

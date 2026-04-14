@@ -1,4 +1,5 @@
 // Verifies: FR-WF-010, FR-WF-011 (status display for work items)
+// Verifies: FR-dependency-dispatch-gating (PendingDependencies status color)
 
 import React from 'react';
 import { WorkItemStatus } from '../../../Shared/types/workflow';
@@ -13,6 +14,8 @@ const STATUS_COLORS: Record<WorkItemStatus, string> = {
   [WorkItemStatus.InProgress]: '#6366f1',
   [WorkItemStatus.Completed]: '#059669',
   [WorkItemStatus.Failed]: '#dc2626',
+  // Verifies: FR-dependency-dispatch-gating — amber color for pending dependencies
+  [WorkItemStatus.PendingDependencies]: '#d97706',
 };
 
 interface StatusBadgeProps {

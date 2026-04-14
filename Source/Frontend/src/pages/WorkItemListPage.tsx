@@ -1,4 +1,5 @@
 // Verifies: FR-WF-010 (Work Item list page with filtering and pagination)
+// Verifies: FR-dependency-ready-check (BlockedBadge integration in list rows)
 
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +13,7 @@ import { useWorkItems } from '../hooks/useWorkItems';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { TypeBadge } from '../components/TypeBadge';
+import { BlockedBadge } from '../components/BlockedBadge';
 
 const PAGE_SIZES = [10, 20, 50];
 
@@ -175,6 +177,11 @@ export const WorkItemListPage: React.FC = () => {
                     </td>
                     <td style={tdStyle}>
                       <StatusBadge status={item.status} />
+                      {/* Verifies: FR-dependency-ready-check — show blocked/pending badges in list */}
+                      <BlockedBadge
+                        hasUnresolvedBlockers={item.hasUnresolvedBlockers ?? false}
+                        status={item.status}
+                      />
                     </td>
                     <td style={tdStyle}>
                       <PriorityBadge priority={item.priority} />

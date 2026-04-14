@@ -1,4 +1,6 @@
 // Verifies: FR-WF-011 (Work Item detail page with history, assessments, and workflow actions)
+// Verifies: FR-dependency-linking (DependenciesPanel integration)
+// Verifies: FR-dependency-dispatch-gating (dispatch gating when hasUnresolvedBlockers)
 
 import React, { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -11,6 +13,7 @@ import { useWorkItem } from '../hooks/useWorkItems';
 import { workItemsApi } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
+import { DependenciesPanel } from '../components/DependenciesPanel';
 
 // Verifies: FR-WF-011 (full detail view with actions, history, assessments)
 export const WorkItemDetailPage: React.FC = () => {
@@ -129,6 +132,16 @@ export const WorkItemDetailPage: React.FC = () => {
         </div>
       </section>
 
+      {/* Verifies: FR-dependency-linking — show dependencies panel when blockedBy or blocks are present */}
+      {((item.blockedBy && item.blockedBy.length > 0) || (item.blocks && item.blocks.length > 0)) && (
+        <DependenciesPanel
+          itemId={item.id}
+          blockedBy={item.blockedBy ?? []}
+          blocks={item.blocks ?? []}
+          hasUnresolvedBlockers={item.hasUnresolvedBlockers}
+        />
+      )}
+
       {/* Verifies: FR-WF-011 (action buttons conditionally shown by status) */}
       <ActionPanel
         item={item}
@@ -184,6 +197,7 @@ const DetailField: React.FC<{ label: string; value: string }> = ({ label, value 
 );
 
 // Verifies: FR-WF-011 (conditional action buttons by status)
+// Verifies: FR-dependency-dispatch-gating (dispatch disabled when hasUnresolvedBlockers)
 const ActionPanel: React.FC<{
   item: WorkItem;
   actionLoading: boolean;
@@ -208,6 +222,7 @@ const ActionPanel: React.FC<{
   onDispatch,
 }) => {
   const status = item.status;
+  const hasUnresolvedBlockers = item.hasUnresolvedBlockers ?? false;
   const showRoute = status === WorkItemStatus.Backlog;
   const showApproveReject =
     status === WorkItemStatus.Proposed || status === WorkItemStatus.Reviewing;
@@ -277,27 +292,49 @@ const ActionPanel: React.FC<{
         )}
 
         {/* "Dispatch" when status=approved (with team selection) */}
+        {/* Verifies: FR-dependency-dispatch-gating — dispatch blocked when hasUnresolvedBlockers */}
         {showDispatch && (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <select
-              data-testid="dispatch-team-select"
-              aria-label="Select team"
-              value={dispatchTeam}
-              onChange={(e) => onDispatchTeamChange(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #d1d5db' }}
-            >
-              <option value="TheATeam">TheATeam</option>
-              <option value="TheFixer">TheFixer</option>
-            </select>
-            <button
-              data-testid="action-dispatch"
-              onClick={onDispatch}
-              disabled={actionLoading}
-              style={{ ...actionBtnStyle, backgroundColor: '#6366f1' }}
-            >
-              Dispatch
-            </button>
-          </div>
+          <>
+            {hasUnresolvedBlockers && (
+              <div
+                data-testid="unresolved-blockers-warning"
+                style={{
+                  padding: '10px 14px',
+                  backgroundColor: '#fef3c7',
+                  color: '#92400e',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  border: '1px solid #fde68a',
+                }}
+              >
+                ⚠️ This item has unresolved blockers. Resolve all dependencies before dispatching.
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <select
+                data-testid="dispatch-team-select"
+                aria-label="Select team"
+                value={dispatchTeam}
+                onChange={(e) => onDispatchTeamChange(e.target.value)}
+                style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              >
+                <option value="TheATeam">TheATeam</option>
+                <option value="TheFixer">TheFixer</option>
+              </select>
+              <button
+                data-testid="action-dispatch"
+                onClick={onDispatch}
+                disabled={actionLoading || hasUnresolvedBlockers}
+                style={{
+                  ...actionBtnStyle,
+                  backgroundColor: hasUnresolvedBlockers ? '#a5b4fc' : '#6366f1',
+                  cursor: hasUnresolvedBlockers ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Dispatch
+              </button>
+            </div>
+          </>
         )}
       </div>
     </section>

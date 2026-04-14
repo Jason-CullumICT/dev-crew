@@ -12,18 +12,17 @@
       },
       "stages": [],
       "agents": {
-        "api-contract": {
+        "frontend-coder": {
           "status": "complete",
-          "started_at": "2026-04-14T03:25:30Z",
-          "name": "API Contract",
-          "model": "haiku",
-          "completed_at": "2026-04-14T03:27:30Z",
-          "duration_s": 120,
-          "verdict": "API contract generated"
+          "started_at": "2026-04-14T03:27:47Z",
+          "name": "Frontend Coder",
+          "model": "sonnet",
+          "completed_at": "2026-04-14T03:34:22Z",
+          "duration_s": 395
         }
       },
       "feedback_loops": [],
-      "updated_at": "2026-04-14T03:27:30Z"
+      "updated_at": "2026-04-14T03:34:22Z"
     }
   }
 }

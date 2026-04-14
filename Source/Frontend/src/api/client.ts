@@ -1,4 +1,5 @@
 // Verifies: FR-WF-010, FR-WF-011 (API client for work item operations)
+// Verifies: FR-dependency-linking (dependenciesApi client functions)
 
 import type {
   WorkItem,
@@ -11,6 +12,9 @@ import type {
   CreateWorkItemRequest,
   RejectWorkItemRequest,
   DispatchWorkItemRequest,
+  AddDependencyRequest,
+  DependenciesResponse,
+  DependencyReadyResponse,
 } from '../../../Shared/types/workflow';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
@@ -64,6 +68,26 @@ export const workItemsApi = {
 
   dispatch(id: string, data: DispatchWorkItemRequest): Promise<WorkItem> {
     return request(`/work-items/${id}/dispatch`, { method: 'POST', body: JSON.stringify(data) });
+  },
+};
+
+// Verifies: FR-dependency-linking — typed API functions for dependency endpoints
+export const dependenciesApi = {
+  addDependency(itemId: string, data: AddDependencyRequest): Promise<DependenciesResponse> {
+    return request(`/work-items/${itemId}/dependencies`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  removeDependency(itemId: string, blockerItemId: string): Promise<void> {
+    return request(`/work-items/${itemId}/dependencies/${blockerItemId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  checkReady(itemId: string): Promise<DependencyReadyResponse> {
+    return request(`/work-items/${itemId}/ready`);
   },
 };
 

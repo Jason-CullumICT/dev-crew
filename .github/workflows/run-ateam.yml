@@ -159,12 +159,13 @@ jobs:
 
       - name: Run Requirements Reviewer
         run: |
+          printf 'Task: %s\nDecompose requirements. Apply Autonomous Scoping + Bin-Packing.\nRead specs and plans. Produce structured requirements for the coders.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/requirements-reviewer.md)" \
             --allowedTools "Read,Write,Edit,Glob,Grep" \
-            "Task: $TASK
-            Decompose requirements. Apply Autonomous Scoping + Bin-Packing.
-            Read specs and plans. Produce structured requirements for the coders."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Dashboard — complete
         if: always()
@@ -208,11 +209,13 @@ jobs:
 
       - name: Run API Contract
         run: |
+          printf 'Generate shared API types and endpoint specs based on the requirements.\nTask: %s\nUpdate Source/Shared/ with type definitions.' "$TASK" > /tmp/prompt.txt
           claude --model claude-haiku-4-5 \
             --system-prompt "$(cat $TEAM_DIR/api-contract.md)" \
             --allowedTools "Read,Write,Edit,Glob,Grep" \
-            "Generate shared API types and endpoint specs based on the requirements.
-            Update Source/Shared/ with type definitions."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Dashboard — complete
         if: always()
@@ -259,12 +262,13 @@ jobs:
 
       - name: Run Backend Coder
         run: |
+          printf 'Implement the backend for: %s\nFollow CLAUDE.md conventions. Test-first. Max 3 fix cycles.\nStay within Source/Backend/. Run tests before completing.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/backend-coder.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Implement the backend for: $TASK
-            Follow CLAUDE.md conventions. Test-first. Max 3 fix cycles.
-            Stay within Source/Backend/. Run tests before completing."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Dashboard — complete
         if: always()
@@ -308,12 +312,13 @@ jobs:
 
       - name: Run Frontend Coder
         run: |
+          printf 'Implement the frontend for: %s\nFollow CLAUDE.md conventions. Test-first + wiring audit. Max 3 fix cycles.\nStay within Source/Frontend/. Run tests before completing.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/frontend-coder.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Implement the frontend for: $TASK
-            Follow CLAUDE.md conventions. Test-first + wiring audit. Max 3 fix cycles.
-            Stay within Source/Frontend/. Run tests before completing."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Dashboard — complete
         if: always()
@@ -360,11 +365,13 @@ jobs:
 
       - name: Run QA Agent
         run: |
+          printf 'Review and test the implementation for: %s\nRun all tests. Grade coverage. Report gaps.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/qa-review-and-tests.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Review and test the implementation for: $TASK
-            Run all tests. Grade coverage. Report gaps."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Dashboard — complete
         if: always()
@@ -408,11 +415,13 @@ jobs:
 
       - name: Run Security QA
         run: |
+          printf 'Security review of new/changed code for: %s\nCheck for OWASP Top 10, injection, auth gaps, secrets, insecure patterns.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/security-qa.md)" \
             --allowedTools "Read,Glob,Grep" \
-            "Security review of new/changed code for: $TASK
-            Check for OWASP Top 10, injection, auth gaps, secrets, insecure patterns."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Dashboard — complete
         if: always()
@@ -435,11 +444,13 @@ jobs:
 
       - name: Run Chaos Tester
         run: |
+          printf 'Adversarial invariant testing for: %s\nFind edge cases, race conditions, invalid states.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat Teams/Shared/chaos-tester.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Adversarial invariant testing for: $TASK
-            Find edge cases, race conditions, invalid states."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
   traceability:
     name: "Traceability Reporter"
@@ -458,11 +469,13 @@ jobs:
         run: |
           python3 tools/traceability-enforcer.py || true
 
+          printf "Generate FR traceability report. Verify every requirement has a '// Verifies: FR-XXX' comment in source. Task: %s" "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/traceability-reporter.md)" \
             --allowedTools "Read,Write,Glob,Grep,Bash" \
-            "Generate FR traceability report. Verify every requirement has a
-            '// Verifies: FR-XXX' comment in source."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
   visual-playwright:
     name: "Visual Playwright"
@@ -479,11 +492,13 @@ jobs:
 
       - name: Run Visual Playwright
         run: |
+          printf 'Write and run Playwright browser tests for: %s\nEphemeral tests. Validate UI flows work end-to-end.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/visual-playwright.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Write and run Playwright browser tests for: $TASK
-            Ephemeral tests. Validate UI flows work end-to-end."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
   # ---------------------------------------------------------------------------
   # Stage 5: QA Tier 2 (sequential — after Tier 1)
@@ -503,11 +518,13 @@ jobs:
 
       - name: Run Design Critic
         run: |
+          printf 'Multimodal visual validation for: %s\nReview UI implementation against design specs.' "$TASK" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat Teams/Shared/design-critic.md)" \
             --allowedTools "Read,Glob,Grep,Bash" \
-            "Multimodal visual validation for: $TASK
-            Review UI implementation against design specs."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
   integration-review:
     name: "Integration Reviewer"
@@ -524,11 +541,13 @@ jobs:
 
       - name: Run Integration Reviewer
         run: |
+          printf 'Final code review + smoke testing for: %s\nVerify integration points. Run full test suite. Report verdict.' "$TASK" > /tmp/prompt.txt
           claude --model claude-haiku-4-5 \
             --system-prompt "$(cat $TEAM_DIR/integration-reviewer.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
-            "Final code review + smoke testing for: $TASK
-            Verify integration points. Run full test suite. Report verdict."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
   # ---------------------------------------------------------------------------
   # Stage 6: Create PR

@@ -1,4 +1,5 @@
-// Verifies: FR-WF-006 — Workflow action endpoints (route/assess/approve/reject/dispatch)
+// Verifies: FR-WF-006, FR-dependency-endpoints, FR-dependency-dispatch-gating
+// Workflow action endpoints (route/assess/approve/reject/dispatch + dependency management)
 
 import { Router, Request, Response } from 'express';
 import {
@@ -8,6 +9,7 @@ import {
   ApproveWorkItemRequest,
   RejectWorkItemRequest,
   DispatchWorkItemRequest,
+  DependencyActionRequest,
   VALID_STATUS_TRANSITIONS,
 } from '../../../Shared/types/workflow';
 import * as store from '../store/workItemStore';
@@ -15,7 +17,14 @@ import { routeWorkItem } from '../services/router';
 import { assessWorkItem } from '../services/assessment';
 import { assignTeam } from '../services/router';
 import { buildChangeEntry } from '../models/WorkItem';
-import { itemsDispatchedCounter } from '../metrics';
+import {
+  addDependency,
+  removeDependency,
+  isReady,
+  computeHasUnresolvedBlockers,
+  onItemResolved,
+} from '../services/dependency';
+import { itemsDispatchedCounter, dispatchGatingEventsCounter } from '../metrics';
 import logger from '../logger';
 
 const router = Router();
@@ -180,6 +189,17 @@ router.post('/:id/reject', (req: Request, res: Response) => {
       reason: body.reason,
     });
 
+    // Verifies: FR-dependency-dispatch-gating — cascade auto-dispatch of dependents
+    const cascaded = onItemResolved(id);
+    if (cascaded.length > 0) {
+      logger.info({
+        msg: 'Cascade: auto-dispatched dependents after rejection',
+        resolvedItemId: id,
+        cascadedCount: cascaded.length,
+        cascadedIds: cascaded.map((c) => c.id),
+      });
+    }
+
     res.json(updated);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
@@ -203,6 +223,23 @@ router.post('/:id/dispatch', (req: Request, res: Response) => {
     if (item.status !== WorkItemStatus.Approved) {
       res.status(400).json({
         error: `Cannot dispatch work item in status '${item.status}'. Must be in 'approved' status.`,
+      });
+      return;
+    }
+
+    // Verifies: FR-dependency-dispatch-gating — Block dispatch when unresolved blockers exist
+    if (computeHasUnresolvedBlockers(id)) {
+      dispatchGatingEventsCounter.inc({ event: 'blocked' });
+      const readiness = isReady(id);
+      logger.warn({
+        msg: 'Dispatch blocked: work item has unresolved dependencies',
+        workItemId: id,
+        docId: item.docId,
+        unresolvedCount: readiness.unresolvedBlockers?.length,
+      });
+      res.status(400).json({
+        error: 'Cannot dispatch: work item has unresolved blocking dependencies',
+        unresolvedBlockers: readiness.unresolvedBlockers,
       });
       return;
     }
@@ -254,6 +291,82 @@ router.post('/:id/dispatch', (req: Request, res: Response) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error({ msg: 'Dispatch action failed', error: message, workItemId: req.params.id });
+    res.status(500).json({ error: message });
+  }
+});
+
+// ─── Dependency endpoints ────────────────────────────────────────────────────
+
+// Verifies: FR-dependency-endpoints — POST /api/work-items/:id/dependencies
+// Body: { action: 'add' | 'remove', blockerId: string }
+router.post('/:id/dependencies', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const body = req.body as DependencyActionRequest;
+
+    if (!body?.blockerId) {
+      res.status(400).json({ error: 'blockerId is required' });
+      return;
+    }
+
+    if (body.action !== 'add' && body.action !== 'remove') {
+      res.status(400).json({ error: "action must be 'add' or 'remove'" });
+      return;
+    }
+
+    const item = store.findById(id);
+    if (!item) {
+      res.status(404).json({ error: `Work item ${id} not found` });
+      return;
+    }
+
+    if (body.action === 'add') {
+      const link = addDependency(id, body.blockerId);
+      res.json(link);
+    } else {
+      removeDependency(id, body.blockerId);
+      res.status(204).send();
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+
+    // Self-reference → 400
+    if (message.toLowerCase().includes('self')) {
+      res.status(400).json({ error: message });
+      return;
+    }
+    // Not found → 404
+    if (message.toLowerCase().includes('not found')) {
+      res.status(404).json({ error: message });
+      return;
+    }
+    // Circular dependency → 409
+    if (message.toLowerCase().includes('cycle') || message.toLowerCase().includes('circular')) {
+      res.status(409).json({ error: message });
+      return;
+    }
+
+    logger.error({ msg: 'Dependency action failed', error: message, workItemId: req.params.id });
+    res.status(500).json({ error: message });
+  }
+});
+
+// Verifies: FR-dependency-endpoints — GET /api/work-items/:id/ready
+router.get('/:id/ready', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const item = store.findById(id);
+    if (!item) {
+      res.status(404).json({ error: `Work item ${id} not found` });
+      return;
+    }
+
+    const result = isReady(id);
+    res.json(result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    logger.error({ msg: 'Readiness check failed', error: message, workItemId: req.params.id });
     res.status(500).json({ error: message });
   }
 });

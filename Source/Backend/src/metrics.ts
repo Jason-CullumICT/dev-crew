@@ -36,3 +36,27 @@ export const itemsDispatchedCounter = new Counter({
   labelNames: ['team'] as const,
   registers: [registry],
 });
+
+// Verifies: FR-dependency-metrics — dependency_operations_total
+export const dependencyOperationsCounter = new Counter({
+  name: 'dependency_operations_total',
+  help: 'Total dependency link operations (add/remove/set)',
+  labelNames: ['action'] as const,
+  registers: [registry],
+});
+
+// Verifies: FR-dependency-metrics — dispatch_gating_events_total
+export const dispatchGatingEventsCounter = new Counter({
+  name: 'dispatch_gating_events_total',
+  help: 'Total dispatch gating events (blocked or cascade dispatched)',
+  labelNames: ['event'] as const,
+  registers: [registry],
+});
+
+// Verifies: FR-dependency-metrics — cycle_detection_events_total
+export const cycleDetectionEventsCounter = new Counter({
+  name: 'cycle_detection_events_total',
+  help: 'Total cycle detection BFS executions',
+  labelNames: ['detected'] as const,
+  registers: [registry],
+});

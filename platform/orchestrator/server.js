@@ -229,6 +229,122 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// ── GitHub Actions Dispatch ──
+
+const WORKFLOW_MAP = {
+  TheATeam: "run-ateam.yml",
+  TheFixer: "run-fixer.yml",
+  TheDesigners: "run-designers.yml",
+  TheInspector: "run-inspector.yml",
+  TheGuardians: "run-guardians.yml",
+};
+
+async function dispatchToGitHubActions(run, saveRun) {
+  const token = config.githubToken;
+  const repoFull = (run.repo || config.githubRepo || "").replace("https://github.com/", "");
+  if (!token) throw new Error("GITHUB_TOKEN not configured — cannot dispatch to GitHub Actions");
+  if (!repoFull) throw new Error("No GitHub repo configured for this run");
+
+  const workflowId = WORKFLOW_MAP[run.team];
+  if (!workflowId) throw new Error(`No workflow mapped for team: ${run.team}`);
+
+  const ref = run.repoBranch || config.githubBranch || "master";
+  const inputs = run.team === "TheFixer"
+    ? { fix_description: run.task.slice(0, 500) }
+    : { task_description: run.task.slice(0, 500) };
+
+  const headers = {
+    Authorization: `token ${token}`,
+    Accept: "application/vnd.github.v3+json",
+    "Content-Type": "application/json",
+  };
+
+  // Dispatch the workflow
+  run.status = "github_dispatching";
+  saveRun(run);
+
+  const dispatchRes = await fetch(
+    `https://api.github.com/repos/${repoFull}/actions/workflows/${workflowId}/dispatches`,
+    { method: "POST", headers, body: JSON.stringify({ ref, inputs }) }
+  );
+
+  if (!dispatchRes.ok) {
+    const body = await dispatchRes.text();
+    throw new Error(`GitHub Actions dispatch failed (${dispatchRes.status}): ${body}`);
+  }
+
+  console.log(`[${run.id}] Dispatched ${workflowId} on ${repoFull}@${ref}`);
+  run.status = "github_running";
+  run.githubWorkflow = workflowId;
+  run.githubRepo = repoFull;
+  saveRun(run);
+
+  // Poll for the workflow run (give GitHub a moment to register it)
+  await new Promise((r) => setTimeout(r, 5000));
+
+  const cutoff = Date.now();
+  let ghRunId = null;
+
+  // Find the run that was just triggered (created after dispatch)
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const listRes = await fetch(
+      `https://api.github.com/repos/${repoFull}/actions/workflows/${workflowId}/runs?per_page=5`,
+      { headers }
+    );
+    if (listRes.ok) {
+      const data = await listRes.json();
+      const match = (data.workflow_runs || []).find(
+        (r) => new Date(r.created_at).getTime() >= cutoff - 30000
+      );
+      if (match) { ghRunId = match.id; break; }
+    }
+    await new Promise((r) => setTimeout(r, 5000));
+  }
+
+  if (!ghRunId) {
+    run.status = "github_running";
+    run.results = { note: "Run dispatched but could not locate run ID for polling. Check GitHub Actions tab." };
+    saveRun(run);
+    return;
+  }
+
+  run.githubRunId = ghRunId;
+  run.githubRunUrl = `https://github.com/${repoFull}/actions/runs/${ghRunId}`;
+  saveRun(run);
+  console.log(`[${run.id}] Polling GitHub Actions run ${ghRunId}`);
+
+  // Poll until complete
+  while (true) {
+    await new Promise((r) => setTimeout(r, 30000));
+    const statusRes = await fetch(
+      `https://api.github.com/repos/${repoFull}/actions/runs/${ghRunId}`,
+      { headers }
+    );
+    if (!statusRes.ok) continue;
+
+    const data = await statusRes.json();
+    const { status: ghStatus, conclusion } = data;
+
+    run.githubStatus = ghStatus;
+    run.githubConclusion = conclusion;
+
+    if (ghStatus === "completed") {
+      run.status = conclusion === "success" ? "complete" : "failed";
+      run.results = {
+        allPassed: conclusion === "success",
+        github_conclusion: conclusion,
+        github_run_url: run.githubRunUrl,
+      };
+      saveRun(run);
+      console.log(`[${run.id}] GitHub Actions run ${ghRunId} completed: ${conclusion}`);
+      return;
+    }
+
+    saveRun(run);
+    console.log(`[${run.id}] GitHub Actions run ${ghRunId}: ${ghStatus}`);
+  }
+}
+
 // ── Work Submission ──
 
 app.post("/api/work", upload.array("images", 10), async (req, res) => {
@@ -236,7 +352,7 @@ app.post("/api/work", upload.array("images", 10), async (req, res) => {
     return res.status(503).json({ error: "Orchestrator not initialized — Docker not available" });
   }
 
-  const { task, planFile, team: forceTeam, repo, repoBranch, claudeSessionToken, tokenLabel } = req.body;
+  const { task, planFile, team: forceTeam, repo, repoBranch, claudeSessionToken, tokenLabel, pipelineMode } = req.body;
   if (!task) return res.status(400).json({ error: "Missing required field: task" });
 
   // Resolve Claude session token using priority chain: per-request → host → env
@@ -264,6 +380,7 @@ app.post("/api/work", upload.array("images", 10), async (req, res) => {
     results: {},
     phases: {},
     feedbackLoops: 0,
+    pipelineMode: pipelineMode === "github_actions" ? "github_actions" : "local",
     createdAt: ts(),
     updatedAt: ts(),
   };
@@ -339,10 +456,14 @@ app.post("/api/work", upload.array("images", 10), async (req, res) => {
 
       run.team = team;
       run.teamReason = teamReason;
-      console.log(`[${run.id}] Team: ${team} — ${teamReason}`);
+      console.log(`[${run.id}] Team: ${team} — ${teamReason} — Pipeline: ${run.pipelineMode}`);
       saveRun(run);
 
-      await workflowEngine.executeWorkflow(run, saveRun, resolvedToken);
+      if (run.pipelineMode === "github_actions") {
+        await dispatchToGitHubActions(run, saveRun);
+      } else {
+        await workflowEngine.executeWorkflow(run, saveRun, resolvedToken);
+      }
     } catch (err) {
       console.error(`[${run.id}] Fatal:`, err);
       run.status = "failed";
@@ -555,6 +676,7 @@ app.post("/api/runs/:id/retry", async (req, res) => {
     resumePoint: req.body?.resumeFrom || null,
     reuseVolume: existingVolume,
     riskLevel: originalRun.riskLevel,
+    pipelineMode: originalRun.pipelineMode || "local",
     createdAt: ts(),
     updatedAt: ts(),
   };
@@ -599,15 +721,18 @@ app.post("/api/runs/:id/retry", async (req, res) => {
         run.teamReason = `Forced to ${forceTeam} by retry request`;
       }
 
-      console.log(`[${run.id}] Resume of ${originalRun.id} — Team: ${run.team}, resumePoint: ${run.resumePoint || "auto"}`);
+      console.log(`[${run.id}] Resume of ${originalRun.id} — Team: ${run.team}, pipeline: ${run.pipelineMode}, resumePoint: ${run.resumePoint || "auto"}`);
       saveRun(run);
 
-      const retryToken = await tokenPool.resolveToken();
-      run.tokenSource = retryToken?.source || "none";
-      run.tokenLabel = retryToken?.label || "no token";
-      saveRun(run);
-
-      await workflowEngine.executeWorkflow(run, saveRun, retryToken);
+      if (run.pipelineMode === "github_actions") {
+        await dispatchToGitHubActions(run, saveRun);
+      } else {
+        const retryToken = await tokenPool.resolveToken();
+        run.tokenSource = retryToken?.source || "none";
+        run.tokenLabel = retryToken?.label || "no token";
+        saveRun(run);
+        await workflowEngine.executeWorkflow(run, saveRun, retryToken);
+      }
     } catch (err) {
       console.error(`[${run.id}] Resume fatal:`, err);
       run.status = "failed";

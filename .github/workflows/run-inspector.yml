@@ -119,18 +119,18 @@ jobs:
           fi
           echo "Starting services for pre-flight check..."
           docker compose -f docker-compose.test.yml up -d --build
-          echo "Waiting for services to become healthy (up to 60s)..."
-          DEADLINE=$(($(date +%s) + 60))
+          echo "Waiting for services to become healthy (up to 90s)..."
+          DEADLINE=$(($(date +%s) + 90))
+          HEALTHY=0
           while [ "$(date +%s)" -lt "$DEADLINE" ]; do
-            HEALTHY=$(docker compose -f docker-compose.test.yml ps --status healthy --quiet | wc -l)
-            if [ "$HEALTHY" -gt 0 ]; then
+            HEALTHY=$(docker compose -f docker-compose.test.yml ps -q | xargs -r docker inspect --format='{{.State.Health.Status}}' 2>/dev/null | grep -c "^healthy$" || true)
+            if [ "${HEALTHY:-0}" -gt 0 ]; then
               break
             fi
             sleep 5
           done
-          HEALTHY=$(docker compose -f docker-compose.test.yml ps --status healthy --quiet | wc -l)
-          if [ "$HEALTHY" -eq 0 ]; then
-            echo "ERROR: No services became healthy within 60s. Cannot run dynamic agents."
+          if [ "${HEALTHY:-0}" -eq 0 ]; then
+            echo "ERROR: No services became healthy within 90s. Cannot run dynamic agents."
             echo ""
             docker compose -f docker-compose.test.yml logs
             docker compose -f docker-compose.test.yml down -v

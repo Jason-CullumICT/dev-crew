@@ -1,0 +1,19 @@
+{
+  "team": "TheATeam",
+  "next_run_number": 2,
+  "runs": {
+    "run-20260414-031722": {
+      "number": 1,
+      "pipeline": {
+        "id": "run-20260414-031722",
+        "status": "running",
+        "started_at": "2026-04-14T03:17:22Z",
+        "task_title": "Implement feature: Dependency tracking between bugs and feature requests in the orchestrator — allow a work item to declare it depends_on another item, blocking submission until dependencies are complete"
+      },
+      "stages": [],
+      "agents": {},
+      "feedback_loops": [],
+      "updated_at": "2026-04-14T03:17:22Z"
+    }
+  }
+}

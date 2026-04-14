@@ -2,6 +2,9 @@
   "teams": {
     "TheFixer": {
       "file": "pipeline-state-TheFixer.json"
+    },
+    "TheATeam": {
+      "file": "pipeline-state-TheATeam.json"
     }
   }
 }

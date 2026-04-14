@@ -1,0 +1,92 @@
+{
+  "task_title": "Implement feature: Dependency tracking between bugs and feature requests in the orchestrator — allow a work item to declare it depends_on another item, blocking submission until dependencies are complete",
+  "plan_file": "",
+  "spec_file": "",
+  "complexity": "S",
+  "stages": [
+    {
+      "name": "requirements-reviewer",
+      "model": "sonnet",
+      "depends_on": []
+    },
+    {
+      "name": "api-contract",
+      "model": "haiku",
+      "depends_on": [
+        "requirements-reviewer"
+      ]
+    },
+    {
+      "name": "backend-coder",
+      "model": "sonnet",
+      "depends_on": [
+        "api-contract"
+      ]
+    },
+    {
+      "name": "frontend-coder",
+      "model": "sonnet",
+      "depends_on": [
+        "api-contract"
+      ]
+    },
+    {
+      "name": "qa-review-and-tests",
+      "model": "sonnet",
+      "depends_on": [
+        "backend-coder",
+        "frontend-coder"
+      ]
+    },
+    {
+      "name": "security-qa",
+      "model": "sonnet",
+      "depends_on": [
+        "backend-coder",
+        "frontend-coder"
+      ]
+    },
+    {
+      "name": "chaos-tester",
+      "model": "sonnet",
+      "depends_on": [
+        "backend-coder",
+        "frontend-coder"
+      ]
+    },
+    {
+      "name": "traceability",
+      "model": "sonnet",
+      "depends_on": [
+        "backend-coder",
+        "frontend-coder"
+      ]
+    },
+    {
+      "name": "visual-playwright",
+      "model": "sonnet",
+      "depends_on": [
+        "backend-coder",
+        "frontend-coder"
+      ]
+    },
+    {
+      "name": "design-critic",
+      "model": "sonnet",
+      "depends_on": [
+        "qa-review-and-tests",
+        "security-qa",
+        "chaos-tester",
+        "traceability",
+        "visual-playwright"
+      ]
+    },
+    {
+      "name": "integration-reviewer",
+      "model": "haiku",
+      "depends_on": [
+        "design-critic"
+      ]
+    }
+  ]
+}

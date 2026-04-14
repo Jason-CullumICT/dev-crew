@@ -8,6 +8,9 @@
 name: "Run TheGuardians"
 
 on:
+  schedule:
+    - cron: "0 3 * * 1"  # 03:00 UTC every Monday
+
   workflow_dispatch:
     inputs:
       branch:
@@ -30,16 +33,21 @@ on:
 permissions:
   contents: write
   issues: write
+  pull-requests: write
 
 env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheGuardians"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 
   security-audit:
     name: "Security Audit"
     runs-on: ubuntu-latest
+    outputs:
+      report_branch: ${{ steps.report_branch.outputs.name }}
+      has_critical: ${{ steps.check.outputs.has_critical }}
 
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +61,7 @@ jobs:
         id: init
         run: |
           RUN_ID=$(bash tools/pipeline-update.sh --team TheGuardians --action init \
-            --metrics "{\"task_title\": \"Security Audit\", \"scope\": \"${{ inputs.scope }}\"}")
+            --metrics "{\"task_title\": \"Security Audit\", \"scope\": \"${{ inputs.scope || 'full' }}\"}")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       - name: Start ephemeral environment
@@ -66,48 +74,72 @@ jobs:
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent static-analyzer --action start --name "Static Analyzer" --model sonnet
 
+          printf 'SAST scan: CWEs, hardcoded secrets, insecure APIs.\nConfig: %s/security.config.yml\nScope: %s\nFocus: %s' \
+            "$TEAM_DIR" "${{ inputs.scope || 'full' }}" "${{ inputs.focus || 'all' }}" > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/static-analyzer.md)" \
             --allowedTools "Read,Glob,Grep,Bash" \
-            "SAST scan: CWEs, hardcoded secrets, insecure APIs.
-            Config: $TEAM_DIR/security.config.yml
-            Scope: ${{ inputs.scope }}
-            Focus: ${{ inputs.focus || 'all' }}"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
+
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent static-analyzer --action complete
 
       - name: Run Pen Tester
         run: |
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent pen-tester --action start --name "Pen Tester" --model sonnet
 
+          printf 'White-box static analysis. Attack surface mapping.\nConfig: %s/security.config.yml' \
+            "$TEAM_DIR" > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/pen-tester.md)" \
             --allowedTools "Read,Glob,Grep,Bash" \
-            "White-box static analysis. Attack surface mapping.
-            Config: $TEAM_DIR/security.config.yml"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
+
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent pen-tester --action complete
 
       - name: Run Red Teamer (ephemeral env only)
         run: |
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent red-teamer --action start --name "Red Teamer" --model sonnet
 
+          printf 'Active exploitation against ephemeral isolated environment ONLY.\nTarget: localhost services from docker-compose.test.yml\nNEVER target dev/staging/production.\nConfig: %s/security.config.yml' \
+            "$TEAM_DIR" > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/red-teamer.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
-            "Active exploitation against ephemeral isolated environment ONLY.
-            Target: localhost services from docker-compose.test.yml
-            NEVER target dev/staging/production.
-            Config: $TEAM_DIR/security.config.yml"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
+
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent red-teamer --action complete
 
       - name: Run Compliance Auditor
         run: |
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent compliance-auditor --action start --name "Compliance Auditor" --model sonnet
 
+          printf 'SOC2, GDPR, ISO27001, OWASP ASVS compliance audit.\nConfig: %s/security.config.yml' \
+            "$TEAM_DIR" > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/compliance-auditor.md)" \
             --allowedTools "Read,Glob,Grep" \
-            "SOC2, GDPR, ISO27001, OWASP ASVS compliance audit.
-            Config: $TEAM_DIR/security.config.yml"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
+
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+            --agent compliance-auditor --action complete
 
       - name: Tear down ephemeral environment
         if: always()
@@ -115,14 +147,14 @@ jobs:
 
       - name: Synthesize Security Report
         run: |
+          printf 'Synthesize all security agent outputs.\nGrade: A-F based on critical/high findings + compliance pass rate.\nGenerate report.' > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
             --allowedTools "Read,Write,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
-            "Synthesize all security agent outputs.
-            Grade: A-F based on critical/high findings + compliance pass rate.
-            Generate report." > guardians-report.md
+            "$(cat /tmp/prompt.txt)" > guardians-report.md
 
       - name: Dashboard — finalize
         if: always()
@@ -130,27 +162,66 @@ jobs:
           bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
             --agent team-leader --action complete --verdict "Security audit complete"
 
-      - name: Upload report
-        uses: actions/upload-artifact@v4
-        with:
-          name: guardians-report
-          path: guardians-report.md
+      - name: Check severity
+        id: check
+        run: |
+          if grep -qE "CRITICAL|Grade: [FD]" guardians-report.md 2>/dev/null; then
+            echo "has_critical=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_critical=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Create issue for critical findings
-        if: success()
+      - name: Commit report to PR branch
+        id: report_branch
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          BRANCH="audit/guardians-${DATE}-$(echo $RANDOM | md5sum | head -c 6)"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          mkdir -p Reports
+          cp guardians-report.md "Reports/guardians-${DATE}.md"
+          git add Reports/
+          git commit -m "Guardians security report ${DATE}
+
+          Co-Authored-By: agent:guardians <agent@dev-crew>" || true
+          git push origin "$BRANCH"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Create PR
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            let report = '';
-            try { report = fs.readFileSync('guardians-report.md', 'utf8'); } catch {}
+            const branch = '${{ steps.report_branch.outputs.name }}';
+            const date = new Date().toISOString().split('T')[0];
+            const hasCritical = '${{ steps.check.outputs.has_critical }}' === 'true';
 
-            if (report.includes('CRITICAL') || report.includes('Grade: F')) {
-              await github.rest.issues.create({
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Guardians] Security audit ${date}`,
+              head: branch,
+              base: 'master',
+              draft: !hasCritical,
+              body: [
+                '## Security Audit Findings',
+                `**Date:** ${date} | **Scope:** ${{ inputs.scope || 'full' }}`,
+                hasCritical
+                  ? '\n> 🚨 **Critical security findings detected** — review immediately.\n'
+                  : '\n> ✅ No critical findings. Draft PR for record-keeping.\n',
+                '## Report',
+                'See `Reports/` directory for full output.',
+                '',
+                '🛡️ Generated by dev-crew TheGuardians pipeline',
+              ].join('\n'),
+            });
+
+            if (hasCritical) {
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `[Guardians] Critical security findings — ${new Date().toISOString().split('T')[0]}`,
-                body: report.substring(0, 65000),
-                labels: ['security', 'critical', 'agent:fix']
+                issue_number: pr.data.number,
+                labels: ['security', 'critical', 'agent:fix'],
               });
             }
+            console.log(`PR: #${pr.data.number}`);

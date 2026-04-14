@@ -2,7 +2,7 @@
 # TheInspector — System Health Audit Pipeline
 # =============================================================================
 # 5 agents. Config-driven spec-drift, performance, chaos, dependency auditing.
-# Output: HTML report (A-F grade) + JSON bug backlog.
+# Output: Markdown report (A-F grade) committed to a PR branch.
 # Runs nightly or on demand.
 # =============================================================================
 
@@ -34,16 +34,21 @@ on:
 permissions:
   contents: write
   issues: write
+  pull-requests: write
 
 env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheInspector"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 
   audit:
     name: "Inspector Audit"
     runs-on: ubuntu-latest
+    outputs:
+      report_branch: ${{ steps.report_branch.outputs.name }}
+      has_critical: ${{ steps.check.outputs.has_critical }}
 
     steps:
       - uses: actions/checkout@v4
@@ -67,60 +72,78 @@ jobs:
           sleep 10
 
       - name: Run Spec-Drift Audit
-        run: |
-          python3 tools/spec-drift-audit.py || true
+        run: python3 tools/spec-drift-audit.py || true
 
       - name: Run Quality Oracle
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
             --agent quality-oracle --action start --name "Quality Oracle" --model sonnet
 
+          printf 'Spec-drift analysis and pattern enforcement.\nConfig: %s/inspector.config.yml\nFocus: %s' \
+            "$TEAM_DIR" "${{ inputs.focus || 'full audit' }}" > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/quality-oracle.md)" \
             --allowedTools "Read,Glob,Grep,Bash" \
-            "Spec-drift analysis and pattern enforcement.
-            Config: $TEAM_DIR/inspector.config.yml
-            Focus: ${{ inputs.focus || 'full audit' }}"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
+
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+            --agent quality-oracle --action complete
 
       - name: Run Dependency Auditor
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
             --agent dependency-auditor --action start --name "Dependency Auditor" --model haiku
 
+          printf 'CVE scanning, license compliance, outdated package check.\nConfig: %s/inspector.config.yml' \
+            "$TEAM_DIR" > /tmp/prompt.txt
+
           claude --model claude-haiku-4-5 \
             --system-prompt "$(cat $TEAM_DIR/dependency-auditor.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
-            "CVE scanning, license compliance, outdated package check.
-            Config: $TEAM_DIR/inspector.config.yml"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
+
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+            --agent dependency-auditor --action complete
 
       - name: Run Performance Profiler (dynamic only)
         if: inputs.mode == 'dynamic'
         run: |
+          printf 'Performance profiling against live services.\nConfig: %s/inspector.config.yml' \
+            "$TEAM_DIR" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/performance-profiler.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
-            "Performance profiling against live services.
-            Config: $TEAM_DIR/inspector.config.yml"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Run Chaos Monkey (dynamic only)
         if: inputs.mode == 'dynamic'
         run: |
+          printf 'Fault injection and invariant analysis.\nConfig: %s/inspector.config.yml' \
+            "$TEAM_DIR" > /tmp/prompt.txt
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/chaos-monkey.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
-            "Fault injection and invariant analysis.
-            Config: $TEAM_DIR/inspector.config.yml"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Synthesize Report
         run: |
+          printf 'Synthesize all agent outputs into a graded report (A-F).\nGenerate markdown report and JSON bug backlog.\nEscalate P1 findings.' > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
             --allowedTools "Read,Write,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
-            "Synthesize all agent outputs into a graded report (A-F).
-            Generate HTML report and JSON bug backlog.
-            Escalate P1 findings." > inspector-report.md
+            "$(cat /tmp/prompt.txt)" > inspector-report.md
 
       - name: Tear down services (dynamic only)
         if: always() && inputs.mode == 'dynamic'
@@ -132,29 +155,67 @@ jobs:
           bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
             --agent team-leader --action complete --verdict "Audit complete"
 
-      - name: Upload report
-        uses: actions/upload-artifact@v4
-        with:
-          name: inspector-report
-          path: |
-            inspector-report.md
-            spec-drift-report.json
+      - name: Check severity
+        id: check
+        run: |
+          if grep -qE "Grade: [FD]|P1" inspector-report.md 2>/dev/null; then
+            echo "has_critical=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_critical=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Create issue for findings
-        if: success()
+      - name: Commit report to PR branch
+        id: report_branch
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          BRANCH="audit/inspector-${DATE}-$(echo $RANDOM | md5sum | head -c 6)"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          mkdir -p Reports
+          cp inspector-report.md "Reports/inspector-${DATE}.md"
+          cp spec-drift-report.json "Reports/spec-drift-${DATE}.json" 2>/dev/null || true
+          git add Reports/
+          git commit -m "Inspector report ${DATE}
+
+          Co-Authored-By: agent:inspector <agent@dev-crew>" || true
+          git push origin "$BRANCH"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Create PR
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            let report = '';
-            try { report = fs.readFileSync('inspector-report.md', 'utf8'); } catch {}
+            const branch = '${{ steps.report_branch.outputs.name }}';
+            const date = new Date().toISOString().split('T')[0];
+            const hasCritical = '${{ steps.check.outputs.has_critical }}' === 'true';
 
-            if (report.includes('Grade: F') || report.includes('Grade: D') || report.includes('P1')) {
-              await github.rest.issues.create({
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Inspector] Health audit ${date}`,
+              head: branch,
+              base: 'master',
+              draft: !hasCritical,
+              body: [
+                '## Health Audit Findings',
+                `**Date:** ${date} | **Mode:** ${{ inputs.mode || 'static' }}`,
+                hasCritical
+                  ? '\n> ⚠️ **Critical or high-priority findings detected** — review before merging.\n'
+                  : '\n> ℹ️ No critical findings. Draft PR for record-keeping — merge or close.\n',
+                '## Report',
+                'See `Reports/` directory for full output.',
+                '',
+                '🔍 Generated by dev-crew TheInspector pipeline',
+              ].join('\n'),
+            });
+
+            if (hasCritical) {
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `[Inspector] Health audit findings — ${new Date().toISOString().split('T')[0]}`,
-                body: report.substring(0, 65000),
-                labels: ['audit', 'agent:fix']
+                issue_number: pr.data.number,
+                labels: ['audit', 'agent:fix'],
               });
             }
+            console.log(`PR: #${pr.data.number}`);

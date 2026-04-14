@@ -30,6 +30,8 @@ permissions:
 env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   TEAM_DIR: "Teams/TheDesigners"
+  DESIGN_BRIEF: ${{ inputs.design_brief }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 
@@ -54,14 +56,20 @@ jobs:
 
       - name: Run UX Researcher
         run: |
+          printf 'Design brief: %s\nProduce UX brief: personas, flows, constraints, information architecture.' \
+            "$DESIGN_BRIEF" > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/ux-researcher.md)" \
             --allowedTools "Read,Write,Glob,Grep" \
-            "Design brief: ${{ inputs.design_brief }}
-            Produce UX brief: personas, flows, constraints, information architecture."
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Push
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "UX research brief
 
@@ -83,20 +91,25 @@ jobs:
 
       - name: Run Visual Designer
         run: |
+          printf 'Create 2-3 design options with screenshots.\nDesign brief: %s\nRead UX research brief. Use browser automation for mockups.\nSave artifacts to Teams/TheDesigners/artifacts/' \
+            "$DESIGN_BRIEF" > /tmp/prompt.txt
+
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/visual-designer.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-            "Create 2-3 design options with screenshots.
-            Design brief: ${{ inputs.design_brief }}
-            Read UX research brief. Use browser automation for mockups.
-            Save artifacts to Teams/TheDesigners/artifacts/"
+            --print \
+            --dangerously-skip-permissions \
+            "$(cat /tmp/prompt.txt)"
 
       - name: Push
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
           git commit -m "Visual design options
 
           Co-Authored-By: agent:visual-designer <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.ux-research.outputs.branch }}
           git push origin HEAD
 
   design-systems-check:
@@ -159,16 +172,17 @@ jobs:
           script: |
             const branch = '${{ needs.ux-research.outputs.branch }}';
             const issueNum = '${{ inputs.issue_number }}';
+            const brief = process.env.DESIGN_BRIEF || '';
 
             const pr = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `[Design] ${{ inputs.design_brief }}`.substring(0, 70),
+              title: `[Design] ${brief}`.substring(0, 70),
               head: branch,
               base: 'master',
               body: [
                 '## Design Options',
-                `**Brief:** ${{ inputs.design_brief }}`,
+                `**Brief:** ${brief}`,
                 '',
                 '## Pipeline',
                 '- [x] UX Research',
@@ -194,3 +208,5 @@ jobs:
                 body: `## 🎨 Design Options Ready\n\nPR #${pr.data.number} has 2-3 design options for review.\n**Your approval is required before implementation begins.**`
               });
             }
+
+            console.log(`PR: #${pr.data.number}`);

@@ -64,8 +64,10 @@ jobs:
       - name: Initialize dashboard
         id: init
         run: |
+          FIX_TITLE=$(printf '%s' "$FIX_DESC" | head -1)
+          jq -n --arg t "$FIX_TITLE" '{"task_title": $t}' > /tmp/fixer-metrics.json
           RUN_ID=$(bash tools/pipeline-update.sh --team TheFixer --action init \
-            --metrics "$(jq -n --arg t "$FIX_DESC" '{"task_title": $t}')")
+            --metrics "$(cat /tmp/fixer-metrics.json)")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       - name: Run Planner

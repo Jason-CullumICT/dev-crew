@@ -19,6 +19,14 @@ const PHASE_ICONS: Record<string, { icon: string; className: string }> = {
 
 const PHASE_NAMES = ['leader', 'implementation', 'qa', 'smoketest', 'inspector']
 
+const GITHUB_CONCLUSION_COLORS: Record<string, string> = {
+  success: 'bg-green-100 text-green-700',
+  failure: 'bg-red-100 text-red-700',
+  cancelled: 'bg-gray-100 text-gray-600',
+  timed_out: 'bg-orange-100 text-orange-700',
+  skipped: 'bg-gray-100 text-gray-400',
+}
+
 const VERDICT_COLORS: Record<string, string> = {
   approved: 'bg-green-100 text-green-700',
   changes_requested: 'bg-yellow-100 text-yellow-700',
@@ -42,6 +50,53 @@ export function RunDetailRow({ run, expanded, onNavigateToRun }: RunDetailRowPro
             <div data-testid="run-detail-task">
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Task</h4>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">{run.task}</p>
+            </div>
+          )}
+
+          {/* GitHub Actions section — shown for github_actions pipeline runs */}
+          {run.pipelineMode === 'github_actions' && (
+            <div data-testid="run-detail-github">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">GitHub Actions</h4>
+              <div className="bg-white border border-gray-200 rounded p-3 space-y-2">
+                {run.githubRunUrl ? (
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={run.githubRunUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      data-testid="github-run-url"
+                    >
+                      View run on GitHub ↗
+                    </a>
+                    {run.githubWorkflow && (
+                      <span className="text-xs text-gray-400">({run.githubWorkflow})</span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">
+                    Dispatched — waiting for GitHub to register run ID
+                  </p>
+                )}
+                <div className="flex items-center gap-3">
+                  {run.githubStatus && (
+                    <span className="text-xs text-gray-600">
+                      Status: <span className="font-medium text-gray-800">{run.githubStatus}</span>
+                    </span>
+                  )}
+                  {run.githubConclusion && (
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${GITHUB_CONCLUSION_COLORS[run.githubConclusion] ?? 'bg-gray-100 text-gray-600'}`}
+                      data-testid="github-conclusion"
+                    >
+                      {run.githubConclusion}
+                    </span>
+                  )}
+                  {run.githubRepo && (
+                    <span className="text-xs text-gray-400">{run.githubRepo}</span>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

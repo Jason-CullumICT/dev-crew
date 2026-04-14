@@ -31,6 +31,8 @@ export type OrchestratorRunStatus =
   | 'validating'
   | 'complete'
   | 'failed'
+  | 'github_dispatching'
+  | 'github_running'
 
 // Verifies: FR-090
 export interface RunPhaseResult {
@@ -70,4 +72,12 @@ export interface OrchestratorRun {
   startedAt?: string
   completedAt?: string
   error?: string
+  // GitHub Actions pipeline fields
+  pipelineMode?: 'local' | 'github_actions'
+  githubRunUrl?: string
+  githubRunId?: number
+  githubWorkflow?: string
+  githubRepo?: string
+  githubStatus?: string
+  githubConclusion?: string
 }

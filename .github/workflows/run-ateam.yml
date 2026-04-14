@@ -74,8 +74,10 @@ jobs:
       - name: Initialize dashboard
         id: init
         run: |
+          TASK_TITLE=$(printf '%s' "$TASK" | head -1)
+          jq -n --arg t "$TASK_TITLE" '{"task_title": $t}' > /tmp/ateam-metrics.json
           RUN_ID=$(bash tools/pipeline-update.sh --team TheATeam --action init \
-            --metrics "$(jq -n --arg t "$TASK" '{"task_title": $t}')")
+            --metrics "$(cat /tmp/ateam-metrics.json)")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       - name: Run Team Leader — produce dispatch plan

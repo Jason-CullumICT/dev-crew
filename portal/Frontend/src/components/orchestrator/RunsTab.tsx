@@ -16,6 +16,8 @@ const RUN_STATUS_COLORS: Record<string, string> = {
   planning: 'bg-purple-100 text-purple-700',
   qa_running: 'bg-yellow-100 text-yellow-700',
   validating: 'bg-indigo-100 text-indigo-700',
+  github_dispatching: 'bg-orange-100 text-orange-700',
+  github_running: 'bg-blue-100 text-blue-700',
 }
 
 // Verifies: FR-091
@@ -25,7 +27,7 @@ const RISK_COLORS: Record<string, string> = {
   high: 'bg-red-100 text-red-700',
 }
 
-const ACTIVE_STATUSES: OrchestratorRunStatus[] = ['planning', 'implementing', 'qa_running', 'validating']
+const ACTIVE_STATUSES: OrchestratorRunStatus[] = ['planning', 'implementing', 'qa_running', 'validating', 'github_dispatching', 'github_running']
 
 // Verifies: FR-091
 function formatTimeAgo(dateStr?: string): string {
@@ -247,7 +249,19 @@ export function RunsTab() {
 
                 {/* Actions — Verifies: FR-093, FR-094 */}
                 <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  {(run.status === 'failed' || run.status === 'complete') && (
+                  {run.githubRunUrl && (
+                    <a
+                      href={run.githubRunUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs px-2 py-1 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                      title="View on GitHub Actions"
+                      data-testid="github-run-link"
+                    >
+                      GH ↗
+                    </a>
+                  )}
+                  {(['failed', 'complete', 'github_dispatching', 'github_running'] as OrchestratorRunStatus[]).includes(run.status) && (
                     <button
                       onClick={() => handleRetry(run.id)}
                       disabled={retryingId === run.id}
@@ -257,7 +271,7 @@ export function RunsTab() {
                       {retryingId === run.id ? 'Retrying…' : 'Retry'}
                     </button>
                   )}
-                  {(run.status === 'complete' || run.status === 'failed') && (
+                  {(['complete', 'failed', 'github_dispatching', 'github_running'] as OrchestratorRunStatus[]).includes(run.status) && (
                     <button
                       onClick={() => handleCleanup(run.id)}
                       className="text-xs px-2 py-1 text-gray-500 border border-gray-300 rounded hover:bg-gray-50"

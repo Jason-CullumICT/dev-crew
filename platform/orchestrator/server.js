@@ -477,8 +477,10 @@ app.post("/api/work", upload.array("images", 10), async (req, res) => {
 
 // Verifies: FR-TMP-009 — include riskLevel, e2e, and pr in run list responses
 app.get("/api/runs", (req, res) => {
-  const runs = listRuns().map(({ id, status, task, team, results, feedbackLoops, riskLevel, e2e, pr, createdAt, updatedAt }) => ({
-    id, status, task, team, results, feedbackLoops, riskLevel, e2e, pr, createdAt, updatedAt,
+  const runs = listRuns().map(({ id, status, task, team, results, feedbackLoops, riskLevel, e2e, pr, createdAt, updatedAt, retryOf, pipelineMode, githubRunUrl, githubRunId, githubWorkflow, githubRepo, githubStatus, githubConclusion }) => ({
+    id, status, task, team, results, feedbackLoops, riskLevel, e2e, pr,
+    startedAt: createdAt, updatedAt,
+    retryOf, pipelineMode, githubRunUrl, githubRunId, githubWorkflow, githubRepo, githubStatus, githubConclusion,
   }));
   res.json({ data: runs });
 });
@@ -648,8 +650,9 @@ app.post("/api/runs/:id/retry", async (req, res) => {
 
   const originalRun = loadRun(req.params.id);
   if (!originalRun) return res.status(404).json({ error: "Run not found" });
-  if (!["failed", "complete"].includes(originalRun.status)) {
-    return res.status(409).json({ error: "Only failed or completed runs can be retried" });
+  const retryableStatuses = ["failed", "complete", "github_dispatching", "github_running"];
+  if (!retryableStatuses.includes(originalRun.status)) {
+    return res.status(409).json({ error: "Only failed, completed, or stuck GitHub Actions runs can be retried" });
   }
 
   const existingVolume = `workspace-${originalRun.id}`;

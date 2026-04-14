@@ -373,6 +373,71 @@ export function approveFeatureRequest(db: Database.Database, id: string): Featur
   return getFeatureRequestById(db, id)!;
 }
 
+// --- Force-approve feature request (human override) ---
+// Skips the majority-vote check — intended for human override when agents voted deny.
+
+export function forceApproveFeatureRequest(db: Database.Database, id: string): FeatureRequest {
+  const fr = getFeatureRequestById(db, id);
+  if (!fr) throw new AppError(404, `Feature request ${id} not found`);
+
+  if (fr.status !== 'voting') {
+    throw new AppError(409, `Feature request must be in 'voting' status to force-approve. Current status: ${fr.status}`);
+  }
+
+  const depService = new DependencyService(db);
+  let newStatus: FeatureRequestStatus = 'approved';
+
+  const readiness = depService.isReady('feature_request', id);
+  if (!readiness.ready) {
+    newStatus = 'pending_dependencies';
+  }
+
+  const now = new Date().toISOString();
+  db.prepare(`
+    UPDATE feature_requests
+    SET status = ?, human_approval_approved_at = ?, updated_at = ?
+    WHERE id = ?
+  `).run(newStatus, now, now, id);
+
+  return getFeatureRequestById(db, id)!;
+}
+
+// --- Retrigger voting — clear existing votes and re-run AI voting ---
+
+export function retriggerFeatureRequest(
+  db: Database.Database,
+  id: string,
+  options: VoteSimulatorOptions = {}
+): FeatureRequest {
+  const fr = getFeatureRequestById(db, id);
+  if (!fr) throw new AppError(404, `Feature request ${id} not found`);
+
+  if (fr.status !== 'voting') {
+    throw new AppError(400, `Feature request must be in 'voting' status to retrigger. Current status: ${fr.status}`);
+  }
+
+  const now = new Date().toISOString();
+
+  // Clear old votes, reset to potential, then immediately re-vote
+  const simResult = simulateVoting(id, options);
+  const voteRecords = buildVoteRecords(simResult, now);
+
+  const insertVote = db.prepare(`
+    INSERT INTO votes (id, feature_request_id, agent_name, decision, comment, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+
+  db.transaction(() => {
+    db.prepare(`DELETE FROM votes WHERE feature_request_id = ?`).run(id);
+    db.prepare(`UPDATE feature_requests SET status = 'voting', updated_at = ? WHERE id = ?`).run(now, id);
+    for (const vote of voteRecords) {
+      insertVote.run(vote.id, vote.feature_request_id, vote.agent_name, vote.decision, vote.comment, vote.created_at);
+    }
+  })();
+
+  return getFeatureRequestById(db, id)!;
+}
+
 // --- Deny feature request (FR-012) ---
 // DD-5: FR must be in 'potential' or 'voting' status
 

@@ -12,6 +12,8 @@ import {
   deleteFeatureRequest,
   voteOnFeatureRequest,
   approveFeatureRequest,
+  forceApproveFeatureRequest,
+  retriggerFeatureRequest,
   denyFeatureRequest,
 } from '../services/featureRequestService';
 import { uploadImagesService, listImages, deleteImage } from '../services/imageService';
@@ -189,6 +191,49 @@ router.post('/:id/approve', async (req: Request, res: Response, next: NextFuncti
 
       span.setAttribute('fr.status', fr.status);
       logger.info('Feature request approved', { id, approved_at: fr.human_approval_approved_at });
+      res.json(fr);
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/feature-requests/:id/force-approve
+// Human override — approves regardless of agent vote majority.
+router.post('/:id/force-approve', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('featureRequests.forceApprove', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('fr.id', id);
+
+      const db = getDb();
+      const fr = forceApproveFeatureRequest(db, id);
+
+      span.setAttribute('fr.status', fr.status);
+      logger.info('Feature request force-approved (human override)', { id, approved_at: fr.human_approval_approved_at });
+      res.json(fr);
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/feature-requests/:id/retrigger
+// Clears existing votes and re-runs AI voting.
+router.post('/:id/retrigger', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('featureRequests.retrigger', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('fr.id', id);
+
+      const db = getDb();
+      const fr = retriggerFeatureRequest(db, id);
+
+      const approveCount = fr.votes.filter((v) => v.decision === 'approve').length;
+      const denyCount = fr.votes.filter((v) => v.decision === 'deny').length;
+      span.setAttribute('fr.votes.approve', approveCount);
+      span.setAttribute('fr.votes.deny', denyCount);
+      logger.info('Feature request voting retriggered', { id, approve_count: approveCount, deny_count: denyCount });
       res.json(fr);
     });
   } catch (err) {

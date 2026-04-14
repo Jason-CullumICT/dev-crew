@@ -46,6 +46,7 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
   const [selectedRepo, setSelectedRepo] = useState(fr.target_repo || "https://github.com/Jason-CullumICT/dev-crew")
   const [sessionToken, setSessionToken] = useState("")
   const [tokenLabel, setTokenLabel] = useState("")
+  const [pipelineMode, setPipelineMode] = useState<'local' | 'github_actions'>('local')
   const [customRepo, setCustomRepo] = useState("")
   const [showCustomRepo, setShowCustomRepo] = useState(false)
   const [validatingRepo, setValidatingRepo] = useState(false)
@@ -113,7 +114,7 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
       }
       await orchestrator.submitWork(
         `Implement feature: ${fr.title}\n\n${fr.description}`,
-        { images: imageFiles.length > 0 ? imageFiles : undefined, claudeSessionToken: sessionToken || undefined, tokenLabel: tokenLabel || undefined }
+        { images: imageFiles.length > 0 ? imageFiles : undefined, claudeSessionToken: sessionToken || undefined, tokenLabel: tokenLabel || undefined, pipelineMode }
       )
       // Update feature request status to in_development
       const updated = await featureRequests.update(fr.id, { status: "in_development" })
@@ -146,6 +147,32 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
       onUpdate(updated)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to approve')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForceApprove = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const updated = await featureRequests.forceApprove(fr.id)
+      onUpdate(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to force approve')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRetrigger = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const updated = await featureRequests.retrigger(fr.id)
+      onUpdate(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to retrigger voting')
     } finally {
       setLoading(false)
     }
@@ -217,6 +244,10 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
   const canVote = fr.status === 'potential'
   const canApprove = fr.status === 'voting'
   const canDeny = fr.status === 'potential' || fr.status === 'voting'
+
+  const approveCount = fr.votes.filter((v) => v.decision === 'approve').length
+  const denyCount = fr.votes.filter((v) => v.decision === 'deny').length
+  const majorityDeny = fr.status === 'voting' && denyCount >= approveCount
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-5">
@@ -340,13 +371,32 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
             {loading ? 'Processing...' : 'Trigger AI Voting'}
           </button>
         )}
-        {canApprove && (
+        {canApprove && !majorityDeny && (
           <button
             onClick={handleApprove}
             disabled={loading}
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
           >
             {loading ? 'Processing...' : 'Approve'}
+          </button>
+        )}
+        {canApprove && majorityDeny && (
+          <button
+            onClick={handleForceApprove}
+            disabled={loading}
+            title={`Agents recommended deny (${approveCount}–${denyCount}). This overrides their vote.`}
+            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50"
+          >
+            {loading ? 'Processing...' : `Force Approve (${approveCount}–${denyCount})`}
+          </button>
+        )}
+        {canApprove && (
+          <button
+            onClick={handleRetrigger}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            {loading ? 'Processing...' : 'Retrigger Voting'}
           </button>
         )}
         {canDeny && !showDenyForm && (
@@ -411,6 +461,22 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
                   className="text-xs border border-gray-300 rounded-lg px-2 py-1 w-36 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-0.5 bg-gray-50 self-start">
+              <button
+                type="button"
+                onClick={() => setPipelineMode('local')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${pipelineMode === 'local' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                🐳 Local
+              </button>
+              <button
+                type="button"
+                onClick={() => setPipelineMode('github_actions')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${pipelineMode === 'github_actions' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                ⚡ GitHub Actions
+              </button>
             </div>
             <button
               onClick={handleSubmitToOrchestrator}

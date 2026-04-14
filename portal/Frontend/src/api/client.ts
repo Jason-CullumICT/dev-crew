@@ -111,6 +111,14 @@ export const featureRequests = {
     return apiFetch(`/api/feature-requests/${id}/approve`, { method: 'POST' })
   },
 
+  forceApprove(id: string): Promise<FeatureRequest> {
+    return apiFetch(`/api/feature-requests/${id}/force-approve`, { method: 'POST' })
+  },
+
+  retrigger(id: string): Promise<FeatureRequest> {
+    return apiFetch(`/api/feature-requests/${id}/retrigger`, { method: 'POST' })
+  },
+
   deny(id: string, input: DenyFeatureRequestInput): Promise<FeatureRequest> {
     return apiFetch(`/api/feature-requests/${id}/deny`, {
       method: 'POST',
@@ -381,7 +389,7 @@ export const orchestrator = {
   },
 
   // Verifies: FR-086
-  submitWork(task: string, opts?: { team?: string; repo?: string; repoBranch?: string; images?: File[]; claudeSessionToken?: string; tokenLabel?: string }): Promise<{ id: string; status: string; statusUrl: string; ports: any; branch: string }> {
+  submitWork(task: string, opts?: { team?: string; repo?: string; repoBranch?: string; images?: File[]; claudeSessionToken?: string; tokenLabel?: string; pipelineMode?: 'local' | 'github_actions' }): Promise<{ id: string; status: string; statusUrl: string; ports: any; branch: string }> {
     if (opts?.images?.length) {
       const formData = new FormData()
       formData.append('task', task)
@@ -391,6 +399,7 @@ export const orchestrator = {
       opts.images.forEach((f) => formData.append('images', f))
       if (opts.claudeSessionToken) formData.append("claudeSessionToken", opts.claudeSessionToken)
       if (opts.tokenLabel) formData.append("tokenLabel", opts.tokenLabel)
+      if (opts.pipelineMode) formData.append("pipelineMode", opts.pipelineMode)
       return fetch('/api/orchestrator/api/work', {
         method: 'POST',
         body: formData,

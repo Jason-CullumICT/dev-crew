@@ -117,6 +117,7 @@ jobs:
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
             --allowedTools "Read,Write,Glob,Grep" \
             --print \
+            --dangerously-skip-permissions \
             "Synthesize all agent outputs into a graded report (A-F).
             Generate HTML report and JSON bug backlog.
             Escalate P1 findings." > inspector-report.md

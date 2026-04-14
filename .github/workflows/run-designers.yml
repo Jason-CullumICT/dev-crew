@@ -118,6 +118,7 @@ jobs:
             --system-prompt "$(cat $TEAM_DIR/design-systems.md)" \
             --allowedTools "Read,Glob,Grep" \
             --print \
+            --dangerously-skip-permissions \
             "Validate design options against Tailwind tokens and component conventions." > design-systems-report.md
 
   accessibility-audit:
@@ -139,6 +140,7 @@ jobs:
             --system-prompt "$(cat $TEAM_DIR/accessibility-auditor.md)" \
             --allowedTools "Read,Glob,Grep" \
             --print \
+            --dangerously-skip-permissions \
             "WCAG 2.1 AA review of design options before implementation." > accessibility-report.md
 
   create-design-pr:

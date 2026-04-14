@@ -119,6 +119,7 @@ jobs:
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
             --allowedTools "Read,Write,Glob,Grep" \
             --print \
+            --dangerously-skip-permissions \
             "Synthesize all security agent outputs.
             Grade: A-F based on critical/high findings + compliance pass rate.
             Generate report." > guardians-report.md

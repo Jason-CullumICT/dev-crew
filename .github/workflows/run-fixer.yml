@@ -78,6 +78,7 @@ jobs:
             --system-prompt "$(cat $TEAM_DIR/planner.md)" \
             --allowedTools "Read,Glob,Grep" \
             --print \
+            --dangerously-skip-permissions \
             "Read the codebase. Produce a fix plan with scope tags.
             Fix: ${{ inputs.fix_description }}
             $PLAN_FLAG" > fix-plan.md
@@ -199,6 +200,7 @@ jobs:
             --system-prompt "$(cat $TEAM_DIR/security-spotter.md)" \
             --allowedTools "Read,Glob,Grep" \
             --print \
+            --dangerously-skip-permissions \
             "Read-only security spot-check on the diff.
             Focus on the changes made for: ${{ inputs.fix_description }}" > security-check.md
 

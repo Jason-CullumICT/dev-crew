@@ -31,3 +31,30 @@
 - M = 2 pts (1-3 hours, multi-file or non-trivial logic)
 - L = 4 pts (3-8 hours, new service/component with tests)
 - XL = 8 pts (full-day, complex multi-system change)
+
+## 2026-04-14 — Pre-Flight Validation Feature
+
+### Platform Architecture (Critical)
+- `platform/orchestrator/server.js` contains `POST /api/work` — the work submission endpoint. This is NOT in `Source/Backend/` and cannot be touched by pipeline agents (backend-coder). Changes to `platform/` require solo-session execution.
+- `platform/orchestrator/lib/` already has `validateOrCreateRepo()` in `server.js` BUT: (1) it has side effects (creates repos), (2) it's only called from `/api/repos/validate`, NOT from `POST /api/work`. This is the root cause of the 5-minute-deep failure bug.
+- `platform/orchestrator/lib/workflow-engine.test.js` uses `node:test` + `node:assert` — platform tests use Node's built-in runner, NOT vitest. Write new platform tests with the same pattern.
+- The traceability enforcer does NOT scan `platform/` — no `// Verifies: FR-XXX` enforcement there, but add them anyway for human traceability.
+
+### Token Architecture
+- `config.githubToken` (from `GITHUB_TOKEN` env) is the ONLY GitHub token in the system. The per-request `claudeSessionToken` is for Anthropic API — NOT for GitHub.
+- Pre-flight always uses `config.githubToken`, regardless of what the request sends.
+
+### Backwards Compatibility Pattern
+- When `resolvedRepo` is empty (no per-request repo + no config.githubRepo), skip pre-flight validation entirely. This preserves existing behaviour for installations without configured repos.
+
+### Error Mapping for GitHub API
+- GitHub 401 → return 401 ("token invalid")
+- GitHub 403 → return 401 ("token present but lacks access")  
+- GitHub 404 on repo → return 404 ("repo not found")
+- GitHub 404 on branch → return 404 ("branch not found")
+
+### Spec Gap Pattern
+- If a spec doesn't cover the feature being implemented, flag a "Spec gap" in requirements.md and recommend adding a spec section. For this feature: `Specifications/workflow-engine.md` needs a "Pre-flight Validation" section.
+
+### FR ID for Platform+Portal Features
+- Use descriptive IDs `FR-preflight-*` (not numeric) for platform/portal features, matching the `FR-dependency-*` pattern established earlier.

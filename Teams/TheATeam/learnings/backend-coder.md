@@ -1,5 +1,38 @@
 # Backend Coder Learnings
 
+## 2026-04-14: Dependency Tracking (FR-dependency-*)
+
+### Shared types already defined in Source/Shared/types/workflow.ts
+- `DependencyLink`, `DependencyBlockageReason`, `DependencyActionRequest`, `ReadinessCheckResponse`
+- `RESOLVED_STATUSES` (Completed, Rejected, Failed) — blockers that unblock dependents
+- `DISPATCH_TRIGGER_STATUSES` (Completed, Rejected) — trigger cascade auto-dispatch
+- `WorkItem.blockedBy`, `WorkItem.blocks`, `WorkItem.hasUnresolvedBlockers` — stored on the item
+
+### Dependency service design (Source/Backend/src/services/dependency.ts)
+- BFS cycle detection: start from `fromId`, follow `blocks` links, check if `toId` reachable
+- `computeHasUnresolvedBlockers` runs live against store (accurate without stale flag)
+- `isReady` returns ReadinessCheckResponse with unresolved blocker list
+- `onItemResolved` called after reject/complete to cascade auto-dispatch Approved+ready dependents
+- `setDependencies` removes all existing then adds new (bulk replace pattern)
+
+### Route integration patterns
+- Dependency endpoints added to `src/routes/workflow.ts` (same file as workflow actions)
+- Self-ref → 400, not found → 404, cycle → 409
+- Dispatch gating: check `computeHasUnresolvedBlockers` before allowing in-progress transition
+- Cascade: call `onItemResolved` after reject handler
+- `blockedBy` field in PATCH handled by calling `setDependencies` before other field updates
+
+### Metrics (src/metrics.ts)
+- `dependency_operations_total` — action label: add/remove/set
+- `dispatch_gating_events_total` — event label: blocked/cascade_dispatched
+- `cycle_detection_events_total` — detected label: true/false
+
+### Test patterns
+- Store tests: use `store.resetStore()` in beforeEach
+- Service tests directly use store module — no HTTP overhead needed
+- Route tests: addDependency() from service to seed state before HTTP calls
+- 52 new tests added (total 146, all pass)
+
 ## 2026-03-25: Tiered Merge Pipeline (backend-coder-2)
 
 ### dispatch.js patterns

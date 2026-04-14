@@ -1,4 +1,4 @@
-// Verifies: FR-WF-002 — Work Item CRUD API endpoints
+// Verifies: FR-WF-002, FR-dependency-endpoints — Work Item CRUD API endpoints
 import { Router, Request, Response } from 'express';
 import {
   CreateWorkItemRequest,
@@ -11,6 +11,7 @@ import {
 } from '../../../Shared/types/workflow';
 import * as store from '../store/workItemStore';
 import { trackUpdates } from '../services/changeHistory';
+import { setDependencies } from '../services/dependency';
 import { itemsCreatedCounter } from '../metrics';
 import logger from '../logger';
 
@@ -113,6 +114,18 @@ router.patch('/:id', (req: Request, res: Response) => {
   if (updates.complexity && !Object.values(WorkItemComplexity).includes(updates.complexity as WorkItemComplexity)) {
     res.status(400).json({ error: 'Invalid complexity value' });
     return;
+  }
+
+  // Verifies: FR-dependency-endpoints — Handle blockedBy bulk replace
+  if (Array.isArray(body.blockedBy)) {
+    try {
+      setDependencies(item.id, body.blockedBy as string[]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Dependency update failed';
+      logger.error({ msg: 'Failed to set dependencies via PATCH', error: message, workItemId: item.id });
+      res.status(400).json({ error: message });
+      return;
+    }
   }
 
   // Verifies: FR-WF-003 — Track changes before applying

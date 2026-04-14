@@ -1,0 +1,27 @@
+# =============================================================================
+# docker-compose.test.yml — Ephemeral test environment
+# =============================================================================
+# Used by TheInspector (dynamic mode) and TheGuardians for live service testing.
+# Spins up the portal backend (API on :3001) as the auditable service.
+# All data is ephemeral — destroyed on `down -v`.
+# =============================================================================
+
+services:
+  portal:
+    build:
+      context: portal
+    ports:
+      - "3001:3001"
+      - "5173:5173"
+    environment:
+      - NODE_ENV=test
+      # Orchestrator is not required for the backend API to start
+      - ORCHESTRATOR_URL=http://localhost:8080
+    tmpfs:
+      - /app/Backend/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 15s

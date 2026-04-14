@@ -21,6 +21,13 @@
 
 set -euo pipefail
 
+# Feature flag — set CLAUDE_CREDENTIALS_ENABLED=true to re-enable.
+# Disabled: falls through to static ANTHROPIC_API_KEY secret.
+if [ "${CLAUDE_CREDENTIALS_ENABLED:-false}" != "true" ]; then
+  echo "[claude-setup] Credential refresh disabled (CLAUDE_CREDENTIALS_ENABLED != true) — using static ANTHROPIC_API_KEY"
+  exit 0
+fi
+
 CREDS_FILE="$HOME/.claude/.credentials.json"
 MARKER_FILE="/tmp/claude_job_start_ts"
 

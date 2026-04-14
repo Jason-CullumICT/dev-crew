@@ -48,6 +48,7 @@ export function BugDetail({ bug, onUpdate, onClose }: BugDetailProps) {
   const [selectedRepo, setSelectedRepo] = useState(bug.target_repo || "https://github.com/Jason-CullumICT/dev-crew")
   const [sessionToken, setSessionToken] = useState("")
   const [tokenLabel, setTokenLabel] = useState("")
+  const [pipelineMode, setPipelineMode] = useState<'local' | 'github_actions'>('local')
   const [knownRepos, setKnownRepos] = useState<{ name: string; url: string }[]>([
     { name: "dev-crew", url: "https://github.com/Jason-CullumICT/dev-crew" },
   ])
@@ -115,7 +116,7 @@ export function BugDetail({ bug, onUpdate, onClose }: BugDetailProps) {
 ${bug.description}
 
 Severity: ${bug.severity}`,
-        { repo: selectedRepo, images: imageFiles.length > 0 ? imageFiles : undefined, claudeSessionToken: sessionToken || undefined, tokenLabel: tokenLabel || undefined }
+        { repo: selectedRepo, images: imageFiles.length > 0 ? imageFiles : undefined, claudeSessionToken: sessionToken || undefined, tokenLabel: tokenLabel || undefined, pipelineMode }
       )
       // Update bug status to in_development
       const updated = await bugs.update(bug.id, { status: "in_development" })
@@ -329,7 +330,23 @@ Severity: ${bug.severity}`,
                 />
               </div>
             </div>
-<button
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-0.5 bg-gray-50 self-start">
+              <button
+                type="button"
+                onClick={() => setPipelineMode('local')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${pipelineMode === 'local' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                🐳 Local
+              </button>
+              <button
+                type="button"
+                onClick={() => setPipelineMode('github_actions')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${pipelineMode === 'github_actions' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                ⚡ GitHub Actions
+              </button>
+            </div>
+          <button
             onClick={handleSubmitToOrchestrator}
             disabled={submittingToOrch}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"

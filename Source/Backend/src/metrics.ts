@@ -60,3 +60,12 @@ export const cycleDetectionEventsCounter = new Counter({
   labelNames: ['detected'] as const,
   registers: [registry],
 });
+
+// Verifies: FR-preflight-validator — preflight_validations_total
+// Domain-significant: security gate on work submission (token + repo + branch checks)
+export const preflightValidationsCounter = new Counter({
+  name: 'preflight_validations_total',
+  help: 'Total pre-flight validation attempts on work submission',
+  labelNames: ['result', 'failureReason'] as const,
+  registers: [registry],
+});

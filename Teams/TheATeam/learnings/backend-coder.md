@@ -1,5 +1,43 @@
 # Backend Coder Learnings
 
+## 2026-04-14: Pre-flight Validation on Work Submission (FR-preflight-*)
+
+### New files created
+- `Source/Backend/src/services/preflightValidator.ts` — GitHub API validation service
+- `Source/Backend/src/routes/work.ts` — `POST /api/work` endpoint
+- `Source/Backend/tests/services/preflightValidator.test.ts` — 17 service unit tests
+- `Source/Backend/tests/routes/work.test.ts` — 14 route integration tests
+
+### Design: dependency injection for testability
+- `HttpGetFn = (url, headers) => Promise<{ status }>` — injected into `validateRepoAccess` and `validateBranch`
+- Tests pass `jest.fn().mockResolvedValue({ status: N })` directly — no module mocking needed for the service
+- Route tests mock the whole service module using `jest.requireActual` to keep `parseRepoSlug` real
+
+### GitHub API status code mapping
+- `200` → `{ valid: true }`
+- `401` from GitHub → surface `{ statusCode: 401 }` — bad token
+- `403` from GitHub → surface `{ statusCode: 401 }` — token lacks access (same bucket as 401)
+- `404` from GitHub → surface `{ statusCode: 404 }` — repo or branch not found
+
+### Route logic (POST /api/work)
+- `task` field required; whitespace-only counts as empty → 400
+- `repo` format validated via `parseRepoSlug` before any network call → 400 fast fail
+- `process.env.GITHUB_TOKEN` required when repo is provided → 401 if missing
+- `repoBranch` validation runs only when `repo` is also provided
+- On success: creates a WorkItem from the task, returns 202 `WorkSubmissionResponse`
+- `WorkSubmissionResponse.statusUrl` = `/api/work-items/:id`
+
+### Metrics added
+- `preflight_validations_total` with labels `result` (passed/failed) and `failureReason`
+  (none/invalid_format/token_missing/unauthorized/repo_not_found/branch_not_found)
+
+### Pre-existing test debt
+- `tests/routes/search.test.ts` has 5 intentionally-failing tests (documented in file header: "GET /api/search NOT wired in app.ts"). Not my responsibility; don't fix.
+
+### Test runner command
+- `./node_modules/.bin/jest --forceExit --detectOpenHandles` (must install deps first with `npm install`)
+- `npx jest` spawns a newer jest version — use the local binary to match `^29.7.0`
+
 ## 2026-04-14: Dependency Tracking (FR-dependency-*)
 
 ### Shared types already defined in Source/Shared/types/workflow.ts

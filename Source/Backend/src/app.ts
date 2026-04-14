@@ -1,9 +1,10 @@
-// Verifies: FR-WF-002, FR-WF-006, FR-WF-007, FR-WF-008, FR-WF-013 — Express app setup
+// Verifies: FR-WF-002, FR-WF-006, FR-WF-007, FR-WF-008, FR-WF-013, FR-preflight-gating — Express app setup
 import express from 'express';
 import workItemsRouter from './routes/workItems';
 import workflowRouter from './routes/workflow';
 import dashboardRouter from './routes/dashboard';
 import intakeRouter from './routes/intake';
+import workRouter from './routes/work';
 import { errorHandler } from './middleware/errorHandler';
 import { registry } from './metrics';
 import logger from './logger';
@@ -29,6 +30,9 @@ app.use('/api/dashboard', dashboardRouter);
 
 // Verifies: FR-WF-008 — Intake webhook routes
 app.use('/api/intake', intakeRouter);
+
+// Verifies: FR-preflight-gating — Work submission with pre-flight validation
+app.use('/api/work', workRouter);
 
 // Verifies: FR-WF-013 — Prometheus metrics endpoint
 app.get('/metrics', async (_req, res) => {

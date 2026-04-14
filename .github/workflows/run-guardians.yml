@@ -246,8 +246,18 @@ jobs:
 
       - name: Start ephemeral environment
         run: |
-          docker compose -f docker-compose.test.yml up -d || true
-          sleep 15
+          docker compose -f docker-compose.test.yml up -d
+          DEADLINE=$(($(date +%s) + 60))
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            HEALTHY=$(docker compose -f docker-compose.test.yml ps -q | xargs -r docker inspect --format='{{.State.Health.Status}}' 2>/dev/null | grep -c "^healthy$" || true)
+            if [ "${HEALTHY:-0}" -gt 0 ]; then echo "Services ready"; break; fi
+            sleep 5
+          done
+          if [ "${HEALTHY:-0}" -eq 0 ]; then
+            echo "ERROR: Services did not become healthy within 60s"
+            docker compose -f docker-compose.test.yml logs
+            exit 1
+          fi
 
       - name: Run Red Teamer
         run: |

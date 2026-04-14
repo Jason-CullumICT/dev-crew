@@ -487,6 +487,17 @@ jobs:
           CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
         run: bash tools/setup-claude-credentials.sh
 
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent chaos-tester --action start --name "Chaos Tester" --model sonnet
+
       - name: Run Chaos Tester
         run: |
           printf 'Adversarial invariant testing for: %s\nFind edge cases, race conditions, invalid states.' "$TASK" > /tmp/prompt.txt
@@ -496,6 +507,23 @@ jobs:
             --print \
             --dangerously-skip-permissions \
             "$(cat /tmp/prompt.txt)"
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent chaos-tester --action complete
+
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Chaos Tester results
+
+          Co-Authored-By: agent:chaos-tester <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.plan.outputs.branch }}
+          git push origin HEAD
 
   traceability:
     name: "Traceability Reporter"
@@ -545,6 +573,17 @@ jobs:
           CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
         run: bash tools/setup-claude-credentials.sh
 
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent visual-playwright --action start --name "Visual Playwright" --model sonnet
+
       - name: Run Visual Playwright
         run: |
           printf 'Write and run Playwright browser tests for: %s\nEphemeral tests. Validate UI flows work end-to-end.' "$TASK" > /tmp/prompt.txt
@@ -554,6 +593,23 @@ jobs:
             --print \
             --dangerously-skip-permissions \
             "$(cat /tmp/prompt.txt)"
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheATeam --run ${{ needs.plan.outputs.run_id }} \
+            --agent visual-playwright --action complete
+
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Visual Playwright results
+
+          Co-Authored-By: agent:visual-playwright <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.plan.outputs.branch }}
+          git push origin HEAD
 
   # ---------------------------------------------------------------------------
   # Stage 5: QA Tier 2 (sequential — after Tier 1)

@@ -836,6 +836,60 @@ app.get("/api/repos/list", (req, res) => {
   res.json({ data: knownRepos });
 });
 
+// ── Team Dispatch (non-build teams: Inspector, Guardians, Designers) ──
+
+app.post("/api/dispatch-team", async (req, res) => {
+  const { team, inputs = {}, repo } = req.body;
+
+  if (!team || !WORKFLOW_MAP[team]) {
+    return res.status(400).json({ error: `Unknown team. Valid teams: ${Object.keys(WORKFLOW_MAP).join(", ")}` });
+  }
+
+  const token = config.githubToken;
+  if (!token) return res.status(503).json({ error: "GITHUB_TOKEN not configured — cannot dispatch to GitHub Actions" });
+
+  const repoFull = (repo || config.githubRepo || "").replace("https://github.com/", "");
+  if (!repoFull) return res.status(503).json({ error: "No GitHub repo configured" });
+
+  const workflowId = WORKFLOW_MAP[team];
+  const ref = config.githubBranch || "master";
+
+  try {
+    const dispatchRes = await fetch(
+      `https://api.github.com/repos/${repoFull}/actions/workflows/${workflowId}/dispatches`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ref, inputs }),
+      }
+    );
+
+    if (!dispatchRes.ok) {
+      const body = await dispatchRes.text();
+      return res.status(dispatchRes.status).json({ error: `GitHub dispatch failed: ${body}` });
+    }
+
+    console.log(`[dispatch-team] Triggered ${workflowId} on ${repoFull}@${ref} with inputs: ${JSON.stringify(inputs)}`);
+
+    return res.json({
+      dispatched: true,
+      team,
+      workflow: workflowId,
+      repo: repoFull,
+      ref,
+      inputs,
+      actionsUrl: `https://github.com/${repoFull}/actions/workflows/${workflowId}`,
+    });
+  } catch (err) {
+    console.error(`[dispatch-team] Error: ${err.message}`);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Portal Update ──
 
 app.post("/api/portal/update", async (req, res) => {

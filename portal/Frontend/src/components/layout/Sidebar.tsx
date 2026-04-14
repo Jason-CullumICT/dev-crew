@@ -22,6 +22,7 @@ export function Sidebar({ activeBugs, pendingFRs }: SidebarProps) {
     { path: '/cycle', label: 'Orchestrator', icon: '⚡' }, // Verifies: FR-076
     { path: '/features', label: 'Feature Browser', icon: '📦' },
     { path: '/learnings', label: 'Learnings', icon: '📚' },
+    { path: '/teams', label: 'Support Teams', icon: '🤖' },
   ]
 
   return (

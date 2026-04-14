@@ -8,6 +8,7 @@ import { BugReportsPage } from './pages/BugReportsPage'
 import { OrchestratorCyclesPage } from './pages/OrchestratorCyclesPage'
 import { FeatureBrowserPage } from './pages/FeatureBrowserPage'
 import { LearningsPage } from './pages/LearningsPage'
+import { TeamsPage } from './pages/TeamsPage'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/cycle" element={<OrchestratorCyclesPage />} />
           <Route path="/features" element={<FeatureBrowserPage />} />
           <Route path="/learnings" element={<LearningsPage />} />
+          <Route path="/teams" element={<TeamsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

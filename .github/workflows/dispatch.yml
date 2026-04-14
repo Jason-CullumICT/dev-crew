@@ -175,13 +175,28 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const issueOrPr = context.payload.issue || {};
+            const title = issueOrPr.title || 'Address findings';
+            const body = issueOrPr.body || '';
+            const number = issueOrPr.number || ${{ steps.route.outputs.issue_number }};
+
+            // Extract report path from PR body if present (Inspector/Guardians PRs include it)
+            const reportMatch = body.match(/`(Reports\/[^`]+\.md)`/);
+            const reportPath = reportMatch ? reportMatch[1] : '';
+
+            // Build a rich description so TheFixer knows where to find the findings
+            let fixDesc = title;
+            if (number) fixDesc += ` (see PR #${number}`;
+            if (reportPath) fixDesc += `, read ${reportPath}`;
+            if (number || reportPath) fixDesc += ')';
+
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'run-fixer.yml',
               ref: 'master',
               inputs: {
-                fix_description: context.payload.issue?.title || 'Address findings'
+                fix_description: fixDesc.substring(0, 500)
               }
             });
 

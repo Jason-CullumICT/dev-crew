@@ -447,6 +447,23 @@ export const orchestrator = {
   },
 }
 
+// --- Team Dispatch (non-build teams) ---
+
+export const teams = {
+  dispatch(team: string, inputs: Record<string, string>): Promise<{
+    dispatched: boolean
+    team: string
+    workflow: string
+    repo: string
+    actionsUrl: string
+  }> {
+    return apiFetch('/api/orchestrator/api/dispatch-team', {
+      method: 'POST',
+      body: JSON.stringify({ team, inputs }),
+    })
+  },
+}
+
 // --- Repo Management ---
 
 export const repos = {

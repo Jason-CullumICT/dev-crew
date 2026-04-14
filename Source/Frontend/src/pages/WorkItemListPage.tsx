@@ -12,6 +12,7 @@ import { useWorkItems } from '../hooks/useWorkItems';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { TypeBadge } from '../components/TypeBadge';
+import { BlockedBadge } from '../components/BlockedBadge';
 
 const PAGE_SIZES = [10, 20, 50];
 
@@ -175,6 +176,8 @@ export const WorkItemListPage: React.FC = () => {
                     </td>
                     <td style={tdStyle}>
                       <StatusBadge status={item.status} />
+                      {/* Verifies: FR-dependency-integration — BlockedBadge in WorkItemListPage */}
+                      <BlockedBadge hasUnresolvedBlockers={item.hasUnresolvedBlockers} />
                     </td>
                     <td style={tdStyle}>
                       <PriorityBadge priority={item.priority} />

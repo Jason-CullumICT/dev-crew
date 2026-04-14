@@ -11,6 +11,7 @@ import { useWorkItem } from '../hooks/useWorkItems';
 import { workItemsApi } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
+import { DependencySection } from '../components/DependencySection';
 
 // Verifies: FR-WF-011 (full detail view with actions, history, assessments)
 export const WorkItemDetailPage: React.FC = () => {
@@ -128,6 +129,9 @@ export const WorkItemDetailPage: React.FC = () => {
           <DetailField label="Updated" value={new Date(item.updatedAt).toLocaleString()} />
         </div>
       </section>
+
+      {/* Verifies: FR-dependency-integration — DependencySection in WorkItemDetailPage */}
+      <DependencySection item={item} onRefresh={refresh} />
 
       {/* Verifies: FR-WF-011 (action buttons conditionally shown by status) */}
       <ActionPanel

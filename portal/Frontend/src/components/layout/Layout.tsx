@@ -39,7 +39,7 @@ export function Layout() {
         pendingFRs={pendingFRs}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>

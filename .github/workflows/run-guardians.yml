@@ -2,6 +2,8 @@
 # TheGuardians — Security & Compliance Pipeline
 # =============================================================================
 # 5 agents. Pen testing, SAST, compliance auditing.
+# Pipeline: Init → Static Analyzer + Pen Tester + Red Teamer + Compliance Auditor (parallel)
+#                → Synthesize → PR
 # Red-teamer ONLY runs on ephemeral isolated environments.
 # =============================================================================
 
@@ -42,12 +44,15 @@ env:
 
 jobs:
 
-  security-audit:
-    name: "Security Audit"
+  # ---------------------------------------------------------------------------
+  # Stage 1: Initialize — branch and dashboard
+  # ---------------------------------------------------------------------------
+  init:
+    name: "Initialize"
     runs-on: ubuntu-latest
     outputs:
-      report_branch: ${{ steps.report_branch.outputs.name }}
-      has_critical: ${{ steps.check.outputs.has_critical }}
+      branch: ${{ steps.branch.outputs.name }}
+      run_id: ${{ steps.init.outputs.run_id }}
 
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +67,14 @@ jobs:
           CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
         run: bash tools/setup-claude-credentials.sh
 
+      - name: Create audit branch
+        id: branch
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          BRANCH="audit/guardians-${DATE}-$(echo $RANDOM | md5sum | head -c 6)"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+
       - name: Initialize dashboard
         id: init
         run: |
@@ -69,16 +82,55 @@ jobs:
             --metrics "{\"task_title\": \"Security Audit\", \"scope\": \"${{ inputs.scope || 'full' }}\"}")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
-      - name: Start ephemeral environment
+      - name: Upload pipeline state
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-state-guardians
+          path: tools/pipeline-state-TheGuardians.json
+
+      - name: Push
         run: |
-          docker compose -f docker-compose.test.yml up -d || true
-          sleep 15
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git commit --allow-empty -m "Guardians audit: initialize
+
+          Co-Authored-By: agent:guardians <agent@dev-crew>"
+          git push origin ${{ steps.branch.outputs.name }}
+
+  # ---------------------------------------------------------------------------
+  # Stage 2: Security audit agents (parallel)
+  # ---------------------------------------------------------------------------
+  static-analyzer:
+    name: "Static Analyzer"
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-guardians
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
+            --agent static-analyzer --action start --name "Static Analyzer" --model sonnet
 
       - name: Run Static Analyzer
         run: |
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
-            --agent static-analyzer --action start --name "Static Analyzer" --model sonnet
-
           printf 'SAST scan: CWEs, hardcoded secrets, insecure APIs.\nConfig: %s/security.config.yml\nScope: %s\nFocus: %s' \
             "$TEAM_DIR" "${{ inputs.scope || 'full' }}" "${{ inputs.focus || 'all' }}" > /tmp/prompt.txt
 
@@ -87,20 +139,56 @@ jobs:
             --allowedTools "Read,Glob,Grep,Bash" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > static-analyzer-report.md
 
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
             --agent static-analyzer --action complete
 
-      - name: Refresh Claude token if needed
-        if: always()
-        run: bash tools/refresh-claude-token.sh
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Static Analyzer report
+
+          Co-Authored-By: agent:static-analyzer <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  pen-tester:
+    name: "Pen Tester"
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-guardians
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
+            --agent pen-tester --action start --name "Pen Tester" --model sonnet
 
       - name: Run Pen Tester
         run: |
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
-            --agent pen-tester --action start --name "Pen Tester" --model sonnet
-
           printf 'White-box static analysis. Attack surface mapping.\nConfig: %s/security.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
 
@@ -109,20 +197,61 @@ jobs:
             --allowedTools "Read,Glob,Grep,Bash" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > pen-tester-report.md
 
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
             --agent pen-tester --action complete
 
-      - name: Refresh Claude token if needed
-        if: always()
-        run: bash tools/refresh-claude-token.sh
-
-      - name: Run Red Teamer (ephemeral env only)
+      - name: Push
         run: |
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Pen Tester report
+
+          Co-Authored-By: agent:pen-tester <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  red-teamer:
+    name: "Red Teamer"
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-guardians
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
             --agent red-teamer --action start --name "Red Teamer" --model sonnet
 
+      - name: Start ephemeral environment
+        run: |
+          docker compose -f docker-compose.test.yml up -d || true
+          sleep 15
+
+      - name: Run Red Teamer
+        run: |
           printf 'Active exploitation against ephemeral isolated environment ONLY.\nTarget: localhost services from docker-compose.test.yml\nNEVER target dev/staging/production.\nConfig: %s/security.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
 
@@ -131,20 +260,60 @@ jobs:
             --allowedTools "Read,Bash,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > red-teamer-report.md
 
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+      - name: Tear down ephemeral environment
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v || true
+
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
             --agent red-teamer --action complete
 
-      - name: Refresh Claude token if needed
-        if: always()
-        run: bash tools/refresh-claude-token.sh
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Red Teamer report
+
+          Co-Authored-By: agent:red-teamer <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  compliance-auditor:
+    name: "Compliance Auditor"
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-guardians
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
+            --agent compliance-auditor --action start --name "Compliance Auditor" --model sonnet
 
       - name: Run Compliance Auditor
         run: |
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
-            --agent compliance-auditor --action start --name "Compliance Auditor" --model sonnet
-
           printf 'SOC2, GDPR, ISO27001, OWASP ASVS compliance audit.\nConfig: %s/security.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
 
@@ -153,22 +322,50 @@ jobs:
             --allowedTools "Read,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > compliance-auditor-report.md
 
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
             --agent compliance-auditor --action complete
 
-      - name: Refresh Claude token if needed
-        if: always()
-        run: bash tools/refresh-claude-token.sh
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Compliance Auditor report
 
-      - name: Tear down ephemeral environment
-        if: always()
-        run: docker compose -f docker-compose.test.yml down -v || true
+          Co-Authored-By: agent:compliance-auditor <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  # ---------------------------------------------------------------------------
+  # Stage 3: Synthesize all findings and create PR
+  # ---------------------------------------------------------------------------
+  synthesize:
+    name: "Team Leader — Synthesize"
+    needs: [init, static-analyzer, pen-tester, red-teamer, compliance-auditor]
+    if: always() && needs.init.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
 
       - name: Synthesize Security Report
         run: |
-          printf 'Synthesize all security agent outputs.\nGrade: A-F based on critical/high findings + compliance pass rate.\nGenerate report.' > /tmp/prompt.txt
+          printf 'Synthesize all security agent reports.\nRead: static-analyzer-report.md, pen-tester-report.md, red-teamer-report.md, compliance-auditor-report.md.\nGrade: A-F based on critical/high findings + compliance pass rate.\nGenerate guardians-report.md.' > /tmp/prompt.txt
 
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
@@ -180,7 +377,7 @@ jobs:
       - name: Dashboard — finalize
         if: always()
         run: |
-          bash tools/pipeline-update.sh --team TheGuardians --run ${{ steps.init.outputs.run_id }} \
+          bash tools/pipeline-update.sh --team TheGuardians --run ${{ needs.init.outputs.run_id }} \
             --agent team-leader --action complete --verdict "Security audit complete"
 
       - name: Check severity
@@ -192,28 +389,25 @@ jobs:
             echo "has_critical=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit report to PR branch
-        id: report_branch
+      - name: Commit report
         run: |
           DATE=$(date +%Y-%m-%d)
-          BRANCH="audit/guardians-${DATE}-$(echo $RANDOM | md5sum | head -c 6)"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git checkout -b "$BRANCH"
           mkdir -p Reports
           cp guardians-report.md "Reports/guardians-${DATE}.md"
           git add Reports/
           git commit -m "Guardians security report ${DATE}
 
           Co-Authored-By: agent:guardians <agent@dev-crew>" || true
-          git push origin "$BRANCH"
-          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
 
       - name: Create PR
         uses: actions/github-script@v7
         with:
           script: |
-            const branch = '${{ steps.report_branch.outputs.name }}';
+            const branch = '${{ needs.init.outputs.branch }}';
             const date = new Date().toISOString().split('T')[0];
             const hasCritical = '${{ steps.check.outputs.has_critical }}' === 'true';
 
@@ -230,6 +424,13 @@ jobs:
                 hasCritical
                   ? '\n> 🚨 **Critical security findings detected** — review immediately.\n'
                   : '\n> ✅ No critical findings. Draft PR for record-keeping.\n',
+                '## Pipeline',
+                '- [x] Static Analyzer',
+                '- [x] Pen Tester',
+                '- [x] Red Teamer',
+                '- [x] Compliance Auditor',
+                '- [x] Team Leader Synthesis',
+                '',
                 '## Report',
                 'See `Reports/` directory for full output.',
                 '',

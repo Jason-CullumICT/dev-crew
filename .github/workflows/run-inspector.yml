@@ -2,8 +2,9 @@
 # TheInspector — System Health Audit Pipeline
 # =============================================================================
 # 5 agents. Config-driven spec-drift, performance, chaos, dependency auditing.
-# Output: Markdown report (A-F grade) committed to a PR branch.
-# Runs nightly or on demand.
+# Pipeline: Init → Quality Oracle + Dependency Auditor (parallel)
+#                → Performance Profiler + Chaos Monkey (parallel, dynamic only)
+#                → Synthesize → PR
 # =============================================================================
 
 name: "Run TheInspector"
@@ -43,12 +44,15 @@ env:
 
 jobs:
 
-  audit:
-    name: "Inspector Audit"
+  # ---------------------------------------------------------------------------
+  # Stage 1: Initialize — branch, dashboard, spec-drift
+  # ---------------------------------------------------------------------------
+  init:
+    name: "Initialize"
     runs-on: ubuntu-latest
     outputs:
-      report_branch: ${{ steps.report_branch.outputs.name }}
-      has_critical: ${{ steps.check.outputs.has_critical }}
+      branch: ${{ steps.branch.outputs.name }}
+      run_id: ${{ steps.init.outputs.run_id }}
 
     steps:
       - uses: actions/checkout@v4
@@ -63,6 +67,14 @@ jobs:
           CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
         run: bash tools/setup-claude-credentials.sh
 
+      - name: Create audit branch
+        id: branch
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          BRANCH="audit/inspector-${DATE}-$(echo $RANDOM | md5sum | head -c 6)"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+
       - name: Initialize dashboard
         id: init
         run: |
@@ -70,20 +82,59 @@ jobs:
             --metrics "{\"task_title\": \"Health Audit\", \"focus\": \"${{ inputs.focus }}\"}")
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
-      - name: Start services (dynamic mode only)
-        if: inputs.mode == 'dynamic'
-        run: |
-          docker compose -f docker-compose.test.yml up -d || true
-          sleep 10
+      - name: Upload pipeline state
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-state-inspector
+          path: tools/pipeline-state-TheInspector.json
 
       - name: Run Spec-Drift Audit
         run: python3 tools/spec-drift-audit.py || true
 
-      - name: Run Quality Oracle
+      - name: Push
         run: |
-          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Inspector audit: initialize
+
+          Co-Authored-By: agent:inspector <agent@dev-crew>" || true
+          git push origin ${{ steps.branch.outputs.name }}
+
+  # ---------------------------------------------------------------------------
+  # Stage 2: Audit agents (parallel)
+  # ---------------------------------------------------------------------------
+  quality-oracle:
+    name: "Quality Oracle"
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-inspector
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
             --agent quality-oracle --action start --name "Quality Oracle" --model sonnet
 
+      - name: Run Quality Oracle
+        run: |
           printf 'Spec-drift analysis and pattern enforcement.\nConfig: %s/inspector.config.yml\nFocus: %s' \
             "$TEAM_DIR" "${{ inputs.focus || 'full audit' }}" > /tmp/prompt.txt
 
@@ -92,20 +143,56 @@ jobs:
             --allowedTools "Read,Glob,Grep,Bash" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > quality-oracle-report.md
 
-          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
             --agent quality-oracle --action complete
 
-      - name: Refresh Claude token if needed
-        if: always()
-        run: bash tools/refresh-claude-token.sh
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Quality Oracle report
+
+          Co-Authored-By: agent:quality-oracle <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  dependency-auditor:
+    name: "Dependency Auditor"
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Download pipeline state
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-state-inspector
+          path: tools/
+
+      - name: Dashboard — start
+        run: |
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
+            --agent dependency-auditor --action start --name "Dependency Auditor" --model haiku
 
       - name: Run Dependency Auditor
         run: |
-          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
-            --agent dependency-auditor --action start --name "Dependency Auditor" --model haiku
-
           printf 'CVE scanning, license compliance, outdated package check.\nConfig: %s/inspector.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
 
@@ -114,17 +201,50 @@ jobs:
             --allowedTools "Read,Bash,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > dependency-auditor-report.md
 
-          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+      - name: Dashboard — complete
+        if: always()
+        run: |
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
             --agent dependency-auditor --action complete
 
-      - name: Refresh Claude token if needed
-        if: always()
-        run: bash tools/refresh-claude-token.sh
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Dependency Auditor report
 
-      - name: Run Performance Profiler (dynamic only)
-        if: inputs.mode == 'dynamic'
+          Co-Authored-By: agent:dependency-auditor <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  performance-profiler:
+    name: "Performance Profiler"
+    needs: init
+    if: inputs.mode == 'dynamic'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Start services
+        run: |
+          docker compose -f docker-compose.test.yml up -d || true
+          sleep 10
+
+      - name: Run Performance Profiler
         run: |
           printf 'Performance profiling against live services.\nConfig: %s/inspector.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
@@ -133,10 +253,48 @@ jobs:
             --allowedTools "Read,Bash,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > performance-profiler-report.md
 
-      - name: Run Chaos Monkey (dynamic only)
-        if: inputs.mode == 'dynamic'
+      - name: Tear down services
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v || true
+
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Performance Profiler report
+
+          Co-Authored-By: agent:performance-profiler <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  chaos-monkey:
+    name: "Chaos Monkey"
+    needs: init
+    if: inputs.mode == 'dynamic'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
+
+      - name: Start services
+        run: |
+          docker compose -f docker-compose.test.yml up -d || true
+          sleep 10
+
+      - name: Run Chaos Monkey
         run: |
           printf 'Fault injection and invariant analysis.\nConfig: %s/inspector.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
@@ -145,15 +303,48 @@ jobs:
             --allowedTools "Read,Bash,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
-            "$(cat /tmp/prompt.txt)"
+            "$(cat /tmp/prompt.txt)" > chaos-monkey-report.md
 
-      - name: Refresh Claude token if needed
+      - name: Tear down services
         if: always()
-        run: bash tools/refresh-claude-token.sh
+        run: docker compose -f docker-compose.test.yml down -v || true
+
+      - name: Push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Chaos Monkey report
+
+          Co-Authored-By: agent:chaos-monkey <agent@dev-crew>" || true
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
+
+  # ---------------------------------------------------------------------------
+  # Stage 3: Synthesize all findings and create PR
+  # ---------------------------------------------------------------------------
+  synthesize:
+    name: "Team Leader — Synthesize"
+    needs: [init, quality-oracle, dependency-auditor, performance-profiler, chaos-monkey]
+    if: always() && needs.init.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.init.outputs.branch }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        env:
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
+        run: bash tools/setup-claude-credentials.sh
 
       - name: Synthesize Report
         run: |
-          printf 'Synthesize all agent outputs into a graded report (A-F).\nGenerate markdown report and JSON bug backlog.\nEscalate P1 findings.' > /tmp/prompt.txt
+          printf 'Synthesize all agent reports into a graded report (A-F).\nRead: quality-oracle-report.md, dependency-auditor-report.md, and any performance-profiler-report.md / chaos-monkey-report.md if present.\nGenerate inspector-report.md with JSON bug backlog. Escalate P1 findings.' > /tmp/prompt.txt
 
           claude --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
@@ -162,14 +353,10 @@ jobs:
             --dangerously-skip-permissions \
             "$(cat /tmp/prompt.txt)" > inspector-report.md
 
-      - name: Tear down services (dynamic only)
-        if: always() && inputs.mode == 'dynamic'
-        run: docker compose -f docker-compose.test.yml down -v || true
-
       - name: Dashboard — finalize
         if: always()
         run: |
-          bash tools/pipeline-update.sh --team TheInspector --run ${{ steps.init.outputs.run_id }} \
+          bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
             --agent team-leader --action complete --verdict "Audit complete"
 
       - name: Check severity
@@ -181,14 +368,11 @@ jobs:
             echo "has_critical=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit report to PR branch
-        id: report_branch
+      - name: Commit report
         run: |
           DATE=$(date +%Y-%m-%d)
-          BRANCH="audit/inspector-${DATE}-$(echo $RANDOM | md5sum | head -c 6)"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git checkout -b "$BRANCH"
           mkdir -p Reports
           cp inspector-report.md "Reports/inspector-${DATE}.md"
           cp spec-drift-report.json "Reports/spec-drift-${DATE}.json" 2>/dev/null || true
@@ -196,16 +380,17 @@ jobs:
           git commit -m "Inspector report ${DATE}
 
           Co-Authored-By: agent:inspector <agent@dev-crew>" || true
-          git push origin "$BRANCH"
-          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          git pull --rebase origin ${{ needs.init.outputs.branch }}
+          git push origin HEAD
 
       - name: Create PR
         uses: actions/github-script@v7
         with:
           script: |
-            const branch = '${{ steps.report_branch.outputs.name }}';
+            const branch = '${{ needs.init.outputs.branch }}';
             const date = new Date().toISOString().split('T')[0];
             const hasCritical = '${{ steps.check.outputs.has_critical }}' === 'true';
+            const isDynamic = '${{ inputs.mode }}' === 'dynamic';
 
             const pr = await github.rest.pulls.create({
               owner: context.repo.owner,
@@ -220,6 +405,13 @@ jobs:
                 hasCritical
                   ? '\n> ⚠️ **Critical or high-priority findings detected** — review before merging.\n'
                   : '\n> ℹ️ No critical findings. Draft PR for record-keeping — merge or close.\n',
+                '## Pipeline',
+                '- [x] Quality Oracle',
+                '- [x] Dependency Auditor',
+                isDynamic ? '- [x] Performance Profiler' : '- [ ] Performance Profiler (static mode — skipped)',
+                isDynamic ? '- [x] Chaos Monkey' : '- [ ] Chaos Monkey (static mode — skipped)',
+                '- [x] Team Leader Synthesis',
+                '',
                 '## Report',
                 'See `Reports/` directory for full output.',
                 '',

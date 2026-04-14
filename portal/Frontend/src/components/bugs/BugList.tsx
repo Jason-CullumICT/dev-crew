@@ -59,7 +59,7 @@ export function BugList({ items, onSelect, selectable, selectedIds, onToggleSele
           )}
           <button
             onClick={() => onSelect(bug)}
-            className={`flex-1 text-left bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-all ${selectable && selectedIds?.has(bug.id) ? "border-blue-500 ring-1 ring-blue-500" : "border-gray-200"} ${HIDDEN_STATUSES.includes(bug.status) ? "opacity-60" : ""}`}
+            className={`flex-1 min-w-0 text-left bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-all ${selectable && selectedIds?.has(bug.id) ? "border-blue-500 ring-1 ring-blue-500" : "border-gray-200"} ${HIDDEN_STATUSES.includes(bug.status) ? "opacity-60" : ""}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">

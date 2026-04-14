@@ -75,9 +75,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add -A
-          git commit -m "UX research brief
+          git diff --cached --quiet || git commit -m "UX research brief
 
-          Co-Authored-By: agent:ux-researcher <agent@dev-crew>" || true
+          Co-Authored-By: agent:ux-researcher <agent@dev-crew>"
           git push origin ${{ steps.branch.outputs.name }}
 
   visual-design:
@@ -112,14 +112,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Visual design options
+          bash tools/git-push.sh "${{ needs.ux-research.outputs.branch }}" "Visual design options
 
-          Co-Authored-By: agent:visual-designer <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.ux-research.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:visual-designer <agent@dev-crew>"
 
   design-systems-check:
     name: "Design Systems"
@@ -198,7 +193,7 @@ jobs:
               repo: context.repo.repo,
               title: `[Design] ${brief}`.substring(0, 70),
               head: branch,
-              base: 'master',
+              base: context.payload.repository.default_branch,
               body: [
                 '## Design Options',
                 `**Brief:** ${brief}`,

@@ -103,9 +103,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add -A
-          git commit -m "Fix plan: $FIX_DESC
+          git diff --cached --quiet || git commit -m "Fix plan: $FIX_DESC
 
-          Co-Authored-By: agent:planner <agent@dev-crew>" || true
+          Co-Authored-By: agent:planner <agent@dev-crew>"
           git push origin ${{ steps.branch.outputs.name }}
 
   backend-fix:
@@ -156,14 +156,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Backend fix applied
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Backend fix applied
 
-          Co-Authored-By: agent:backend-fixer <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:backend-fixer <agent@dev-crew>"
 
   frontend-fix:
     name: "Frontend Fixer"
@@ -213,14 +208,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Frontend fix applied
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Frontend fix applied
 
-          Co-Authored-By: agent:frontend-fixer <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:frontend-fixer <agent@dev-crew>"
 
   verify:
     name: "Verify & Report"
@@ -264,14 +254,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Verification and security check complete
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Verification and security check complete
 
-          Co-Authored-By: agent:verify-reporter <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:verify-reporter <agent@dev-crew>"
 
       - name: Create PR
         uses: actions/github-script@v7
@@ -283,7 +268,7 @@ jobs:
               repo: context.repo.repo,
               title: `[TheFixer] ${process.env.FIX_DESC || ""}`.substring(0, 70),
               head: branch,
-              base: 'master',
+              base: context.payload.repository.default_branch,
               body: [
                 '## Fix Summary',
                 `**Fix:** ${process.env.FIX_DESC || ""}`,

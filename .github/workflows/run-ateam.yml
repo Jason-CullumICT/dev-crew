@@ -130,9 +130,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add -A
-          git commit -m "Agent pipeline: initialize for $TASK
+          git diff --cached --quiet || git commit -m "Agent pipeline: initialize for $TASK
 
-          Co-Authored-By: agent:team-leader <agent@dev-crew>" || true
+          Co-Authored-By: agent:team-leader <agent@dev-crew>"
           git push origin ${{ steps.branch.outputs.name }}
 
   # ---------------------------------------------------------------------------
@@ -185,14 +185,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Requirements review complete
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Requirements review complete
 
-          Co-Authored-By: agent:requirements-reviewer <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:requirements-reviewer <agent@dev-crew>"
 
   api-contract:
     name: "API Contract"
@@ -241,14 +236,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "API contract generated
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "API contract generated
 
-          Co-Authored-By: agent:api-contract <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:api-contract <agent@dev-crew>"
 
   # ---------------------------------------------------------------------------
   # Stage 3: Implementation (parallel backend + frontend)
@@ -300,14 +290,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Backend implementation
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Backend implementation
 
-          Co-Authored-By: agent:backend-coder <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:backend-coder <agent@dev-crew>"
 
   frontend:
     name: "Frontend Coder"
@@ -356,14 +341,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Frontend implementation
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Frontend implementation
 
-          Co-Authored-By: agent:frontend-coder <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:frontend-coder <agent@dev-crew>"
 
   # ---------------------------------------------------------------------------
   # Stage 4: QA Tier 1 (parallel)
@@ -415,14 +395,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "QA review and tests
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "QA review and tests
 
-          Co-Authored-By: agent:qa-review <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:qa-review <agent@dev-crew>"
 
   security-qa:
     name: "Security QA"
@@ -516,14 +491,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Chaos Tester results
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Chaos Tester results
 
-          Co-Authored-By: agent:chaos-tester <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:chaos-tester <agent@dev-crew>"
 
   traceability:
     name: "Traceability Reporter"
@@ -602,14 +572,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Visual Playwright results
+          bash tools/git-push.sh "${{ needs.plan.outputs.branch }}" "Visual Playwright results
 
-          Co-Authored-By: agent:visual-playwright <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.plan.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:visual-playwright <agent@dev-crew>"
 
   # ---------------------------------------------------------------------------
   # Stage 5: QA Tier 2 (sequential — after Tier 1)
@@ -733,7 +698,7 @@ jobs:
               repo: context.repo.repo,
               title: `[TheATeam] ${task.substring(0, 60)}`,
               head: branch,
-              base: 'master',
+              base: context.payload.repository.default_branch,
               body: body,
             });
 

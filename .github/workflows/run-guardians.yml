@@ -148,14 +148,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Static Analyzer report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Static Analyzer report
 
-          Co-Authored-By: agent:static-analyzer <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:static-analyzer <agent@dev-crew>"
 
   pen-tester:
     name: "Pen Tester"
@@ -206,14 +201,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Pen Tester report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Pen Tester report
 
-          Co-Authored-By: agent:pen-tester <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:pen-tester <agent@dev-crew>"
 
   red-teamer:
     name: "Red Teamer"
@@ -283,14 +273,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Red Teamer report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Red Teamer report
 
-          Co-Authored-By: agent:red-teamer <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:red-teamer <agent@dev-crew>"
 
   compliance-auditor:
     name: "Compliance Auditor"
@@ -341,14 +326,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Compliance Auditor report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Compliance Auditor report
 
-          Co-Authored-By: agent:compliance-auditor <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:compliance-auditor <agent@dev-crew>"
 
   # ---------------------------------------------------------------------------
   # Stage 3: Synthesize all findings and create PR
@@ -411,12 +391,9 @@ jobs:
           git config user.name "github-actions[bot]"
           mkdir -p Reports
           cp guardians-report.md "Reports/guardians-${DATE}.md"
-          git add Reports/
-          git commit -m "Guardians security report ${DATE}
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Guardians security report ${DATE}
 
-          Co-Authored-By: agent:guardians <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:guardians <agent@dev-crew>"
 
       - name: Create PR
         uses: actions/github-script@v7
@@ -431,7 +408,7 @@ jobs:
               repo: context.repo.repo,
               title: `[Guardians] Security audit ${date}`,
               head: branch,
-              base: 'master',
+              base: context.payload.repository.default_branch,
               draft: !hasCritical,
               body: [
                 '## Security Audit Findings',

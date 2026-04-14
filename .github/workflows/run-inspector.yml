@@ -148,9 +148,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add -A
-          git commit -m "Inspector audit: initialize
+          git diff --cached --quiet || git commit -m "Inspector audit: initialize
 
-          Co-Authored-By: agent:inspector <agent@dev-crew>" || true
+          Co-Authored-By: agent:inspector <agent@dev-crew>"
           git push origin ${{ steps.branch.outputs.name }}
 
   # ---------------------------------------------------------------------------
@@ -205,14 +205,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Quality Oracle report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Quality Oracle report
 
-          Co-Authored-By: agent:quality-oracle <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:quality-oracle <agent@dev-crew>"
 
   dependency-auditor:
     name: "Dependency Auditor"
@@ -263,14 +258,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Dependency Auditor report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Dependency Auditor report
 
-          Co-Authored-By: agent:dependency-auditor <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:dependency-auditor <agent@dev-crew>"
 
   performance-profiler:
     name: "Performance Profiler"
@@ -323,14 +313,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Performance Profiler report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Performance Profiler report
 
-          Co-Authored-By: agent:performance-profiler <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:performance-profiler <agent@dev-crew>"
 
   chaos-monkey:
     name: "Chaos Monkey"
@@ -383,14 +368,9 @@ jobs:
 
       - name: Push
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "Chaos Monkey report
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Chaos Monkey report
 
-          Co-Authored-By: agent:chaos-monkey <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:chaos-monkey <agent@dev-crew>"
 
   # ---------------------------------------------------------------------------
   # Stage 3: Synthesize all findings and create PR
@@ -454,12 +434,9 @@ jobs:
           mkdir -p Reports
           cp inspector-report.md "Reports/inspector-${DATE}.md"
           cp spec-drift-report.json "Reports/spec-drift-${DATE}.json" 2>/dev/null || true
-          git add Reports/
-          git commit -m "Inspector report ${DATE}
+          bash tools/git-push.sh "${{ needs.init.outputs.branch }}" "Inspector report ${DATE}
 
-          Co-Authored-By: agent:inspector <agent@dev-crew>" || true
-          git pull --rebase origin ${{ needs.init.outputs.branch }}
-          git push origin HEAD
+          Co-Authored-By: agent:inspector <agent@dev-crew>"
 
       - name: Create PR
         uses: actions/github-script@v7
@@ -475,7 +452,7 @@ jobs:
               repo: context.repo.repo,
               title: `[Inspector] Health audit ${date}`,
               head: branch,
-              base: 'master',
+              base: context.payload.repository.default_branch,
               draft: !hasCritical,
               body: [
                 '## Health Audit Findings',

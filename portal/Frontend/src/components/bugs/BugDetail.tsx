@@ -220,7 +220,7 @@ Severity: ${bug.severity}`,
         <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
           Description
         </h4>
-        <p className="text-sm text-gray-700 whitespace-pre-wrap">{bug.description}</p>
+        <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{bug.description}</p>
       </div>
 
       <div className="border-t border-gray-100 pt-4">

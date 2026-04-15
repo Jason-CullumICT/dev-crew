@@ -63,7 +63,7 @@ jobs:
           printf 'Design brief: %s\nProduce UX brief: personas, flows, constraints, information architecture.' \
             "$DESIGN_BRIEF" > /tmp/prompt.txt
 
-          claude --model claude-sonnet-4-6 \
+          bash tools/claude-with-retry.sh --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/ux-researcher.md)" \
             --allowedTools "Read,Write,Glob,Grep" \
             --print \
@@ -103,7 +103,7 @@ jobs:
           printf 'Create 2-3 design options with screenshots.\nDesign brief: %s\nRead UX research brief. Use browser automation for mockups.\nSave artifacts to Teams/TheDesigners/artifacts/' \
             "$DESIGN_BRIEF" > /tmp/prompt.txt
 
-          claude --model claude-sonnet-4-6 \
+          bash tools/claude-with-retry.sh --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/visual-designer.md)" \
             --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
             --print \
@@ -136,12 +136,18 @@ jobs:
 
       - name: Run Design Systems Check
         run: |
-          claude --model claude-haiku-4-5 \
+          bash tools/claude-with-retry.sh --model claude-haiku-4-5 \
             --system-prompt "$(cat $TEAM_DIR/design-systems.md)" \
             --allowedTools "Read,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
             "Validate design options against Tailwind tokens and component conventions." > design-systems-report.md
+
+      - name: Push
+        run: |
+          bash tools/git-push.sh "${{ needs.ux-research.outputs.branch }}" "Design systems check report
+
+          Co-Authored-By: agent:design-systems <agent@dev-crew>"
 
   accessibility-audit:
     name: "Accessibility Auditor"
@@ -163,12 +169,18 @@ jobs:
 
       - name: Run Accessibility Audit
         run: |
-          claude --model claude-haiku-4-5 \
+          bash tools/claude-with-retry.sh --model claude-haiku-4-5 \
             --system-prompt "$(cat $TEAM_DIR/accessibility-auditor.md)" \
             --allowedTools "Read,Glob,Grep" \
             --print \
             --dangerously-skip-permissions \
             "WCAG 2.1 AA review of design options before implementation." > accessibility-report.md
+
+      - name: Push
+        run: |
+          bash tools/git-push.sh "${{ needs.ux-research.outputs.branch }}" "Accessibility audit report
+
+          Co-Authored-By: agent:accessibility-auditor <agent@dev-crew>"
 
   create-design-pr:
     name: "Create Design PR (awaiting approval)"

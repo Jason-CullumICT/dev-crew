@@ -181,6 +181,7 @@ jobs:
           path: tools/
 
       - name: Dashboard — start
+        continue-on-error: true
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
             --agent quality-oracle --action start --name "Quality Oracle" --model sonnet
@@ -190,7 +191,7 @@ jobs:
           printf 'Spec-drift analysis and pattern enforcement.\nConfig: %s/inspector.config.yml\nFocus: %s' \
             "$TEAM_DIR" "${{ inputs.focus || 'full audit' }}" > /tmp/prompt.txt
 
-          claude --model claude-sonnet-4-6 \
+          bash tools/claude-with-retry.sh --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/quality-oracle.md)" \
             --allowedTools "Read,Glob,Grep,Bash" \
             --print \
@@ -198,6 +199,7 @@ jobs:
             "$(cat /tmp/prompt.txt)" > quality-oracle-report.md
 
       - name: Dashboard — complete
+        continue-on-error: true
         if: always()
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
@@ -234,6 +236,7 @@ jobs:
           path: tools/
 
       - name: Dashboard — start
+        continue-on-error: true
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
             --agent dependency-auditor --action start --name "Dependency Auditor" --model haiku
@@ -243,7 +246,7 @@ jobs:
           printf 'CVE scanning, license compliance, outdated package check.\nConfig: %s/inspector.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
 
-          claude --model claude-haiku-4-5 \
+          bash tools/claude-with-retry.sh --model claude-haiku-4-5 \
             --system-prompt "$(cat $TEAM_DIR/dependency-auditor.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
             --print \
@@ -251,6 +254,7 @@ jobs:
             "$(cat /tmp/prompt.txt)" > dependency-auditor-report.md
 
       - name: Dashboard — complete
+        continue-on-error: true
         if: always()
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \
@@ -300,7 +304,7 @@ jobs:
         run: |
           printf 'Performance profiling against live services.\nConfig: %s/inspector.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
-          claude --model claude-sonnet-4-6 \
+          bash tools/claude-with-retry.sh --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/performance-profiler.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
             --print \
@@ -355,7 +359,7 @@ jobs:
         run: |
           printf 'Fault injection and invariant analysis.\nConfig: %s/inspector.config.yml' \
             "$TEAM_DIR" > /tmp/prompt.txt
-          claude --model claude-sonnet-4-6 \
+          bash tools/claude-with-retry.sh --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/chaos-monkey.md)" \
             --allowedTools "Read,Bash,Glob,Grep" \
             --print \
@@ -404,7 +408,7 @@ jobs:
         run: |
           printf 'Synthesize all agent reports into a graded report (A-F).\nRead: quality-oracle-report.md, dependency-auditor-report.md, and any performance-profiler-report.md / chaos-monkey-report.md if present.\nGenerate inspector-report.md with JSON bug backlog. Escalate P1 findings.' > /tmp/prompt.txt
 
-          claude --model claude-sonnet-4-6 \
+          bash tools/claude-with-retry.sh --model claude-sonnet-4-6 \
             --system-prompt "$(cat $TEAM_DIR/team-leader.md)" \
             --allowedTools "Read,Write,Glob,Grep" \
             --print \
@@ -412,6 +416,7 @@ jobs:
             "$(cat /tmp/prompt.txt)" > inspector-report.md
 
       - name: Dashboard — finalize
+        continue-on-error: true
         if: always()
         run: |
           bash tools/pipeline-update.sh --team TheInspector --run ${{ needs.init.outputs.run_id }} \

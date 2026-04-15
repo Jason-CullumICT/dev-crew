@@ -187,19 +187,22 @@ describe('FR-074: imageService', () => {
   describe('deleteImage', () => {
     it('should remove the image record from the database', () => {
       // Verifies: FR-074
+      // Fixes: FIX-001 — updated call to include entity ownership parameters
       const fr = createFeatureRequest(db, { title: 'FR', description: 'desc' });
       const [img] = uploadImagesService(db, fr.id, 'feature_request', [makeMockFile({ filename: 'del.png' })]);
 
-      deleteImage(db, img.id);
+      deleteImage(db, img.id, fr.id, 'feature_request');
       const remaining = listImages(db, fr.id, 'feature_request');
       expect(remaining).toHaveLength(0);
     });
 
     it('should throw 404 for non-existent image ID', () => {
       // Verifies: FR-074
-      expect(() => deleteImage(db, 'IMG-9999')).toThrow();
+      // Fixes: FIX-001 — updated call to include entity ownership parameters
+      const fr = createFeatureRequest(db, { title: 'FR', description: 'desc' });
+      expect(() => deleteImage(db, 'IMG-9999', fr.id, 'feature_request')).toThrow();
       try {
-        deleteImage(db, 'IMG-9999');
+        deleteImage(db, 'IMG-9999', fr.id, 'feature_request');
       } catch (err: unknown) {
         expect((err as { statusCode: number }).statusCode).toBe(404);
       }
@@ -207,6 +210,7 @@ describe('FR-074: imageService', () => {
 
     it('should delete the file from disk when it exists', () => {
       // Verifies: FR-074, DD-IMG-05
+      // Fixes: FIX-001 — updated call to include entity ownership parameters
       const fr = createFeatureRequest(db, { title: 'FR', description: 'desc' });
       const testFilename = `test-delete-${Date.now()}.png`;
       const testFilePath = path.join(UPLOAD_DIR, testFilename);
@@ -222,7 +226,7 @@ describe('FR-074: imageService', () => {
       ]);
 
       expect(fs.existsSync(testFilePath)).toBe(true);
-      deleteImage(db, img.id);
+      deleteImage(db, img.id, fr.id, 'feature_request');
       expect(fs.existsSync(testFilePath)).toBe(false);
     });
   });

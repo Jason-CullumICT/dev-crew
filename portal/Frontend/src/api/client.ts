@@ -143,6 +143,13 @@ export const featureRequests = {
   checkReady(id: string): Promise<{ ready: boolean; unresolved_blockers: any[] }> {
     return apiFetch(`/api/feature-requests/${id}/ready`)
   },
+
+  complete(id: string): Promise<FeatureRequest> {
+    return apiFetch(`/api/feature-requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'completed' }),
+    })
+  },
 }
 
 // --- Bug Reports ---
@@ -178,6 +185,22 @@ export const bugs = {
 
   delete(id: string): Promise<void> {
     return apiFetch(`/api/bugs/${id}`, { method: 'DELETE' })
+  },
+
+  triage(id: string): Promise<BugReport> {
+    return apiFetch(`/api/bugs/${id}/triage`, { method: 'POST' })
+  },
+
+  resolve(id: string): Promise<BugReport> {
+    return apiFetch(`/api/bugs/${id}/resolve`, { method: 'POST' })
+  },
+
+  close(id: string): Promise<BugReport> {
+    return apiFetch(`/api/bugs/${id}/close`, { method: 'POST' })
+  },
+
+  reopen(id: string): Promise<BugReport> {
+    return apiFetch(`/api/bugs/${id}/reopen`, { method: 'POST' })
   },
 
   addDependency(id: string, blockerId: string): Promise<void> {

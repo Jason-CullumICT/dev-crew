@@ -39,6 +39,7 @@ export function BugDetail({ bug, onUpdate, onClose }: BugDetailProps) {
   const [attachedImages, setAttachedImages] = useState<ImageAttachment[]>([])
   const [error, setError] = useState<string | null>(null)
   const [submittingToOrch, setSubmittingToOrch] = useState(false)
+  const [transitioning, setTransitioning] = useState(false)
   // Verifies: FR-DUP-09
   const [showDuplicateForm, setShowDuplicateForm] = useState(false)
   const [duplicateOfId, setDuplicateOfId] = useState('')
@@ -125,6 +126,19 @@ Severity: ${bug.severity}`,
       setError(err instanceof Error ? err.message : "Failed to submit to orchestrator")
     } finally {
       setSubmittingToOrch(false)
+    }
+  }
+
+  const handleTransition = async (action: 'triage' | 'resolve' | 'close' | 'reopen') => {
+    setTransitioning(true)
+    setError(null)
+    try {
+      const updated = await bugs[action](bug.id)
+      onUpdate(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update status')
+    } finally {
+      setTransitioning(false)
     }
   }
 
@@ -292,6 +306,60 @@ Severity: ${bug.severity}`,
           <p className="text-xs text-red-600 mt-1">{error}</p>
         )}
       </div>
+
+      {/* Status workflow actions */}
+      {(bug.status === 'reported' || bug.status === 'in_development' || bug.status === 'resolved' || bug.status === 'closed') && (
+        <div className="border-t border-gray-100 pt-4">
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Workflow</h4>
+          <div className="flex flex-wrap gap-2">
+            {bug.status === 'reported' && (
+              <button
+                onClick={() => handleTransition('triage')}
+                disabled={transitioning}
+                className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-50"
+              >
+                {transitioning ? 'Saving…' : 'Mark as Triaged'}
+              </button>
+            )}
+            {bug.status === 'in_development' && (
+              <button
+                onClick={() => handleTransition('resolve')}
+                disabled={transitioning}
+                className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 disabled:opacity-50"
+              >
+                {transitioning ? 'Saving…' : 'Mark as Resolved'}
+              </button>
+            )}
+            {bug.status === 'resolved' && (
+              <>
+                <button
+                  onClick={() => handleTransition('close')}
+                  disabled={transitioning}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                >
+                  {transitioning ? 'Saving…' : 'Close Bug'}
+                </button>
+                <button
+                  onClick={() => handleTransition('reopen')}
+                  disabled={transitioning}
+                  className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-50"
+                >
+                  {transitioning ? 'Saving…' : 'Reopen'}
+                </button>
+              </>
+            )}
+            {bug.status === 'closed' && (
+              <button
+                onClick={() => handleTransition('reopen')}
+                disabled={transitioning}
+                className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-50"
+              >
+                {transitioning ? 'Saving…' : 'Reopen'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Submit to orchestrator */}
       {(bug.status === "reported" || bug.status === "triaged") && (

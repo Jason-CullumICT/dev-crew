@@ -240,6 +240,19 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
     }
   }
 
+  const handleComplete = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const updated = await featureRequests.complete(fr.id)
+      onUpdate(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark as completed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const isHidden = HIDDEN_STATUSES.includes(fr.status)
   const canVote = fr.status === 'potential'
   const canApprove = fr.status === 'voting'
@@ -512,6 +525,22 @@ export function FeatureRequestDetail({ fr, onUpdate, onClose }: FeatureRequestDe
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* WORKFLOW — in_development → completed */}
+      {fr.status === 'in_development' && (
+        <div className="border-t border-gray-100 pt-4 space-y-2">
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Workflow</h4>
+          <div className="flex gap-2">
+            <button
+              onClick={handleComplete}
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? 'Processing...' : 'Mark as Completed'}
             </button>
           </div>
         </div>

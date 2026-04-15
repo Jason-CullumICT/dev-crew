@@ -15,6 +15,7 @@ const STATUS_OPTIONS = [
   { value: 'in_development', label: 'In Development' },
   { value: 'resolved', label: 'Resolved' },
   { value: 'closed', label: 'Closed' },
+  { value: 'pending_dependencies', label: 'Pending Dependencies' },
 ]
 
 const SEVERITY_OPTIONS = [

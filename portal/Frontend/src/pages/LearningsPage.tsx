@@ -1,4 +1,6 @@
 // Verifies: FR-030
+// @deprecated — Hidden from nav. Pipeline writes learnings to Teams/ repo files, not the portal API.
+// Re-enable by adding to Sidebar navItems when a pipeline stage calls POST /api/learnings.
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { Header } from '../components/layout/Header'
 import { LearningsList } from '../components/learnings/LearningsList'

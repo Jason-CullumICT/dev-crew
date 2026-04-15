@@ -20,8 +20,8 @@ export function Sidebar({ activeBugs, pendingFRs }: SidebarProps) {
     { path: '/feature-requests', label: 'Feature Requests', icon: '✨', badge: pendingFRs },
     { path: '/bugs', label: 'Bug Reports', icon: '🐛', badge: activeBugs },
     { path: '/cycle', label: 'Orchestrator', icon: '⚡' }, // Verifies: FR-076
-    { path: '/features', label: 'Feature Browser', icon: '📦' },
-    { path: '/learnings', label: 'Learnings', icon: '📚' },
+    // @deprecated — Feature Browser and Learnings hidden: pipeline does not write to these tables.
+    // Routes and pages preserved at /features and /learnings if wired up in future.
     { path: '/teams', label: 'Support Teams', icon: '🤖' },
   ]
 

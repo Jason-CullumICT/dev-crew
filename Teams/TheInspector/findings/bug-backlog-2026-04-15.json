@@ -1,0 +1,344 @@
+{
+  "audit_id": "run-20260415-022207",
+  "audit_date": "2026-04-15",
+  "branch": "audit/inspector-2026-04-15-82a27c",
+  "grade": "D",
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 19,
+    "p3_total": 23,
+    "p4_total": 5,
+    "spec_coverage_pct": 82,
+    "escalations_to_guardians": 5,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "route_to": "TheGuardians",
+      "title": "Handlebars.js 4.7.8 — multiple RCE vectors via JavaScript injection",
+      "file": "Source/Backend/package-lock.json",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q (+ 6 others)",
+      "description": "Seven Handlebars CVEs in Source/Backend including code injection via AST type confusion (CVSS 9.8). Any user-controlled template data is an RCE vector.",
+      "fix": "cd Source/Backend && npm update handlebars  # target 4.7.9+"
+    },
+    {
+      "id": "CHAOS-001",
+      "severity": "P1",
+      "source": "chaos-monkey",
+      "route_to": "TheGuardians",
+      "title": "SSRF via orchestrator proxy path traversal",
+      "file": "portal/Backend/src/index.ts:75",
+      "description": "GET /api/orchestrator/../../health returns HTTP 200 from backend's own /health. req.url concatenated onto orchestrator base URL without sanitisation — any internal route is reachable without authentication.",
+      "confirmed_dynamic": true,
+      "fix": "Validate path component does not contain '..' before forwarding; use URL+pathname normalisation."
+    },
+    {
+      "id": "CHAOS-016",
+      "severity": "P3",
+      "source": "chaos-monkey",
+      "route_to": "TheGuardians",
+      "title": "CORS advertises unimplemented methods; Access-Control-Allow-Credentials may be over-broad",
+      "file": "portal/Backend/src/index.ts:34-39",
+      "description": "CORS headers advertise PATCH and DELETE globally but those methods 404. Access-Control-Allow-Credentials: true needs review against allowedOrigins scope.",
+      "fix": "Restrict allowed methods to GET,POST,OPTIONS or configure per-route. Audit credentials flag."
+    },
+    {
+      "id": "CHAOS-019",
+      "severity": "P3",
+      "source": "chaos-monkey",
+      "route_to": "TheGuardians",
+      "title": "No rate limiting — orchestrator proxy amplifies unauthenticated requests to upstream",
+      "file": "portal/Backend/src/index.ts",
+      "description": "No express-rate-limit or equivalent on any endpoint. The /api/orchestrator proxy amplifies every unauthenticated request into an upstream call with no throttle.",
+      "fix": "Add express-rate-limit (e.g. 100 req/min per IP) on proxy and write endpoints."
+    },
+    {
+      "id": "CHAOS-020",
+      "severity": "P3",
+      "source": "chaos-monkey",
+      "route_to": "TheGuardians",
+      "title": "Stored XSS — raw HTML/JS accepted and stored verbatim",
+      "file": "portal/Backend/src/services/featureRequestService.ts",
+      "description": "POST /api/feature-requests with <script>alert(1)</script> title returns 201 and stores verbatim. React default rendering is safe for text nodes, but any dangerouslySetInnerHTML call in the frontend triggers stored XSS.",
+      "fix": "Reject or sanitize HTML/JS in title/description fields at service layer (sanitize-html or blocklist <script>, on* handlers)."
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "category": "CVE-RCE",
+      "title": "Handlebars.js 4.7.8 — multiple RCE vectors (CVSS 9.8)",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "escalated": true,
+      "fix": "npm update handlebars (Source/Backend)",
+      "priority": "Block deployment"
+    },
+    {
+      "id": "PERF-002",
+      "severity": "P1",
+      "source": "performance-profiler",
+      "category": "algorithmic",
+      "title": "getActivity() O(N×M) memory + O(N×M log N×M) sort on every dashboard request",
+      "file": "Source/Backend/src/services/dashboard.ts:32",
+      "status": "NEW",
+      "escalated": false,
+      "fix": "Replace cross-product flatten+sort with global pre-sorted ring buffer (cap ~1,000). Push to ring on every changeHistory write.",
+      "priority": "Block deployment"
+    },
+    {
+      "id": "PERF-003",
+      "severity": "P1",
+      "source": "performance-profiler",
+      "category": "unbounded",
+      "title": "getQueue() returns full WorkItem objects including unbounded changeHistory[] for entire dataset",
+      "file": "Source/Backend/src/services/dashboard.ts:57",
+      "status": "NEW",
+      "escalated": false,
+      "fix": "Return summary projections only {id, docId, title, status, priority, assignedTeam}. Add per-bucket limit (default 10).",
+      "priority": "Block deployment"
+    },
+    {
+      "id": "CHAOS-001",
+      "severity": "P1",
+      "source": "chaos-monkey",
+      "category": "SSRF",
+      "title": "SSRF via orchestrator proxy path traversal — confirmed live exploit",
+      "file": "portal/Backend/src/index.ts:75",
+      "status": "NEW",
+      "escalated": true,
+      "fix": "Sanitize path component before proxy forward. Block '..' sequences.",
+      "priority": "Block deployment"
+    },
+    {
+      "id": "CHAOS-002",
+      "severity": "P1",
+      "source": "chaos-monkey",
+      "category": "missing-timeout",
+      "title": "No timeout on orchestrator fetch() — infinite hang cascades to connection pool exhaustion",
+      "file": "portal/Backend/src/index.ts:112",
+      "status": "NEW",
+      "escalated": false,
+      "fix": "Wrap fetch() with AbortController (30s timeout). Return 504 on expiry.",
+      "priority": "Block deployment"
+    },
+    {
+      "id": "CHAOS-003",
+      "severity": "P1",
+      "source": "chaos-monkey",
+      "category": "recovery-failure",
+      "title": "No SIGTERM/SIGINT handlers — hard kill on container stop, SQLite WAL not flushed",
+      "file": "portal/Backend/src/index.ts:155, Source/Backend/src/app.ts:48",
+      "status": "NEW",
+      "escalated": false,
+      "fix": "Add process.on('SIGTERM') + process.on('SIGINT') handlers: server.close() → closeDb() → process.exit(0) with 15s force-kill fallback.",
+      "priority": "Block deployment"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-001", "severity": "P2", "source": "quality-oracle", "category": "spec-drift",
+      "title": "GET /api/search route missing — 5 tests will fail at runtime",
+      "file": "Source/Backend/src/routes/ (missing search.ts)",
+      "status": "NEW", "fix": "Implement Source/Backend/src/routes/search.ts and register in app.ts",
+      "priority": "This sprint"
+    },
+    {
+      "id": "QO-002", "severity": "P2", "source": "quality-oracle", "category": "architecture-violation",
+      "title": "Traceability enforcer never scans portal/ or platform/ — 1,068 Verifies comments unvalidated",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW", "fix": "Extend source_dirs to include portal/",
+      "priority": "This sprint"
+    },
+    {
+      "id": "QO-003", "severity": "P2", "source": "quality-oracle", "category": "tooling",
+      "title": "Enforcer false-failure on dependency-linking plan — 7 spurious missing FR IDs",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW", "fix": "Tighten extraction regex to table-column context only",
+      "priority": "This sprint"
+    },
+    {
+      "id": "QO-004", "severity": "P2", "source": "quality-oracle", "category": "spec-drift",
+      "title": "3 open dependency-linking gaps: api-types, seed.ts, 2 missing frontend test files",
+      "files": ["portal/Shared/", "portal/Backend/src/database/seed.ts", "portal/Frontend/tests/"],
+      "status": "NEW", "fix": "Route to TheFixer — plan has exact implementation instructions",
+      "priority": "This sprint"
+    },
+    {
+      "id": "QO-005", "severity": "P2", "source": "quality-oracle", "category": "spec-drift",
+      "title": "FR-TMP-001–010 (tiered-merge-pipeline) — zero enforced traceability in platform/",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "status": "NEW", "fix": "Add traces to platform/ and extend enforcer, or formally mark platform/ spec-exempt in CLAUDE.md",
+      "priority": "Next sprint"
+    },
+    {
+      "id": "DEP-002", "severity": "P2", "source": "dependency-auditor", "category": "CVE-DoS",
+      "title": "path-to-regexp ReDoS (CVSS 7.5) in portal/Backend + platform/orchestrator",
+      "files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "status": "NEW", "fix": "npm audit fix in portal/Backend and platform/orchestrator",
+      "priority": "This sprint"
+    },
+    {
+      "id": "DEP-003", "severity": "P2", "source": "dependency-auditor", "category": "CVE-DoS",
+      "title": "picomatch ReDoS + prototype pollution (CVSS 7.5) in portal/Frontend",
+      "file": "portal/Frontend/package-lock.json",
+      "status": "NEW", "fix": "npm update picomatch in portal/Frontend",
+      "priority": "This sprint"
+    },
+    {
+      "id": "PERF-001", "severity": "P2", "source": "performance-profiler", "category": "algorithmic",
+      "title": "findAll() 5 sequential O(n) filter passes + O(n log n) sort with Date parsing on every request",
+      "file": "Source/Backend/src/store/workItemStore.ts:30",
+      "status": "NEW", "fix": "Pre-parse updatedAt to epoch ms; add secondary status/type indexes",
+      "priority": "This sprint"
+    },
+    {
+      "id": "PERF-004", "severity": "P2", "source": "performance-profiler", "category": "unbounded",
+      "title": "GET /api/work-items list serializes full changeHistory[] + assessments[] on every paginated response",
+      "file": "Source/Backend/src/routes/workItems.ts:60",
+      "status": "NEW", "fix": "Add toListView() projection; return full object only from GET /api/work-items/:id",
+      "priority": "This sprint"
+    },
+    {
+      "id": "PERF-005", "severity": "P2", "source": "performance-profiler", "category": "algorithmic",
+      "title": "setDependencies() runs BFS cycle detection K times instead of once — O(K × BFS) per PATCH",
+      "file": "Source/Backend/src/services/dependency.ts:220",
+      "status": "NEW", "fix": "Single consolidated cycle check for all new deps in one BFS pass",
+      "priority": "This sprint"
+    },
+    {
+      "id": "PERF-006", "severity": "P2", "source": "performance-profiler", "category": "observability",
+      "title": "Missing http_request_duration_seconds Histogram — cannot detect latency budget violations",
+      "file": "Source/Backend/src/metrics.ts",
+      "status": "NEW", "fix": "Add Histogram to metrics.ts + res.on('finish') middleware in app.ts",
+      "priority": "This sprint"
+    },
+    {
+      "id": "CHAOS-004", "severity": "P2", "source": "chaos-monkey", "category": "error-handling",
+      "title": "No uncaughtException/unhandledRejection handlers — any out-of-Express throw silently kills process",
+      "files": ["portal/Backend/src/index.ts", "Source/Backend/src/app.ts"],
+      "status": "NEW", "fix": "Add process.on('uncaughtException') and process.on('unhandledRejection') with logging + exit(1)",
+      "priority": "Block deployment"
+    },
+    {
+      "id": "CHAOS-005", "severity": "P2", "source": "chaos-monkey", "category": "recovery-failure",
+      "title": "GET /api/dashboard returns 404 — route declared but not served (possible startup import error)",
+      "file": "portal/Backend/src/index.ts:64",
+      "status": "NEW", "fix": "Check startup logs for import error on dashboardRouter; verify compiled output",
+      "priority": "This sprint"
+    },
+    {
+      "id": "CHAOS-006", "severity": "P2", "source": "chaos-monkey", "category": "error-handling",
+      "title": "Invalid JSON body returns HTTP 500 instead of 400",
+      "file": "portal/Backend/src/middleware/errorHandler.ts",
+      "status": "NEW", "fix": "Add SyntaxError check in errorHandler: if (err instanceof SyntaxError && 'body' in err) return 400",
+      "priority": "This sprint"
+    },
+    {
+      "id": "CHAOS-007", "severity": "P2", "source": "chaos-monkey", "category": "resource-leak",
+      "title": "Pagination not validated — ?limit=99999 dumps full dataset (DoS vector)",
+      "files": ["portal/Backend/src/routes/featureRequests.ts", "portal/Backend/src/routes/bugs.ts"],
+      "status": "NEW", "fix": "Clamp page ≥ 1, 1 ≤ limit ≤ 100. Return 400 for non-numeric inputs.",
+      "priority": "This sprint"
+    },
+    {
+      "id": "CHAOS-008", "severity": "P2", "source": "chaos-monkey", "category": "error-handling",
+      "title": "SSE stream errors silently swallowed — pump().catch(() => res.end()) discards error object",
+      "file": "portal/Backend/src/index.ts:130",
+      "status": "NEW", "fix": "pump().catch((err) => { logger.error('SSE pump error', {...}); res.end(); })",
+      "priority": "This sprint"
+    },
+    {
+      "id": "CHAOS-009", "severity": "P2", "source": "chaos-monkey", "category": "state-invariant",
+      "title": "updateFeatureRequest/updateBug read-then-write not in transaction — concurrent double-apply race",
+      "files": ["portal/Backend/src/services/featureRequestService.ts:251", "portal/Backend/src/services/bugService.ts:184"],
+      "status": "NEW", "fix": "Wrap read-validate-write in db.transaction() — same pattern as voteOnFeatureRequest",
+      "priority": "This sprint"
+    },
+    {
+      "id": "CHAOS-010", "severity": "P2", "source": "chaos-monkey", "category": "resource-leak",
+      "title": "No SQLite busy_timeout pragma — SQLITE_BUSY throws immediately under write contention → 500",
+      "file": "portal/Backend/src/database/connection.ts:19",
+      "status": "NEW", "fix": "Add db.pragma('busy_timeout = 5000') after connection creation in getDb()",
+      "priority": "This sprint"
+    },
+    {
+      "id": "CHAOS-011", "severity": "P2", "source": "chaos-monkey", "category": "resource-leak",
+      "title": "Dashboard activity: 6 unbounded SELECT * queries merged in memory — O(n·tables) heap per request",
+      "file": "portal/Backend/src/services/dashboardService.ts",
+      "status": "NEW", "fix": "Add LIMIT N (e.g. 500) to each per-table query before in-memory merge",
+      "priority": "This sprint",
+      "cross_ref": ["PERF-002", "PERF-003"]
+    }
+  ],
+  "p3_findings": [
+    { "id": "QO-006", "source": "quality-oracle", "title": "Dual logger abstraction in Source/Backend (src/logger.ts + src/utils/logger.ts)", "file": "Source/Backend/src/" },
+    { "id": "QO-007", "source": "quality-oracle", "title": "2 eslint-disable react-hooks/exhaustive-deps suppressions — stale closure risk", "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"] },
+    { "id": "QO-008", "source": "quality-oracle", "title": "Portal dependency traces use non-canonical FR IDs — cannot cross-reference against plan", "file": "portal/" },
+    { "id": "DEP-004", "source": "dependency-auditor", "title": "Vite path traversal + esbuild dev CSRF (CVE-MODERATE)", "files": ["Source/Frontend/package-lock.json", "portal/Frontend/package-lock.json"] },
+    { "id": "DEP-005", "source": "dependency-auditor", "title": "brace-expansion DoS (CVSS 6.5) in Source/Backend", "file": "Source/Backend/package-lock.json" },
+    { "id": "DEP-006", "source": "dependency-auditor", "title": "pino 8.17.0 → 10.3.1 (2 major versions behind)", "file": "Source/Backend/package.json" },
+    { "id": "DEP-007", "source": "dependency-auditor", "title": "React 18 → 19 available; react-router-dom 6 → 7 available", "file": "Source/Frontend/package.json" },
+    { "id": "DEP-008", "source": "dependency-auditor", "title": "uuid 9.0.0 → 13.0.0 (4 major versions behind)", "file": "Source/Backend/package.json" },
+    { "id": "DEP-009", "source": "dependency-auditor", "title": "OpenTelemetry packages 160+ minor versions behind in portal/Backend", "file": "portal/Backend/package.json" },
+    { "id": "DEP-010", "source": "dependency-auditor", "title": "portal/Backend: 577 transitive dependencies — large supply chain surface", "file": "portal/Backend/package-lock.json" },
+    { "id": "DEP-011", "source": "dependency-auditor", "title": "picomatch appears in 4 duplicate instances in portal/Frontend — deduplication needed", "file": "portal/Frontend/node_modules/" },
+    { "id": "DEP-012", "source": "dependency-auditor", "title": "Source/Backend: 310 dev vs 102 prod deps (3:1 ratio) — verify dev isolation", "file": "Source/Backend/package.json" },
+    { "id": "PERF-007", "source": "performance-profiler", "title": "changeHistory array O(n) spread-copy on every write (should use push())", "files": ["Source/Backend/src/services/dependency.ts", "Source/Backend/src/routes/workflow.ts"] },
+    { "id": "PERF-008", "source": "performance-profiler", "title": "computeHasUnresolvedBlockers() called redundantly before isReady() in dispatch handler", "file": "Source/Backend/src/routes/workflow.ts:231" },
+    { "id": "CHAOS-012", "source": "chaos-monkey", "title": "No explicit body size limit on Source/Backend — Express default 100kb, oversized → 500 not 413", "file": "Source/Backend/src/app.ts:13" },
+    { "id": "CHAOS-013", "source": "chaos-monkey", "title": "Oversized payload returns 500 instead of 413 in portal/Backend errorHandler", "file": "portal/Backend/src/middleware/errorHandler.ts" },
+    { "id": "CHAOS-014", "source": "chaos-monkey", "title": "No try/catch in intake webhook route handlers — store throw propagates as HTML 500", "file": "Source/Backend/src/routes/intake.ts" },
+    { "id": "CHAOS-015", "source": "chaos-monkey", "title": "No enum validation in intake routes — arbitrary type/priority strings stored", "file": "Source/Backend/src/routes/intake.ts:19" },
+    { "id": "CHAOS-016", "source": "chaos-monkey", "title": "CORS advertises PATCH/DELETE but those methods 404 (TheGuardians — see escalations)", "file": "portal/Backend/src/index.ts:34", "escalated": true },
+    { "id": "CHAOS-017", "source": "chaos-monkey", "title": "Method-not-allowed returns 404 HTML instead of 405 JSON + Allow header", "file": "portal/Backend/src/middleware/errorHandler.ts" },
+    { "id": "CHAOS-018", "source": "chaos-monkey", "title": "closeDb() is dead code in production — never called from index.ts", "file": "portal/Backend/src/database/connection.ts:27" },
+    { "id": "CHAOS-019", "source": "chaos-monkey", "title": "No rate limiting — orchestrator proxy (TheGuardians — see escalations)", "file": "portal/Backend/src/index.ts", "escalated": true },
+    { "id": "CHAOS-020", "source": "chaos-monkey", "title": "Stored XSS — raw HTML/JS stored verbatim (TheGuardians — see escalations)", "files": ["portal/Backend/src/services/featureRequestService.ts", "portal/Backend/src/services/bugService.ts"], "escalated": true }
+  ],
+  "p4_findings": [
+    { "id": "QO-009", "source": "quality-oracle", "title": "7 Source/Frontend components/hooks lack test files", "files": ["Layout.tsx", "PriorityBadge.tsx", "StatusBadge.tsx", "TypeBadge.tsx", "DebugPortalPage.tsx", "useDashboard.ts", "useWorkItems.ts"] },
+    { "id": "QO-010", "source": "quality-oracle", "title": "Traceability enforcer default mode may target stale plan (most-recently-modified)", "file": "tools/traceability-enforcer.py" },
+    { "id": "CHAOS-021", "source": "chaos-monkey", "title": "updateWorkItem store has no field whitelist — Object.assign accepts any Partial<WorkItem>", "file": "Source/Backend/src/store/workItemStore.ts:71" },
+    { "id": "CHAOS-022", "source": "chaos-monkey", "title": "NaN from parseInt not explicitly validated in dashboard route — fragile NaN coercion", "file": "portal/Backend/src/routes/dashboard.ts:34" },
+    { "id": "CHAOS-023", "source": "chaos-monkey", "title": "No database-level pagination in portal/Backend list queries — full table scan", "files": ["portal/Backend/src/services/featureRequestService.ts:152", "portal/Backend/src/services/bugService.ts:89"] }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "No projection layer — list endpoints return full objects with unbounded nested arrays",
+      "affected_findings": ["PERF-001", "PERF-003", "PERF-004", "CHAOS-007", "CHAOS-011", "CHAOS-023"],
+      "single_fix": "Add toListView() projection in store layer; enforce pagination clamp on all list routes",
+      "fix_impact": "Resolves 6 findings across 2 specialists"
+    },
+    {
+      "root_cause": "Dashboard service loads entire dataset on every request without pre-aggregation",
+      "affected_findings": ["PERF-002", "PERF-003", "CHAOS-011"],
+      "single_fix": "Ring buffer for activity (Source/Backend); LIMIT per-table for portal dashboard",
+      "fix_impact": "Resolves 3 findings across 2 specialists; prevents p95 budget breach at scale"
+    },
+    {
+      "root_cause": "Missing Node.js process lifecycle management (signals, top-level error handlers)",
+      "affected_findings": ["CHAOS-003", "CHAOS-004", "CHAOS-018"],
+      "single_fix": "Add SIGTERM/SIGINT handlers calling closeDb(); add uncaughtException/unhandledRejection handlers",
+      "fix_impact": "Resolves 3 findings across 1 specialist; prevents silent process death and data loss"
+    },
+    {
+      "root_cause": "Error middleware does not handle specific HTTP error types",
+      "affected_findings": ["CHAOS-006", "CHAOS-013", "CHAOS-017"],
+      "single_fix": "Extend errorHandler.ts to detect SyntaxError (400), entity.too.large (413), method-not-allowed (405)",
+      "fix_impact": "Resolves 3 findings across 1 specialist in a single middleware file edit"
+    },
+    {
+      "root_cause": "Traceability enforcer has blind spots (scan dirs) and regex issues (ID extraction)",
+      "affected_findings": ["QO-002", "QO-003", "QO-005", "QO-008", "QO-010"],
+      "single_fix": "Overhaul tools/traceability-enforcer.py: extend source_dirs to portal/, fix ID regex, add active-plan marker support",
+      "fix_impact": "Resolves 5 quality-oracle findings; closes the ~18% enforcer-invisible spec coverage gap"
+    }
+  ]
+}

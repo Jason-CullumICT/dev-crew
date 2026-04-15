@@ -1,0 +1,252 @@
+{
+  "auditDate": "2026-04-15",
+  "agent": "dependency_auditor",
+  "status": "complete",
+  "summary": {
+    "projectsAudited": 6,
+    "packageManagersDetected": [
+      "npm"
+    ],
+    "totalDirectDependencies": 588,
+    "totalTransitiveDependencies": 1987,
+    "vulnerabilityTotals": {
+      "critical": 1,
+      "high": 3,
+      "moderate": 11,
+      "low": 0
+    },
+    "outdatedMajorVersions": 6,
+    "abandonedDependencies": 0,
+    "supplyChainRisks": 3
+  },
+  "vulnerabilityBreakdown": {
+    "p1_blocking": [
+      {
+        "id": "DEP-001",
+        "package": "handlebars@4.7.8",
+        "severity": "CRITICAL",
+        "cveSummary": "Multiple JavaScript Injection vulnerabilities (GHSA-2w6w-674q-4c4q, GHSA-3mfm-83xf-c92r, +5 more)",
+        "locations": [
+          "Source/Backend/package-lock.json"
+        ],
+        "fixAvailable": true
+      }
+    ],
+    "p2_high": [
+      {
+        "id": "DEP-002",
+        "package": "path-to-regexp",
+        "severity": "HIGH",
+        "cveSummary": "ReDoS via multiple route parameters (GHSA-37ch-88jc-xwx2)",
+        "cvssScore": 7.5,
+        "locations": [
+          "portal/Backend/package-lock.json",
+          "platform/orchestrator/package-lock.json"
+        ],
+        "fixAvailable": true
+      },
+      {
+        "id": "DEP-003",
+        "package": "picomatch",
+        "severity": "HIGH",
+        "cveSummary": "ReDoS via extglob + Method Injection in POSIX classes (GHSA-c2c7-rcm5-vvqj, GHSA-3v7f-55p6-f55p)",
+        "cvssScore": 7.5,
+        "locations": [
+          "portal/Frontend/package-lock.json"
+        ],
+        "fixAvailable": true,
+        "notes": "Found in 4 separate node_modules paths (anymatch, micromatch, readdirp, picomatch)"
+      }
+    ],
+    "p3_moderate": [
+      {
+        "id": "DEP-004",
+        "package": "vite@<=6.4.1, esbuild@<=0.24.2, vitest@affected",
+        "severity": "MODERATE",
+        "cveSummary": "Path traversal in .map handling + dev server CSRF (GHSA-4w7w-66w2-5vf9, GHSA-67mh-4wv8-2f99)",
+        "locations": [
+          "Source/Frontend/package-lock.json",
+          "portal/Backend/package-lock.json",
+          "portal/Frontend/package-lock.json"
+        ],
+        "notes": "Development/build toolchain, lower production impact"
+      },
+      {
+        "id": "DEP-005",
+        "package": "brace-expansion@<1.1.13",
+        "severity": "MODERATE",
+        "cveSummary": "DoS via zero-step sequences (GHSA-f886-m6hf-6m8v)",
+        "cvssScore": 6.5,
+        "locations": [
+          "Source/Backend/package-lock.json"
+        ]
+      }
+    ]
+  },
+  "outdatedPackages": [
+    {
+      "id": "DEP-006",
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "majorVersionsGap": 2,
+      "location": "Source/Backend"
+    },
+    {
+      "id": "DEP-007",
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.5",
+      "majorVersionsGap": 1,
+      "location": "Source/Frontend"
+    },
+    {
+      "id": "DEP-008",
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "13.0.0",
+      "majorVersionsGap": 4,
+      "location": "Source/Backend"
+    },
+    {
+      "id": "DEP-009",
+      "package": "@opentelemetry/sdk-node",
+      "current": "0.47.0",
+      "latest": "0.214.0",
+      "minorVersionsGap": 160,
+      "location": "portal/Backend",
+      "severity": "HIGH"
+    }
+  ],
+  "supplyChainRisks": [
+    {
+      "id": "DEP-010",
+      "category": "Dependency Bloat",
+      "metric": "portal/Backend: 577 total dependencies (397 prod, 181 dev)",
+      "risk": "Large attack surface for supply chain compromises"
+    },
+    {
+      "id": "DEP-011",
+      "category": "Dependency Duplication",
+      "package": "picomatch",
+      "locations": 4,
+      "risk": "Multiple copies make patching and auditing harder"
+    },
+    {
+      "id": "DEP-012",
+      "category": "Dev/Prod Imbalance",
+      "metric": "Source/Backend: 3:1 dev-to-prod ratio (310 dev vs 102 prod)",
+      "risk": "Larger CI/CD supply chain surface"
+    }
+  ],
+  "projectMetrics": [
+    {
+      "project": "Source/Backend",
+      "packageManager": "npm",
+      "directDeps": 102,
+      "transitiveDeps": 309,
+      "cves": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 1
+      },
+      "outdatedMajor": 3
+    },
+    {
+      "project": "Source/Frontend",
+      "packageManager": "npm",
+      "directDeps": 9,
+      "transitiveDeps": 221,
+      "cves": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 5
+      },
+      "outdatedMajor": 3
+    },
+    {
+      "project": "Source/E2E",
+      "packageManager": "npm",
+      "directDeps": 4,
+      "transitiveDeps": 0,
+      "cves": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0
+      }
+    },
+    {
+      "project": "portal/Backend",
+      "packageManager": "npm",
+      "directDeps": 397,
+      "transitiveDeps": 180,
+      "cves": {
+        "critical": 0,
+        "high": 1,
+        "moderate": 4
+      }
+    },
+    {
+      "project": "portal/Frontend",
+      "packageManager": "npm",
+      "directDeps": 9,
+      "transitiveDeps": 415,
+      "cves": {
+        "critical": 0,
+        "high": 1,
+        "moderate": 4
+      }
+    },
+    {
+      "project": "platform/orchestrator",
+      "packageManager": "npm",
+      "directDeps": 153,
+      "transitiveDeps": 2,
+      "cves": {
+        "critical": 0,
+        "high": 1,
+        "moderate": 0
+      }
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "Update handlebars to 4.7.9+ (CRITICAL)",
+      "Update path-to-regexp via npm audit fix (HIGH)",
+      "Update picomatch to 2.3.2+ (HIGH)"
+    ],
+    "shortTerm": [
+      "Plan Vite/Vitest major version upgrade",
+      "Update brace-expansion to 1.1.13+",
+      "Run full test suite after each update"
+    ],
+    "mediumTerm": [
+      "Plan pino upgrade (Backend team)",
+      "Plan React 19 upgrade (Frontend team)",
+      "Update uuid (Backend team)",
+      "Update OpenTelemetry packages (Portal team)"
+    ],
+    "ongoing": [
+      "Set up Dependabot or Renovate for automated PRs",
+      "Add npm audit to CI/CD pipeline",
+      "Quarterly dependency audits",
+      "Monitor security advisories"
+    ]
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": [
+        "DEP-001 (Handlebars RCE)",
+        "DEP-002, DEP-003 (ReDoS testing)"
+      ]
+    },
+    {
+      "team": "TheFixer",
+      "findings": [
+        "DEP-009 (OpenTelemetry version mismatch)"
+      ]
+    }
+  ],
+  "reportFile": "Teams/TheInspector/findings/dependency-audit-2026-04-15.md"
+}

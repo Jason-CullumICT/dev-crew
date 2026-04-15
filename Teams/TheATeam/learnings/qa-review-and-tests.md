@@ -52,6 +52,35 @@ calls those functions on user interaction (typing in the picker, saving). Initia
 render doesn't trigger API calls in those methods. New integration tests that render
 the full page should include the complete mock to avoid future surprises.
 
+## Cycle: pipeline-optimisations (2026-04-15)
+
+### Infrastructure FRs Need Configuration Tests in Source/
+
+When FRs target `platform/` files (Dockerfile, workflow-engine.js) or `Specifications/` docs
+rather than application code in `Source/`, there is no natural home for traceability
+comments. The traceability enforcer only scans `Source/` and `E2E/`. The solution is to
+write "infrastructure configuration tests" in `Source/Backend/tests/infrastructure/` that:
+- Read the actual file using `fs.readFileSync` and assert expected content
+- Carry `// Verifies: FR-XXX` comments that satisfy the enforcer
+- Serve as regression guards (fail if implementation is reverted)
+
+These tests fail when the implementation is missing/incomplete — which is intentional and
+the correct QA behavior. Do NOT skip or xfail them.
+
+### platform/ Changes Require Solo Session — Enforce in QA Report
+
+Per CLAUDE.md, `platform/` is solo-session only. If all FRs in a plan touch `platform/`,
+the implementation MUST come from a solo session, not a pipeline coder. QA should
+explicitly call this out in the verdict if implementation is missing.
+
+### Cross-Referenced Parent-Plan FRs Are Picked Up by the Enforcer
+
+The traceability enforcer matches ALL `FR-[A-Z0-9-]+` patterns in the requirements.md,
+including parent-spec FRs that appear in the "Spec refs" header or "Current State" table
+(e.g., FR-TMP-003, FR-TMP-008, FR-TMP-010). These must also have `// Verifies:` comments
+in Source/. Add them to the infrastructure test file with appropriate test cases that
+actually verify related behavior.
+
 ### Metrics Counters Are Module Singletons
 `prom-client` counters are module-level singletons. Test files that import `app`
 share the same counter state. Assertions that check counter values (not just label

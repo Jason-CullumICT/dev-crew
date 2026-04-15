@@ -1,0 +1,311 @@
+{
+  "audit_id": "run-20260415-045637",
+  "audit_date": "2026-04-15",
+  "branch": "audit/inspector-2026-04-15-e573f3",
+  "grade": "D",
+  "overall": {
+    "p1_total": 1,
+    "p2_total": 6,
+    "p3_total": 7,
+    "p4_total": 4,
+    "spec_coverage_pct": 27,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "prior_audit": null,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "cwe": ["CWE-94", "CWE-843"],
+      "cvss": 9.8,
+      "cvss_vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion — RCE",
+      "package": "handlebars@4.7.8",
+      "cve_ids": ["GHSA-2w6w-674q-4c4q"],
+      "affected_projects": ["Source/Backend"],
+      "exploit_scenario": "Remote unauthenticated attacker sends crafted Handlebars template exploiting AST type confusion to execute arbitrary JavaScript on the backend server process.",
+      "impact": "Remote Code Execution — full server compromise, data exfiltration, lateral movement",
+      "fix": "npm update handlebars to >=4.7.9 in Source/Backend; consider package.json overrides",
+      "route": "ESCALATE → TheGuardians",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "CVE",
+      "cwe": ["CWE-1333"],
+      "cvss": 7.5,
+      "cvss_vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "title": "path-to-regexp Regular Expression Denial of Service (ReDoS) in Orchestrator",
+      "package": "path-to-regexp@<0.1.13",
+      "cve_ids": ["GHSA-37ch-88jc-xwx2"],
+      "affected_projects": ["platform/orchestrator"],
+      "exploit_scenario": "Attacker sends single crafted HTTP request with malicious URL pattern, causing catastrophic regex backtracking that freezes the orchestrator process.",
+      "impact": "Full orchestrator DoS — entire agent pipeline frozen, requiring process restart",
+      "fix": "npm update path-to-regexp to >=0.1.13 in platform/orchestrator",
+      "route": "ESCALATE → TheGuardians",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "cwe": ["CWE-400"],
+      "cvss": 6.5,
+      "title": "brace-expansion Process Hang and Memory Exhaustion",
+      "package": "brace-expansion@<1.1.13",
+      "cve_ids": ["GHSA-f886-m6hf-6m8v"],
+      "affected_projects": ["Source/Backend"],
+      "fix": "npm update brace-expansion to >=1.1.13 in Source/Backend",
+      "cross_refs": ["[CROSS-REF: red-teamer] Input validation on sequence parameters"],
+      "route": "TheFixer",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers bypass service layer — 19 direct store calls",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "detail": "All three route files call store.createWorkItem, store.findById, store.findAll, store.updateWorkItem, and store.softDelete directly. CLAUDE.md: 'No direct DB calls from route handlers'.",
+      "fix": "Extract workItemService.ts; route handlers delegate to service functions only",
+      "traceability": null,
+      "route": "TheFixer",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "GET /api/search not registered — 5 tests intentionally failing, DependencyPicker broken",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Frontend/src/api/client.ts",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "detail": "FR-dependency-search requires cross-entity typeahead. Route not implemented. 5 tests fail. DependencyPicker component broken at runtime.",
+      "fix": "Create Source/Backend/src/routes/search.ts; register GET /api/search in app.ts; return {data: WorkItem[]}",
+      "traceability": "FR-dependency-search",
+      "route": "TheFixer",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dev-workflow-platform.md — 69 FRs (FR-001 to FR-069) with zero source coverage",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "detail": "Full development workflow platform spec in active Specifications/ directory with no corresponding source implementation.",
+      "fix": "Annotate unbuilt FRs as [PLANNED] OR move spec to Plans/ if not yet scheduled",
+      "traceability": "FR-001 through FR-069",
+      "route": "Solo Session",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry distributed tracing absent — no @opentelemetry/* packages installed",
+      "files": [
+        "Source/Backend/package.json",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "detail": "CLAUDE.md and FR-021 require OTel spans, traceparent header propagation, span IDs in logs. Logging and Prometheus present; tracing pillar completely missing.",
+      "fix": "Install @opentelemetry/sdk-node, @opentelemetry/auto-instrumentations-node; configure trace exporter; add spans in assessment.ts and router.ts",
+      "traceability": "FR-021",
+      "route": "TheFixer",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "CVE",
+      "cwe": ["CWE-22", "CWE-200"],
+      "cvss": null,
+      "title": "Vite path traversal in optimized deps .map handling (dev only)",
+      "package": "vite@<=6.4.1",
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "affected_projects": ["Source/Frontend"],
+      "fix": "npm update vite to >=8.0.8 in Source/Frontend (major version bump required)",
+      "route": "TheFixer",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE",
+      "cwe": ["CWE-346"],
+      "cvss": 5.3,
+      "title": "esbuild dev server CORS bypass",
+      "package": "esbuild@<=0.24.2",
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "affected_projects": ["Source/Frontend"],
+      "fix": "Update vite to >=8.0.8 (brings esbuild along)",
+      "route": "TheFixer",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Outdated major versions: react 18, express 4, pino 8, uuid 9",
+      "packages": ["react@18.3.1", "react-dom@18.3.1", "react-router-dom@6.26.0", "express@4.18.2", "pino@8.17.0", "uuid@9.0.0"],
+      "affected_projects": ["Source/Frontend", "Source/Backend"],
+      "fix": "Plan major version upgrade sprint: react→19, express→5, pino→10, uuid→13",
+      "route": "TheFixer",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "Traceability enforcer covers only 13/107 requirements — CI false-green",
+      "files": ["tools/traceability-enforcer.py"],
+      "detail": "Enforcer only checks FR-WF-001 to FR-WF-013. 94 requirements in dev-workflow-platform.md and tiered-merge-pipeline.md are invisible to it.",
+      "fix": "Extend enforcer to scan Specifications/dev-workflow-platform.md for FR-\\d+ IDs",
+      "route": "Solo Session (tools/ scope)",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Logger always emits JSON — no dev pretty-printing (violates FR-003)",
+      "files": ["Source/Backend/src/utils/logger.ts"],
+      "fix": "Branch emit() on process.env.NODE_ENV: JSON in production, console.log in development",
+      "traceability": "FR-003",
+      "route": "TheFixer",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "test-hygiene",
+      "title": "Duplicate test files at tests/ and tests/pages/ for 2 components",
+      "files": [
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx"
+      ],
+      "fix": "Delete superseded copies; standardise on one test root (prefer tests/pages/)",
+      "route": "TheFixer",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable-next-line react-hooks/exhaustive-deps without justification (×2)",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Add justification comment OR fix the hook dependency correctly",
+      "route": "TheFixer",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P4",
+      "category": "CVE",
+      "title": "@vitest/mocker, vite-node moderate CVEs (dev environment only)",
+      "affected_projects": ["Source/Frontend"],
+      "fix": "Address when upgrading to Vite 8.x",
+      "route": "Backlog",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P4",
+      "category": "supply-chain",
+      "title": "~2,800 transitive dependencies — large attack surface",
+      "affected_projects": ["all"],
+      "fix": "Quarterly dependency audit; consider removing unused direct dependencies",
+      "route": "Backlog",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "spec-drift",
+      "title": "tiered-merge-pipeline.md FR-TMP-001–010 unimplemented (platform scope)",
+      "files": ["Specifications/tiered-merge-pipeline.md"],
+      "fix": "Annotate as [platform-scope] or move reference to platform/ documentation",
+      "route": "Solo Session",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "Two logger abstractions: src/logger.ts wraps src/utils/logger.ts",
+      "files": [
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "fix": "Consolidate into single logger; extend utils/logger.ts to accept string|object; remove wrapper",
+      "route": "TheFixer",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Unimplemented specs in active Specifications/ directory",
+      "findings": ["QO-003", "QO-005", "QO-009"],
+      "single_fix": "Annotate unbuilt specs as [PLANNED] or move to Plans/; extend enforcer scope",
+      "fix_impact": "Removes false-D on spec coverage; CI traceability becomes accurate"
+    },
+    {
+      "root_cause": "Missing observability layer (OTel)",
+      "findings": ["QO-004", "QO-006", "QO-010"],
+      "single_fix": "Add @opentelemetry/sdk-node + consolidate logger with NODE_ENV branching",
+      "fix_impact": "Resolves 3 findings; satisfies FR-021 and CLAUDE.md observability rules"
+    },
+    {
+      "root_cause": "Handlebars transitive dependency chain",
+      "findings": ["DEP-001", "DEP-003"],
+      "single_fix": "npm update handlebars brace-expansion in Source/Backend",
+      "fix_impact": "Eliminates P1 CVE and 1 P2 CVE with single update command"
+    },
+    {
+      "root_cause": "Service layer bypass + missing search route",
+      "findings": ["QO-001", "QO-002"],
+      "single_fix": "Create workItemService.ts + searchRouter.ts; refactor route handlers to delegate",
+      "fix_impact": "Fixes 2 P2s; unblocks DependencyPicker UI and 5 failing tests"
+    },
+    {
+      "root_cause": "Development toolchain vulnerabilities (vite/esbuild)",
+      "findings": ["DEP-004", "DEP-005", "DEP-007"],
+      "single_fix": "npm update vite to >=8.0.8 in Source/Frontend",
+      "fix_impact": "Resolves 3 P3/P4 findings in one major-version upgrade"
+    }
+  ]
+}

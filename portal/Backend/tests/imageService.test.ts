@@ -173,7 +173,7 @@ describe('Image Service — deleteImage', () => {
     const fr = createFeatureRequest(db, { title: 'Test FR', description: 'desc' });
     const [image] = uploadImagesService(db, fr.id, 'feature_request', [makeMockFile()]);
 
-    deleteImage(db, image.id);
+    deleteImage(db, image.id, fr.id, 'feature_request');
 
     const images = listImages(db, fr.id, 'feature_request');
     expect(images).toHaveLength(0);
@@ -181,7 +181,8 @@ describe('Image Service — deleteImage', () => {
 
   it('should throw 404 for non-existent image', () => {
     // Verifies: FR-074
-    expect(() => deleteImage(db, 'IMG-9999')).toThrow('Image not found');
+    const fr = createFeatureRequest(db, { title: 'Test FR', description: 'desc' });
+    expect(() => deleteImage(db, 'IMG-9999', fr.id, 'feature_request')).toThrow('Image not found');
   });
 
   it('should not fail if file does not exist on disk', () => {
@@ -190,7 +191,60 @@ describe('Image Service — deleteImage', () => {
     const [image] = uploadImagesService(db, fr.id, 'feature_request', [makeMockFile()]);
 
     // File doesn't exist on disk (mock file path), should not throw
-    expect(() => deleteImage(db, image.id)).not.toThrow();
+    expect(() => deleteImage(db, image.id, fr.id, 'feature_request')).not.toThrow();
     expect(listImages(db, fr.id, 'feature_request')).toHaveLength(0);
+  });
+});
+
+describe('Image Service — deleteImage ownership validation', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('should reject deletion if image belongs to a different entity of the same type', () => {
+    // Fixes: FIX-001 — cross-entity deletion prevention (same entity type, different id)
+    const fr1 = createFeatureRequest(db, { title: 'FR 1', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'FR 2', description: 'desc' });
+    const [image] = uploadImagesService(db, fr1.id, 'feature_request', [makeMockFile()]);
+
+    // Attempting to delete fr1's image via fr2's identity should throw 403
+    expect(() => deleteImage(db, image.id, fr2.id, 'feature_request')).toThrow('Image does not belong to this entity');
+  });
+
+  it('should reject deletion if image belongs to a different entity type', () => {
+    // Fixes: FIX-001 — cross-entity deletion prevention (different entity type)
+    const fr = createFeatureRequest(db, { title: 'Test FR', description: 'desc' });
+    const bug = createBug(db, { title: 'Test Bug', description: 'desc', severity: 'high' });
+    const [frImage] = uploadImagesService(db, fr.id, 'feature_request', [makeMockFile()]);
+
+    // Attempting to delete FR's image using bug's identity should throw 403
+    expect(() => deleteImage(db, frImage.id, bug.id, 'bug')).toThrow('Image does not belong to this entity');
+  });
+
+  it('should reject deletion if a bug image is deleted via a feature_request entity', () => {
+    // Fixes: FIX-001 — cross-entity deletion prevention (bug image via FR route)
+    const fr = createFeatureRequest(db, { title: 'Test FR', description: 'desc' });
+    const bug = createBug(db, { title: 'Test Bug', description: 'desc', severity: 'medium' });
+    const [bugImage] = uploadImagesService(db, bug.id, 'bug', [makeMockFile()]);
+
+    // Attempting to delete bug's image using FR's identity should throw 403
+    expect(() => deleteImage(db, bugImage.id, fr.id, 'feature_request')).toThrow('Image does not belong to this entity');
+  });
+
+  it('should succeed when deleting an image with the correct entity context', () => {
+    // Verifies: FR-074 — normal deletion succeeds with correct ownership
+    // Fixes: FIX-001 — correct path must still work after ownership check
+    const bug = createBug(db, { title: 'Test Bug', description: 'desc', severity: 'low' });
+    const [image] = uploadImagesService(db, bug.id, 'bug', [makeMockFile()]);
+
+    expect(() => deleteImage(db, image.id, bug.id, 'bug')).not.toThrow();
+    expect(listImages(db, bug.id, 'bug')).toHaveLength(0);
   });
 });

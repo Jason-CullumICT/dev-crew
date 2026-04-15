@@ -116,13 +116,28 @@ export function listImages(
 }
 
 // Verifies: FR-074
+// Fixes: FIX-001 — enforce entity ownership before deleting an image to prevent cross-entity deletion
 export function deleteImage(
   db: Database.Database,
-  imageId: string
+  imageId: string,
+  entityId: string,
+  entityType: ImageEntityType
 ): void {
   const row = db.prepare('SELECT * FROM image_attachments WHERE id = ?').get(imageId) as ImageRow | undefined;
   if (!row) {
     throw new AppError(404, 'Image not found');
+  }
+
+  // FIX-001: Verify the image belongs to the specified entity before deleting
+  if (row.entity_id !== entityId || row.entity_type !== entityType) {
+    logger.warn('Cross-entity image deletion attempt blocked', {
+      imageId,
+      requested_entity_id: entityId,
+      requested_entity_type: entityType,
+      actual_entity_id: row.entity_id,
+      actual_entity_type: row.entity_type,
+    });
+    throw new AppError(403, 'Image does not belong to this entity');
   }
 
   // Delete from DB

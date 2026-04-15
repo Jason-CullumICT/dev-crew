@@ -1,5 +1,15 @@
 # Backend Coder Learnings
 
+## 2026-04-15: Playwright Docker Optimization Feature — Scope Mismatch
+
+### Feature: "Bake Playwright into worker Docker image to eliminate per-cycle reinstall"
+- ALL implementation is in `platform/` (Dockerfile.worker, workflow-engine.js) — HARD LIMIT for pipeline agents
+- FRs are FR-PW-001, FR-PW-002 (platform/), FR-PW-003 (Specifications/)
+- NO `[backend]` FRs exist in Source/Backend/ for this feature
+- This feature MUST be executed as a solo session, not a pipeline agent
+- Key changes needed: `ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` in Dockerfile.worker; remove per-cycle install blocks in `_runPlaywrightE2E()` in workflow-engine.js; update env var from `/workspace/.playwright` to `/ms-playwright`
+- Requirements spec is at Plans/pipeline-optimisations/requirements.md
+
 ## 2026-04-14: Dependency Tracking (FR-dependency-*)
 
 ### Shared types already defined in Source/Shared/types/workflow.ts

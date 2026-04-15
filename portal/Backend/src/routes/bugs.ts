@@ -10,6 +10,10 @@ import {
   getBugById,
   updateBug,
   deleteBug,
+  triageBug,
+  resolveBug,
+  closeBug,
+  reopenBug,
 } from '../services/bugService';
 import { uploadImagesService, listImages, deleteImage } from '../services/imageService';
 import { uploadImages as uploadMiddleware } from '../middleware/upload';
@@ -17,6 +21,7 @@ import { DependencyService, DependencyError } from '../services/dependencyServic
 import { DependencyActionRequest, parseItemId } from '../../../Shared/types';
 import { AppError } from '../middleware/errorHandler';
 import { withSpan } from '../lib/tracing';
+import { bugTransitionsCounter } from '../middleware/metrics';
 import logger from '../lib/logger';
 
 const router = Router();
@@ -121,6 +126,74 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
   } catch (err) {
     next(err);
   }
+});
+
+// POST /api/bugs/:id/triage — reported → triaged
+router.post('/:id/triage', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('bugs.triage', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('bug.id', id);
+      const db = getDb();
+      const before = getBugById(db, id);
+      if (!before) throw new AppError(404, `Bug ${id} not found`);
+      const updated = triageBug(db, id);
+      bugTransitionsCounter.inc({ from_status: before.status, to_status: updated.status });
+      logger.info('Bug triaged', { id, from: before.status, to: updated.status });
+      res.json(updated);
+    });
+  } catch (err) { next(err); }
+});
+
+// POST /api/bugs/:id/resolve — in_development → resolved
+router.post('/:id/resolve', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('bugs.resolve', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('bug.id', id);
+      const db = getDb();
+      const before = getBugById(db, id);
+      if (!before) throw new AppError(404, `Bug ${id} not found`);
+      const updated = resolveBug(db, id);
+      bugTransitionsCounter.inc({ from_status: before.status, to_status: updated.status });
+      logger.info('Bug resolved', { id, from: before.status, to: updated.status });
+      res.json(updated);
+    });
+  } catch (err) { next(err); }
+});
+
+// POST /api/bugs/:id/close — resolved → closed
+router.post('/:id/close', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('bugs.close', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('bug.id', id);
+      const db = getDb();
+      const before = getBugById(db, id);
+      if (!before) throw new AppError(404, `Bug ${id} not found`);
+      const updated = closeBug(db, id);
+      bugTransitionsCounter.inc({ from_status: before.status, to_status: updated.status });
+      logger.info('Bug closed', { id, from: before.status, to: updated.status });
+      res.json(updated);
+    });
+  } catch (err) { next(err); }
+});
+
+// POST /api/bugs/:id/reopen — resolved | closed → triaged
+router.post('/:id/reopen', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await withSpan('bugs.reopen', async (span) => {
+      const { id } = req.params;
+      span.setAttribute('bug.id', id);
+      const db = getDb();
+      const before = getBugById(db, id);
+      if (!before) throw new AppError(404, `Bug ${id} not found`);
+      const updated = reopenBug(db, id);
+      bugTransitionsCounter.inc({ from_status: before.status, to_status: updated.status });
+      logger.info('Bug reopened', { id, from: before.status, to: updated.status });
+      res.json(updated);
+    });
+  } catch (err) { next(err); }
 });
 
 // DELETE /api/bugs/:id

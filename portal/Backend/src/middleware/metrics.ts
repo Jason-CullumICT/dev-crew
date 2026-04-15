@@ -33,6 +33,14 @@ export const featureRequestTransitionsCounter = new client.Counter({
   registers: [register],
 });
 
+// Bug status transitions counter
+export const bugTransitionsCounter = new client.Counter({
+  name: 'bug_status_transitions_total',
+  help: 'Total number of bug status transitions',
+  labelNames: ['from_status', 'to_status'],
+  registers: [register],
+});
+
 // AI voting invocations counter
 export const aiVotingCounter = new client.Counter({
   name: 'ai_voting_invocations_total',

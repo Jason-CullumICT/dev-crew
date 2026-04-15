@@ -13,6 +13,17 @@ export const VALID_SEVERITIES: BugSeverity[] = ['low', 'medium', 'high', 'critic
 // Verifies: FR-DUP-01
 export const VALID_BUG_STATUSES: BugStatus[] = ['reported', 'triaged', 'in_development', 'resolved', 'closed', 'pending_dependencies', 'duplicate', 'deprecated'];
 
+// Allowed status transitions for the bug state machine.
+// duplicate and deprecated are handled separately as terminal states.
+export const BUG_STATUS_TRANSITIONS: Partial<Record<BugStatus, BugStatus[]>> = {
+  reported:             ['triaged', 'in_development', 'duplicate', 'deprecated'],
+  triaged:              ['in_development', 'duplicate', 'deprecated'],
+  in_development:       ['resolved', 'duplicate', 'deprecated'],
+  resolved:             ['closed', 'triaged', 'duplicate', 'deprecated'],
+  closed:               ['triaged', 'duplicate', 'deprecated'],
+  pending_dependencies: ['triaged', 'in_development', 'duplicate', 'deprecated'],
+};
+
 // --- Input length limits (DD-11, Security M-04) ---
 export const TITLE_MAX_LENGTH = 200;
 export const DESCRIPTION_MAX_LENGTH = 10000;
@@ -225,6 +236,12 @@ export function updateBug(db: Database.Database, id: string, input: UpdateBugInp
       throw new AppError(400, `Cannot transition from '${bug.status}' to '${newStatus}'. Duplicate/deprecated are terminal statuses`);
     }
 
+    // Enforce allowed transition table
+    const allowedNext = BUG_STATUS_TRANSITIONS[bug.status as BugStatus];
+    if (allowedNext && !allowedNext.includes(newStatus!)) {
+      throw new AppError(400, `Invalid transition from '${bug.status}' to '${newStatus}'. Allowed next states: ${allowedNext.join(', ')}`);
+    }
+
     // Verifies: FR-DUP-04 — Validate duplicate_of when setting status to duplicate
     if (newStatus === 'duplicate') {
       if (!input.duplicate_of) {
@@ -294,6 +311,46 @@ export function updateBug(db: Database.Database, id: string, input: UpdateBugInp
   }
 
   return getBugById(db, id)!;
+}
+
+// Transition: reported → triaged
+export function triageBug(db: Database.Database, id: string): BugReport {
+  const bug = getBugById(db, id);
+  if (!bug) throw new AppError(404, `Bug ${id} not found`);
+  if (bug.status !== 'reported') {
+    throw new AppError(400, `Cannot triage: bug is '${bug.status}', expected 'reported'`);
+  }
+  return updateBug(db, id, { status: 'triaged' });
+}
+
+// Transition: in_development → resolved
+export function resolveBug(db: Database.Database, id: string): BugReport {
+  const bug = getBugById(db, id);
+  if (!bug) throw new AppError(404, `Bug ${id} not found`);
+  if (bug.status !== 'in_development') {
+    throw new AppError(400, `Cannot resolve: bug is '${bug.status}', expected 'in_development'`);
+  }
+  return updateBug(db, id, { status: 'resolved' });
+}
+
+// Transition: resolved → closed
+export function closeBug(db: Database.Database, id: string): BugReport {
+  const bug = getBugById(db, id);
+  if (!bug) throw new AppError(404, `Bug ${id} not found`);
+  if (bug.status !== 'resolved') {
+    throw new AppError(400, `Cannot close: bug is '${bug.status}', expected 'resolved'`);
+  }
+  return updateBug(db, id, { status: 'closed' });
+}
+
+// Transition: resolved | closed → triaged (reopen)
+export function reopenBug(db: Database.Database, id: string): BugReport {
+  const bug = getBugById(db, id);
+  if (!bug) throw new AppError(404, `Bug ${id} not found`);
+  if (!['resolved', 'closed'].includes(bug.status)) {
+    throw new AppError(400, `Cannot reopen: bug is '${bug.status}'. Only resolved or closed bugs can be reopened`);
+  }
+  return updateBug(db, id, { status: 'triaged' });
 }
 
 export function deleteBug(db: Database.Database, id: string): void {

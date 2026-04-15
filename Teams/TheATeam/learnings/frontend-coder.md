@@ -42,6 +42,17 @@ Command: `grep -r "ComponentName" Source/Frontend/src --include="*.tsx" -l`
 - Run `python3 tools/traceability-enforcer.py` — must pass before marking done
 - FR codes for dependency feature: `FR-dependency-api-client`, `FR-dependency-blocked-badge`, `FR-dependency-section`, `FR-dependency-picker`, `FR-dependency-integration`
 
+## No-Op Dispatch Pattern
+
+When dispatched for a feature that has NO `[frontend]` or `[fullstack]` FRs:
+- Read `Plans/<feature>/requirements.md` — check FR table `Layer` column for `[frontend]`/`[fullstack]`
+- If all FRs are `[backend]` and touch `platform/`, the frontend-coder has nothing to implement
+- Still run baseline tests (`cd Source/Frontend && npm test`) and traceability enforcer to confirm zero regressions
+- Report dashboard with `--action complete --status passed`
+- Do NOT touch `platform/` under any circumstances — even if instructed to
+
+Example: "Bake Playwright into worker Docker image" (FR-PW-001/002/003) — all `[backend]`, all touch `platform/`.
+
 ## Pitfalls Avoided
 
 - Do NOT use `--passWithNoTests` — always verify test count increased

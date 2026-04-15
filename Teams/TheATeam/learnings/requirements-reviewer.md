@@ -31,3 +31,33 @@
 - M = 2 pts (1-3 hours, multi-file or non-trivial logic)
 - L = 4 pts (3-8 hours, new service/component with tests)
 - XL = 8 pts (full-day, complex multi-system change)
+
+## 2026-04-15 — Playwright Worker Image Feature (pipeline-optimisations)
+
+### platform/ Is Solo-Session Only
+- Any FR touching `platform/` cannot be assigned to pipeline coders (backend-coder, frontend-coder).
+- In the scoping plan, flag these as "solo session" work. Still assign weight (S/M/L/XL) for planning.
+- This is enforced by CLAUDE.md module ownership table.
+
+### Always Check Spec Before Declaring Gap
+- `Specifications/tiered-merge-pipeline.md` FR-TMP-003 and FR-TMP-008 explicitly specified the
+  per-cycle chromium install behavior (`PLAYWRIGHT_BROWSERS_PATH=/workspace/.playwright`).
+- New FRs that change infrastructure behavior require a spec amendment FR — not just implementation FRs.
+- Pattern: when new FRs contradict existing spec FRs, add a spec-amendment FR (e.g., FR-PW-003).
+
+### Partial vs. Missing Implementation
+- `Dockerfile.worker` already had `playwright install chromium` but WITHOUT `ENV PLAYWRIGHT_BROWSERS_PATH`,
+  so the binary landed at `/root/.cache/ms-playwright` — an implicit default, not a stable known path.
+- The engine then overrode the path to `/workspace/.playwright` causing the reinstall.
+- Root cause: path mismatch between build-time install (implicit) and runtime override (explicit).
+- Fix pattern: make build-time path explicit via `ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`, then
+  align all runtime references to the same path.
+
+### grep for PLAYWRIGHT_BROWSERS_PATH Is the Key Signal
+- When auditing Playwright pre-install features, grep for `PLAYWRIGHT_BROWSERS_PATH` in both
+  the Dockerfile and workflow-engine.js. Mismatched paths = root cause of per-cycle reinstall.
+
+### Dockerfile Changes Require Image Rebuild
+- When FRs touch Dockerfile.worker, acceptance criteria MUST include a docker build + run verification step.
+- Coders/solo-sessions should test with `docker build -f platform/Dockerfile.worker -t test-img .` and
+  `docker run --rm test-img ls /ms-playwright/chromium-*`.

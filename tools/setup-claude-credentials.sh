@@ -23,7 +23,7 @@ set -euo pipefail
 
 # Feature flag — set CLAUDE_CREDENTIALS_ENABLED=false to disable.
 # Enabled by default: reads CLAUDE_CREDENTIALS secret and exports accessToken as ANTHROPIC_API_KEY.
-if [ "${CLAUDE_CREDENTIALS_ENABLED:-true}" != "true" ]; then
+if [ "${CLAUDE_CREDENTIALS_ENABLED:-false}" != "true" ]; then
   echo "[claude-setup] Credential refresh disabled (CLAUDE_CREDENTIALS_ENABLED=false) — using static ANTHROPIC_API_KEY"
   exit 0
 fi

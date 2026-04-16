@@ -1,0 +1,230 @@
+{
+  "audit_id": "run-20260416-045627",
+  "date": "2026-04-16",
+  "branch": "audit/inspector-2026-04-16-202c9b",
+  "grade": "D",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 3,
+    "p3_total": 6,
+    "p4_total": 1,
+    "spec_coverage_pct": 21,
+    "escalations_count": 1
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection & Prototype Pollution (CVSS 9.8 RCE)",
+      "severity": "P1",
+      "category": "CVE / JavaScript Injection",
+      "source": "dependency-auditor",
+      "package": "handlebars@4.7.8",
+      "path": "Source/Backend → ts-jest → handlebars",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q (CVSS 9.8 RCE)",
+        "GHSA-3mfm-83xf-c92r (CVSS 8.1)",
+        "GHSA-xhpv-hc6g-r9c6 (CVSS 8.1)",
+        "GHSA-9cx6-37pm-9jff (CVSS 7.5)",
+        "GHSA-xjpj-3mr7-gcpf (CVSS 8.3)",
+        "GHSA-2qvq-rjwj-gvw9 (CVSS 4.7)",
+        "GHSA-7rx3-28cr-v5wh (CVSS 4.8)"
+      ],
+      "exploit": "Attacker supplies malicious Handlebars template → arbitrary JS execution during ts-jest test compilation. Build artifacts could embed malicious code.",
+      "impact": "Remote code execution, information disclosure, state corruption in test pipeline.",
+      "fix": "Update ts-jest to a version that pins handlebars >=4.7.9. Monitor upstream releases.",
+      "fix_status": "BLOCKED — awaiting ts-jest upstream patch",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "status": "NEW"
+    }
+  ],
+  "p1_backlog": [
+    {
+      "id": "QO-001",
+      "title": "Traceability Enforcer Blind Spot: Specifications/ Never Scanned",
+      "severity": "P1",
+      "category": "spec-drift / architecture-violation",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py:16–57",
+      "detail": "Enforcer only targets Plans/*/requirements.md. All three Specifications/ files — the project's domain truth — are never validated. Running the default returns PASSED while 76+ requirements remain unimplemented.",
+      "fix": "Extend enforcer to accept --spec-dir Specifications/ or add a second gate step running --file against each Specifications/*.md. Update CLAUDE.md verification-gates block.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["QO-002", "QO-003"]
+    },
+    {
+      "id": "QO-002",
+      "title": "Major Spec Drift: dev-workflow-platform.md FR-001–069 Fully Unimplemented",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "69 FRs for a SQLite-backed dev workflow platform (feature requests, bug tracking, pipeline orchestration, 9 frontend pages) exist in Specifications/ but have zero implementation in Source/. Enforcer reports 76 MISSING when pointed at this spec.",
+      "fix": "Determine canonical intent: annotate as 'Status: Planned/Backlog' if future work, or open a P1 implementation gap for TheATeam pipeline. Either way, extend enforcer to catch this.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["QO-001"]
+    },
+    {
+      "id": "QO-003",
+      "title": "FR-TMP-* in platform/ Is Invisible to the Enforcer",
+      "severity": "P1",
+      "category": "spec-drift / traceability",
+      "source": "quality-oracle",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "detail": "tiered-merge-pipeline.md FR-TMP-001–010 are correctly implemented in platform/orchestrator/lib/workflow-engine.js with proper // Verifies: comments, but the enforcer only scans Source/ and E2E/. Any regression in platform/ traceability is invisible to the gate.",
+      "fix": "Add platform/ to the enforcer's source_dirs (with node_modules/ excluded). This brings FR-TMP coverage into the automated gate.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["QO-001"]
+    }
+  ],
+  "p2_backlog": [
+    {
+      "id": "QO-004",
+      "title": "Missing dependencyCheckDuration Prometheus Histogram",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "file": "Source/Backend/src/metrics.ts",
+      "detail": "FR-dependency-metrics requires 4 Prometheus metrics. Three counters are implemented; the dependencyCheckDuration histogram is absent. BFS cycle-detection has no latency visibility.",
+      "fix": "Add Histogram for dependency_check_duration_ms in metrics.ts. Instrument hasUnresolvedBlockers() and isReady() in dependency.ts.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "title": "Silent Error Swallowing: 5 Frontend Catch Blocks Without Logging",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:97",
+        "Source/Frontend/src/pages/WorkItemDetailPage.tsx:34",
+        "Source/Frontend/src/pages/CreateWorkItemPage.tsx:50",
+        "Source/Frontend/src/hooks/useDashboard.ts:48",
+        "Source/Frontend/src/hooks/useWorkItems.ts:53,105"
+      ],
+      "detail": "Each catch sets error state for the UI but does not log. Architecture rule: every catch must re-throw, log with full context, or explicitly document suppression. No frontend logger abstraction exists.",
+      "fix": "Create Source/Frontend/src/utils/logger.ts (dev-mode structured logging). Instrument all 5 catch sites.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "brace-expansion DoS (Memory Exhaustion)",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "source": "dependency-auditor",
+      "package": "brace-expansion@<1.1.13",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cvss": 6.5,
+      "location": "Source/Backend (transitive)",
+      "detail": "Zero-step sequence in shell expansion causes unbounded recursion, process hang, and memory exhaustion. Dev/build only.",
+      "fix": "cd Source/Backend && npm update brace-expansion",
+      "effort": "5 minutes",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_backlog": [
+    {
+      "id": "DEP-003",
+      "title": "Vite Path Traversal in Optimized Deps Map Handling",
+      "severity": "P3",
+      "category": "CVE / Path Traversal",
+      "source": "dependency-auditor",
+      "package": "vite@5.4.0",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "detail": "Path traversal in .map file handling. Dev server only.",
+      "fix": "npm install vite@latest (major version bump, 2h effort)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["DEP-004", "DEP-005"]
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vitest / Vite-Node / @vitest/mocker Transitive Vulnerabilities",
+      "severity": "P3",
+      "category": "CVE / Transitive",
+      "source": "dependency-auditor",
+      "packages": ["vitest@2.0.5", "@vitest/mocker", "vite-node"],
+      "detail": "All route back to Vite + esbuild vulnerabilities. Root cause is Vite 5 major version lag.",
+      "fix": "npm install vite@latest vitest@latest (major version bump, 2h effort)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["DEP-003", "DEP-005"]
+    },
+    {
+      "id": "DEP-005",
+      "title": "esbuild CORS Bypass in Dev Server",
+      "severity": "P3",
+      "category": "CVE / CORS Bypass",
+      "source": "dependency-auditor",
+      "package": "esbuild@<=0.24.2",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvss": 5.3,
+      "detail": "Dev server allows any website to send requests and read responses, enabling source code exfiltration. Dev only.",
+      "fix": "npm install vite@latest (pins esbuild to patched version)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["DEP-003", "DEP-004"]
+    },
+    {
+      "id": "QO-006",
+      "title": "eslint-disable on react-hooks/exhaustive-deps Without Rationale",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Add inline comments explaining why the deps array is intentionally incomplete.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "title": "Duplicate Test Files: tests/ vs tests/pages/",
+      "severity": "P3",
+      "category": "hygiene",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "fix": "Consolidate to tests/pages/; confirm no unique cases before deleting root-level files.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "title": "Enforcer Extracts Seed-Data IDs as Requirement IDs",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py:64",
+      "fix": "Tighten extraction regex to require >=3 digit chars, or use two-phase check with table-row anchoring.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_backlog": [
+    {
+      "id": "QO-008",
+      "title": "DebugPortalPage: No Traceability Comment, No Test",
+      "severity": "P4",
+      "category": "untested / traceability",
+      "source": "quality-oracle",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "fix": "Add // Verifies: FR-WF-009 and a minimal render test confirming iframe src.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

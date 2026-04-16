@@ -1,0 +1,257 @@
+{
+  "audit_date": "2026-04-16",
+  "components_audited": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E"
+  ],
+  "package_managers": ["npm"],
+  "grade": "C",
+  "summary": {
+    "direct_dependencies": 16,
+    "transitive_dependencies": 647,
+    "cves_total": 7,
+    "cves_critical": 1,
+    "cves_high": 0,
+    "cves_moderate": 6,
+    "cves_low": 0,
+    "outdated_major_versions": 7,
+    "outdated_minor_versions": 0,
+    "license_issues": 0,
+    "abandoned_packages": 0
+  },
+  "severity_breakdown": {
+    "p1_critical": [
+      {
+        "id": "DEP-001",
+        "title": "Handlebars JavaScript Injection & Prototype Pollution",
+        "package": "handlebars",
+        "version": "4.7.8",
+        "cves": [
+          "GHSA-2w6w-674q-4c4q (CVSS 9.8)",
+          "GHSA-3mfm-83xf-c92r (CVSS 8.1)",
+          "GHSA-xhpv-hc6g-r9c6 (CVSS 8.1)",
+          "GHSA-9cx6-37pm-9jff (CVSS 7.5)",
+          "GHSA-xjpj-3mr7-gcpf (CVSS 8.3)",
+          "GHSA-2qvq-rjwj-gvw9 (CVSS 4.7)",
+          "GHSA-7rx3-28cr-v5wh (CVSS 4.8)"
+        ],
+        "location": "Source/Backend (via ts-jest)",
+        "risk_level": "CRITICAL (dev-only but RCE potential)",
+        "fix_status": "BLOCKED (awaiting ts-jest patch)",
+        "escalation": "TheGuardians (JavaScript injection vulnerability)"
+      }
+    ],
+    "p2_high": [
+      {
+        "id": "DEP-002",
+        "title": "brace-expansion DoS (Memory Exhaustion)",
+        "package": "brace-expansion",
+        "version": "<1.1.13",
+        "cve": "GHSA-f886-m6hf-6m8v",
+        "cvss": 6.5,
+        "location": "Source/Backend (transitive)",
+        "risk_level": "MODERATE (dev-only)",
+        "fix": "npm update brace-expansion",
+        "effort": "5 minutes"
+      }
+    ],
+    "p3_moderate": [
+      {
+        "id": "DEP-003",
+        "title": "Vite Path Traversal in Optimized Deps Map Handling",
+        "package": "vite",
+        "version": "5.4.0",
+        "cve": "GHSA-4w7w-66w2-5vf9",
+        "location": "Source/Frontend",
+        "risk_level": "MODERATE (dev-only)",
+        "fix": "npm install vite@latest",
+        "breaking_change": true,
+        "effort": "2 hours"
+      },
+      {
+        "id": "DEP-004",
+        "title": "Vitest, Vite-Node, @vitest/mocker Transitive Vulnerabilities",
+        "packages": ["vitest", "@vitest/mocker", "vite-node"],
+        "location": "Source/Frontend",
+        "root_cause": "vite + esbuild vulnerabilities",
+        "fix": "npm install vite@latest vitest@latest",
+        "breaking_change": true,
+        "effort": "2 hours"
+      },
+      {
+        "id": "DEP-005",
+        "title": "esbuild CORS Bypass in Dev Server",
+        "package": "esbuild",
+        "version": "<=0.24.2",
+        "cve": "GHSA-67mh-4wv8-2f99",
+        "cvss": 5.3,
+        "location": "Source/Frontend (via Vite)",
+        "risk_level": "MODERATE (dev-only)",
+        "impact": "Allows exfiltration of source code via dev server",
+        "fix": "npm install vite@latest",
+        "effort": "2 hours"
+      }
+    ]
+  },
+  "outdated_packages": {
+    "backend": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "lag_majors": 1,
+        "priority": "P3",
+        "has_security_patches": true
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.3.1",
+        "lag_majors": 2,
+        "priority": "P2",
+        "reason": "Logger framework may have perf/security fixes"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "13.0.0",
+        "lag_majors": 4,
+        "priority": "P3",
+        "reason": "Low-risk utility, no security issues but far behind"
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.2.5",
+        "lag_majors": 1,
+        "priority": "P2",
+        "reason": "Major version includes perf & security improvements"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "latest": "19.2.5",
+        "lag_majors": 1,
+        "priority": "P2",
+        "reason": "Tied to react, requires testing"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "latest": "7.14.1",
+        "lag_majors": 1,
+        "priority": "P3",
+        "reason": "Router lib, may have security fixes"
+      }
+    ]
+  },
+  "dependency_tree": {
+    "backend": {
+      "direct_prod": 4,
+      "direct_dev": 8,
+      "transitive_prod": 102,
+      "transitive_dev": 310,
+      "total_transitive": 412,
+      "duplicate_majors": 0,
+      "supply_chain_risk": "MODERATE (ts-jest → Handlebars)"
+    },
+    "frontend": {
+      "direct_prod": 3,
+      "direct_dev": 12,
+      "transitive_prod": 9,
+      "transitive_dev": 222,
+      "total_transitive": 231,
+      "duplicate_majors": 0,
+      "supply_chain_risk": "MODERATE (Vite single-maintainer esbuild)"
+    },
+    "e2e": {
+      "direct_prod": 1,
+      "direct_dev": 0,
+      "transitive_prod": 0,
+      "transitive_dev": 3,
+      "total_transitive": 4,
+      "duplicate_majors": 0,
+      "supply_chain_risk": "LOW (Playwright is Microsoft-maintained)"
+    }
+  },
+  "license_compliance": {
+    "gpl_agpl_found": false,
+    "licenses_detected": [
+      "MIT",
+      "Apache-2.0",
+      "ISC",
+      "BSD-3-Clause"
+    ],
+    "status": "COMPLIANT ✓",
+    "notes": "No viral licenses detected; project is clear for proprietary deployment"
+  },
+  "supply_chain_risks": [
+    {
+      "id": "SC-001",
+      "title": "Handlebars RCE via ts-jest",
+      "risk_level": "MODERATE",
+      "details": "ts-jest brings handlebars (dev-only) with RCE via template injection",
+      "mitigation": "Keep ts-jest updated; monitor for patches"
+    },
+    {
+      "id": "SC-002",
+      "title": "esbuild Single-Maintainer Risk",
+      "risk_level": "LOW",
+      "details": "esbuild is primarily maintained by Evan Wallace; widely audited and stable",
+      "mitigation": "No immediate action; monitor for security advisories"
+    },
+    {
+      "id": "SC-003",
+      "title": "Vite Rapid Release Cycle",
+      "risk_level": "MODERATE",
+      "details": "Vite major version releases annually; staying N-1 major means missing patches",
+      "mitigation": "Establish quarterly update schedule; plan Vite 5→8 migration"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "URGENT",
+      "action": "Check ts-jest releases for Handlebars patch",
+      "estimate": "5 minutes monitoring",
+      "depends_on": "ts-jest upstream"
+    },
+    {
+      "priority": "HIGH",
+      "action": "Plan Vite 5→8 migration (breaking change)",
+      "estimate": "2-3 sprints",
+      "impact": "Unblocks 5 MODERATE CVEs"
+    },
+    {
+      "priority": "HIGH",
+      "action": "Add 'npm audit --audit-level=moderate' to CI pre-merge",
+      "estimate": "30 minutes",
+      "impact": "Prevents new vulnerabilities"
+    },
+    {
+      "priority": "MEDIUM",
+      "action": "Upgrade Backend express 4.18→4.22",
+      "estimate": "30 minutes"
+    },
+    {
+      "priority": "MEDIUM",
+      "action": "Upgrade Backend pino 8→10",
+      "estimate": "1 hour"
+    },
+    {
+      "priority": "MEDIUM",
+      "action": "Plan React 18→19 upgrade for Q2",
+      "estimate": "4 hours (next sprint)"
+    },
+    {
+      "priority": "LOW",
+      "action": "Add Dependabot integration for auto-PRs on security updates",
+      "estimate": "15 minutes"
+    }
+  ],
+  "next_audit": "2026-05-16",
+  "audit_frequency": "Monthly",
+  "notes": "1st comprehensive audit. Handlebars CRITICAL CVE escalated to TheGuardians. Vite major version lag is primary blocker for dev-only vulnerabilities. No GPL/AGPL licenses detected—project is clear for proprietary use."
+}

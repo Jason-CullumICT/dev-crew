@@ -1,0 +1,341 @@
+{
+  "audit": {
+    "id": "run-20260417-050202",
+    "date": "2026-04-17",
+    "branch": "audit/inspector-2026-04-17-a59c89",
+    "grade": "D",
+    "mode": "static",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend and frontend services were offline",
+    "prior_audit": null,
+    "spec_coverage_percent": 81,
+    "counts": {
+      "p1": 3,
+      "p2": 5,
+      "p3": 6,
+      "p4": 1,
+      "total": 15,
+      "escalations": 2,
+      "fixed": 0,
+      "new": 15
+    }
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "subcategory": "Code Injection / Remote Code Execution",
+      "title": "Handlebars.js Multiple Code Injection CVEs",
+      "package": "handlebars",
+      "affected_workspaces": ["Source/Backend"],
+      "cvss_max": 9.8,
+      "cve_count": 8,
+      "cve_ids": [
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "current_version_range": "4.0.0 - 4.7.8",
+      "required_version": ">=4.7.9",
+      "fix_command": "cd Source/Backend && npm install handlebars@latest",
+      "exploit_scenario": "Attacker-controlled template content executes arbitrary JavaScript on server, achieving full RCE",
+      "impact": "Complete server compromise, all in-memory data accessible",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Code injection / RCE requiring security code review of all template handling before upgrade",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P1",
+      "category": "CVE",
+      "subcategory": "Remote Code Execution via Deserialization",
+      "title": "protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "affected_workspaces": ["platform/orchestrator", "portal/Backend"],
+      "cvss_max": 9.8,
+      "cve_count": 1,
+      "cve_ids": ["GHSA-xq3m-2v4x-88gg"],
+      "current_version_range": "<7.5.5",
+      "required_version": ">=7.5.5",
+      "fix_command": "cd platform/orchestrator && npm list protobufjs && npm install [parent-package]@latest",
+      "exploit_scenario": "Network attacker sends crafted malformed protobuf message to exposed orchestrator service triggering RCE in the pipeline infrastructure process",
+      "impact": "Full compromise of pipeline orchestrator, all running agent containers reachable",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Network-exposed service with known RCE, requires security assessment before remediation",
+      "platform_note": "platform/orchestrator is solo-session only per CLAUDE.md — do NOT route to pipeline agents",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "FR Identifier Namespace Collision Between orchestrator-cycle-dashboard and image-upload Plans",
+      "files": [
+        "Plans/orchestrator-cycle-dashboard/requirements.md",
+        "Plans/image-upload/requirements.md"
+      ],
+      "detail": "Both plans independently assigned FR-070 through FR-076 to completely different features. Traceability enforcer will false-pass both if either plan is implemented.",
+      "recommendation": "Create Plans/fr-registry.md mapping every FR ID to its owning plan. Rename orchestrator-cycle-dashboard to FR-OCD-001..007. Add enforcer duplicate-ID detection.",
+      "cross_refs": ["QO-002", "QO-003"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Three Approved Plans Unimplemented in Source/",
+      "files": [
+        "Plans/orchestrator-cycle-dashboard/requirements.md",
+        "Plans/image-upload/requirements.md",
+        "Plans/duplicate-deprecated-status/requirements.md"
+      ],
+      "detail": "orchestrator-cycle-dashboard: 7 FRs (0% in Source/). image-upload: 20 FRs implemented in portal/ only. duplicate-deprecated-status: 13 FRs, portal/ schema only (FR-DUP-08).",
+      "recommendation": "Route orchestrator-cycle-dashboard to TheFixer for implementation. Clarify scope of image-upload and duplicate-deprecated-status (portal/ vs Source/) and annotate requirements accordingly.",
+      "cross_refs": ["QO-001", "QO-003"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "Traceability Enforcer Only Validates Most-Recently-Modified Plan",
+      "files": ["tools/traceability-enforcer.py"],
+      "detail": "Enforcer uses max(req_files, key=os.path.getmtime) — currently resolves to Plans/self-judging-workflow. Three approved plans silently bypass the CI gate.",
+      "recommendation": "Update enforcer to iterate all requirements.md files containing 'Verdict: APPROVED' and validate each one. Add a traceability-passed.json manifest for incremental CI.",
+      "cross_refs": ["QO-002"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Specifications/ Directory Disconnected from Source/",
+      "files": [
+        "Specifications/dev-workflow-platform.md",
+        "Specifications/workflow-engine.md"
+      ],
+      "detail": "dev-workflow-platform.md (482 lines) documents portal/ not Source/. workflow-engine.md (162 lines) has no FR IDs — untraceable. inspector.config.yml specs.dir points to Specifications/ creating false coverage impression.",
+      "recommendation": "Option A: Retrofit workflow-engine.md with FR-WF-XXX IDs matching Plans/self-judging-workflow. Option B: Annotate Specifications/ as portal/-only explicitly.",
+      "cross_refs": ["QO-001", "QO-002"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "subcategory": "Path Traversal",
+      "title": "Vite Path Traversal in .map Handling",
+      "package": "vite",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "current_version": "^5.4.0",
+      "required_version": ">=6.4.2",
+      "fix_command": "cd Source/Frontend && npm install vite@latest vitest@latest",
+      "detail": "Information disclosure via optimized deps .map files. Dev-only risk but direct dependency.",
+      "recommendation": "Upgrade vite to >=6.4.2. Coordinate with vitest upgrade (major version jump). Run full test suite after upgrade.",
+      "cross_refs": ["DEP-004", "DEP-005"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE",
+      "subcategory": "ReDoS",
+      "title": "path-to-regexp ReDoS via Route Parameters",
+      "package": "path-to-regexp",
+      "affected_workspaces": ["platform/orchestrator", "portal/Backend"],
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-37ch-88jc-xwx2"],
+      "current_version": "<0.1.13",
+      "required_version": ">=0.1.13",
+      "fix_command": "cd platform/orchestrator && npm install express@latest",
+      "detail": "Malformed route parameters cause regex catastrophic backtracking (DoS). Affects network-exposed orchestrator.",
+      "recommendation": "Upgrade express in platform/orchestrator and portal/Backend to pull path-to-regexp >=0.1.13. Note: platform/ requires solo session.",
+      "cross_refs": ["DEP-001"],
+      "route_to": "TheFixer",
+      "platform_note": "platform/orchestrator is solo-session only per CLAUDE.md",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "untested",
+      "title": "Frontend Hooks and Badge Components Lack Dedicated Unit Tests",
+      "files": [
+        "Source/Frontend/src/hooks/useDashboard.ts",
+        "Source/Frontend/src/hooks/useWorkItems.ts",
+        "Source/Frontend/src/components/Layout.tsx",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx",
+        "Source/Frontend/src/pages/DebugPortalPage.tsx"
+      ],
+      "detail": "Hooks tested only via page-level tests. Badge components have zero tests. Enum regressions invisible to CI.",
+      "recommendation": "Add renderHook() unit tests for hooks. Add snapshot/assertion tests for badge components. Include // Verifies: FR-XXX comments.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Silent Error Swallow in API Client",
+      "files": ["Source/Frontend/src/api/client.ts:26"],
+      "detail": ".catch(() => ({})) swallows JSON parse failures — callers receive {} on malformed responses. Violates 'never swallow errors silently' architecture rule.",
+      "recommendation": "Log parse failure with response status before returning {}. Or re-throw and let callers handle. Add comment if suppression is intentional.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable Without Justification Comment",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "detail": "Both suppress react-hooks/exhaustive-deps without explanation. Cannot audit intentional vs accidental stale-closure suppression.",
+      "recommendation": "Add inline explanations: '// eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only run on mount; fetchItems is stable (useCallback)'",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P3",
+      "category": "CVE",
+      "subcategory": "Denial of Service",
+      "title": "brace-expansion DoS via Zero-Step Sequences",
+      "package": "brace-expansion",
+      "affected_workspaces": ["Source/Backend"],
+      "cvss": 6.5,
+      "cve_ids": ["GHSA-f886-m6hf-6m8v"],
+      "current_version": "<1.1.13",
+      "required_version": ">=1.1.13",
+      "detail": "Zero-step sequences cause process hang and memory exhaustion. Likely resolved automatically by parent package upgrade.",
+      "recommendation": "npm install brace-expansion@latest (may be automatic via parent upgrade). Verify with npm audit after handlebars update.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "CVE",
+      "subcategory": "CORS Bypass",
+      "title": "esbuild CORS Bypass in Dev Server",
+      "package": "esbuild",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "cvss": 5.3,
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "current_version": "<=0.24.2",
+      "required_version": ">=0.24.3",
+      "detail": "Allows any website to send requests to dev server and read response. Dev-only risk.",
+      "recommendation": "Resolved via vite upgrade (DEP-003). Coordinate as single upgrade.",
+      "cross_refs": ["DEP-003"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE",
+      "subcategory": "Multiple (test stack)",
+      "title": "vitest and Related Moderate CVEs",
+      "package": "vitest",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "cve_ids": [],
+      "current_version": "<4.1.4",
+      "required_version": ">=4.1.4",
+      "detail": "Multiple moderate CVEs in vitest, @vitest/mocker, vite-node. Affects development and testing only.",
+      "recommendation": "npm install vitest@latest. Coordinate with vite upgrade (DEP-003) as they are tightly coupled.",
+      "cross_refs": ["DEP-003", "DEP-004"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "architecture-violation",
+      "title": "Dual Logger Modules in Backend",
+      "files": [
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "detail": "Two logger modules — compat wrapper and real implementation. Creates import path inconsistency risk for new routes.",
+      "recommendation": "Pick one logger interface. Update utils/logger.ts to export default-compatible logger and remove logger.ts shim.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    }
+  ],
+
+  "cross_reference_map": [
+    {
+      "root_cause": "No centralised FR ID registry",
+      "affected_findings": ["QO-001", "QO-002", "QO-003", "QO-004"],
+      "single_fix": "Create Plans/fr-registry.md + update enforcer to iterate all APPROVED requirements.md files",
+      "fix_impact": "Eliminates ID collision risk, surfaces all unimplemented plans in CI, closes enforcer scope gap"
+    },
+    {
+      "root_cause": "Critical CVEs requiring security review",
+      "affected_findings": ["DEP-001", "DEP-006"],
+      "single_fix": "Trigger TheGuardians audit; after clearance upgrade handlebars >=4.7.9 and protobufjs >=7.5.5",
+      "fix_impact": "Eliminates two CRITICAL RCE vectors (CVSS 9.8) across backend and network-exposed orchestrator"
+    },
+    {
+      "root_cause": "Stale Vite/esbuild/vitest build toolchain",
+      "affected_findings": ["DEP-003", "DEP-004", "DEP-005"],
+      "single_fix": "npm install vite@latest vitest@latest in Source/Frontend and portal/Frontend",
+      "fix_impact": "Resolves path traversal + CORS bypass + vitest CVEs in one coordinated upgrade"
+    },
+    {
+      "root_cause": "Stale express routing dependency",
+      "affected_findings": ["DEP-007"],
+      "single_fix": "npm install express@latest in platform/orchestrator and portal/Backend",
+      "fix_impact": "Pulls path-to-regexp >=0.1.13, eliminates ReDoS on network-exposed service"
+    }
+  ],
+
+  "thefixer_backlog": [
+    "QO-001", "QO-002", "QO-003", "QO-004",
+    "DEP-003", "DEP-007",
+    "QO-005", "QO-006", "QO-007",
+    "DEP-002", "DEP-004", "DEP-005",
+    "QO-008"
+  ],
+
+  "report_paths": {
+    "html": "Teams/TheInspector/findings/audit-2026-04-17-D.html",
+    "json": "Teams/TheInspector/findings/bug-backlog-2026-04-17.json"
+  }
+}

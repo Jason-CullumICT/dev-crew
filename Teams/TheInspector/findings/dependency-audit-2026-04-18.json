@@ -1,0 +1,320 @@
+{
+  "audit_metadata": {
+    "date": "2026-04-18",
+    "auditor": "dependency_auditor",
+    "model": "haiku",
+    "package_managers_detected": ["npm"],
+    "projects_scanned": 6,
+    "scan_method": "npm audit --json, npm outdated --json"
+  },
+  "summary": {
+    "total_direct_dependencies": 38,
+    "total_transitive_dependencies": 1623,
+    "total_vulnerabilities": 16,
+    "critical_count": 2,
+    "high_count": 3,
+    "moderate_count": 11,
+    "outdated_major_versions": 8,
+    "abandoned_dependencies": 0,
+    "license_violations": 0
+  },
+  "vulnerabilities": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-2w6w-674q-4c4q",
+      "cwe": ["CWE-94", "CWE-843"],
+      "package_name": "handlebars",
+      "affected_version": "4.7.8",
+      "vulnerable_range": ">=4.0.0 <=4.7.8",
+      "fixed_in_version": "4.7.9",
+      "affected_projects": ["Source/Backend"],
+      "category": "cve",
+      "description": "Multiple JavaScript injection vulnerabilities in Handlebars template engine via AST type confusion",
+      "related_cves": [
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "remediation": "npm update handlebars || npm install handlebars@>=4.7.9",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "cvss_score": 0,
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "cwe": ["CWE-94"],
+      "package_name": "protobufjs",
+      "affected_version": "<7.5.5",
+      "vulnerable_range": "<7.5.5",
+      "fixed_in_version": "7.5.5",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "category": "cve",
+      "description": "Arbitrary code execution during protobuf message deserialization",
+      "remediation": "npm update protobufjs",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "path-to-regexp Regular Expression Denial of Service",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve_id": "GHSA-37ch-88jc-xwx2",
+      "cwe": ["CWE-1333"],
+      "package_name": "path-to-regexp",
+      "affected_version": "<0.1.13",
+      "vulnerable_range": "<0.1.13",
+      "fixed_in_version": "0.1.13",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "category": "cve",
+      "description": "ReDoS vulnerability via multiple route parameters causes exponential regex backtracking",
+      "remediation": "npm update express (which depends on path-to-regexp)",
+      "cross_ref": "red-teamer"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Picomatch ReDoS via Extglob Quantifiers",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve_id": "GHSA-c2c7-rcm5-vvqj",
+      "cwe": ["CWE-1333"],
+      "package_name": "picomatch",
+      "affected_version": "<=2.3.1 || 4.0.0-4.0.3",
+      "vulnerable_range": "<=2.3.1 || 4.0.0-4.0.3",
+      "fixed_in_version": "2.3.2 || 4.0.4",
+      "affected_projects": ["portal/Frontend"],
+      "category": "cve",
+      "description": "ReDoS via extglob quantifier patterns in glob matching",
+      "remediation": "npm update picomatch"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Brace-Expansion Zero-Step Sequence DoS",
+      "severity": "P3",
+      "cvss_score": 6.5,
+      "cve_id": "GHSA-f886-m6hf-6m8v",
+      "cwe": ["CWE-400"],
+      "package_name": "brace-expansion",
+      "affected_version": "<1.1.13",
+      "vulnerable_range": "<1.1.13",
+      "fixed_in_version": "1.1.13",
+      "affected_projects": ["Source/Backend"],
+      "category": "cve",
+      "description": "Zero-step sequence in brace expansion causes process hang and memory exhaustion",
+      "remediation": "npm update brace-expansion"
+    },
+    {
+      "id": "DEP-006",
+      "title": "Vite Path Traversal in Optimized Deps .map Handling",
+      "severity": "P3",
+      "cvss_score": 0,
+      "cve_id": "GHSA-4w7w-66w2-5vf9",
+      "cwe": ["CWE-22", "CWE-200"],
+      "package_name": "vite",
+      "affected_version": "<=6.4.1",
+      "vulnerable_range": "<=6.4.1",
+      "fixed_in_version": "8.0.8",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "category": "cve",
+      "description": "Path traversal in optimized dependencies source map handling allows information disclosure",
+      "remediation": "npm install vite@8.0.8+"
+    },
+    {
+      "id": "DEP-007",
+      "title": "esbuild CORS Bypass in Dev Server",
+      "severity": "P3",
+      "cvss_score": 5.3,
+      "cve_id": "GHSA-67mh-4wv8-2f99",
+      "cwe": ["CWE-346"],
+      "package_name": "esbuild",
+      "affected_version": "<=0.24.2",
+      "vulnerable_range": "<=0.24.2",
+      "fixed_in_version": "0.24.3",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "category": "cve",
+      "description": "esbuild dev server CORS bypass allows any website to make requests and read responses",
+      "remediation": "npm update vite (which bundles esbuild)",
+      "impact": "Development environment only"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vitest Test Framework Chain Vulnerabilities",
+      "severity": "P3",
+      "cvss_score": 5.0,
+      "cve_id": "Multiple",
+      "cwe": ["CWE-22", "CWE-200"],
+      "package_name": "vitest",
+      "affected_version": "<=3.0.0-beta.4",
+      "vulnerable_range": "<=3.0.0-beta.4",
+      "fixed_in_version": "4.1.4",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "category": "cve",
+      "description": "vitest depends on vite and vite-node with path traversal CVEs",
+      "remediation": "npm install vitest@4.1.4+"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "express",
+      "current_versions": {
+        "Source/Backend": "4.18.2",
+        "platform/orchestrator": "4.21.0",
+        "portal/Backend": "4.18.2"
+      },
+      "latest": "5.2.1",
+      "majors_behind": 1,
+      "severity": "P3"
+    },
+    {
+      "package": "pino",
+      "current_versions": {
+        "Source/Backend": "8.17.0"
+      },
+      "latest": "10.3.1",
+      "majors_behind": 2,
+      "severity": "P3"
+    },
+    {
+      "package": "react",
+      "current_versions": {
+        "Source/Frontend": "18.3.1"
+      },
+      "latest": "19.2.5",
+      "majors_behind": 1,
+      "severity": "P3"
+    },
+    {
+      "package": "react-router-dom",
+      "current_versions": {
+        "Source/Frontend": "6.26.0"
+      },
+      "latest": "7.14.1",
+      "majors_behind": 1,
+      "severity": "P3"
+    },
+    {
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "current_versions": {
+        "portal/Backend": "0.40.0"
+      },
+      "latest": "0.73.0",
+      "minors_behind": 33,
+      "severity": "P3"
+    },
+    {
+      "package": "@opentelemetry/exporter-trace-otlp-http",
+      "current_versions": {
+        "portal/Backend": "0.47.0"
+      },
+      "latest": "0.215.0",
+      "minors_behind": 168,
+      "severity": "P3"
+    },
+    {
+      "package": "@opentelemetry/sdk-node",
+      "current_versions": {
+        "portal/Backend": "0.47.0"
+      },
+      "latest": "0.215.0",
+      "minors_behind": 168,
+      "severity": "P3"
+    }
+  ],
+  "license_compliance": {
+    "status": "PASS",
+    "total_checked": 38,
+    "permissive_licenses": 38,
+    "gpl_agpl_count": 0,
+    "unlicensed_count": 0,
+    "licenses_by_type": {
+      "MIT": 31,
+      "Apache-2.0": 7
+    }
+  },
+  "supply_chain_risk": {
+    "largest_projects": [
+      {
+        "project": "portal/Backend",
+        "transitive_deps": 566,
+        "direct_deps": 11,
+        "risk_level": "High"
+      },
+      {
+        "project": "portal/Frontend",
+        "transitive_deps": 415,
+        "direct_deps": 9,
+        "risk_level": "High"
+      },
+      {
+        "project": "Source/Backend",
+        "transitive_deps": 407,
+        "direct_deps": 4,
+        "risk_level": "Moderate"
+      }
+    ],
+    "post_install_scripts": "None detected"
+  },
+  "remediation_plan": {
+    "phase_1": {
+      "priority": "Immediate",
+      "items": [
+        "Investigate handlebars dependency in Source/Backend build chain",
+        "Update protobufjs in platform/orchestrator and portal/Backend",
+        "Update express to 4.22+ or 5.x in all projects",
+        "Update picomatch in portal/Frontend"
+      ]
+    },
+    "phase_2": {
+      "priority": "Next Sprint",
+      "items": [
+        "Upgrade Vite to 8.0.8+ in Source/Frontend, portal/Frontend",
+        "Upgrade Vitest to 4.1.4+ in all frontend projects",
+        "Upgrade React to 19.x in Source/Frontend",
+        "Upgrade React Router DOM to 7.x in Source/Frontend"
+      ]
+    },
+    "phase_3": {
+      "priority": "Follow-up Sprint",
+      "items": [
+        "Upgrade pino to 10.x in Source/Backend",
+        "Upgrade OpenTelemetry packages in portal/Backend",
+        "Review and upgrade remaining minor version gaps"
+      ]
+    }
+  },
+  "escalations": [
+    {
+      "severity": "Critical",
+      "escalation_team": "TheGuardians",
+      "issue": "DEP-001 (Handlebars.js)",
+      "reason": "Multiple JavaScript injection vectors; assess template input sources"
+    },
+    {
+      "severity": "Critical",
+      "escalation_team": "TheGuardians",
+      "issue": "DEP-002 (Protobufjs)",
+      "reason": "Arbitrary code execution; critical infrastructure (orchestrator) affected"
+    },
+    {
+      "severity": "Medium",
+      "escalation_team": "red-teamer",
+      "issue": "DEP-003 (path-to-regexp ReDoS)",
+      "reason": "DoS vector; validate exploit feasibility"
+    }
+  ],
+  "next_steps": [
+    "Run remediation Phase 1 immediately",
+    "Coordinate with TheGuardians on escalations",
+    "Schedule Phase 2 updates for next sprint",
+    "Implement automated audit in CI/CD (npm audit --audit-level=moderate)",
+    "Establish monthly dependency review cadence",
+    "Consider Dependabot or Snyk integration for continuous monitoring"
+  ]
+}

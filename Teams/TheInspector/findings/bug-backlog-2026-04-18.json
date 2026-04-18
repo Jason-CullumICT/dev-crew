@@ -1,0 +1,242 @@
+{
+  "audit_id": "run-20260418-044307",
+  "date": "2026-04-18",
+  "branch": "audit/inspector-2026-04-18-10f78e",
+  "grade": "D",
+  "synthesised_by": "team_leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services unavailable (backend and frontend not running); static-only audit performed",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 5,
+    "p3_total": 11,
+    "p4_total": 0,
+    "spec_coverage_overall_pct": 17,
+    "escalations_to_guardians": 2,
+    "fixed_since_prior": 0,
+    "prior_audit": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cwe": ["CWE-94", "CWE-843"],
+      "package": "handlebars@4.7.8",
+      "affected": ["Source/Backend (indirect)"],
+      "impact": "Arbitrary code execution in templates",
+      "remediation": "npm update handlebars (>=4.7.9)",
+      "route": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "Protobufjs Arbitrary Code Execution during Deserialization",
+      "cvss": "unassigned",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cwe": ["CWE-94"],
+      "package": "protobufjs <7.5.5",
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "impact": "RCE on critical orchestrator infrastructure",
+      "remediation": "npm update protobufjs (>=7.5.5)",
+      "route": "TheGuardians",
+      "trigger": "injection / arbitrary code execution"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Canonical Specs Describe an Unbuilt Product",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "FR-001–FR-069 describe a different product (Feature Requests/Bug Reports/Dev Cycles/SQLite). Zero implementation traces exist. The built product is an in-memory work-item routing engine.",
+      "recommendation": "Archive dev-workflow-platform.md as superseded or add a 'Future Scope' header. Write a spec for the actual built system.",
+      "route": "TheFixer + requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift / pattern-violation",
+      "title": "Traceability Enforcer Single-Plan Blind Spot",
+      "file": "tools/traceability-enforcer.py:59",
+      "detail": "Enforcer auto-selects only the most-recently-modified requirements.md. Reports PASSED while 57 requirements across 3 plans have zero traces (orchestrated-dev-cycles: 17 failures, dev-cycle-traceability: 20 failures, image-upload: 20 failures).",
+      "recommendation": "Add --all-plans mode to enforcer; let inspector.config.yml mark plans as completed to exclude them.",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route Handlers Bypass Service Layer",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/intake.ts:4"
+      ],
+      "detail": "All three route files import directly from workItemStore, violating the 'no direct DB calls from route handlers' architecture rule. Business logic (filtering, pagination, state transitions) lives in route handlers.",
+      "recommendation": "Extract store calls into workItemService.ts. Route handlers should only parse request, call service, format response.",
+      "route": "TheFixer (backend-coder)",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependency-linking Delta References Stale portal/ Paths",
+      "file": "Plans/dependency-linking/requirements.md",
+      "detail": "Implementation delta table references portal/Backend/ and portal/Frontend/ paths. Project migrated to Source/. FR-dependency-frontend-tests is incorrectly marked missing — tests exist at Source/Frontend/tests/components/.",
+      "recommendation": "Update delta to Source/ paths. Mark FR-dependency-frontend-tests as Done.",
+      "route": "TheFixer (requirements-reviewer)",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "Duplicate Test Files for Same Components",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "detail": "Two test files cover the same components. Creates maintenance burden, contradictory expectations, and inflated test count.",
+      "recommendation": "Consolidate to tests/pages/ canonical location. Merge non-overlapping cases, delete top-level duplicates.",
+      "route": "TheFixer (frontend-coder)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve",
+      "title": "path-to-regexp ReDoS",
+      "cvss": 7.5,
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cwe": ["CWE-1333"],
+      "package": "path-to-regexp <0.1.13",
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "detail": "ReDoS via multiple route parameters causes exponential regex backtracking. DoS vector on routing layer.",
+      "recommendation": "npm update express (resolves path-to-regexp transitively)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve",
+      "title": "Picomatch ReDoS via Extglob Quantifiers",
+      "cvss": 7.5,
+      "cve": "GHSA-c2c7-rcm5-vvqj",
+      "cwe": ["CWE-1333"],
+      "package": "picomatch <=2.3.1",
+      "affected": ["portal/Frontend"],
+      "detail": "ReDoS via extglob quantifier patterns in glob matching.",
+      "recommendation": "npm update picomatch",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006", "source": "quality-oracle", "severity": "P3",
+      "title": "eslint-disable Without Justification",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "recommendation": "Add inline comments explaining why react-hooks/exhaustive-deps is intentionally suppressed."
+    },
+    {
+      "id": "QO-007", "source": "quality-oracle", "severity": "P3",
+      "title": "WorkItemDetailPage.tsx at 426 Lines — Refactor Candidate",
+      "file": "Source/Frontend/src/pages/WorkItemDetailPage.tsx",
+      "recommendation": "Extract WorkflowActionsPanel, ChangeHistoryTimeline, AssessmentRecordsList as focused components."
+    },
+    {
+      "id": "QO-008", "source": "quality-oracle", "severity": "P3",
+      "title": "FR ID Namespace Has No Authority Registry",
+      "detail": "Seven distinct FR prefixes with no mapping table. Enforcer pattern FR-\\d+ misses FR-WF-XXX and FR-dependency-XXX.",
+      "recommendation": "Add FR namespace registry to CLAUDE.md. Update enforcer pattern."
+    },
+    {
+      "id": "DEP-005", "source": "dependency-auditor", "severity": "P3",
+      "title": "brace-expansion Zero-Step Sequence DoS",
+      "cvss": 6.5, "cve": "GHSA-f886-m6hf-6m8v",
+      "package": "brace-expansion <1.1.13", "affected": ["Source/Backend"],
+      "recommendation": "npm update brace-expansion"
+    },
+    {
+      "id": "DEP-006", "source": "dependency-auditor", "severity": "P3",
+      "title": "Vite Path Traversal in Optimised Deps .map Handling",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "package": "vite <=6.4.1", "affected": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "recommendation": "npm install vite@8.0.8+"
+    },
+    {
+      "id": "DEP-007", "source": "dependency-auditor", "severity": "P3",
+      "title": "esbuild CORS Bypass in Dev Server",
+      "cvss": 5.3, "cve": "GHSA-67mh-4wv8-2f99",
+      "package": "esbuild <=0.24.2", "impact": "Development environment only",
+      "recommendation": "npm update vite (bundles esbuild)"
+    },
+    {
+      "id": "DEP-008", "source": "dependency-auditor", "severity": "P3",
+      "title": "Vitest Chain Vulnerabilities (depends on vulnerable vite/vite-node)",
+      "cve": "Multiple", "package": "vitest <=3.0.0-beta.4",
+      "recommendation": "npm install vitest@4.1.4+"
+    },
+    {
+      "id": "DEP-OUT-01", "source": "dependency-auditor", "severity": "P3",
+      "title": "express 1 major version behind (4.18 → 5.x)",
+      "affected": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "recommendation": "Upgrade to express@5.2.1 when ready"
+    },
+    {
+      "id": "DEP-OUT-02", "source": "dependency-auditor", "severity": "P3",
+      "title": "React + react-router-dom 1 major behind",
+      "affected": ["Source/Frontend"],
+      "recommendation": "Upgrade to React 19.x, react-router-dom 7.x in Phase 2"
+    },
+    {
+      "id": "DEP-OUT-03", "source": "dependency-auditor", "severity": "P3",
+      "title": "OpenTelemetry packages 168+ minors behind in portal/Backend",
+      "affected": ["portal/Backend"],
+      "recommendation": "Upgrade @opentelemetry/* packages in Phase 3"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Spec governance gap — multiple plans accumulated with no tracking of which are active vs future-scope",
+      "affected_findings": ["QO-001", "QO-002", "QO-008"],
+      "fix": "Single fix: (1) Mark Specifications/dev-workflow-platform.md as future-scope, (2) add --all-plans mode to enforcer, (3) add FR namespace registry. All three findings resolved by this governance cleanup."
+    },
+    {
+      "root_cause": "Service layer not yet extracted from route handlers",
+      "affected_findings": ["QO-003"],
+      "fix": "Create Source/Backend/src/services/workItemService.ts, migrate store calls from workItems.ts, workflow.ts, intake.ts."
+    },
+    {
+      "root_cause": "Frontend test organisation not standardised after migration",
+      "affected_findings": ["QO-005", "QO-004"],
+      "fix": "Consolidate test files under tests/pages/, update dependency-linking delta to reflect Source/ paths."
+    },
+    {
+      "root_cause": "Transitive dependency staleness in platform/orchestrator and portal stack",
+      "affected_findings": ["DEP-002", "DEP-003"],
+      "fix": "Single npm update run in platform/orchestrator fixes both protobufjs and path-to-regexp."
+    }
+  ]
+}

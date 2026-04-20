@@ -1,0 +1,260 @@
+{
+  "audit_id": "run-20260420-052509",
+  "audit_date": "2026-04-20",
+  "branch": "audit/inspector-2026-04-20-b1dbb3",
+  "project": "dev-crew Source App",
+  "overall_grade": "D",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 5,
+    "p3_total": 8,
+    "p4_total": 1,
+    "spec_coverage_plans": "100%",
+    "spec_coverage_specifications": "~28%",
+    "escalations_to_guardians": 2,
+    "prior_audit": null,
+    "trend": "first_audit_no_baseline"
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "title": "JavaScript Injection via Handlebars (RCE)",
+      "severity": "P1",
+      "category": "injection",
+      "route": "[ESCALATE → TheGuardians]",
+      "cves": ["CVE-2019-19919", "CVE-2021-23369", "CVE-2021-23383", "plus 5 more"],
+      "cvss_max": 9.8,
+      "workspace": "Source/Backend (transitive)",
+      "fix": "Upgrade handlebars to >=4.7.9 via npm audit fix --force in Source/Backend",
+      "exploit_scenario": "If any user-supplied input reaches handlebars template compilation (prototype pollution chain), remote code execution is possible with zero authentication precondition.",
+      "exploitability": "zero-precondition (if untrusted template input reaches handlebars)"
+    },
+    {
+      "id": "DA-002",
+      "title": "Arbitrary Code Execution via Protobufjs",
+      "severity": "P1",
+      "category": "injection",
+      "route": "[ESCALATE → TheGuardians]",
+      "cves": ["CVE-2023-36665"],
+      "cvss_max": 9.8,
+      "workspace": "platform/orchestrator, portal/Backend",
+      "fix": "Upgrade protobufjs to >=7.5.5 in platform/orchestrator and portal/Backend",
+      "exploit_scenario": "Untrusted .proto file content passed to protobufjs parser allows prototype pollution leading to arbitrary code execution.",
+      "exploitability": "zero-precondition (if any .proto content comes from user input or untrusted source)"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Traceability Enforcer Blind to Specifications/ Directory",
+      "severity": "P1",
+      "category": "spec-drift / governance-failure",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer + requirements-reviewer",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "Enforcer auto-detects only Plans/ requirements.md, never scans Specifications/. 89 FRs in Specifications/ are invisible to CI. Creates a structural false-green verification gate.",
+      "recommendation": "Add Specifications/ scan mode with explicit NOT_STARTED status; distinguish not-yet-implemented from silently missing.",
+      "exploitability": "N/A (governance)"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "Route Handlers Bypass Service Layer (20+ Direct Store Calls)",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts (lines 44, 73, 79, 89, 134, 142)",
+        "Source/Backend/src/routes/workflow.ts (lines 44, 71, 99, 119, 155, 175, 217, 269, 317, 359)",
+        "Source/Backend/src/routes/intake.ts (lines 19, 42)"
+      ],
+      "recommendation": "Introduce thin service functions for CRUD; apply the existing dashboard.ts pattern to CRUD routes."
+    },
+    {
+      "id": "QO-003",
+      "title": "GET /api/search Not Wired in app.ts — DependencyPicker Broken at Runtime",
+      "severity": "P2",
+      "category": "spec-drift (unimplemented endpoint)",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer",
+      "files": [
+        "Source/Backend/src/app.ts (missing route mount)",
+        "Source/Frontend/src/api/client.ts:101"
+      ],
+      "recommendation": "Add routes/search.ts and mount at /api/search; contract is in Source/Shared/api-contracts.md."
+    },
+    {
+      "id": "QO-004",
+      "title": "dependencyCheckDuration Histogram Missing from metrics.ts",
+      "severity": "P2",
+      "category": "spec-drift (missing metric)",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer",
+      "files": [
+        "Source/Backend/src/metrics.ts",
+        "Source/Backend/tests/routes/metrics.test.ts"
+      ],
+      "recommendation": "Add Histogram named dependency_check_duration_seconds; instrument isReady() and detectCycle(); add test assertion."
+    },
+    {
+      "id": "DA-003",
+      "title": "ReDoS in path-to-regexp — Route Matching DoS Attack Vector",
+      "severity": "P2",
+      "category": "security (ReDoS)",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "route": "TheFixer",
+      "workspaces": ["platform/orchestrator", "portal/Backend"],
+      "fix": "Upgrade path-to-regexp to >=0.1.13"
+    },
+    {
+      "id": "DA-004",
+      "title": "ReDoS in picomatch — Catastrophic Backtracking in Glob Patterns",
+      "severity": "P2",
+      "category": "security (ReDoS)",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "route": "TheFixer",
+      "workspaces": ["portal/Frontend (transitive via vite)"],
+      "fix": "Upgrade picomatch to >=2.3.2 or >=4.0.4"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "title": "Logger Missing Production/Development Format Switch",
+      "severity": "P3",
+      "category": "architecture-violation (observability)",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "recommendation": "Add NODE_ENV !== 'production' branch for human-readable dev output."
+    },
+    {
+      "id": "QO-006",
+      "title": "Duplicate Logger Abstraction — workItemStore.ts Bypasses Normalization Wrapper",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer",
+      "file": "Source/Backend/src/store/workItemStore.ts:10"
+    },
+    {
+      "id": "QO-007",
+      "title": "pending_dependencies Status Specified But Not Implemented",
+      "severity": "P3",
+      "category": "spec-drift",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer (coordinate with api-contract module owner)",
+      "files": [
+        "Source/Shared/types/workflow.ts:5-15",
+        "Source/Backend/src/routes/workflow.ts:230-244"
+      ]
+    },
+    {
+      "id": "QO-008",
+      "title": "ESLint react-hooks/exhaustive-deps Suppressions Without Documented Reason",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ]
+    },
+    {
+      "id": "QO-009",
+      "title": "api-contracts.md References Unspecified Ghost FRs (FR-070 – FR-085)",
+      "severity": "P3",
+      "category": "doc-stale / spec-drift",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "requirements-reviewer",
+      "file": "Source/Shared/api-contracts.md"
+    },
+    {
+      "id": "DA-005",
+      "title": "Vite Path Traversal (Dev Server Only)",
+      "severity": "P3",
+      "category": "security (dev-only)",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "route": "TheFixer",
+      "workspace": "portal/Frontend"
+    },
+    {
+      "id": "DA-006",
+      "title": "Esbuild Dev Server SSRF (Dev Only)",
+      "severity": "P3",
+      "category": "security (dev-only)",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "route": "TheFixer",
+      "workspace": "portal/Frontend"
+    },
+    {
+      "id": "DA-007",
+      "title": "Brace-expansion DoS via Malformed Brace Patterns",
+      "severity": "P3",
+      "category": "security (moderate)",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "route": "TheFixer"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-010",
+      "title": "vite-env.d.ts Lacks Traceability Comment",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "route": "TheFixer (low priority)",
+      "file": "Source/Frontend/src/vite-env.d.ts"
+    }
+  ],
+  "not_run": [
+    {
+      "specialist": "performance-profiler",
+      "reason": "Services offline (backend/frontend not reachable at health endpoints)",
+      "mode_fallback": "static — no report generated this audit"
+    },
+    {
+      "specialist": "chaos-monkey",
+      "reason": "Services offline — requires all services healthy for dynamic mode",
+      "mode_fallback": "static — no report generated this audit"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Verification gate scope mismatch (Plans/ vs Specifications/)",
+      "affected_findings": ["QO-001", "QO-009"],
+      "single_fix": "Extend traceability-enforcer.py to scan Specifications/ with NOT_STARTED/PLANNED status markers",
+      "fix_impact": "Resolves governance false-green AND ghost FR reference confusion"
+    },
+    {
+      "root_cause": "Missing service layer abstraction for CRUD routes",
+      "affected_findings": ["QO-002", "QO-007"],
+      "single_fix": "Introduce workItemService.ts with CRUD + state-transition logic; pending_dependencies status included",
+      "fix_impact": "Resolves architecture violation AND implements missing status correctly"
+    },
+    {
+      "root_cause": "Transitive dependency drift in platform/orchestrator and portal/Backend",
+      "affected_findings": ["DA-002", "DA-003"],
+      "single_fix": "Single npm update run in platform/orchestrator and portal/Backend covering protobufjs >=7.5.5 + path-to-regexp >=0.1.13",
+      "fix_impact": "Resolves 1 P1 and 1 P2 with a single dependency upgrade pass"
+    }
+  ]
+}

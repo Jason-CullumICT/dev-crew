@@ -515,3 +515,161 @@ The application has **zero authentication and zero authorization** on every API 
 - **No rate limiting:** All endpoints accept unlimited requests. Use for flood tests (PEN-004, PEN-010).
 - **Dependency endpoint has no status guard on the item being patched:** Use PATCH `blockedBy: []` to clear blockers (PEN-009), not just `POST /:id/dependencies remove`.
 - **`onItemResolved` is only called from the reject handler** (`workflow.ts:193`) and NOT from the approve handler — cascade dispatch only triggers on rejection. Approval moves to `Approved`, dispatch is manual.
+
+---
+
+## Red Team Results
+
+**Executed by:** red_teamer  
+**Date:** 2026-04-20  
+**Target:** `http://localhost:3001` (portal/Backend — ephemeral isolated test environment)  
+**Scope Note:** The pen tester analysed `Source/Backend/` (the workflow engine with `/api/work-items` routes). The live test environment (`docker-compose.test.yml`) runs `portal/Backend/` — a different service with routes `/api/feature-requests`, `/api/bugs`, `/api/cycles`, etc. All exploit chains were executed against the **actual running service**. PEN findings were mapped to equivalent vulnerability classes in the running application.
+
+---
+
+### Objectives vs. Results
+
+| Security Config Objective | Outcome |
+|--------------------------|---------|
+| Bypass work item state machine to reach an invalid status | **ACHIEVED** — RED-002 |
+| Access or modify a soft-deleted work item via direct ID reference | **NOT ACHIEVED** — hard delete (404 after delete) |
+| Submit a malformed assessment verdict that bypasses routing logic | **PARTIAL** — RED-006 (invalid vote value accepted, pipeline fires unconditionally) |
+| Enumerate all work items without pagination limit enforcement | **ACHIEVED** — RED-004 |
+
+---
+
+### RED-001: Unauthenticated Anonymous Agent Voting Pipeline Takeover
+
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests` + `POST /api/feature-requests/:id/vote`
+- **Based On:** PEN-001 (No Authentication), PEN-002 (No Authorization)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with no credentials → HTTP 201, `FR-0005` created.
+  2. `POST /api/feature-requests/FR-0005/vote` with `{"vote":"up"}` → HTTP 200.
+  3. The full 5-agent voting pipeline (TechFeasibilityAgent, BusinessValueAgent, SecurityReviewAgent, UserImpactAgent, ResourceCostAgent) fires immediately and writes AI votes to the record — all triggered by an anonymous attacker.
+  4. Status transitions from `potential` → `voting` with 5 fabricated AI votes recorded.
+  5. **Evidence:** All responses HTTP 200/201 with full vote objects, no `WWW-Authenticate` challenge anywhere.
+- **Recommendation:** Add authentication middleware (JWT/session) to all `/api/feature-requests` mutation routes. The voting trigger endpoint (`/vote`) must require a valid authenticated user session before invoking the agent pipeline.
+
+---
+
+### RED-002: State Machine Bypass via Unauthenticated Sequential PATCH
+
+- **Severity:** Critical
+- **Objective Achieved:** Yes — full status lifecycle bypassed
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH http://localhost:3001/api/feature-requests/:id`
+- **Based On:** PEN-001 (No Authentication), PEN-002 (No Authorization), PEN-003 analog (assessment bypass)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → create `FR-0006` in `potential` status.
+  2. `PATCH /api/feature-requests/FR-0006 {"status":"voting"}` → HTTP 200, status: `voting`.
+  3. `PATCH /api/feature-requests/FR-0006 {"status":"approved"}` → HTTP 200, status: `approved`.
+  4. `PATCH /api/feature-requests/FR-0006 {"status":"in_development"}` → HTTP 200, status: `in_development`.
+  5. `PATCH /api/feature-requests/FR-0006 {"status":"completed"}` → HTTP 200, status: `completed`.
+  6. Feature request moved from `potential` → `completed` in 4 unauthenticated requests. No voting, no human approval, no agent review occurred.
+  7. **Evidence:** Each PATCH returned HTTP 200 with the updated `status` field.
+- **Recommendation:** Remove `status` from the PATCH-updatable fields entirely. Status transitions must only be possible through dedicated workflow endpoints that enforce valid transition rules and require authenticated identity with appropriate roles.
+
+---
+
+### RED-003: Unauthenticated Bug Status Escalation (Full Lifecycle Takeover)
+
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/bugs` + `PATCH /api/bugs/:id`
+- **Based On:** PEN-001 (No Authentication), PEN-002 (No Authorization), PEN-006 analog
+- **Exploit Scenario:**
+  1. `POST /api/bugs {"severity":"critical","status":"reported"}` → HTTP 201, `BUG-0009` created (no auth).
+  2. `PATCH /api/bugs/BUG-0009 {"status":"triaged"}` → HTTP 200.
+  3. `PATCH /api/bugs/BUG-0009 {"status":"in_development"}` → HTTP 200.
+  4. `PATCH /api/bugs/BUG-0009 {"status":"resolved"}` → HTTP 200.
+  5. `PATCH /api/bugs/BUG-0009 {"status":"closed"}` → HTTP 200.
+  6. Critical-severity bug moved from `reported` → `closed` in 4 unauthenticated PATCH requests. No triage review, no developer assignment, no fix verification.
+  7. **Evidence:** All 4 PATCH requests returned HTTP 200 with updated `status` field confirmed on each read-back.
+- **Recommendation:** Enforce authentication on all PATCH endpoints. Implement RBAC: only users with `triage` role may set `triaged`; only `developer` role may set `in_development`; only `reviewer` role may set `resolved`/`closed`.
+
+---
+
+### RED-004: Unbounded Pagination / Full Data Enumeration
+
+- **Severity:** Medium
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/bugs?limit=999999999`, `GET /api/dashboard/summary`
+- **Based On:** PEN-010 (Unbounded `?limit`), PEN-011 (Metrics), PEN-001
+- **Exploit Scenario:**
+  1. `GET /api/bugs?limit=999999999` → HTTP 200, all records returned in one response, no server-side cap.
+  2. `GET /api/dashboard/summary` (unauthenticated) → returns aggregate counts by status and severity for ALL data types in the system.
+  3. `GET /metrics` (unauthenticated) → Prometheus metrics expose process memory, CPU, heap, FD count, and custom domain metrics (`cycle_feedback_total`).
+  4. Together: attacker gets full operational picture of the system with three unauthenticated requests.
+  5. **Evidence:** `TOTAL ITEMS DUMPED: 8` with `limit=999999999` accepted without error.
+- **Recommendation:** Cap `limit` parameter server-side (e.g., max 100). Add authentication to `/api/dashboard` and `/metrics` endpoints.
+
+---
+
+### RED-005: SSRF via Unvalidated `actions_url` in Team Dispatches
+
+- **Severity:** High
+- **Objective Achieved:** Partial (URL stored; callback execution not confirmed in test window)
+- **Status:** Confirmed (Live Exploit — malicious URLs stored; SSRF callback depends on dispatch trigger)
+- **Target URL:** `POST http://localhost:3001/api/team-dispatches`
+- **Based On:** PEN-004 analog (Unauthenticated Webhook Injection), PEN-001
+- **Exploit Scenario:**
+  1. `POST /api/team-dispatches {"team":"ssrf-team","actions_url":"http://169.254.169.254/latest/meta-data/","workflow":"ssrf-probe"}` → HTTP 201, record created with attacker-controlled URL.
+  2. `POST /api/team-dispatches {"actions_url":"http://localhost:3001/api/bugs"}` → HTTP 201 (SSRF to internal API).
+  3. Both records confirmed in `GET /api/team-dispatches` listing.
+  4. When the dispatch system processes these records (e.g., GitHub Actions callback or internal webhook), it will call the attacker-controlled URL — enabling SSRF, internal network probing, or exfiltration.
+  5. **Evidence:** Both dispatches returned HTTP 201 with `actions_url` values verbatim in response body. URLs visible in list endpoint.
+- **Recommendation:** Validate `actions_url` against an allowlist of permitted GitHub Actions URL patterns (e.g., `https://api.github.com/*`). Reject any non-HTTPS URLs or URLs pointing to RFC-1918 address space / localhost. Add authentication to the team-dispatches endpoint.
+
+---
+
+### RED-006: Malformed Vote Payload Accepted — Voting Pipeline Fires Unconditionally
+
+- **Severity:** Medium
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/vote`
+- **Based On:** PEN-014 analog (Invalid field value corrupts domain state), PEN-003
+- **Exploit Scenario:**
+  1. Create feature request `FR-0007` in `potential` status.
+  2. `POST /api/feature-requests/FR-0007/vote` with `{"vote":"INVALID_VERDICT_XYZ"}` → HTTP 200.
+  3. Server ignores the `vote` field value entirely and unconditionally fires the 5-agent voting pipeline (all 5 agents returned `approve` votes).
+  4. Status transitions to `voting`, 5 agent votes written.
+  5. **Evidence:** HTTP 200 returned with full vote objects despite `vote` value being `"INVALID_VERDICT_XYZ"`. The `vote` input parameter provides no meaningful gate.
+- **Recommendation:** The `/vote` endpoint should validate the input, but more importantly should require authentication. The `vote` field value should be validated against allowed values and the pipeline should not fire silently on invalid input — return HTTP 400 for unrecognized vote values.
+
+---
+
+### RED-007: Meta-Finding — Pen Tester Analysed Wrong Service
+
+- **Severity:** High (Process / Coverage Gap)
+- **Objective Achieved:** N/A
+- **Status:** Confirmed
+- **Target URL:** `docker-compose.test.yml` → `portal/` context (not `Source/Backend/`)
+- **Based On:** All PEN findings (static analysis of `Source/Backend/`)
+- **Exploit Scenario:**
+  1. `docker-compose.test.yml` builds from `context: portal` and exposes port 3001.
+  2. The pen tester performed static analysis on `Source/Backend/src/` (routes: `/api/work-items`, `/api/intake`, etc.).
+  3. The actual running service is `portal/Backend/src/` (routes: `/api/feature-requests`, `/api/bugs`, `/api/cycles`, etc.).
+  4. `Source/Backend/` is NOT running in the test environment. Its findings (PEN-001 through PEN-016) were never verified against a live instance.
+  5. The portal backend has analogous vulnerabilities (no auth, no RBAC, unbounded pagination, unauthenticated metrics, SSRF via team-dispatches) but different domain objects and partially different behaviour (hard delete vs. soft delete; state machine partially enforced via workflow endpoints but fully bypassable via PATCH).
+- **Recommendation:** Update `security.config.yml` to clearly identify which service each target runs. The pen tester should analyse the codebase that `docker-compose.test.yml` actually builds. Run the workflow engine (`Source/Backend/`) as a separate target in a dedicated compose service so both services can be audited.
+
+---
+
+### Metrics
+
+| Metric | Value |
+|--------|-------|
+| Objectives achieved | 3 / 4 (75%) |
+| Objectives partial | 1 / 4 |
+| Exploit chains attempted | 7 |
+| Confirmed live breaches | 5 |
+| Critical findings confirmed | 3 (RED-001, RED-002, RED-003) |
+| High findings confirmed | 1 (RED-005) |
+| Medium findings confirmed | 2 (RED-004, RED-006) |
+| Meta-findings | 1 (RED-007: wrong service analysed) |

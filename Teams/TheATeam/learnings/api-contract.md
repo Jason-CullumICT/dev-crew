@@ -1,5 +1,42 @@
 # API Contract Agent Learnings
 
+## 2026-04-14 — Pre-Flight Validation on Work Submission (FR-preflight-validator, FR-preflight-gating, FR-preflight-tests)
+
+### Context
+Pre-flight validation validates GitHub token and branch existence before a work run is created in the orchestrator. This prevents failures 5+ minutes deep in container execution.
+
+### Shared Types Added
+- `WorkSubmissionRequest` — Work request with optional repo/branch overrides
+- `WorkSubmissionResponse` — Response with run ID, status, and polling URL
+
+### Orchestrator API Contract
+- **Endpoint:** `POST /api/work` (platform/orchestrator/server.js:350)
+- **Pre-flight validation:** Before saveRun(), call validateRepoAccess() and validateBranchExists()
+- **Error codes:**
+  - 401: Invalid/missing GitHub token (GitHub returns 401 or 403)
+  - 404: Repo not found or branch not found (GitHub returns 404)
+  - 500: GitHub API error (5xx or unexpected 4xx)
+- **Backwards compat:** Skip validation if resolvedRepo is empty (local pipeline without configured repo)
+- **No side effects:** Validation functions only read from GitHub API, never create repos
+
+### Implementation Notes
+- Validation library: `platform/orchestrator/lib/github-validator.js` (new file, solo-session only)
+  - `validateRepoAccess(repoFullName, token)` — throws {status, message}
+  - `validateBranchExists(repoFullName, branch, token)` — throws {status, message}
+- No new enums needed; error responses use existing `ApiErrorResponse` format
+- Frontend error display: portal/Frontend/src/components/{bugs,feature-requests}/Detail.tsx
+  - Add `preflightError` flag to distinguish 401/404/500 from generic 500
+  - Render amber "Pre-flight check failed" box with actionable hints per status code
+
+### Key Decision: Orchestrator API as Separate Section
+The orchestrator API (work submission) is documented separately from the Workflow Engine API (work items, dependencies) in `Source/Shared/api-contracts.md` because:
+- Orchestrator lives in `platform/` (solo-session only), not `Source/`
+- Platform is infrastructure that runs agents, not application logic
+- Workflow Engine is the product API (agents use this)
+- Both share the same error response format but different purposes
+
+---
+
 ## 2026-04-14 — Dependency Tracking Feature (FR-070–FR-085)
 
 ### Shared Types Location

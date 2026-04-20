@@ -154,6 +154,31 @@ export interface DependencyActionRequest {
   blockerId: string;
 }
 
+// --- Orchestrator API Request/Response Types ---
+// Verifies: FR-preflight-validator, FR-preflight-gating — Work submission with pre-flight validation
+
+export interface WorkSubmissionRequest {
+  task: string;                          // Required: work description/prompt
+  planFile?: string;                     // Optional: path to plan file
+  team?: string;                         // Optional: force assignment to 'TheATeam' or 'TheFixer'
+  repo?: string;                         // Optional: GitHub repo (owner/name); falls back to config
+  repoBranch?: string;                   // Optional: git branch; falls back to config
+  claudeSessionToken?: string;           // Optional: Anthropic API token
+  tokenLabel?: string;                   // Optional: label for token pool
+  pipelineMode?: string;                 // Optional: 'local' (default) or 'github_actions'
+  images?: Array<{name: string, data: string}>; // Optional: base64-encoded images
+}
+
+export interface WorkSubmissionResponse {
+  id: string;                            // Unique run ID (run-{timestamp}-{randomId})
+  status: string;                        // Always "team_selecting" on submission
+  message: string;                       // Status message
+  statusUrl: string;                     // URL to poll: /api/runs/:id
+  attachments: number;                   // Count of uploaded images
+  ports?: Record<string, unknown>;       // Port mappings (if available)
+  branch?: string;                       // Git branch (if available)
+}
+
 export interface ReadinessCheckResponse {
   ready: boolean;
   unresolvedBlockers?: DependencyLink[];

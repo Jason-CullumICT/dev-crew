@@ -93,6 +93,20 @@ export function getAllItems(): WorkItem[] {
   return Array.from(items.values()).filter((item) => !item.deleted);
 }
 
+// Verifies: FR-dependency-search — Search work items by title or description (case-insensitive, special-char safe)
+export function searchItems(q: string): WorkItem[] {
+  if (!q || q.trim() === '') return [];
+
+  // Use plain string .includes() — no regex, so %, _, [ etc. are treated as literals
+  const needle = q.toLowerCase();
+  return Array.from(items.values()).filter(
+    (item) =>
+      !item.deleted &&
+      (item.title.toLowerCase().includes(needle) ||
+        item.description.toLowerCase().includes(needle)),
+  );
+}
+
 // Reset store (for testing)
 export function resetStore(): void {
   items = new Map();

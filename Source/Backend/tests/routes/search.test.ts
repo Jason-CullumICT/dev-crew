@@ -104,6 +104,46 @@ describe('GET /api/search — cross-entity typeahead search', () => {
     expect(res.body.data.length).toBeGreaterThanOrEqual(1);
   });
 
+  // Fixes: FIX-special-chars — special regex/LIKE characters must not cause 500
+  it('returns 200 and empty data when query contains % (percent)', async () => {
+    const res = await request(app).get('/api/search?q=%25');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('data');
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  // Fixes: FIX-special-chars — underscore must be treated as a literal character
+  it('returns 200 and empty data when query contains _ (underscore)', async () => {
+    const res = await request(app).get('/api/search?q=_');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('data');
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  // Fixes: FIX-special-chars — bracket must be treated as a literal character
+  it('returns 200 and empty data when query contains [ (open bracket)', async () => {
+    const res = await request(app).get('/api/search?q=%5B');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('data');
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  // Fixes: FIX-special-chars — special chars in title are matched literally
+  it('finds an item whose title contains a literal special character', async () => {
+    store.createWorkItem({
+      title: '50% discount feature',
+      description: 'Promotional pricing',
+      type: WorkItemType.Feature,
+      priority: WorkItemPriority.Low,
+      source: WorkItemSource.Manual,
+    });
+
+    const res = await request(app).get('/api/search?q=50%25');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].title).toBe('50% discount feature');
+  });
+
   // Verifies: FR-dependency-search — excludes soft-deleted items from results
   it('excludes deleted work items from search results', async () => {
     const item = store.createWorkItem({

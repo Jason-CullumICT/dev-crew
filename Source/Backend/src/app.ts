@@ -4,6 +4,7 @@ import workItemsRouter from './routes/workItems';
 import workflowRouter from './routes/workflow';
 import dashboardRouter from './routes/dashboard';
 import intakeRouter from './routes/intake';
+import searchRouter from './routes/search';
 import { errorHandler } from './middleware/errorHandler';
 import { registry } from './metrics';
 import logger from './logger';
@@ -29,6 +30,9 @@ app.use('/api/dashboard', dashboardRouter);
 
 // Verifies: FR-WF-008 — Intake webhook routes
 app.use('/api/intake', intakeRouter);
+
+// Verifies: FR-dependency-search — Cross-entity typeahead search
+app.use('/api/search', searchRouter);
 
 // Verifies: FR-WF-013 — Prometheus metrics endpoint
 app.get('/metrics', async (_req, res) => {

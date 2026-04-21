@@ -1,0 +1,373 @@
+{
+  "audit_id": "run-20260421-050018",
+  "audit_date": "2026-04-21",
+  "project": "dev-crew Source App",
+  "branch": "audit/inspector-2026-04-21-60c0df",
+  "overall_grade": "D",
+  "grade_rationale": "3 P1 findings (exceeds C-grade max of 2 P1s). Grade thresholds: A=0 P1; B=0 P1; C≤2 P1; D=otherwise.",
+  "specialists_run": ["quality-oracle (static)", "dependency-auditor (static)"],
+  "specialists_skipped": ["performance-profiler (services offline)", "chaos-monkey (services offline)"],
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 5,
+    "p3_total": 9,
+    "p4_total": 2,
+    "total_findings": 19,
+    "security_escalations": 2,
+    "solo_session_required": 2,
+    "spec_coverage_total_pct": 24,
+    "spec_coverage_active_scope_pct": 90
+  },
+  "escalations": [
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "Handlebars.js Multiple JavaScript Injection CVEs",
+      "route": "[ESCALATE → TheGuardians]",
+      "trigger": "injection",
+      "package": "handlebars 4.0.0 - 4.7.8",
+      "module": "Source/Backend",
+      "worst_cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "all_cves": [
+        "GHSA-2w6w-674q-4c4q (9.8)",
+        "GHSA-xjpj-3mr7-gcpf (8.3)",
+        "GHSA-3mfm-83xf-c92r (8.1)",
+        "GHSA-xhpv-hc6g-r9c6 (8.1)",
+        "GHSA-9cx6-37pm-9jff (7.5)",
+        "GHSA-2qvq-rjwj-gvw9 (4.7)",
+        "GHSA-7rx3-28cr-v5wh (4.8)",
+        "GHSA-442j-39wm-28r2 (3.7)"
+      ],
+      "exploit_scenario": "If handlebars renders templates derived from user input (workflow definitions, assessment notes), attacker can inject arbitrary JavaScript via AST type confusion. Full backend RCE.",
+      "investigation_required": "Verify if handlebars is direct dependency; audit all template rendering calls for user-controlled input.",
+      "fix": "npm update handlebars@^4.7.9 in Source/Backend",
+      "owner": "backend-coder + TheGuardians",
+      "estimated_effort_hours": 2,
+      "ready_to_fix": true
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "protobufjs Arbitrary Code Execution in Orchestrator",
+      "route": "[ESCALATE → TheGuardians] + [SOLO-SESSION required]",
+      "trigger": "code-execution (injection class)",
+      "package": "protobufjs <7.5.5",
+      "module": "platform/orchestrator",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cwe": "CWE-94",
+      "exploit_scenario": "Maliciously crafted protobuf input triggers arbitrary code execution in orchestrator process. Orchestrator controls entire build pipeline — compromise allows artifact tampering.",
+      "fix": "npm update protobufjs@^7.5.5 in platform/orchestrator",
+      "owner": "solo-session (human) — pipeline agents cannot touch platform/",
+      "estimated_effort_hours": 1,
+      "ready_to_fix": false,
+      "reason_blocked": "platform/ is critical infrastructure per CLAUDE.md, requires solo-session"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "GET /api/search endpoint not registered — runtime 404",
+      "file": "Source/Backend/src/app.ts (missing route)",
+      "related_files": [
+        "Source/Backend/tests/routes/search.test.ts",
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/api/client.ts:101"
+      ],
+      "fr_refs": ["FR-dependency-search", "FR-dependency-picker"],
+      "impact": "DependencyPicker modal broken in production. Every search attempt returns 404. Dependency feature unusable.",
+      "fix": "Create Source/Backend/src/routes/search.ts filtering store.getAllItems() by ?q= on title/description. Register in app.ts. All 5 test cases in search.test.ts must pass.",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 2,
+      "cross_refs": ["QO-002", "QO-012"],
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "pending_dependencies WorkItemStatus missing — dispatch returns 400 instead",
+      "file": "Source/Shared/types/workflow.ts:5",
+      "related_files": ["Source/Backend/src/routes/workflow.ts:231"],
+      "fr_refs": ["FR-dependency-dispatch-gating"],
+      "fix": "Add PendingDependencies='pending_dependencies' to WorkItemStatus. Update VALID_STATUS_TRANSITIONS. Change dispatch to set status instead of returning 400. Update cascade in onItemResolved.",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 3,
+      "cross_refs": ["QO-001"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Prometheus histogram not implemented",
+      "file": "Source/Backend/src/metrics.ts",
+      "fr_refs": ["FR-dependency-metrics"],
+      "fix": "Add dependencyCheckDuration Histogram to metrics.ts. Instrument isReady() and detectCycle() in dependency.ts. Add test assertion in metrics.test.ts.",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 2,
+      "cross_refs": ["QO-008"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Traceability enforcer scope too narrow — PASSED is a false positive",
+      "file": "tools/traceability-enforcer.py",
+      "fix": "Add status banners to dev-workflow-platform.md and tiered-merge-pipeline.md. Expand enforcer config to scan all active spec files.",
+      "owner": "solo-session or TheFixer",
+      "estimated_effort_hours": 2,
+      "cross_refs": ["QO-009", "QO-010"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Dual logger modules — inconsistent import paths",
+      "file": "Source/Backend/src/logger.ts",
+      "related_files": ["Source/Backend/src/utils/logger.ts"],
+      "fix": "Consolidate to utils/logger.ts with object-style interface. Remove compat logger.ts. Update all imports.",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 1.5,
+      "cross_refs": ["QO-006"],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "security",
+      "title": "path-to-regexp ReDoS in platform/orchestrator (CVSS 7.5)",
+      "file": "platform/orchestrator/package.json",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "cwe": "CWE-1333",
+      "fix": "npm update path-to-regexp@^0.1.13 in platform/orchestrator",
+      "owner": "solo-session (human) — platform/ restriction",
+      "estimated_effort_hours": 1,
+      "ready_to_fix": false,
+      "reason_blocked": "platform/ requires solo-session",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "LOG_LEVEL env var not respected — all log levels always emitted",
+      "file": "Source/Backend/src/utils/logger.ts:17",
+      "fix": "Add level guard in emit(): compare LOG_LEVELS.indexOf(level) against minLevel from process.env.LOG_LEVEL.",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 0.5,
+      "cross_refs": ["QO-005"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "No OpenTelemetry tracing — architecture rule + FR-021",
+      "file": "Source/Backend/src/ (absent)",
+      "fr_refs": ["FR-021"],
+      "fix": "Add @opentelemetry/auto-instrumentations-node. Add custom spans around workflow state transitions. Propagate traceparent header in app.ts middleware.",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 4,
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "No route latency Prometheus histogram",
+      "file": "Source/Backend/src/metrics.ts",
+      "fr_refs": ["FR-004"],
+      "fix": "Add http_request_duration_seconds Histogram to metrics.ts. Add middleware in app.ts to record and observe request duration.",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 1.5,
+      "cross_refs": ["QO-003"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dev-workflow-platform.md 69 FRs with 0 source refs — needs status banner",
+      "file": "Specifications/dev-workflow-platform.md",
+      "fix": "Add <!-- Status: ROADMAP — not yet implemented. Active implementation: workflow-engine.md --> banner at top of file.",
+      "owner": "solo-session",
+      "estimated_effort_hours": 0.25,
+      "cross_refs": ["QO-004"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "tiered-merge-pipeline.md 10 FRs with 0 Source/ refs",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "fix": "Add <!-- Status: PLATFORM — implemented in platform/orchestrator, not in Source/ --> banner.",
+      "owner": "solo-session",
+      "estimated_effort_hours": 0.25,
+      "cross_refs": ["QO-004"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-011",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "doc-stale",
+      "title": "api-contracts.md references non-existent FR-070..FR-085",
+      "file": "Source/Shared/api-contracts.md:6",
+      "fix": "Map FR-070..FR-085 references to actual FR-dependency-* IDs, or create spec entries.",
+      "owner": "solo-session",
+      "estimated_effort_hours": 1,
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "security (dev-time)",
+      "title": "Vite path traversal in optimized deps (GHSA-4w7w-66w2-5vf9)",
+      "file": "Source/Frontend/package.json",
+      "dev_time_only": true,
+      "fix": "npm update vitest@^4.1.4 in Source/Frontend (pulls in fixed vite 8.0.9+)",
+      "owner": "frontend-coder (TheFixer)",
+      "estimated_effort_hours": 3,
+      "combined_with": "DEP-005",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "security (dev-time)",
+      "title": "esbuild CORS bypass in dev server (GHSA-67mh-4wv8-2f99)",
+      "file": "Source/Frontend/package.json",
+      "dev_time_only": true,
+      "fix": "npm update vitest@^4.1.4 (same fix as DEP-004)",
+      "owner": "frontend-coder (TheFixer)",
+      "estimated_effort_hours": 0,
+      "combined_with": "DEP-004",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "security",
+      "title": "brace-expansion memory exhaustion (GHSA-f886-m6hf-6m8v, CVSS 6.5)",
+      "file": "Source/Backend/package.json",
+      "fix": "npm update brace-expansion@^1.1.13 in Source/Backend",
+      "owner": "backend-coder (TheFixer)",
+      "estimated_effort_hours": 0.5,
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-012",
+      "severity": "P4",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "DependencyPicker swallows search errors silently",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:56",
+      "fix": "Add console.error('DependencyPicker search failed:', err) in catch block.",
+      "owner": "frontend-coder (TheFixer)",
+      "estimated_effort_hours": 0.25,
+      "status": "NEW"
+    },
+    {
+      "id": "QO-013",
+      "severity": "P4",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Two eslint-disable suppressions without why-comment",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "related_files": ["Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "fix": "Add inline comment before each disable explaining the intentional dep array pattern.",
+      "owner": "frontend-coder (TheFixer)",
+      "estimated_effort_hours": 0.25,
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "id": "XREF-1",
+      "root_cause": "Incomplete dependency feature implementation",
+      "findings": ["QO-001", "QO-002", "QO-012"],
+      "single_fix": "Implement /api/search route + add PendingDependencies to WorkItemStatus + log frontend errors",
+      "findings_resolved": 3
+    },
+    {
+      "id": "XREF-2",
+      "root_cause": "Prometheus metrics infrastructure — no Histograms",
+      "findings": ["QO-003", "QO-008"],
+      "single_fix": "Add 2 Histograms to metrics.ts + route latency middleware in app.ts",
+      "findings_resolved": 2
+    },
+    {
+      "id": "XREF-3",
+      "root_cause": "Logger fragmentation and missing log level control",
+      "findings": ["QO-005", "QO-006"],
+      "single_fix": "Consolidate to utils/logger.ts + add LOG_LEVEL guard in emit()",
+      "findings_resolved": 2
+    },
+    {
+      "id": "XREF-4",
+      "root_cause": "Traceability tooling not expanded with spec surface",
+      "findings": ["QO-004", "QO-009", "QO-010"],
+      "single_fix": "Add status banners to inactive specs + expand enforcer config",
+      "findings_resolved": 3
+    },
+    {
+      "id": "XREF-5",
+      "root_cause": "No automated CVE scanning in CI pipeline",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006"],
+      "single_fix": "Add npm audit --audit-level=critical to CI/CD pipeline",
+      "findings_resolved": 6,
+      "note": "Prevents future recurrence; does not fix existing CVEs"
+    }
+  ],
+  "remediation_backlog": [
+    { "priority": "Block Deployment", "id": "DEP-002", "title": "Trigger TheGuardians + patch handlebars@^4.7.9", "owner": "backend-coder + TheGuardians", "hours": 2 },
+    { "priority": "Block Deployment", "id": "DEP-001", "title": "[SOLO-SESSION] npm update protobufjs@^7.5.5 in platform/orchestrator", "owner": "solo-session", "hours": 1 },
+    { "priority": "This Sprint", "id": "QO-001", "title": "Implement GET /api/search route", "owner": "backend-coder (TheFixer)", "hours": 2 },
+    { "priority": "This Sprint", "id": "QO-002", "title": "Add pending_dependencies to WorkItemStatus + fix dispatch gating", "owner": "backend-coder (TheFixer)", "hours": 3 },
+    { "priority": "This Sprint", "id": "QO-004+QO-009+QO-010", "title": "Add spec status banners + expand traceability enforcer", "owner": "solo-session or TheFixer", "hours": 2 },
+    { "priority": "This Sprint", "id": "QO-005+QO-006", "title": "Consolidate logger + add LOG_LEVEL filtering", "owner": "backend-coder (TheFixer)", "hours": 2 },
+    { "priority": "Next Sprint", "id": "QO-003+QO-008", "title": "Add Prometheus Histograms + route latency middleware", "owner": "backend-coder (TheFixer)", "hours": 3 },
+    { "priority": "Next Sprint", "id": "DEP-004+DEP-005", "title": "Update vitest to ^4.1.4 (fixes Vite + esbuild)", "owner": "frontend-coder (TheFixer)", "hours": 3 },
+    { "priority": "Next Sprint", "id": "QO-007", "title": "Add OpenTelemetry auto-instrumentation + custom spans", "owner": "backend-coder (TheFixer)", "hours": 4 },
+    { "priority": "Next Sprint", "id": "DEP-003", "title": "[SOLO-SESSION] npm update path-to-regexp@^0.1.13 in platform/orchestrator", "owner": "solo-session", "hours": 1 },
+    { "priority": "Backlog", "id": "CI-CVE", "title": "Add npm audit + license-checker to CI/CD pipeline", "owner": "solo-session / DevOps", "hours": 4 },
+    { "priority": "Backlog", "id": "QO-011", "title": "Fix orphaned FR-070..085 refs in api-contracts.md", "owner": "solo-session", "hours": 1 },
+    { "priority": "Backlog", "id": "QO-012+QO-013", "title": "DependencyPicker error logging + eslint-disable comments", "owner": "frontend-coder (TheFixer)", "hours": 0.5 },
+    { "priority": "Backlog", "id": "DEP-006", "title": "npm update brace-expansion@^1.1.13 in Source/Backend", "owner": "backend-coder (TheFixer)", "hours": 0.5 }
+  ],
+  "audit_metadata": {
+    "report_html": "Teams/TheInspector/findings/audit-2026-04-21-D.html",
+    "report_md": "inspector-report.md",
+    "prior_audit": "none (first combined audit)",
+    "quality_oracle_standalone": "Teams/TheInspector/findings/audit-2026-04-21-C.md",
+    "next_audit_recommended": "2026-05-21",
+    "rerun_note": "Re-run with services running to capture performance-profiler + chaos-monkey results"
+  }
+}

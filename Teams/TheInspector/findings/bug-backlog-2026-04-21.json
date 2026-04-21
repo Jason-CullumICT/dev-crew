@@ -1,0 +1,335 @@
+{
+  "audit_date": "2026-04-21",
+  "project": "dev-crew",
+  "overall_grade": "B",
+  "executive_summary": {
+    "total_cves": 9,
+    "critical": 2,
+    "high": 1,
+    "moderate": 6,
+    "escalations": "2 findings require solo-session (platform/ infrastructure)",
+    "risk_assessment": "Grade B - Critical vulnerabilities in non-application code (orchestrator) and application code (handlebars). Require immediate attention but do not block deployment if orchestrator is isolated from user traffic."
+  },
+  "dependency_metrics": {
+    "modules": {
+      "source_backend": {
+        "direct": 4,
+        "transitive": 408,
+        "total": 412,
+        "vulnerabilities": 2,
+        "critical": 1,
+        "high": 0,
+        "moderate": 1
+      },
+      "source_frontend": {
+        "direct": 3,
+        "transitive": 228,
+        "total": 231,
+        "vulnerabilities": 5,
+        "critical": 0,
+        "high": 0,
+        "moderate": 5,
+        "note": "All moderate vulnerabilities are dev-time only (vite, vitest, esbuild)"
+      },
+      "source_e2e": {
+        "direct": 4,
+        "transitive": "unknown",
+        "vulnerabilities": 0,
+        "status": "clean"
+      },
+      "platform_orchestrator": {
+        "direct": 3,
+        "transitive": 153,
+        "total": 156,
+        "vulnerabilities": 2,
+        "critical": 1,
+        "high": 1,
+        "note": "INFRASTRUCTURE - Requires solo-session fixes"
+      }
+    },
+    "supply_chain": {
+      "total_direct_dependencies": 13,
+      "total_transitive_dependencies": 789,
+      "ratio": "61:1 transitive-to-direct",
+      "risk_assessment": "HIGH - Significant attack surface, recommend supply chain monitoring"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "protobufjs Arbitrary Code Execution (Platform Orchestrator)",
+      "package": "protobufjs",
+      "affected_versions": "<7.5.5",
+      "module": "platform/orchestrator",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss_score": "unknown",
+      "cwe": ["CWE-94"],
+      "impact": "Arbitrary code execution in protobufjs. This is in the orchestrator infrastructure that runs the entire build pipeline.",
+      "exploitability": "High - known CVE with public POC likely available",
+      "fix": "npm update protobufjs@^7.5.5",
+      "escalation": "SOLO-SESSION REQUIRED - platform/ infrastructure cannot be modified by pipeline agents",
+      "estimated_effort_hours": 1,
+      "testing_required": true,
+      "ready_to_fix": false,
+      "reason_blocked": "platform/ is critical infrastructure, requires solo session per CLAUDE.md"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "Handlebars.js Multiple JavaScript Injection Vulnerabilities",
+      "package": "handlebars",
+      "affected_versions": "4.0.0 - 4.7.8",
+      "module": "Source/Backend",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q (CVSS 9.8 - CRITICAL)",
+        "GHSA-3mfm-83xf-c92r (CVSS 8.1)",
+        "GHSA-xjpj-3mr7-gcpf (CVSS 8.3)",
+        "GHSA-9cx6-37pm-9jff (CVSS 7.5)",
+        "GHSA-xhpv-hc6g-r9c6 (CVSS 8.1)",
+        "GHSA-2qvq-rjwj-gvw9 (CVSS 4.7)",
+        "GHSA-7rx3-28cr-v5wh (CVSS 4.8)",
+        "GHSA-442j-39wm-28r2 (CVSS 3.7)"
+      ],
+      "impact": "Multiple JavaScript injection vulnerabilities in template engine. Could allow template injection attacks if templates are derived from user input.",
+      "exploitability": "High if templates are user-editable (workflow definitions)",
+      "investigation_required": "Verify if handlebars is directly used or transitive. Check if templates are derived from user input.",
+      "fix": "npm update handlebars@^4.7.9",
+      "owner": "backend-coder",
+      "estimated_effort_hours": 2,
+      "testing_required": true,
+      "ready_to_fix": true,
+      "cross_ref": "red-teamer - Verify template input validation"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "title": "path-to-regexp Regular Expression Denial of Service",
+      "package": "path-to-regexp",
+      "affected_versions": "<0.1.13",
+      "module": "platform/orchestrator",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-1333"],
+      "impact": "ReDoS vulnerability in path matching. Attacker can craft route parameters to trigger catastrophic backtracking, causing DoS.",
+      "exploitability": "High if orchestrator routes are exposed to untrusted input",
+      "fix": "npm update path-to-regexp@^0.1.13",
+      "escalation": "SOLO-SESSION REQUIRED - platform/ infrastructure",
+      "estimated_effort_hours": 1,
+      "testing_required": true,
+      "ready_to_fix": false,
+      "cross_ref": "red-teamer - Recommend rate limiting on API routes"
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "title": "Vite Path Traversal in Optimized Deps",
+      "package": "vite",
+      "affected_versions": "<=6.4.1",
+      "module": "Source/Frontend",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "cwe": ["CWE-22", "CWE-200"],
+      "dev_time_only": true,
+      "production_risk": "Low - unless sourcemaps are served in production",
+      "fix": "npm update vitest@^4.1.4 (pulls in vite 8.0.9+)",
+      "owner": "frontend-coder",
+      "estimated_effort_hours": 3,
+      "testing_required": true,
+      "ready_to_fix": true,
+      "notes": "Major version bump for vitest, may require API updates in tests"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "title": "vitest/esbuild Cascading Dev-Time Vulnerabilities",
+      "package": "vitest, esbuild, @vitest/mocker, vite-node",
+      "affected_versions": "vitest <=3.0.0-beta.4, esbuild <=0.24.2",
+      "module": "Source/Frontend",
+      "cves": [
+        "GHSA-67mh-4wv8-2f99 (esbuild - CORS bypass)",
+        "GHSA-4w7w-66w2-5vf9 (vite - path traversal)"
+      ],
+      "dev_time_only": true,
+      "production_risk": "None - dev server and test runner",
+      "fix": "npm update vitest@^4.1.4",
+      "owner": "frontend-coder",
+      "estimated_effort_hours": 3,
+      "testing_required": true,
+      "ready_to_fix": true,
+      "combined_with": "DEP-004"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P4",
+      "title": "brace-expansion Memory Exhaustion",
+      "package": "brace-expansion",
+      "affected_versions": "<1.1.13",
+      "module": "Source/Backend",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cvss_score": 6.5,
+      "cwe": ["CWE-400"],
+      "impact": "Zero-step sequence causes process hang and memory exhaustion. Only triggered with malformed input.",
+      "exploitability": "Low - requires specific input pattern",
+      "fix": "npm update brace-expansion@^1.1.13",
+      "owner": "backend-coder",
+      "estimated_effort_hours": 0.5,
+      "testing_required": false,
+      "ready_to_fix": true
+    }
+  ],
+  "outdated_packages": [
+    {
+      "module": "Source/Backend",
+      "package": "express",
+      "current": "4.18.2",
+      "wanted": "4.22.1",
+      "latest": "5.2.1",
+      "major_gap": 1,
+      "recommendation": "Update to 4.22.1 for security patches",
+      "effort": "Low"
+    },
+    {
+      "module": "Source/Backend",
+      "package": "pino",
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "major_gap": 2,
+      "recommendation": "Consider upgrade for performance improvements, but major version bump requires evaluation",
+      "effort": "Medium"
+    },
+    {
+      "module": "Source/Frontend",
+      "package": "react",
+      "current": "18.3.1",
+      "wanted": "18.3.1",
+      "latest": "19.2.5",
+      "major_gap": 1,
+      "recommendation": "Plan React 19 migration for future sprint, significant effort",
+      "effort": "High"
+    },
+    {
+      "module": "Source/Frontend",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "wanted": "6.30.3",
+      "latest": "7.14.1",
+      "major_gap": 1,
+      "recommendation": "Coupled with React 19 migration planning",
+      "effort": "High"
+    },
+    {
+      "module": "Source/Frontend",
+      "package": "vitest",
+      "current": "2.0.5",
+      "wanted": "2.0.5",
+      "latest": "4.1.4",
+      "major_gap": 2,
+      "recommendation": "Required to fix dev-time vulnerabilities (DEP-004, DEP-005). High priority.",
+      "effort": "Medium-High",
+      "priority": "HIGH"
+    },
+    {
+      "module": "platform/orchestrator",
+      "package": "express",
+      "current": "4.21.0",
+      "wanted": "4.22.1",
+      "latest": "5.2.1",
+      "major_gap": 1,
+      "recommendation": "Update as part of DEP-003 remediation",
+      "effort": "Low"
+    }
+  ],
+  "license_compliance": {
+    "status": "PASS",
+    "details": "All direct dependencies use permissive licenses (MIT, ISC, Apache 2.0). No GPL/AGPL detected.",
+    "transitive_check": "Not performed - recommend adding license-checker to CI/CD"
+  },
+  "supply_chain_assessment": {
+    "risk_level": "HIGH",
+    "rationale": "799 total dependencies (61:1 transitive-to-direct ratio) across all modules. Single compromise in transitive dependency affects entire build pipeline and application.",
+    "recommendations": [
+      "Add license-checker to CI/CD pipeline",
+      "Monitor npm trends for packages with <100 weekly downloads",
+      "Implement GitHub Dependabot or equivalent for proactive CVE alerting",
+      "Quarterly review of dependency age (flag packages not updated in 6+ months)",
+      "Run npm audit in CI/CD, fail on critical/high in direct dependencies"
+    ]
+  },
+  "remediation_backlog": [
+    {
+      "id": "DEP-001",
+      "ticket_title": "[SOLO-SESSION] Fix protobufjs RCE in orchestrator (platform/orchestrator)",
+      "description": "Update protobufjs to >=7.5.5 to fix arbitrary code execution vulnerability in orchestrator infrastructure.",
+      "priority": "P1 - Critical",
+      "owner": "solo-session (not pipeline agent)",
+      "labels": ["security", "critical", "infrastructure", "orchestrator"],
+      "estimated_hours": 1,
+      "blocking": true,
+      "affects": ["entire build pipeline"]
+    },
+    {
+      "id": "DEP-002",
+      "ticket_title": "Fix handlebars JavaScript injection vulnerabilities (Source/Backend)",
+      "description": "Update handlebars to >=4.7.9 to fix multiple JavaScript injection CVEs. Investigate if handlebars is processing user-defined templates (workflow definitions).",
+      "priority": "P1 - Critical",
+      "owner": "backend-coder",
+      "labels": ["security", "critical", "backend", "vulnerability"],
+      "estimated_hours": 2,
+      "test_required": true,
+      "cross_refs": ["red-teamer"]
+    },
+    {
+      "id": "DEP-003",
+      "ticket_title": "[SOLO-SESSION] Fix path-to-regexp ReDoS in orchestrator (platform/orchestrator)",
+      "description": "Update path-to-regexp to >=0.1.13 to fix Regular Expression Denial of Service vulnerability in API routing.",
+      "priority": "P2 - High",
+      "owner": "solo-session (not pipeline agent)",
+      "labels": ["security", "high", "infrastructure", "dos"],
+      "estimated_hours": 1,
+      "blocking": false,
+      "cross_refs": ["red-teamer - recommend rate limiting"]
+    },
+    {
+      "id": "DEP-004-005",
+      "ticket_title": "Update frontend dev dependencies (vitest 4.1.4, vite 8.0.9, esbuild)",
+      "description": "Update vitest to 4.1.4 which pulls in fixed vite and esbuild. Fixes path traversal and CORS bypass vulnerabilities in dev server/test runner. Requires testing for API changes.",
+      "priority": "P3 - Medium",
+      "owner": "frontend-coder",
+      "labels": ["security", "frontend", "devtools", "testing"],
+      "estimated_hours": 3,
+      "test_required": true,
+      "notes": "Major version bump, API changes likely"
+    },
+    {
+      "id": "DEP-OUTDATED-BACKEND",
+      "ticket_title": "Update Backend dependencies (express, pino, brace-expansion)",
+      "description": "Patch updates for security and stability: express 4.22.1+, pino 8.21.0+, brace-expansion 1.1.13+. Plan pino 8→10 migration for future.",
+      "priority": "P3 - Medium",
+      "owner": "backend-coder",
+      "labels": ["maintenance", "backend", "dependencies"],
+      "estimated_hours": 2
+    },
+    {
+      "id": "CI-CD-AUDIT",
+      "ticket_title": "[INFRASTRUCTURE] Add npm audit and license-checker to CI/CD",
+      "description": "Integrate npm audit and license-checker into build pipeline. Fail on critical/high CVEs in direct dependencies.",
+      "priority": "P3 - Medium",
+      "owner": "solo-session or devops",
+      "labels": ["infrastructure", "ci-cd", "automation"],
+      "estimated_hours": 4,
+      "enables": ["automated CVE detection", "license compliance checks"]
+    }
+  ],
+  "audit_metadata": {
+    "audit_tool": "npm audit, npm outdated",
+    "audit_scope": "Source/Backend, Source/Frontend, Source/E2E, platform/orchestrator",
+    "date_run": "2026-04-21",
+    "next_recommended_audit": "2026-05-21",
+    "audit_frequency_days": 30
+  }
+}

@@ -1,0 +1,107 @@
+# TheInspector — Audit Report
+**Date:** 2026-04-22  
+**Audit ID:** run-20260422-045823  
+**Branch:** audit/inspector-2026-04-22-3f460d  
+**Overall Grade:** C
+
+---
+
+## Grade Rationale
+
+| Criterion | A threshold | B threshold | C threshold | Actual | Pass? |
+|-----------|------------|------------|------------|--------|-------|
+| Max P1 findings | 0 | 0 | 2 | **1** | ✅ C |
+| Max P2 findings | 3 | 8 | 15 | **6** | ✅ C |
+| Min spec coverage (active) | 80% | 60% | 40% | **100%** | ✅ C |
+
+**Grade: C** — 1 P1 finding (Handlebars injection CVSS 9.8) fails the B threshold (`max_p1: 0`). C threshold accommodates up to 2 P1s. Active spec coverage of 100% keeps us from D territory.
+
+---
+
+## Specialists
+
+| Specialist | Mode | Grade | P1 | P2 | P3 | P4 |
+|------------|------|-------|----|----|----|----|
+| quality-oracle | Static | B | 0 | 4 | 5 | 2 |
+| dependency-auditor | Static | B+ | 1 | 2 | 3 | 1 |
+| performance-profiler | **NOT RUN** | — | — | — | — | — |
+| chaos-monkey | **NOT RUN** | — | — | — | — | — |
+
+> Services were unavailable (backend: localhost:3001 down, frontend: localhost:5173 down). Performance and chaos specialists require live services.
+
+---
+
+## P1 Findings (1) — [ESCALATED → TheGuardians]
+
+### DA-001 · Handlebars.js JavaScript Injection (CVSS 9.8)
+- **Package:** `handlebars@4.7.8` via `ts-jest@29.1.2` in `Source/Backend`
+- **CVE:** GHSA-2w6w-674q-4c4q (+ 7 related injection vectors)
+- **Risk:** Arbitrary code execution if templates processed from untrusted sources during CI/CD
+- **Fix:** `cd Source/Backend && npm install --save-dev ts-jest@30.0.0`
+- **Escalation:** ✅ Posted — TheGuardians should verify no untrusted templates in test code and that CI secrets are not accessible from the test runner
+
+---
+
+## P2 Findings (6)
+
+| ID | Title | File | Fix |
+|----|-------|------|-----|
+| QO-001 | Traceability enforcer never scans Specifications/ (79 FRs invisible) | tools/traceability-enforcer.py | Add --specs mode |
+| QO-002 | Route handlers import store directly — bypass service layer | routes/{intake,workItems,workflow}.ts | Extract workItemService.ts |
+| QO-003 | Missing dependency_check_duration Histogram metric | src/metrics.ts | Add prom-client Histogram |
+| QO-004 | OpenTelemetry not implemented (mandated by CLAUDE.md) | Source/Backend/src/ | Add OTel SDK + bootstrap |
+| DA-002 | brace-expansion DoS CVSS 6.5 (via ts-jest → glob) | Backend/package-lock.json | Upgrade ts-jest (cascade) |
+| DA-003 | Vite 5.4.0 path traversal GHSA-4w7w-66w2-5vf9 | Frontend/package-lock.json | Upgrade vite ≥6.4.2 |
+
+---
+
+## Cross-Reference Map (Efficiency wins)
+
+| Root Cause | Affected Findings | Single Fix |
+|-----------|-------------------|-----------|
+| ts-jest dependency chain | DA-001 (P1) + DA-002 (P2) | `npm install --save-dev ts-jest@30.0.0` |
+| Vite version lag | DA-003 (P2) + DA-004 (P3) + DA-005 (P3) | `npm install --save-dev vite@^6.4.2` |
+| Missing WorkItemStatus value | QO-005 (P3) + QO-006 (P3) | Add `pending_dependencies` to enum |
+| Architecture layers missing | QO-002 (P2) + QO-004 (P2) | 2 TheFixer tasks; shared root cause |
+
+---
+
+## P3 / P4 Summary
+
+**P3 (8):** QO-005 (spec drift — pending_dependencies), QO-006 (dead BlockedBadge amber path), QO-007 (E2E dir has zero tests), QO-008 (dual logger modules), QO-009 (eslint-disable no justification), DA-004 (esbuild CORS), DA-005 (vitest cascade), DA-006 (uuid/express/pino outdated)
+
+**P4 (3):** QO-010 (non-standard Verifies in DebugPortalPage), QO-011 (low traceability density in 3 test files), DA-007 (React 19 available, not urgent)
+
+---
+
+## Action Queue
+
+| Priority | Action | Route |
+|----------|--------|-------|
+| 🔴 BLOCK | Upgrade ts-jest → resolves DA-001 P1 + DA-002 P2 | TheFixer |
+| 🔴 BLOCK | TheGuardians verify Handlebars risk scope | TheGuardians |
+| 🟠 SPRINT | Upgrade vite ≥6.4.2 → resolves DA-003 + DA-004 + DA-005 | TheFixer |
+| 🟠 SPRINT | Extract workItemService.ts (QO-002) | TheFixer |
+| 🟠 SPRINT | Add OTel bootstrap (QO-004) | TheFixer |
+| 🟠 SPRINT | Add dependency_check_duration Histogram (QO-003) | TheFixer |
+| 🟡 NEXT | Extend traceability-enforcer --specs (QO-001) | TheFixer |
+| 🟡 NEXT | Add pending_dependencies status to fix QO-005 + QO-006 | TheFixer |
+| 🟡 NEXT | Write baseline E2E tests (QO-007) | TheFixer |
+| 📋 BACKLOG | Consolidate logger modules (QO-008) | TheFixer |
+| 📋 BACKLOG | eslint-disable justifications (QO-009) | TheFixer |
+| 📋 BACKLOG | Fix DebugPortalPage Verifies comment (QO-010) | TheFixer |
+
+---
+
+## Report Files
+
+| File | Description |
+|------|-------------|
+| `Teams/TheInspector/findings/audit-2026-04-22-C.html` | Full HTML report (16 sections) |
+| `Teams/TheInspector/findings/bug-backlog-2026-04-22.json` | Machine-readable bug backlog with all 18 findings |
+| `Teams/TheInspector/findings/audit-2026-04-22-B.md` | quality-oracle detailed findings |
+| `Teams/TheInspector/findings/dependency-audit-2026-04-22.md` | dependency-auditor detailed findings |
+
+---
+
+_Generated by TheInspector team-leader · run-20260422-045823 · 2026-04-22_

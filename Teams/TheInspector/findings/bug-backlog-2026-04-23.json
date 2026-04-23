@@ -1,0 +1,345 @@
+{
+  "audit_id": "run-20260423-050250",
+  "audit_date": "2026-04-23",
+  "branch": "audit/inspector-2026-04-23-22e525",
+  "grade": "D",
+  "grade_rationale": "3 P1 findings exceed C threshold of max_p1: 2",
+  "prior_grade": null,
+  "trend": "first_audit",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend and frontend services offline during audit window",
+
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 8,
+    "p3_total": 9,
+    "p4_total": 0,
+    "total_findings": 20,
+    "escalated_to_guardians": 3,
+    "fixed_since_prior": 0,
+    "spec_coverage_pct": 96,
+    "unspecced_fr_count": 40
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "protobufjs Arbitrary Code Execution",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "affected_version": "<7.5.5",
+      "project": "platform/orchestrator",
+      "fix": "npm update protobufjs in platform/orchestrator",
+      "route": "TheGuardians",
+      "status": "NEW",
+      "priority": "BLOCK_DEPLOYMENT"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "Handlebars JavaScript Injection (multiple vectors)",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "package": "handlebars",
+      "affected_version": ">=4.0.0 <=4.7.8",
+      "project": "Source/Backend",
+      "fix": "Update handlebars to 4.7.9+ or add overrides in package.json",
+      "route": "TheGuardians",
+      "status": "NEW",
+      "priority": "BLOCK_DEPLOYMENT"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "path-to-regexp Regular Expression Denial of Service",
+      "cvss": 7.5,
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "package": "path-to-regexp",
+      "affected_version": "<0.1.13",
+      "project": "platform/orchestrator",
+      "fix": "npm update path-to-regexp in platform/orchestrator (may require Express update)",
+      "route": "TheGuardians",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    }
+  ],
+
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "40 FR IDs implemented with no canonical Specification",
+      "files": [
+        "portal/Frontend/src/**",
+        "portal/Backend/src/**"
+      ],
+      "detail": "FR-070..FR-095 (26), FR-DUP-01..FR-DUP-13 (13), FR-0001 (1) exist only in Plans files. Specifications/dev-workflow-platform.md stops at FR-069.",
+      "recommendation": "Back-port FR-070..FR-095 and FR-DUP-01..FR-DUP-13 into Specifications/dev-workflow-platform.md. Normalize FR-0001 to FR-001.",
+      "route": "requirements-reviewer",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-api-types: blocked_by field missing from shared types",
+      "files": [
+        "portal/Shared/api.ts:32-59",
+        "portal/Frontend/src/components/shared/DependencyPicker.tsx:291,293"
+      ],
+      "detail": "UpdateBugInput and UpdateFeatureRequestInput missing blocked_by?: string[]. DependencyPicker uses 'as any' casts as workaround.",
+      "recommendation": "Add blocked_by?: string[] to both interfaces in portal/Shared/api.ts. Remove the two 'as any' casts in DependencyPicker.tsx.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed: seed.ts does not exist",
+      "files": [
+        "portal/Backend/src/database/"
+      ],
+      "detail": "No seed.ts in portal/Backend/src/database/. Dependency seed data never loaded on startup.",
+      "recommendation": "Create portal/Backend/src/database/seed.ts with idempotent seeding. Wire into index.ts startup after schema migration.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "untested",
+      "title": "FR-dependency-frontend-tests: DependencySection and BlockedBadge test files missing",
+      "files": [
+        "portal/Frontend/tests/DependencySection.test.tsx",
+        "portal/Frontend/tests/BlockedBadge.test.tsx"
+      ],
+      "detail": "Both test files are missing. DependencySection (blocked-by/blocks lists, chip navigation, edit button) and BlockedBadge (red/amber/none states) have zero coverage.",
+      "recommendation": "Create both test files with // Verifies: traceability comments for FR-dependency-section and FR-dependency-blocked-badge.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Direct SQL in teamDispatches route handler + zero traceability comments",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts:37-44",
+        "portal/Backend/src/routes/teamDispatches.ts:71-75"
+      ],
+      "detail": "Raw db.prepare(...).all() SQL executed directly in route handler. Zero Verifies comments. Violates 'no direct DB calls from route handlers' rule.",
+      "recommendation": "Extract SQL into teamDispatchService.ts. Add // Verifies: comments.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "Traceability enforcer gate covers only 13 of 100+ requirements",
+      "files": [
+        "tools/traceability-enforcer.py"
+      ],
+      "detail": "Enforcer auto-selects most recently modified requirements.md (FR-WF-001..013 only). Portal's 85+ FRs never validated. Gate passes silently while 90%+ of requirements go unchecked.",
+      "recommendation": "Add --all-plans flag or create consolidated requirements-all.md. Add second enforcer invocation targeting Plans/dev-workflow-platform/requirements.md.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "UUID missing buffer bounds check",
+      "cvss": "moderate",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "package": "uuid",
+      "affected_version": "<14.0.0",
+      "files": [
+        "Source/Backend/package.json",
+        "platform/orchestrator/package-lock.json"
+      ],
+      "recommendation": "npm install uuid@^14.0.0 in Source/Backend. Update dockerode in orchestrator to 4.0.2+.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "THIS_SPRINT"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "outdated",
+      "title": "Express.js major version gap (4.x current, 5.x available)",
+      "package": "express",
+      "current_version": "4.18.x / 4.21.x",
+      "latest_version": "5.2.1",
+      "files": [
+        "Source/Backend/package.json",
+        "platform/orchestrator/package.json"
+      ],
+      "recommendation": "Plan Express 5.x migration sprint. Review breaking changes before upgrade.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "NEXT_SPRINT"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 missing Verifies comment in Dockerfile.worker",
+      "files": [
+        "platform/Dockerfile.worker:32-40"
+      ],
+      "recommendation": "Add # Verifies: FR-TMP-008 comment to relevant lines in Dockerfile.worker.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "NEXT_SPRINT"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "untested",
+      "title": "TeamsPage has no test file",
+      "files": [
+        "portal/Frontend/src/pages/TeamsPage.tsx"
+      ],
+      "recommendation": "Create portal/Frontend/tests/TeamsPage.test.tsx covering team dispatch list render, filtering, loading/error states.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "NEXT_SPRINT"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "3 eslint-disable suppressions without justification comments",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "portal/Frontend/src/hooks/useApi.ts:35"
+      ],
+      "recommendation": "Add inline comment justifying each eslint-disable-next-line react-hooks/exhaustive-deps suppression.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "BACKLOG"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "Brace expansion DoS (CVSS 6.5) — transitive in Source/Backend",
+      "cvss": 6.5,
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "package": "brace-expansion",
+      "affected_version": "<1.1.13",
+      "files": ["Source/Backend/package-lock.json"],
+      "recommendation": "Update parent packages pulling in brace-expansion to use 1.1.13+.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "BACKLOG"
+    },
+    {
+      "id": "DEP-006-010",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "Frontend test tooling — vite/vitest/esbuild ecosystem moderate CVEs (5 packages)",
+      "packages": ["vite", "vitest", "esbuild", "vite-node", "@vitest/mocker"],
+      "files": ["Source/Frontend/package-lock.json"],
+      "recommendation": "Run npm update in Source/Frontend to refresh vite/vitest chain.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "NEXT_SPRINT"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "React 18.3 → 19.x (1 major version behind)",
+      "package": "react",
+      "current_version": "18.3.1",
+      "latest_version": "19.2.5",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Non-critical; test thoroughly — React 19 may have behavioral changes.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "BACKLOG"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "React Router 6.x → 7.x (1 major version behind)",
+      "package": "react-router-dom",
+      "current_version": "6.26.0-6.30.3",
+      "latest_version": "7.14.2",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Check 7.x release notes; navigation API changes expected.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "BACKLOG"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Pino 8.x → 10.x (2 major versions behind)",
+      "package": "pino",
+      "current_version": "8.17.0",
+      "latest_version": "10.3.1",
+      "files": ["Source/Backend/package.json"],
+      "recommendation": "Review 9.x and 10.x breaking changes; test in staging before upgrade.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "NEXT_SPRINT"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Multer 1.x LTS → 2.x",
+      "package": "multer",
+      "current_version": "1.4.5-lts.1",
+      "latest_version": "2.1.1",
+      "files": ["platform/orchestrator/package.json"],
+      "recommendation": "Plan upgrade; file upload handling may differ in 2.x.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "priority": "BACKLOG"
+    }
+  ],
+
+  "cross_references": [
+    {
+      "root_cause": "No automated dependency scanning in CI/CD",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014", "DEP-015"],
+      "fix": "Add npm audit --audit-level=high as CI pre-merge gate; configure Dependabot for all 4 projects"
+    },
+    {
+      "root_cause": "Incomplete spec governance — traceability tooling doesn't cover full requirement set",
+      "findings": ["QO-001", "QO-006"],
+      "fix": "Back-port FRs to Specifications/; extend tools/traceability-enforcer.py to scan all requirements.md files"
+    },
+    {
+      "root_cause": "FR-dependency-* feature shipped partially",
+      "findings": ["QO-002", "QO-003", "QO-004"],
+      "fix": "Single TheFixer ticket: add blocked_by to types + create seed.ts + create 2 test files"
+    }
+  ],
+
+  "report_paths": {
+    "html": "Teams/TheInspector/findings/audit-2026-04-23-D.html",
+    "json": "Teams/TheInspector/findings/bug-backlog-2026-04-23.json"
+  }
+}

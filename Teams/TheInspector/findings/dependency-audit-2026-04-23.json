@@ -1,0 +1,248 @@
+{
+  "audit_metadata": {
+    "date": "2026-04-23",
+    "tool": "npm audit",
+    "projects_scanned": 4,
+    "total_dependencies": 799
+  },
+  "summary": {
+    "critical_cves": 2,
+    "high_cves": 1,
+    "moderate_cves": 6,
+    "low_cves": 0,
+    "total_cves": 9,
+    "outdated_major_versions": 6,
+    "supply_chain_risks": 0,
+    "license_violations": 0,
+    "fixable_vulnerabilities": 9
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Arbitrary Code Execution in protobufjs",
+      "severity": "P1",
+      "cvss_score": "9.8+",
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "category": "cve",
+      "package": "protobufjs",
+      "affected_versions": "<7.5.5",
+      "project": "platform/orchestrator",
+      "is_direct_dependency": false,
+      "cwe": "CWE-94",
+      "url": "https://github.com/advisories/GHSA-xq3m-2v4x-88gg",
+      "recommendation": "npm update protobufjs in platform/orchestrator",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars JavaScript Injection (Critical)",
+      "severity": "P1",
+      "cvss_score": "9.8",
+      "cve_id": "GHSA-2w6w-674q-4c4q",
+      "category": "cve",
+      "package": "handlebars",
+      "affected_versions": ">=4.0.0 <=4.7.8",
+      "project": "Source/Backend",
+      "is_direct_dependency": false,
+      "cwe": ["CWE-94", "CWE-843"],
+      "url": "https://github.com/advisories/GHSA-2w6w-674q-4c4q",
+      "related_cves": [
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "recommendation": "Update handlebars to 4.7.9+ or major version upgrade",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Regular Expression Denial of Service (ReDoS) in path-to-regexp",
+      "severity": "P2",
+      "cvss_score": "7.5",
+      "cve_id": "GHSA-37ch-88jc-xwx2",
+      "category": "cve",
+      "package": "path-to-regexp",
+      "affected_versions": "<0.1.13",
+      "project": "platform/orchestrator",
+      "is_direct_dependency": false,
+      "cwe": "CWE-1333",
+      "url": "https://github.com/advisories/GHSA-37ch-88jc-xwx2",
+      "recommendation": "Update path-to-regexp to 0.1.13+",
+      "cross_ref": "red-teamer"
+    },
+    {
+      "id": "DEP-004",
+      "title": "UUID Missing Buffer Bounds Check",
+      "severity": "P2",
+      "cvss_score": "Medium",
+      "cve_id": "GHSA-w5hq-g745-h8pq",
+      "category": "cve",
+      "package": "uuid",
+      "affected_versions": "<14.0.0",
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "is_direct_dependency": {"Source/Backend": true, "platform/orchestrator": false},
+      "cwe": ["CWE-787", "CWE-1285"],
+      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+      "recommendation": "Upgrade uuid to 14.0.0+ (major version change)",
+      "note": "Requires compatibility testing"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Brace Expansion Denial of Service",
+      "severity": "P3",
+      "cvss_score": "6.5",
+      "cve_id": "GHSA-f886-m6hf-6m8v",
+      "category": "cve",
+      "package": "brace-expansion",
+      "affected_versions": "<1.1.13",
+      "project": "Source/Backend",
+      "is_direct_dependency": false,
+      "cwe": "CWE-400",
+      "url": "https://github.com/advisories/GHSA-f886-m6hf-6m8v",
+      "recommendation": "Update via transitive dependency updates"
+    },
+    {
+      "id": "DEP-006-010",
+      "title": "Frontend Test Dependencies (Vite/Vitest)",
+      "severity": "P3",
+      "category": "cve",
+      "package": ["vite", "vitest", "esbuild", "vite-node", "@vitest/mocker"],
+      "project": "Source/Frontend",
+      "is_direct_dependency": true,
+      "recommendation": "Run npm update in Source/Frontend",
+      "note": "Development-time dependencies"
+    },
+    {
+      "id": "DEP-011",
+      "title": "Express.js Outdated (Major Version Gap)",
+      "severity": "P2",
+      "category": "outdated",
+      "package": "express",
+      "current_version": {"Source/Backend": "4.18.2", "platform/orchestrator": "4.21.0"},
+      "latest_version": "5.2.1",
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "is_direct_dependency": true,
+      "major_versions_behind": 1,
+      "recommendation": "Plan upgrade to Express 5.x with testing",
+      "note": "Breaking changes expected"
+    },
+    {
+      "id": "DEP-012",
+      "title": "React/React-DOM Outdated",
+      "severity": "P3",
+      "category": "outdated",
+      "package": ["react", "react-dom"],
+      "current_version": "18.3.1",
+      "latest_version": "19.2.5",
+      "project": "Source/Frontend",
+      "is_direct_dependency": true,
+      "major_versions_behind": 1,
+      "recommendation": "Test and upgrade to React 19.x"
+    },
+    {
+      "id": "DEP-013",
+      "title": "React Router Outdated",
+      "severity": "P3",
+      "category": "outdated",
+      "package": "react-router-dom",
+      "current_version": "6.26.0-6.30.3",
+      "latest_version": "7.14.2",
+      "project": "Source/Frontend",
+      "is_direct_dependency": true,
+      "major_versions_behind": 1,
+      "recommendation": "Review breaking changes in 7.x before upgrade"
+    },
+    {
+      "id": "DEP-014",
+      "title": "Pino Logger Outdated (Major Version Gap)",
+      "severity": "P3",
+      "category": "outdated",
+      "package": "pino",
+      "current_version": "8.17.0",
+      "latest_version": "10.3.1",
+      "project": "Source/Backend",
+      "is_direct_dependency": true,
+      "major_versions_behind": 2,
+      "recommendation": "Update for security and performance patches"
+    },
+    {
+      "id": "DEP-015",
+      "title": "Multer Outdated",
+      "severity": "P3",
+      "category": "outdated",
+      "package": "multer",
+      "current_version": "1.4.5-lts.1",
+      "latest_version": "2.1.1",
+      "project": "platform/orchestrator",
+      "is_direct_dependency": true,
+      "major_versions_behind": 1,
+      "recommendation": "Upgrade to 2.x for security improvements"
+    }
+  ],
+  "projects": {
+    "Source/Backend": {
+      "direct_dependencies": 13,
+      "transitive_dependencies": 398,
+      "total_dependencies": 411,
+      "critical_cves": 1,
+      "high_cves": 0,
+      "moderate_cves": 2,
+      "low_cves": 0
+    },
+    "Source/Frontend": {
+      "direct_dependencies": 13,
+      "transitive_dependencies": 217,
+      "total_dependencies": 230,
+      "critical_cves": 0,
+      "high_cves": 0,
+      "moderate_cves": 5,
+      "low_cves": 0
+    },
+    "Source/E2E": {
+      "direct_dependencies": 4,
+      "transitive_dependencies": 0,
+      "total_dependencies": 4,
+      "critical_cves": 0,
+      "high_cves": 0,
+      "moderate_cves": 0,
+      "low_cves": 0
+    },
+    "platform/orchestrator": {
+      "direct_dependencies": 3,
+      "transitive_dependencies": 152,
+      "total_dependencies": 155,
+      "critical_cves": 1,
+      "high_cves": 1,
+      "moderate_cves": 2,
+      "low_cves": 0
+    }
+  },
+  "supply_chain_assessment": {
+    "post_install_scripts": "None detected - good",
+    "suspicious_low_download_packages": "None detected",
+    "license_violations": "None - all GPL-free",
+    "abandoned_dependencies": "None in critical path"
+  },
+  "priority_actions": {
+    "immediate": [
+      "DEP-001: Update protobufjs in platform/orchestrator",
+      "DEP-002: Update handlebars in Source/Backend",
+      "DEP-003: Update path-to-regexp in platform/orchestrator"
+    ],
+    "short_term": [
+      "DEP-004: Upgrade uuid to 14.0.0+ with testing",
+      "DEP-011: Plan Express 5.x upgrade",
+      "DEP-014: Update pino for security patches"
+    ],
+    "medium_term": [
+      "DEP-006-010: Update vite/vitest ecosystem",
+      "DEP-012: React 18→19 upgrade",
+      "DEP-013: React Router 6→7 upgrade",
+      "DEP-015: Multer 1→2 upgrade"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": ["DEP-001", "DEP-002", "DEP-003"]
+  }
+}

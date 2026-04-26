@@ -1,0 +1,285 @@
+{
+  "audit_metadata": {
+    "date": "2026-04-26",
+    "agent": "dependency_auditor",
+    "scope": "dev-crew repository",
+    "projects_scanned": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E",
+      "platform/orchestrator",
+      "portal/Backend",
+      "portal/Frontend"
+    ]
+  },
+  "summary": {
+    "total_findings": 17,
+    "critical_cves": 2,
+    "high_cves": 3,
+    "moderate_cves": 12,
+    "low_cves": 0,
+    "outdated_packages": 6,
+    "license_issues": 4
+  },
+  "vulnerabilities": [
+    {
+      "id": "DEP-001",
+      "name": "Handlebars RCE via AST Type Confusion",
+      "severity": "P1",
+      "package": "handlebars",
+      "current_version": "4.7.8",
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "locations": ["Source/Backend"],
+      "fix": "npm update handlebars",
+      "effort": "low",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "name": "protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "package": "protobufjs",
+      "affected_range": "<7.5.5",
+      "cvss_score": 9.8,
+      "cve_ids": ["GHSA-xq3m-2v4x-88gg"],
+      "cwe": "CWE-94",
+      "locations": ["platform/orchestrator", "portal/Backend"],
+      "fix": "npm update protobufjs",
+      "effort": "medium",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "name": "path-to-regexp ReDoS Vulnerability",
+      "severity": "P2",
+      "package": "path-to-regexp",
+      "affected_range": "<0.1.13",
+      "cvss_score": 7.5,
+      "cve_ids": ["GHSA-37ch-88jc-xwx2"],
+      "cwe": "CWE-1333",
+      "locations": ["platform/orchestrator", "portal/Backend"],
+      "fix": "npm update path-to-regexp",
+      "effort": "medium",
+      "cross_ref": "red-teamer"
+    },
+    {
+      "id": "DEP-004",
+      "name": "picomatch ReDoS & Method Injection",
+      "severity": "P2",
+      "package": "picomatch",
+      "affected_ranges": ["<=2.3.1", "4.0.0 - 4.0.3"],
+      "cvss_score": 7.5,
+      "cve_ids": ["GHSA-c2c7-rcm5-vvqj", "GHSA-3v7f-55p6-f55p"],
+      "cwe": ["CWE-1333", "CWE-1321"],
+      "locations": ["portal/Frontend"],
+      "fix": "npm update picomatch",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-005",
+      "name": "uuid Buffer Bounds Check Missing",
+      "severity": "P3",
+      "package": "uuid",
+      "affected_range": "<14.0.0",
+      "cve_ids": ["GHSA-w5hq-g745-h8pq"],
+      "cwe": ["CWE-787", "CWE-1285"],
+      "locations": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "fix": "npm install uuid@14.0.0",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-006",
+      "name": "Vite Path Traversal in Optimized Deps",
+      "severity": "P3",
+      "package": "vite",
+      "affected_range": "<=6.4.1",
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "cwe": ["CWE-22", "CWE-200"],
+      "locations": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "fix": "npm install vite@latest",
+      "effort": "low",
+      "note": "Development environment only"
+    },
+    {
+      "id": "DEP-007",
+      "name": "PostCSS XSS via Unescaped </style>",
+      "severity": "P3",
+      "package": "postcss",
+      "affected_range": "<8.5.10",
+      "cvss_score": 6.1,
+      "cve_ids": ["GHSA-qx2v-qp2m-jg93"],
+      "cwe": "CWE-79",
+      "locations": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "fix": "npm install postcss@latest",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-008",
+      "name": "esbuild CORS Misconfiguration",
+      "severity": "P3",
+      "package": "esbuild",
+      "affected_range": "<=0.24.2",
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "cwe": "CWE-346",
+      "locations": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "fix": "Update vite to latest",
+      "effort": "low",
+      "note": "Development environment only"
+    },
+    {
+      "id": "DEP-009",
+      "name": "brace-expansion DoS",
+      "severity": "P3",
+      "package": "brace-expansion",
+      "affected_range": "<1.1.13",
+      "cve_ids": ["GHSA-f886-m6hf-6m8v"],
+      "cwe": "CWE-400",
+      "locations": ["Source/Backend"],
+      "fix": "Automatic with dependency updates",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-010",
+      "name": "vitest Vulnerability Chain",
+      "severity": "P3",
+      "package": "vitest",
+      "affected_range": "<4.1.5",
+      "locations": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "fix": "npm install vitest@latest",
+      "effort": "low",
+      "note": "Inherits from vite/esbuild vulnerabilities"
+    },
+    {
+      "id": "DEP-011",
+      "name": "React Major Version Gap",
+      "severity": "P3",
+      "category": "outdated",
+      "packages": {
+        "react": {"current": "18.3.1", "latest": "19.2.5"},
+        "react-dom": {"current": "18.3.1", "latest": "19.2.5"},
+        "react-router-dom": {"current": "6.26.0", "latest": "7.14.2"}
+      },
+      "locations": ["Source/Frontend", "portal/Frontend"],
+      "effort": "high",
+      "note": "Breaking changes; requires testing"
+    },
+    {
+      "id": "DEP-012",
+      "name": "Express Major Version Gap",
+      "severity": "P3",
+      "category": "outdated",
+      "packages": {
+        "express": {"current": "4.18.2", "latest": "5.2.1"},
+        "multer": {"current": "1.4.5-lts.1", "latest": "2.1.1"}
+      },
+      "locations": ["Source/Backend", "portal/Backend", "platform/orchestrator"],
+      "effort": "high",
+      "note": "Express 4 approaching EOL"
+    },
+    {
+      "id": "DEP-013",
+      "name": "Pino Logging Major Version Gap",
+      "severity": "P3",
+      "category": "outdated",
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "locations": ["Source/Backend"],
+      "effort": "low"
+    },
+    {
+      "id": "DEP-014",
+      "name": "OpenTelemetry SDK Significant Version Gaps",
+      "severity": "P3",
+      "category": "outdated",
+      "packages": {
+        "@opentelemetry/exporter-trace-otlp-http": {
+          "current": "0.47.0",
+          "latest": "0.215.0",
+          "gap": "0.168 versions"
+        },
+        "@opentelemetry/sdk-node": {
+          "current": "0.47.0",
+          "latest": "0.215.0",
+          "gap": "0.168 versions"
+        },
+        "@opentelemetry/auto-instrumentations-node": {
+          "current": "0.40.0",
+          "latest": "0.73.0",
+          "gap": "0.33 versions"
+        }
+      },
+      "locations": ["portal/Backend"],
+      "effort": "high",
+      "severity_upgrade": "P2",
+      "note": "CRITICAL INFRASTRUCTURE - 6+ months behind. Largest version gap in codebase."
+    },
+    {
+      "id": "DEP-015",
+      "name": "Missing License Declarations",
+      "severity": "P4",
+      "category": "license",
+      "locations": [
+        "Source/Backend",
+        "Source/Frontend",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "note": "Only E2E has license declared (ISC)"
+    },
+    {
+      "id": "DEP-016",
+      "name": "Large Transitive Dependency Trees",
+      "severity": "P4",
+      "category": "supply_chain",
+      "details": {
+        "Source/Backend": {"direct": 102, "transitive": 400},
+        "Source/Frontend": {"direct": 9, "transitive": 200},
+        "portal/Backend": {"direct": 397, "transitive": 600},
+        "portal/Frontend": {"direct": 9, "transitive": 400}
+      },
+      "concern": "portal/Backend with 397 direct deps is unusually high"
+    },
+    {
+      "id": "DEP-017",
+      "name": "Post-Install Scripts",
+      "severity": "P4",
+      "category": "supply_chain",
+      "result": "POSITIVE - 0 found",
+      "description": "No suspicious post-install scripts detected"
+    }
+  ],
+  "remediation_timeline": {
+    "immediate": {
+      "timeframe": "Week 1",
+      "items": ["DEP-001", "DEP-002", "DEP-003"]
+    },
+    "short_term": {
+      "timeframe": "Week 2-4",
+      "items": ["DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010"]
+    },
+    "medium_term": {
+      "timeframe": "Month 2",
+      "items": ["DEP-011", "DEP-012", "DEP-013", "DEP-014"]
+    }
+  },
+  "metrics": {
+    "total_direct_dependencies": 44,
+    "total_transitive_dependencies": 1800,
+    "effort_estimate_hours": 40,
+    "projects_with_critical": 2,
+    "projects_with_high": 3,
+    "projects_clean": 1
+  }
+}

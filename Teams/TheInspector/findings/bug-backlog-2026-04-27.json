@@ -1,0 +1,430 @@
+{
+  "audit_id": "run-20260427-053807",
+  "audit_date": "2026-04-27",
+  "branch": "audit/inspector-2026-04-27-ace513",
+  "grade": "D",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 11,
+    "p3_total": 10,
+    "p4_total": 2,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_absent": ["performance-profiler", "chaos-monkey"],
+    "escalations_count": 3,
+    "fixed_count": 0,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "category": "CVE · RCE",
+      "title": "Handlebars JavaScript Injection — Remote Code Execution",
+      "package": "handlebars@4.0.0–4.7.8",
+      "project": "Source/Backend (transitive)",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "impact": "Arbitrary JavaScript execution via template manipulation. If handlebars processes user-controlled templates, attacker achieves RCE with no privileges.",
+      "fix": "Determine if handlebars is in production code (grep -r 'handlebars' Source/Backend). If test-only: move to devDependencies, upgrade to >=4.7.9. If production: upgrade immediately. If unused: remove.",
+      "route_to": "TheGuardians",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "cvss": 9.8,
+      "category": "CVE · RCE",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs@<7.5.5",
+      "project": "platform/orchestrator (transitive via dockerode)",
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "impact": "Malicious .proto file or serialized protobuf message triggers arbitrary JavaScript execution during parse. Orchestrator compromise = full pipeline compromise.",
+      "fix": "cd platform/orchestrator && npm audit fix && npm install protobufjs@^7.5.5 --save. Audit all protobuf data sources.",
+      "route_to": "TheGuardians",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "CVE · ReDoS · DoS",
+      "title": "path-to-regexp ReDoS — all HTTP routes vulnerable to Denial of Service",
+      "package": "path-to-regexp@<0.1.13 (transitive via express)",
+      "project": "Source/Backend + platform/orchestrator",
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "impact": "Crafted route parameters with many segments trigger catastrophic regex backtracking, hanging the server. Zero-precondition DoS.",
+      "fix": "cd Source/Backend && npm install express@^5 --save; cd platform/orchestrator && npm install express@^5 --save. Review Express v5 migration guide.",
+      "route_to": "TheGuardians",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift · untested",
+      "title": "GET /api/search not wired — DependencyPicker 404s in production",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts",
+        "Source/Frontend/src/components/DependencyPicker.tsx"
+      ],
+      "spec_refs": ["FR-dependency-search", "FR-dependency-picker"],
+      "impact": "DependencyPicker typeahead broken in production. 5 tests actively failing.",
+      "fix": "Add GET /api/search route to app.ts. Implementation: store.findAll() filtered on title/description. Pass all 5 search.test.ts tests.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift · architecture-violation",
+      "title": "Specifications/ describes a different system than Source/ — 101 requirements untracked",
+      "files": [
+        "Specifications/dev-workflow-platform.md",
+        "Specifications/tiered-merge-pipeline.md",
+        "tools/traceability-enforcer.py"
+      ],
+      "spec_refs": ["FR-001 through FR-069", "FR-TMP-001 through FR-TMP-010"],
+      "impact": "Full spec coverage is 23% (not 97%). Traceability enforcer gives false-green. Agents reading Specifications/ get incorrect system picture.",
+      "fix": "Strategic decision required: (a) add Status: PLANNED headers to unimplemented specs; (b) move to docs/future/; (c) extend enforcer to check Specifications/. Document in CLAUDE.md.",
+      "route_to": "requirements-reviewer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE · Buffer overflow",
+      "title": "UUID buffer bounds check missing (GHSA-w5hq-g745-h8pq)",
+      "package": "uuid@^9.0.0",
+      "project": "Source/Backend (direct)",
+      "fix": "cd Source/Backend && npm install uuid@^14.0.0 --save",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE · Path traversal",
+      "title": "Vite path traversal in .map handling (GHSA-4w7w-66w2-5vf9)",
+      "package": "vite@<=6.4.1",
+      "project": "Source/Frontend (direct)",
+      "fix": "cd Source/Frontend && npm install vite@latest --save-dev",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "Outdated · Major lag",
+      "title": "Express 2 major versions behind (v4.18 → v5.2) — missing security patches",
+      "package": "express@^4.18.2",
+      "project": "Source/Backend + platform/orchestrator",
+      "fix": "cd Source/Backend && npm install express@^5.2.1 --save; cd platform/orchestrator && npm install express@^5.2.1 --save. Review v5 migration guide.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "DEP-003 (path-to-regexp ReDoS resolved by this upgrade)",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "Outdated · Major lag",
+      "title": "Pino 2 major versions behind (v8 → v10) — missing performance and security improvements",
+      "package": "pino@^8.17.0",
+      "project": "Source/Backend",
+      "fix": "cd Source/Backend && npm install pino@^10 --save",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "Outdated · CVE chain",
+      "title": "UUID 5 major versions behind (v9 → v14) — CVE present in v9",
+      "package": "uuid@^9.0.0",
+      "project": "Source/Backend (direct)",
+      "fix": "cd Source/Backend && npm install uuid@^14.0.0 --save (resolves DEP-004 simultaneously)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "DEP-004 (same package, same fix)",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-070–FR-085 have no canonical specification document",
+      "files": ["Source/Shared/api-contracts.md"],
+      "fix": "Either delete FR-070–FR-085 references from api-contracts.md and align with FR-dependency-* IDs, or create a proper plan/spec doc defining FR-070–FR-085.",
+      "route_to": "requirements-reviewer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift · missing metric",
+      "title": "dependencyCheckDuration histogram absent from metrics.ts — FR-dependency-metrics 75% complete",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "spec_refs": ["FR-dependency-metrics"],
+      "fix": "Add dependencyCheckDuration histogram to metrics.ts. Instrument isReady() and computeHasUnresolvedBlockers(). Add assertion in metrics.test.ts.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift · architecture-violation",
+      "title": "pending_dependencies status missing from WorkItemStatus enum — dispatch gating returns 400",
+      "files": [
+        "Source/Shared/types/workflow.ts",
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/services/dependency.ts",
+        "Source/Frontend/src/components/StatusBadge.tsx"
+      ],
+      "spec_refs": ["FR-dependency-dispatch-gating"],
+      "fix": "Add PendingDependencies = 'pending-dependencies' to WorkItemStatus. Update VALID_STATUS_TRANSITIONS, dispatch route, onItemResolved, StatusBadge.tsx. Coordinate api-contract agent for shared type change.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "4 duplicate frontend test files across tests/ and tests/pages/ — false-green CI risk",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "fix": "Pick canonical location (tests/pages/), merge unique test cases from flat tests/ into it, delete flat duplicates. Run test suite to confirm zero regressions.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P2",
+      "category": "untested",
+      "title": "Source/E2E/tests/ directory does not exist — Playwright has nothing to run",
+      "files": ["Source/E2E/playwright.config.ts"],
+      "spec_refs": ["FR-TMP-002", "FR-TMP-003"],
+      "fix": "Create Source/E2E/tests/ with smoke tests covering: create work item, route, dispatch happy paths. Playwright testDir: './tests' currently resolves to void.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE · dev-only",
+      "title": "PostCSS XSS via unescaped </style> tags (dev server only)",
+      "package": "postcss@<8.5.10 via vite",
+      "fix": "cd Source/Frontend && npm install vite@latest --save-dev (pulls in patched postcss)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "CVE · dev-only",
+      "title": "esbuild CORS/CSRF in dev server allows any website to read responses",
+      "package": "esbuild@<=0.24.2 via vite",
+      "fix": "cd Source/Frontend && npm install vite@latest --save-dev",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "CVE · Moderate",
+      "title": "brace-expansion process hang via zero-step sequences (CVSS 6.5)",
+      "package": "brace-expansion@<1.1.13 via jest",
+      "fix": "cd Source/Backend && npm install brace-expansion@1.1.13 --save",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "Outdated",
+      "title": "React 1 major version behind (v18.3 → v19.2)",
+      "package": "react@^18.3.1, react-dom@^18.3.1",
+      "project": "Source/Frontend",
+      "fix": "cd Source/Frontend && npm install react@^19 react-dom@^19 --save. Review React 19 migration guide — breaking changes to useEffect and removed APIs.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "Outdated",
+      "title": "React Router 1 major version behind (v6.26 → v7.14)",
+      "package": "react-router-dom@^6.26.0",
+      "project": "Source/Frontend",
+      "fix": "cd Source/Frontend && npm install react-router-dom@^7 --save. Significant breaking changes — review migration guide.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "category": "Outdated",
+      "title": "Dockerode major version available (v4 → v5) — requires Node 18+",
+      "package": "dockerode@^4.0.4",
+      "project": "platform/orchestrator",
+      "fix": "cd platform/orchestrator && npm install dockerode@^5 --save (verify Node 18+ first)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "Logger always emits JSON — no dev-mode pretty-print (violates FR-003)",
+      "files": ["Source/Backend/src/utils/logger.ts"],
+      "spec_refs": ["FR-003", "FR-WF-013"],
+      "fix": "Add NODE_ENV !== 'production' check; use formatted output (JSON.stringify with indentation or chalk) in dev mode. Update logger tests to cover both modes.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Dual logger abstraction — two modules with different call conventions",
+      "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "fix": "Pick one call convention (prefer object-style {msg, ...ctx}). Update all callers. Delete the compatibility shim.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed not implemented — no seed data script",
+      "files": ["Source/Backend/src/ (seed.ts missing)"],
+      "spec_refs": ["FR-dependency-seed"],
+      "fix": "Create Source/Backend/src/seed.ts. Call addDependency() with specified pairs on startup (SEED_DATA=true env var). Guard with existence check for idempotency.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-011",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "2 eslint-disable-next-line directives without explanation comments",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "fix": "Add // reason: comment after each suppression explaining the intentional omission.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-012",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "DebugPortalPage.tsx has non-standard traceability comment — not a valid FR-XXX reference",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx:1"],
+      "fix": "Change comment to: // Infrastructure: debug portal — not spec-tracked",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Express v5 upgrade",
+      "affected_findings": ["DEP-003", "DEP-009"],
+      "single_fix": "npm install express@^5.2.1 in Source/Backend and platform/orchestrator",
+      "fix_impact": "Resolves 2 findings"
+    },
+    {
+      "root_cause": "Vite upgrade (Frontend)",
+      "affected_findings": ["DEP-005", "DEP-006", "DEP-007"],
+      "single_fix": "npm install vite@latest in Source/Frontend",
+      "fix_impact": "Resolves 3 findings (postcss + esbuild are transitive deps)"
+    },
+    {
+      "root_cause": "Spec drift — Specifications/ not maintained alongside implementation",
+      "affected_findings": ["QO-002", "QO-003"],
+      "single_fix": "Add Status headers to unimplemented specs; extend traceability enforcer to cover Specifications/",
+      "fix_impact": "Resolves structural drift; prevents false-green CI on 101 requirements"
+    },
+    {
+      "root_cause": "WorkItemStatus enum gap",
+      "affected_findings": ["QO-005"],
+      "single_fix": "Add PendingDependencies to WorkItemStatus; update dispatch route, transitions, StatusBadge, onItemResolved",
+      "fix_impact": "Resolves 1 finding across 4 files; requires coordinated shared-type change"
+    },
+    {
+      "root_cause": "UUID version lag + CVE",
+      "affected_findings": ["DEP-004", "DEP-011"],
+      "single_fix": "npm install uuid@^14.0.0 in Source/Backend",
+      "fix_impact": "Resolves 2 findings (CVE + version lag in same package)"
+    }
+  ],
+  "grading": {
+    "grade": "D",
+    "rationale": "4 P1 findings exceed the C threshold (max_p1: 2). Two are CRITICAL CVEs (CVSS 9.8) in transitive dependencies. Two are fundamental spec-drift violations (missing route, specs/source mismatch).",
+    "thresholds_used": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": {"description": "Anything worse than C"}
+    },
+    "actual": {
+      "p1_count": 4,
+      "p2_count": 11,
+      "spec_coverage_active_pct": 97,
+      "spec_coverage_full_pct": 23
+    }
+  },
+  "next_audit": {
+    "recommended_date": "2026-05-27",
+    "prerequisites": [
+      "Services must be live for dynamic testing (performance-profiler, chaos-monkey)",
+      "DEP-001/DEP-002 escalations reviewed by TheGuardians",
+      "QO-001 search endpoint implemented",
+      "npm audit added to CI/CD pipeline"
+    ]
+  }
+}

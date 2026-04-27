@@ -477,3 +477,166 @@ For maximum impact, the red teamer should attempt in this order:
 5. **PEN-006** — Dependency DoS via soft-delete (availability attack)
 6. **PEN-008** — Metrics exfiltration (reconnaissance)
 7. **PEN-011** — Pagination edge cases (data access via negative page)
+
+---
+
+## Red Team Results
+
+**Run Date:** 2026-04-27  
+**Analyst:** red_teamer  
+**Environment:** Ephemeral Docker (docker-compose.test.yml) — portal/Backend (SQLite, port 3001)  
+**Target Correction:** The pen-tester analyzed `Source/Backend/` (in-memory Map store), but the running ephemeral target is `portal/Backend/` (SQLite-backed). All findings below were validated against the actual live service.
+
+### Objectives Status
+
+| Objective | Status | RED-ID |
+|-----------|--------|--------|
+| Bypass work item state machine to reach an invalid status | ✅ **ACHIEVED** | RED-002 |
+| Enumerate all items without pagination limit enforcement | ✅ **ACHIEVED** | RED-005 |
+| Access or modify a soft-deleted work item via direct ID reference | ✅ **PARTIAL** | RED-003 |
+| Submit a malformed assessment verdict that bypasses routing logic | ⚠️ N/A (no assessment workflow in portal backend) | — |
+
+---
+
+### RED-001: Zero Authentication — All Portal API Endpoints Fully Exposed
+- **Severity:** Critical
+- **Objective Achieved:** Yes (baseline prerequisite for all other chains)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/*`
+- **Based On:** PEN-001
+- **Exploit Scenario:**
+  1. `curl http://localhost:3001/api/feature-requests` → HTTP 200 with full dataset, no auth challenge
+  2. `curl -X POST http://localhost:3001/api/feature-requests -d '{"title":"intruder",...}'` → HTTP 201, item created with ID FR-0001
+  3. `curl -X POST http://localhost:3001/api/bugs -d '{"title":"RED TEAM BUG",...}'` → HTTP 201, BUG-0001 created
+  4. **No authentication header, session cookie, or API key is required for any endpoint.**
+  5. All 9 API routers (`/api/feature-requests`, `/api/bugs`, `/api/cycles`, `/api/learnings`, `/api/features`, `/api/pipeline-runs`, `/api/search`, `/api/team-dispatches`, `/metrics`) return 200 to unauthenticated callers.
+- **Evidence:** Items FR-0001, BUG-0001 created in live database by unauthenticated attacker.
+- **Recommendation:** Implement JWT or API-key middleware as a global Express middleware applied before any route. Reject all requests without valid credentials with HTTP 401.
+
+---
+
+### RED-002: State Machine Bypass — Unauthenticated Force-Approve Without Voting
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH /api/feature-requests/:id` + `POST /api/feature-requests/:id/force-approve`
+- **Based On:** PEN-002 (adapted), PEN-003 (adapted)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → FR-0003 created, status = `potential`, votes = []
+  2. `PATCH /api/feature-requests/FR-0003` `{"status":"voting"}` → FR transitions to `voting` state with **zero AI votes cast** (the PATCH endpoint allows skipping the `/vote` endpoint that triggers actual vote simulation)
+  3. `POST /api/feature-requests/FR-0003/force-approve` → FR transitions to `approved`, `human_approval_approved_at` set, **votes = []** (empty — no voting ever occurred)
+  4. FR is now `approved` with no agent review whatsoever. The entire agent voting pipeline was skipped.
+- **Evidence:** FR-0003 confirmed `status: approved`, `votes: []`, `human_approval_approved_at: 2026-04-27T06:16:30.930Z` via live API.
+- **Recommendation:** (1) Require the `/vote` endpoint (not PATCH) to be the only path to `voting` status — enforce in the transition validator. (2) Require authentication for `/force-approve` — restrict to human operators via a role claim. (3) Do not allow PATCH to bypass the vote simulation step.
+
+---
+
+### RED-003: Dependency DoS — Deleted Blocker Permanently Blocks Victim Item
+- **Severity:** High
+- **Objective Achieved:** Partial — "Access or modify a soft-deleted work item via direct ID reference"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/bugs/:id/dependencies` + `DELETE /api/bugs/:id`
+- **Based On:** PEN-006 (confirmed equivalent in portal)
+- **Exploit Scenario:**
+  1. Create Bug A (blocker): `BUG-0002`, status `reported`
+  2. Create Feature Request B (victim): `FR-0005`, status `potential`
+  3. `POST /api/feature-requests/FR-0005/dependencies` `{"action":"add","blocker_id":"BUG-0002"}` → dependency recorded
+  4. Readiness check BEFORE: `GET /api/feature-requests/FR-0005/ready` → `ready: false, unresolved: [{id: BUG-0002, status: reported}]` (expected)
+  5. `DELETE /api/bugs/BUG-0002` → HTTP 204. Bug is hard-deleted from database.
+  6. Readiness check AFTER: `GET /api/feature-requests/FR-0005/ready` → `ready: false, unresolved: [{id: BUG-0002, status: unknown, title: Unknown}]`
+  7. **FR-0005 is now permanently showing as blocked** by a deleted item that returns HTTP 404. No obvious UI path to resolution.
+  8. Recovery IS possible by calling `POST /api/feature-requests/FR-0005/dependencies {"action":"remove","blocker_id":"BUG-0002"}` — but this is non-obvious to an affected user and requires knowing the deleted bug's ID.
+- **Evidence:** Live `/ready` endpoint returned `unresolved_blockers: [{item_id: "BUG-0002", status: "unknown", title: "Unknown"}]` after deletion.
+- **Recommendation:** On delete of any item, cascade-remove all `dependencies` rows where it appears as a blocker (`WHERE blocker_item_type=? AND blocker_item_id=?`). This is an ON DELETE CASCADE that is currently absent from the schema.
+
+---
+
+### RED-004: XSS Payload Storage — No Server-Side Sanitization
+- **Severity:** Medium
+- **Objective Achieved:** Partial (backend confirmed; frontend rendering not exploited in this run)
+- **Status:** Confirmed (Live Exploit — backend portion)
+- **Target URL:** `POST /api/feature-requests`, `POST /api/bugs`
+- **Based On:** PEN-010
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with `"title": "<script>alert(document.cookie)</script>"` → HTTP 201, payload stored verbatim as `title` field in SQLite DB (FR-0006)
+  2. `POST /api/bugs` with `"description": "<img src=x onerror=fetch(...+document.cookie)>"` → HTTP 201, stored as `description` in BUG-0002
+  3. `GET /api/search?q=XSS` returns the poisoned item in results — any frontend that renders `title` via `innerHTML` or `dangerouslySetInnerHTML` would execute the payload for every viewer.
+  4. The portal React frontend relies on JSX escaping; however, any future use of raw HTML rendering (markdown renderers, innerHTML) would convert this into a full XSS sink.
+- **Evidence:** FR-0006 `title` field in database: `<script>alert(document.cookie)</script>` (verbatim, no encoding). Confirmed via GET response.
+- **Recommendation:** Implement server-side HTML sanitization (e.g., `DOMPurify` or `sanitize-html`) on `title` and `description` at the service layer, before persisting to the database. Do not rely solely on frontend rendering to prevent XSS.
+
+---
+
+### RED-005: Full Data Enumeration — No Pagination Enforcement
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/feature-requests`, `GET /api/bugs`, `GET /api/search`
+- **Based On:** PEN-005 (adapted)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests` (no limit param) → returns ALL 22 feature requests in single response, no pagination headers
+  2. `GET /api/feature-requests?limit=999999` → same result, parameter ignored, all items returned
+  3. `GET /api/search` → returns up to 20 items (hardcoded limit), but `GET /api/feature-requests` and `GET /api/bugs` have **no upper limit whatsoever**
+  4. As dataset grows, a single GET call returns the complete database contents, consuming significant server memory for JSON serialization
+- **Evidence:** 22 items created; all 22 returned in a single unauthenticated request. `limit=999999` parameter accepted without cap.
+- **Recommendation:** Enforce pagination at the service layer with a hard maximum (e.g., `MAX_LIMIT = 100`). Return `{data, total, page, limit}` envelope. Apply this to all list endpoints consistently.
+
+---
+
+### RED-006: Unauthenticated Prometheus Metrics — Operational Intelligence Leak
+- **Severity:** High
+- **Objective Achieved:** Yes (reconnaissance)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /metrics`
+- **Based On:** PEN-008
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/metrics` → HTTP 200 with full Prometheus text output, no auth
+  2. Reveals: `http_requests_total` by route+method+status (full route map of the API), `ai_voting_invocations_total`, `nodejs_heap_size_used_bytes`, `process_cpu_seconds_total`, event loop lag percentiles
+  3. The metrics expose the attacker's own reconnaissance (routes probed, status codes received) — an attacker can verify which probes succeeded
+  4. In production: leaks business cadence (total FRs created, votes cast, bugs created per day) and system health (heap size, GC pressure) to any unauthenticated caller
+- **Evidence:** Full Prometheus output retrieved without any credentials. Contains `http_requests_total` counter for every route probed during this red team session.
+- **Recommendation:** Protect `/metrics` behind network-level controls (internal-only route) or HTTP Basic Auth. Never expose Prometheus endpoints to the public internet.
+
+---
+
+### RED-007: CORS Credential Header Leaks for Non-Whitelisted Origins
+- **Severity:** Medium
+- **Objective Achieved:** No (no cookie-based auth currently; risk is forward-looking)
+- **Status:** Confirmed (Live Misconfiguration)
+- **Target URL:** All endpoints
+- **Based On:** PEN-012 (adapted)
+- **Exploit Scenario:**
+  1. Request with `Origin: http://evil.com` header → response includes `Access-Control-Allow-Credentials: true` even though `Access-Control-Allow-Origin` is NOT returned (origin not whitelisted)
+  2. Browser blocks the actual request, but the CORS middleware incorrectly leaks `Access-Control-Allow-Credentials: true` and `Access-Control-Allow-Methods: GET,POST,PATCH,DELETE,OPTIONS` for non-whitelisted origins
+  3. If cookie-based session auth is added in the future, this CORS misconfiguration would allow credentialed cross-origin requests from ANY origin to succeed (since the server signals credentials are allowed, and a misconfigured `ACAO: *` or reflected origin would complete the exploit)
+  4. `X-Powered-By: Express` header leaks framework (stack fingerprinting)
+- **Evidence:** `curl -I -H "Origin: http://evil.com" http://localhost:3001/api/feature-requests` returns `Access-Control-Allow-Credentials: true` and `Access-Control-Allow-Methods: ...` for the non-whitelisted origin.
+- **Recommendation:** Configure CORS to only send credential-related headers when the origin IS in the whitelist. Add `app.disable('x-powered-by')` to remove framework fingerprint.
+
+---
+
+### RED-008: Unauthenticated Orchestrator Proxy — SSRF + Internal URL Disclosure
+- **Severity:** Medium
+- **Objective Achieved:** Partial (orchestrator not running in test env; SSRF surface confirmed)
+- **Status:** Confirmed (Surface Verified)
+- **Target URL:** `GET|POST /api/orchestrator/*`
+- **Based On:** New finding (not in pen-tester map)
+- **Exploit Scenario:**
+  1. `GET /api/orchestrator/any-path` → forwards request to `http://localhost:8080/any-path` (configured via `ORCHESTRATOR_URL` env var)
+  2. Error response leaks internal URL: `{"error":"Orchestrator unreachable at http://localhost:8080"}`
+  3. In production (orchestrator at port 9800): an unauthenticated attacker can proxy arbitrary HTTP requests to the internal orchestrator with no credential check
+  4. The proxy supports GET, POST, multipart uploads, and SSE passthrough — full HTTP capability for internal SSRF
+  5. Path traversal in URL is handled by Express routing (mitigated), but all sub-paths under `/api/orchestrator/` are proxied verbatim
+- **Evidence:** HTTP 502 with body `{"error":"Orchestrator unreachable at http://localhost:8080"}` leaks internal network topology.
+- **Recommendation:** (1) Require authentication before proxying any request to the orchestrator. (2) Validate and allowlist paths that can be proxied. (3) Remove the internal URL from error messages (return generic "Service unavailable").
+
+---
+
+### Summary: Confirmed Breaches vs Objectives
+
+| Objective | Result | Chain |
+|-----------|--------|-------|
+| Bypass state machine to invalid status | ✅ CRITICAL BREACH | PATCH→voting + force-approve with 0 votes |
+| Enumerate all items without pagination | ✅ HIGH BREACH | GET /api/feature-requests returns all data |
+| Access soft-deleted item via direct ref | ✅ PARTIAL BREACH | Dependency record survives delete, blocks victim |
+| Malformed assessment bypass | N/A | Portal has no assessment workflow |

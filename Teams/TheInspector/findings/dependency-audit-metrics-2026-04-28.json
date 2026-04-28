@@ -1,0 +1,328 @@
+{
+  "audit_metadata": {
+    "date": "2026-04-28",
+    "specialist": "dependency_auditor",
+    "projects_audited": 6,
+    "duration_minutes": 15,
+    "audit_status": "completed"
+  },
+  "summary": {
+    "total_cves": 17,
+    "cves_by_severity": {
+      "critical": 2,
+      "high": 3,
+      "moderate": 12,
+      "low": 0
+    },
+    "outdated_major_versions": 5,
+    "license_compliance_pass": true,
+    "abandoned_dependencies": 0,
+    "overall_grade": "D"
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection (AST Type Confusion)",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss_score": 9.8,
+      "package": "handlebars",
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "affected_projects": [
+        "Source/Backend",
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "is_direct_dependency": false,
+      "severity": "critical",
+      "impact": "Remote code execution via template injection",
+      "remediation": "npm update handlebars@>=4.7.9"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs Arbitrary Code Execution",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss_score": 9.8,
+      "package": "protobufjs",
+      "affected_range": "<7.5.5",
+      "affected_projects": [
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "is_direct_dependency": false,
+      "severity": "critical",
+      "impact": "Arbitrary code execution via .proto file parsing",
+      "remediation": "npm update protobufjs@>=7.5.5"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "path-to-regexp ReDoS (Regular Expression Denial of Service)",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss_score": 7.5,
+      "package": "path-to-regexp",
+      "affected_range": "<0.1.13",
+      "affected_projects": [
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "is_direct_dependency": false,
+      "severity": "high",
+      "impact": "Denial of service via crafted URL parameters",
+      "remediation": "npm update path-to-regexp@>=0.1.13"
+    },
+    {
+      "id": "DEP-004",
+      "title": "picomatch ReDoS via Extglob Quantifiers",
+      "cve": "GHSA-c2c7-rcm5-vvqj",
+      "cvss_score": 7.5,
+      "package": "picomatch",
+      "affected_range": "<=2.3.1 or 4.0.0-4.0.3",
+      "affected_projects": ["portal/Frontend"],
+      "is_direct_dependency": false,
+      "severity": "high",
+      "impact": "Build system hang via ReDoS in glob patterns",
+      "remediation": "npm update picomatch@>=2.3.2 @4.0.4",
+      "note": "Build-time vulnerability, affects dev environment"
+    }
+  ],
+  "projects_summary": {
+    "Source/Backend": {
+      "direct_dependencies": 4,
+      "transitive_dependencies_estimated": 102,
+      "cves_critical": 1,
+      "cves_high": 0,
+      "cves_moderate": 3,
+      "outdated_major": 3,
+      "lock_file_size_lines": 5353,
+      "status": "vulnerable"
+    },
+    "Source/Frontend": {
+      "direct_dependencies": 3,
+      "transitive_dependencies_estimated": 200,
+      "cves_critical": 0,
+      "cves_high": 0,
+      "cves_moderate": 4,
+      "outdated_major": 3,
+      "status": "vulnerable"
+    },
+    "Source/E2E": {
+      "direct_dependencies": 4,
+      "transitive_dependencies_estimated": 40,
+      "cves_critical": 0,
+      "cves_high": 0,
+      "cves_moderate": 0,
+      "outdated_major": 0,
+      "status": "clean"
+    },
+    "platform/orchestrator": {
+      "direct_dependencies": 3,
+      "transitive_dependencies_estimated": 80,
+      "cves_critical": 1,
+      "cves_high": 1,
+      "cves_moderate": 2,
+      "outdated_major": 0,
+      "status": "critical"
+    },
+    "portal/Backend": {
+      "direct_dependencies": 10,
+      "transitive_dependencies_estimated": 300,
+      "cves_critical": 1,
+      "cves_high": 1,
+      "cves_moderate": 4,
+      "outdated_major": 0,
+      "status": "critical"
+    },
+    "portal/Frontend": {
+      "direct_dependencies": 5,
+      "transitive_dependencies_estimated": 400,
+      "cves_critical": 0,
+      "cves_high": 1,
+      "cves_moderate": 3,
+      "outdated_major": 0,
+      "status": "vulnerable"
+    }
+  },
+  "outdated_packages": [
+    {
+      "project": "Source/Backend",
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "major_versions_behind": 1,
+      "priority": "medium"
+    },
+    {
+      "project": "Source/Backend",
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2,
+      "priority": "medium"
+    },
+    {
+      "project": "Source/Backend",
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.0",
+      "major_versions_behind": 5,
+      "priority": "high"
+    },
+    {
+      "project": "Source/Frontend",
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.5",
+      "major_versions_behind": 1,
+      "priority": "medium"
+    },
+    {
+      "project": "Source/Frontend",
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.5",
+      "major_versions_behind": 1,
+      "priority": "medium"
+    },
+    {
+      "project": "Source/Frontend",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.14.2",
+      "major_versions_behind": 1,
+      "priority": "medium"
+    }
+  ],
+  "license_compliance": {
+    "status": "pass",
+    "total_direct_dependencies_checked": 28,
+    "gpl_found": 0,
+    "agpl_found": 0,
+    "unknown_licenses": 0,
+    "licenses_approved": [
+      "MIT",
+      "Apache-2.0"
+    ]
+  },
+  "supply_chain_risk": {
+    "largest_dependency_trees": [
+      {
+        "project": "portal/Frontend",
+        "transitive_count": 400,
+        "risk_level": "medium",
+        "note": "Typical for modern React SPA with build tools"
+      },
+      {
+        "project": "portal/Backend",
+        "transitive_count": 300,
+        "risk_level": "medium",
+        "note": "High due to OpenTelemetry + Google Cloud SDKs"
+      },
+      {
+        "project": "Source/Frontend",
+        "transitive_count": 200,
+        "risk_level": "low",
+        "note": "Standard Vite + React stack"
+      }
+    ],
+    "duplicate_versions_detected": [],
+    "native_dependencies": [
+      {
+        "package": "better-sqlite3",
+        "projects": ["portal/Backend"],
+        "note": "Requires build toolchain, MIT license"
+      }
+    ]
+  },
+  "remediation_plan": {
+    "phase_1_critical": {
+      "priority": "immediate",
+      "estimated_effort_hours": 2,
+      "risk_level": "low",
+      "items": [
+        "Update handlebars@>=4.7.9 (Source/Backend)",
+        "Update protobufjs@>=7.5.5 (platform/orchestrator, portal/Backend)",
+        "Update path-to-regexp@>=0.1.13 (platform/orchestrator, portal/Backend)"
+      ]
+    },
+    "phase_2_high": {
+      "priority": "this_sprint",
+      "estimated_effort_hours": 3,
+      "risk_level": "low_to_moderate",
+      "items": [
+        "Update picomatch@>=2.3.2 (portal/Frontend)",
+        "Update vite@>=5.2.0 (Source/Frontend, portal/Frontend)",
+        "Update esbuild/postcss chain"
+      ]
+    },
+    "phase_3_medium": {
+      "priority": "next_sprint",
+      "estimated_effort_hours": 5,
+      "risk_level": "moderate",
+      "items": [
+        "Upgrade uuid@14 (all projects - 5 major versions)",
+        "Upgrade dockerode@5 (platform/orchestrator)",
+        "Upgrade React@19 (Source/Frontend - test thoroughly)"
+      ]
+    },
+    "phase_4_future": {
+      "priority": "planning",
+      "estimated_effort_hours": 8,
+      "risk_level": "moderate_to_high",
+      "items": [
+        "Express@5 upgrade (code review required)",
+        "Pino@10 upgrade (logging format review)",
+        "React-Router@7 upgrade (routing API changes)"
+      ]
+    }
+  },
+  "cross_references": [
+    {
+      "specialist": "red-teamer",
+      "finding": "Handlebars injection (DEP-001)",
+      "action": "Assess if user-controlled templates flow through email/PDF pipelines"
+    },
+    {
+      "specialist": "red-teamer",
+      "finding": "path-to-regexp ReDoS (DEP-003)",
+      "action": "Test /api/work-items/:id* routes for ReDoS exploitation"
+    },
+    {
+      "specialist": "performance-profiler",
+      "finding": "uuid@14 upgrade (9.0 → 14.0)",
+      "action": "Check performance impact on work item creation"
+    },
+    {
+      "specialist": "TheGuardians",
+      "finding": "All critical CVEs",
+      "action": "High-priority security review of orchestrator and portal infrastructure"
+    }
+  ],
+  "audit_tools_available": {
+    "npm_audit": {
+      "installed": true,
+      "functional": true,
+      "provides_cvss": true,
+      "provides_fix_suggestions": true
+    },
+    "npm_outdated": {
+      "installed": true,
+      "functional": true,
+      "returns_wanted_vs_latest": true
+    },
+    "license_checker": {
+      "installed": false,
+      "status": "not_available",
+      "fallback": "manual_package_json_inspection"
+    },
+    "govulncheck": "no_go_projects_found",
+    "pip_audit": "no_python_projects_in_source"
+  },
+  "next_steps": [
+    "1. Approve Phase 1 & 2 remediation plan",
+    "2. Assign to backend-coder & frontend-coder via TheFixer team",
+    "3. Red-teamer reviews exploitability of critical CVEs",
+    "4. Re-audit after remediation to verify CVEs closed",
+    "5. Plan Phase 3 & 4 major version upgrades as separate sprint items"
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "audit_id": "run-20260429-053959",
+  "date": "2026-04-29",
+  "branch": "audit/inspector-2026-04-29-2d795d",
+  "grade": "D",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 10,
+    "p3_total": 25,
+    "p4_total": 2,
+    "escalations": 2,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "reason_skipped": "Services offline (localhost:3001 and localhost:5173 unreachable)"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Remote Code Injection",
+      "severity": "P1",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "package": "handlebars",
+      "affected_projects": ["Source/Backend"],
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r"],
+      "exploit_scenario": "JavaScript injection via AST type confusion. Exploitable if any endpoint renders user-controlled data through Handlebars templates.",
+      "fix": "cd Source/Backend && npm audit fix  (upgrades handlebars to >=4.7.9)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "package": "protobufjs",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "exploit_scenario": "RCE when parsing untrusted .proto files or protobuf messages. platform/orchestrator manages Docker — potential container escape.",
+      "fix": "Upgrade protobufjs to >=7.5.5 or dockerode to >=5.0.0",
+      "status": "NEW"
+    }
+  ],
+  "p1": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search not wired into app.ts",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "file": "Source/Backend/src/app.ts",
+      "description": "searchRouter is defined and tested but never mounted. DependencyPicker typeahead (searchItems()) returns 404 in production — entire dependency-linking UI feature is non-functional.",
+      "fix": "Add: app.use('/api/search', searchRouter) in Source/Backend/src/app.ts",
+      "status": "NEW"
+    }
+  ],
+  "p2": [
+    {
+      "id": "DEP-003",
+      "title": "path-to-regexp ReDoS in route parsing",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "security-redos",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "fix": "npm update path-to-regexp (in each affected project)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "picomatch Path traversal / ReDoS",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "security-redos",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "affected_projects": ["portal/Frontend"],
+      "fix": "cd portal/Frontend && npm update picomatch && npm audit fix",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "uuid 5 major versions behind (buffer overflow CVE)",
+      "severity": "P2",
+      "category": "outdated-security",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "affected_projects": ["Source/Backend"],
+      "current": "9.0.1",
+      "latest": "14.0.0",
+      "fix": "npm install uuid@latest in Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "pino 2 major versions behind — likely unpatched security issues",
+      "severity": "P2",
+      "category": "outdated-security",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "affected_projects": ["Source/Backend"],
+      "current": "8.21.0",
+      "latest": "10.3.1",
+      "fix": "npm install pino@latest in Source/Backend (check for breaking API changes)",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "title": "OTel tracing absent from Source/Backend",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "requirement": "FR-WF-013",
+      "file": "Source/Backend/src/",
+      "description": "No @opentelemetry/* imports in Source/Backend/src/. No spans, no traceparent header propagation. Both CLAUDE.md and FR-WF-013 mandate OTel.",
+      "fix": "Install @opentelemetry/sdk-node, auto-instrument HTTP + Express, propagate W3C traceparent",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "title": "dependencyCheckDuration histogram missing",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "requirement": "FR-dependency-metrics",
+      "file": "Source/Backend/src/metrics.ts",
+      "description": "FR-dependency-metrics requires 4 Prometheus metrics; only 3 exist. Missing: dependency_check_duration histogram.",
+      "fix": "Add Histogram('dependency_check_duration') to metrics.ts, instrument computeHasUnresolvedBlockers and isReady",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "title": "Portal UpdateBugInput / UpdateFeatureRequestInput missing blocked_by?",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "file": "portal/Shared/api.ts",
+      "description": "Both UpdateBugInput and UpdateFeatureRequestInput lack blocked_by?: string[]. Forces as any casts in portal/Frontend/src/components/shared/DependencyPicker.tsx:291,293.",
+      "fix": "Add blocked_by?: string[] to both interfaces in portal/Shared/api.ts",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "title": "Portal seed.ts not created",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "requirement": "FR-dependency-seed",
+      "file": "portal/Backend/src/database/",
+      "description": "portal/Backend/src/database/ has connection.ts and schema.ts only. seed.ts (idempotent dependency seeding on startup) is missing.",
+      "fix": "Create portal/Backend/src/database/seed.ts with idempotent seeding logic",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "title": "DependencySection.test.tsx and BlockedBadge.test.tsx missing",
+      "severity": "P2",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "requirement": "FR-dependency-frontend-tests",
+      "file": "portal/Frontend/src/components/",
+      "description": "DependencyPicker.test.tsx exists; the other two mandated test files do not.",
+      "fix": "Create DependencySection.test.tsx and BlockedBadge.test.tsx with component test coverage",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "title": "pending_dependencies status absent; dispatch-gating deviates from spec",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "requirement": "FR-dependency-dispatch-gating",
+      "files": ["Source/Shared/types/workflow.ts", "Source/Backend/src/", "portal/Frontend/src/"],
+      "description": "Spec says status becomes pending_dependencies when blockers block approval. Implementation keeps status as approved and returns HTTP 400. No PendingDependencies value in WorkItemStatus enum. UI shows blocked items as approved with no indicator.",
+      "fix": "Add pending_dependencies to WorkItemStatus enum + update backend transition logic + update frontend status display. Coordinate across Shared + Backend + Frontend layers.",
+      "cross_layer": true,
+      "status": "NEW"
+    }
+  ],
+  "p3": [
+    {
+      "id": "QO-008",
+      "title": "Traceability enforcer doesn't cover FR-dependency-* (13 requirements)",
+      "severity": "P3",
+      "category": "process",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "fix": "Add python3 tools/traceability-enforcer.py --file Plans/dependency-linking/requirements.md to CI verification gates",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "title": "FR-TMP-001..010 entirely untracked (platform/ audit needed)",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "solo-session",
+      "fix": "Conduct solo-session audit of platform/ to assess FR-TMP-001..010 compliance",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "title": "eslint-disable react-hooks/exhaustive-deps suppressions without rationale",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Fix hook dependencies correctly or add rationale comment explaining intentional suppression",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-moderate",
+      "title": "22 moderate-severity CVEs across all 6 projects",
+      "severity": "P3",
+      "category": "security-cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "count": 22,
+      "fix": "See Teams/TheInspector/findings/dependency-audit-2026-04-29.md for full CVE list and remediation instructions",
+      "status": "NEW"
+    }
+  ],
+  "p4": [
+    {
+      "id": "QO-011",
+      "title": "Duplicate logger modules (logger.ts + utils/logger.ts)",
+      "severity": "P4",
+      "category": "code-quality",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "fix": "Consolidate into single logger module; update all imports",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-012",
+      "title": "Wrong traceability ID in portal DependencyPicker.tsx:288",
+      "severity": "P4",
+      "category": "traceability",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "file": "portal/Frontend/src/components/shared/DependencyPicker.tsx:288",
+      "fix": "Change // Verifies: FR-0001 to // Verifies: FR-dependency-picker",
+      "status": "NEW"
+    }
+  ]
+}

@@ -1,0 +1,370 @@
+{
+  "audit_id": "run-20260430-054355",
+  "audit_date": "2026-04-30",
+  "branch": "audit/inspector-2026-04-30-b8aa8b",
+  "grade": "D",
+  "grade_basis": "3 P1 findings (config threshold: C = max_p1:2, D = max_p1:999)",
+  "grade_note": "DEP-001 is P1 by CVSS severity but has no current runtime exploit path (build-tools-only). If re-classified P2 by TheGuardians, combined grade = C.",
+  "spec_coverage": {
+    "source_workflow_engine": { "total": 13, "covered": 13, "pct": 100 },
+    "source_dependency": { "total": 15, "covered": 14, "pct": 93, "missing": ["FR-dependency-search"] },
+    "source_tiered_merge": { "total": 10, "covered": 0, "pct": 0, "note": "platform layer — not in Source/ scan dirs" },
+    "portal_platform": { "total": "95+", "covered": "unknown", "pct": "unknown", "note": "enforcer never scans portal/; 1041 Verifies comments unseen" }
+  },
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 6,
+    "p3_total": 7,
+    "p4_total": 6,
+    "total_findings": 22,
+    "escalations": 1,
+    "fixed": 0,
+    "new": 22,
+    "still_open": 0,
+    "regressed": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE / Supply Chain",
+      "title": "Handlebars.js: 8 JavaScript injection CVEs in build tools",
+      "route_to": "TheGuardians",
+      "reason": "Code injection vulnerabilities in build tooling (CVSS 9.8) — supply chain risk",
+      "package": "handlebars@4.0.0–4.7.8",
+      "location": "Source/Backend — transitive via Jest/ts-jest/Babel",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "fix": "npm audit fix --force in Source/Backend; upgrade to handlebars@^4.7.9",
+      "status": "NEW",
+      "exploit_path": "Build-time only — no runtime exploit path in current codebase"
+    }
+  ],
+  "p1": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "GET /api/search endpoint not wired in app.ts",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts:1-6",
+        "Source/Frontend/src/api/client.ts:101"
+      ],
+      "spec_ref": "FR-dependency-search",
+      "fix": "Create workItemService.ts; implement GET /api/search route; mount in app.ts; remove 'intentionally failing' comment from test",
+      "cross_refs": ["QO-005"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "this-sprint"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift / architecture-violation",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer blind to portal/ — 1,041 Verifies comments unseen",
+      "files": [
+        "tools/traceability-enforcer.py:77",
+        "Teams/TheInspector/inspector.config.yml:42-48"
+      ],
+      "spec_ref": "FR-001 through FR-095, FR-DUP-*",
+      "fix": "Add 'portal' to source_dirs in enforcer script and inspector.config.yml (one-line fix each)",
+      "cross_refs": ["QO-006"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "this-sprint"
+    }
+  ],
+  "p2": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "pending_dependencies status absent from WorkItemStatus enum",
+      "files": ["Source/Shared/types/workflow.ts:5-15"],
+      "spec_ref": "FR-dependency-types, FR-dependency-dispatch-gating",
+      "fix": "Add PendingDependencies = 'pending-dependencies' to WorkItemStatus enum; update VALID_STATUS_TRANSITIONS; update dispatch handler to set status instead of returning HTTP 400",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "dependencyCheckDuration histogram missing from metrics.ts",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "spec_ref": "FR-dependency-metrics",
+      "fix": "Add dependency_check_duration_seconds Histogram to metrics.ts; instrument isReady() in dependency.ts",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Route handlers call store directly — no service layer",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/workflow.ts:15"
+      ],
+      "fix": "Create Source/Backend/src/services/workItemService.ts; move CRUD/business logic; route handlers call service only",
+      "cross_refs": ["QO-001"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "this-sprint"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer non-deterministically picks one of 8 plans",
+      "files": ["tools/traceability-enforcer.py:48-57"],
+      "fix": "Accept list of plan files; add CI wrapper iterating all Plans/*/requirements.md files",
+      "cross_refs": ["QO-002"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "this-sprint"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "UUID buffer bounds check missing — direct backend dependency",
+      "files": ["Source/Backend/package.json"],
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "package": "uuid@9.0.1",
+      "fix": "npm update uuid to ^14.0.0 in Backend; run test suite to verify work item ID generation",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "this-sprint"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "outdated-dependency",
+      "source": "dependency-auditor",
+      "title": "Outdated major versions: Express ^4.18.2, Pino ^8.17.0",
+      "files": ["Source/Backend/package.json"],
+      "fix": "Plan Express 4→5 and Pino 8→10 upgrades as dedicated sprints with middleware audit",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "backlog"
+    }
+  ],
+  "p3": [
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "eslint-disable-next-line without justification in 2 files",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Add inline comment explaining why react-hooks/exhaustive-deps is safe to suppress, or fix the dependency arrays",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "Silent JSON parse failure swallowed in API client",
+      "files": ["Source/Frontend/src/api/client.ts:26"],
+      "fix": "Add comment documenting intentional suppression, or log parse failure at debug level",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P3",
+      "category": "CVE / dev-tool",
+      "source": "dependency-auditor",
+      "title": "Vite ≤5.4.x path traversal in optimized deps .map files",
+      "files": ["Source/Frontend/package.json"],
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "fix": "Upgrade vite to 6.x (resolves DEP-003, DEP-004, DEP-005, DEP-006 together)",
+      "cross_refs": ["DEP-004", "DEP-005", "DEP-006"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "CVE / dev-tool",
+      "source": "dependency-auditor",
+      "title": "Vitest transitive path traversal via vite-node",
+      "files": ["Source/Frontend/package.json"],
+      "fix": "Resolved by vite upgrade (see DEP-003)",
+      "cross_refs": ["DEP-003"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE / dev-tool",
+      "source": "dependency-auditor",
+      "title": "PostCSS <8.5.10 XSS via unescaped </style> tags",
+      "files": ["Source/Frontend (transitive via Vite)"],
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "fix": "Resolved by vite upgrade (see DEP-003)",
+      "cross_refs": ["DEP-003"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE / dev-tool",
+      "source": "dependency-auditor",
+      "title": "ESBuild ≤0.24.2 CORS/CSRF bypass in dev server",
+      "files": ["Source/Frontend (transitive via Vite)"],
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "fix": "Resolved by vite upgrade (see DEP-003); verify dev server is localhost-bound in CI",
+      "cross_refs": ["DEP-003"],
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "brace-expansion <1.1.13 zero-step sequence DoS",
+      "files": ["Source/Backend (transitive via jest/glob)"],
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "fix": "Should auto-resolve with npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "next-sprint"
+    }
+  ],
+  "p4": [
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "DebugPortalPage.tsx uses non-standard Verifies marker",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx:1"],
+      "fix": "Use FR-XXX pattern or remove Verifies: prefix",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "backlog"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "category": "doc-stale",
+      "source": "quality-oracle",
+      "title": "workflow-engine.md spec has no FR-XXX identifiers",
+      "files": ["Specifications/workflow-engine.md"],
+      "fix": "Add FR-WF-XXX IDs to specced behaviors or mark as design narrative only",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "backlog"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P4",
+      "category": "outdated-dependency",
+      "source": "dependency-auditor",
+      "title": "React 18→19 and react-router 6→7 available (no security urgency)",
+      "files": ["Source/Frontend/package.json"],
+      "fix": "Plan as dedicated sprint — breaking changes in hooks and router API",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "backlog"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P4",
+      "category": "supply-chain",
+      "source": "dependency-auditor",
+      "title": "~600+ transitive packages — supply chain baseline",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "fix": "Monitor; no immediate action needed",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "priority_sprint": "backlog"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P4",
+      "category": "licensing",
+      "source": "dependency-auditor",
+      "title": "License compliance: all MIT/ISC — PASS",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "fix": "No action required",
+      "status": "PASS"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P4",
+      "category": "maintenance",
+      "source": "dependency-auditor",
+      "title": "No abandoned packages detected — PASS",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "fix": "No action required; re-baseline next audit",
+      "status": "PASS"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Traceability enforcement structural gap",
+      "findings": ["QO-002", "QO-006"],
+      "single_fix": "Add 'portal' to enforcer source_dirs + fix CI plan enumeration",
+      "impact": "Resolves 1 P1 + 1 P2; enables portal/ coverage measurement"
+    },
+    {
+      "root_cause": "Missing service layer blocks search route",
+      "findings": ["QO-001", "QO-005"],
+      "single_fix": "Create workItemService.ts + implement GET /api/search",
+      "impact": "Resolves 1 P1 + 1 P2; fixes DependencyPicker at runtime"
+    },
+    {
+      "root_cause": "Vite version carries transitive CVE chain",
+      "findings": ["DEP-003", "DEP-004", "DEP-005", "DEP-006"],
+      "single_fix": "npm update vite to 6.x in Source/Frontend",
+      "impact": "Resolves 4 P3 findings; estimated 4-6 hours"
+    },
+    {
+      "root_cause": "WorkItemStatus enum incompleteness",
+      "findings": ["QO-003"],
+      "single_fix": "Add PendingDependencies enum value + update transitions + fix dispatch handler",
+      "impact": "Resolves 1 P2; restores BlockedBadge amber UX; enables FR-dependency-dispatch-gating"
+    }
+  ],
+  "next_audit": {
+    "recommended_date": "2026-05-30",
+    "mode": "dynamic",
+    "prerequisite": "Backend and frontend services must be running for performance-profiler and chaos-monkey",
+    "track": ["DEP-001 escalation outcome from TheGuardians", "UUID upgrade (DEP-002)", "Portal enforcer fix (QO-002)", "Search route implementation (QO-001)"]
+  }
+}

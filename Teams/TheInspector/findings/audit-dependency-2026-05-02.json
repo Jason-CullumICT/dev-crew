@@ -1,0 +1,271 @@
+{
+  "audit_metadata": {
+    "date": "2026-05-02",
+    "auditor": "dependency-auditor",
+    "tool_versions": {
+      "npm": "latest",
+      "npm_audit": "v10+"
+    },
+    "duration_seconds": 60
+  },
+  "project": {
+    "name": "dev-crew Source App",
+    "workspaces": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E"
+    ]
+  },
+  "summary": {
+    "total_findings": 9,
+    "severity_breakdown": {
+      "critical_p1": 1,
+      "high_p2": 0,
+      "medium_p3": 8,
+      "low_p4": 0
+    },
+    "package_managers": ["npm"],
+    "total_cves": 9
+  },
+  "vulnerabilities": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "category": "CVE",
+      "type": "JavaScript Injection / RCE",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "cvss_score": 9.8,
+      "affected_versions": ">=4.0.0 <=4.7.8",
+      "root_cause": "ts-jest dependency",
+      "workspace": "Source/Backend",
+      "fix": "npm install handlebars@latest",
+      "timeline": "<4 hours"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P3",
+      "package": "uuid",
+      "version": "9.0.1",
+      "category": "CVE",
+      "type": "Buffer Overflow",
+      "cves": ["GHSA-w5hq-g745-h8pq"],
+      "cvss_score": 0,
+      "affected_versions": "<14.0.0",
+      "workspace": "Source/Backend",
+      "fix": "npm install uuid@latest",
+      "timeline": "<1 day"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P3",
+      "package": "vite",
+      "version": "5.4.0",
+      "category": "CVE",
+      "type": "Path Traversal",
+      "cves": ["GHSA-4w7w-66w2-5vf9"],
+      "cvss_score": 0,
+      "affected_versions": "<=6.4.1",
+      "workspace": "Source/Frontend",
+      "fix": "npm install vite@latest",
+      "timeline": "<1 day"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "package": "postcss",
+      "category": "CVE",
+      "type": "XSS",
+      "cves": ["GHSA-qx2v-qp2m-jg93"],
+      "cvss_score": 6.1,
+      "affected_versions": "<8.5.10",
+      "workspace": "Source/Frontend",
+      "fix": "npm install postcss@latest",
+      "timeline": "<1 day"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "package": "esbuild",
+      "category": "CVE",
+      "type": "CORS Bypass",
+      "cves": ["GHSA-67mh-4wv8-2f99"],
+      "cvss_score": 5.3,
+      "affected_versions": "<=0.24.2",
+      "workspace": "Source/Frontend",
+      "fix": "npm install esbuild@latest",
+      "timeline": "<1 day"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "package": "brace-expansion",
+      "category": "CVE",
+      "type": "DoS",
+      "cves": ["GHSA-f886-m6hf-6m8v"],
+      "cvss_score": 6.5,
+      "affected_versions": "<1.1.13",
+      "workspace": "Source/Backend",
+      "fix": "npm update (indirect dependency)",
+      "timeline": "<1 day"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "package": "vitest",
+      "version": "2.0.5",
+      "category": "Transitive",
+      "type": "Cascade Vulnerabilities",
+      "affected_packages": ["vite", "esbuild", "@vitest/mocker"],
+      "workspace": "Source/Frontend",
+      "fix": "npm update vitest vite esbuild",
+      "timeline": "<1 day"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "Outdated Major Versions",
+      "type": "Maintenance Gap",
+      "findings": {
+        "backend": [
+          {
+            "package": "pino",
+            "current": "8.17.0",
+            "latest": "10.3.1",
+            "major_behind": 2,
+            "priority": "high"
+          },
+          {
+            "package": "uuid",
+            "current": "9.0.1",
+            "latest": "14.0.0",
+            "major_behind": 5,
+            "priority": "high"
+          },
+          {
+            "package": "express",
+            "current": "4.18.2",
+            "latest": "5.2.1",
+            "major_behind": 1,
+            "priority": "medium"
+          }
+        ],
+        "frontend": [
+          {
+            "package": "react",
+            "current": "18.3.1",
+            "latest": "19.2.5",
+            "major_behind": 1,
+            "priority": "low"
+          },
+          {
+            "package": "react-router-dom",
+            "current": "6.26.0",
+            "latest": "7.14.2",
+            "major_behind": 1,
+            "priority": "low"
+          }
+        ]
+      }
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P4",
+      "category": "Supply Chain Risk",
+      "type": "High Transitive Dependency Count",
+      "findings": {
+        "backend": {
+          "direct": 13,
+          "transitive": 412,
+          "ratio": "31:1"
+        },
+        "frontend": {
+          "direct": 13,
+          "transitive": 231,
+          "ratio": "18:1"
+        }
+      },
+      "risk": "Low (within acceptable ratios)"
+    }
+  ],
+  "license_compliance": {
+    "status": "NOT_AUDITED",
+    "reason": "license-checker not available in environment",
+    "recommendation": "Run npx license-checker --json in CI/CD"
+  },
+  "dependency_health": {
+    "backend": {
+      "workspace": "Source/Backend",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 412,
+      "vulnerabilities_critical": 1,
+      "vulnerabilities_moderate": 2,
+      "outdated_major": 2,
+      "status": "NEEDS_ATTENTION"
+    },
+    "frontend": {
+      "workspace": "Source/Frontend",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 231,
+      "vulnerabilities_critical": 0,
+      "vulnerabilities_moderate": 6,
+      "outdated_major": 2,
+      "status": "MEDIUM"
+    },
+    "e2e": {
+      "workspace": "Source/E2E",
+      "vulnerabilities_critical": 0,
+      "vulnerabilities_moderate": 0,
+      "status": "CLEAN"
+    }
+  },
+  "remediation_roadmap": {
+    "immediate": [
+      {
+        "task": "Fix Handlebars critical RCE",
+        "id": "DEP-001",
+        "owner": "backend-coder",
+        "timeline": "<4 hours"
+      }
+    ],
+    "short_term": [
+      {
+        "task": "Update uuid, build tools",
+        "ids": ["DEP-002", "DEP-003", "DEP-004", "DEP-005"],
+        "owner": "backend-coder, frontend-coder",
+        "timeline": "<1 day"
+      },
+      {
+        "task": "Plan major version upgrades",
+        "id": "DEP-008",
+        "owner": "team-lead",
+        "timeline": "<1 week per package"
+      }
+    ],
+    "roadmap": [
+      {
+        "task": "Set up recurring npm audit in CI/CD",
+        "owner": "devops",
+        "timeline": "<2 weeks"
+      },
+      {
+        "task": "Add license compliance check",
+        "owner": "devops",
+        "timeline": "<2 weeks"
+      }
+    ]
+  },
+  "overall_grade": "C",
+  "trend": "STABLE",
+  "risk_posture": "MEDIUM",
+  "next_audit_recommended": "2026-06-01"
+}

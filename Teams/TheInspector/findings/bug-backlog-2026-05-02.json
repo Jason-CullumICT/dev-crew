@@ -1,0 +1,323 @@
+{
+  "audit_id": "run-20260502-052351",
+  "audit_date": "2026-05-02",
+  "project": "dev-crew Source App",
+  "grade": "C",
+  "grading_rationale": "2 P1 findings (threshold: max 2), 4 P2 findings (threshold: max 15), spec coverage 87% (threshold: min 40%). Grade C thresholds met; blocked from B by P1 count > 0.",
+  "specialists": ["quality-oracle", "dependency-auditor"],
+  "skipped_specialists": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "No live services detected (backend http://localhost:3001 offline, frontend http://localhost:5173 offline)",
+  "spec_coverage": {
+    "plans_in_scope": [
+      "Plans/self-judging-workflow",
+      "Plans/dependency-linking"
+    ],
+    "total_requirements": 29,
+    "covered": 27,
+    "coverage_pct": 87,
+    "uncovered": [
+      { "id": "FR-dependency-search", "reason": "Route not implemented" },
+      { "id": "FR-dependency-metrics (histogram)", "reason": "Histogram instrument missing, 3/4 instruments present" }
+    ]
+  },
+  "summary": {
+    "p1": 2,
+    "p2": 4,
+    "p3": 10,
+    "p4": 2,
+    "total": 18,
+    "fixed_since_prior": 0,
+    "baseline": "first_audit"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js RCE in test infrastructure — CVSS 9.8",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "trigger": "JavaScript injection (CVSS 9.8 — security_triggers match: 'injection')",
+      "package": "handlebars@4.7.8",
+      "chain": "ts-jest → handlebars@4.7.8",
+      "workspace": "Source/Backend/ (devDependencies)",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q (CVSS 9.8)",
+        "GHSA-3mfm-83xf-c92r (CVSS 8.1)",
+        "GHSA-xhpv-hc6g-r9c6 (CVSS 8.1)",
+        "GHSA-9cx6-37pm-9jff (CVSS 7.5)",
+        "GHSA-xjpj-3mr7-gcpf (CVSS 8.2)",
+        "GHSA-2qvq-rjwj-gvw9 (CVSS 4.7)",
+        "GHSA-7rx3-28cr-v5wh (CVSS 4.8)"
+      ],
+      "immediate_fix": "npm install handlebars@latest in Source/Backend/",
+      "guardians_question": "Do any test fixtures in Source/Backend/tests/ process externally-sourced Handlebars template input? If yes, this is an active RCE surface in CI."
+    }
+  ],
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source_specialist": "quality-oracle",
+      "title": "GET /api/search not implemented — DependencyPicker typeahead broken in production",
+      "file": "Source/Backend/src/app.ts",
+      "fr": "FR-dependency-search",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Create Source/Backend/src/routes/search.ts; register app.use('/api/search', searchRouter). Contract defined by 5 tests in search.test.ts.",
+      "priority_order": 1
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source_specialist": "quality-oracle",
+      "title": "Traceability enforcer covers only the most recently modified plan — 16 FR-dependency-* requirements unpatrolled",
+      "file": "tools/traceability-enforcer.py:49-57",
+      "fr": null,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Loop over all Plans/*/requirements.md in CI. Add --all-plans flag to enforcer.",
+      "priority_order": 4
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source_specialist": "quality-oracle",
+      "title": "dependencyCheckDuration histogram absent from Source/ metrics — FR-dependency-metrics partial",
+      "file": "Source/Backend/src/metrics.ts",
+      "fr": "FR-dependency-metrics",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Add Histogram instrument; instrument isReady() and detectCycle() in services/dependency.ts; add test assertion.",
+      "priority_order": 5,
+      "cross_ref": "Root Cause 1 — dependency-linking feature incomplete"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source_specialist": "quality-oracle",
+      "title": "workItems.ts and intake.ts call data store directly — service layer bypassed",
+      "file": "Source/Backend/src/routes/workItems.ts, Source/Backend/src/routes/intake.ts",
+      "fr": null,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Extract workItemService.ts wrapping store calls. Update both route files to use it.",
+      "priority_order": 2,
+      "cross_ref": "Root Cause 4 — no service-layer abstraction"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source_specialist": "quality-oracle",
+      "title": "FR-dependency-dispatch-gating deviation — HTTP 400 returned; spec requires 200 + pending_dependencies status",
+      "file": "Source/Backend/src/routes/workflow.ts:230-244",
+      "fr": "FR-dependency-dispatch-gating",
+      "status": "NEW",
+      "route_to": "requirements-reviewer then TheFixer",
+      "fix_summary": "Requirements-reviewer to adjudicate spec intent. If spec is authoritative: add PendingDependencies to enum and implement status transition. If code design is intentional: update spec to document 400-based approach.",
+      "priority_order": 3,
+      "cross_ref": "Root Cause 1 — dependency-linking feature incomplete"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "source_specialist": "quality-oracle",
+      "title": "Dual logger abstractions in Source/Backend/ — two active log sinks with different calling conventions",
+      "file": "Source/Backend/src/logger.ts, Source/Backend/src/utils/logger.ts",
+      "fr": null,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Standardize on one logger interface. Migrate all import sites to the object-style named export.",
+      "priority_order": 9,
+      "cross_ref": "Root Cause 4 — no service-layer abstraction"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source_specialist": "quality-oracle",
+      "title": "eslint-disable suppressing exhaustive-deps in useWorkItems.ts without justification comment",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "fr": null,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Either add justification comment or refactor with useMemo to avoid object-reference churn.",
+      "priority_order": 10
+    },
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "untested",
+      "source_specialist": "quality-oracle",
+      "title": "PriorityBadge, StatusBadge, TypeBadge, Layout lack dedicated unit tests",
+      "file": "Source/Frontend/src/components/",
+      "fr": null,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Add tests/components/PriorityBadge.test.tsx, StatusBadge.test.tsx, TypeBadge.test.tsx.",
+      "priority_order": 14
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P3",
+      "category": "CVE",
+      "source_specialist": "dependency-auditor",
+      "title": "uuid@9.0.1 buffer overflow — GHSA-w5hq-g745-h8pq (CWE-787), 5 major versions behind",
+      "file": "Source/Backend/package.json",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "npm install uuid@latest in Source/Backend/",
+      "priority_order": 6,
+      "cross_ref": "Root Cause 3 — backend dependency age"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P3",
+      "category": "CVE",
+      "source_specialist": "dependency-auditor",
+      "title": "vite@5.4.0 path traversal in optimized deps .map handling — GHSA-4w7w-66w2-5vf9",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "npm install vite@latest in Source/Frontend/",
+      "priority_order": 7,
+      "cross_ref": "Root Cause 2 — Vite ecosystem upgrade deferred"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "CVE",
+      "source_specialist": "dependency-auditor",
+      "title": "postcss XSS via unescaped </style> in CSS stringify — GHSA-qx2v-qp2m-jg93",
+      "file": "Source/Frontend/package.json (transitive via vite)",
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "npm install postcss@latest in Source/Frontend/",
+      "priority_order": 8
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE",
+      "source_specialist": "dependency-auditor",
+      "title": "esbuild CORS bypass in dev server — GHSA-67mh-4wv8-2f99 (dev-only)",
+      "file": "Source/Frontend/package.json (transitive via vite)",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "npm install esbuild@latest (resolved by updating vite)",
+      "priority_order": 8,
+      "cross_ref": "Root Cause 2 — Vite ecosystem upgrade deferred"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE",
+      "source_specialist": "dependency-auditor",
+      "title": "brace-expansion DoS via zero-step sequence — GHSA-f886-m6hf-6m8v",
+      "file": "Source/Backend/package.json (transitive)",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "npm update brace-expansion (indirect — resolved via ts-jest update)",
+      "priority_order": 8
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "transitive-cascade",
+      "source_specialist": "dependency-auditor",
+      "title": "vitest@2.0.5 cascades vite + esbuild vulnerabilities in Frontend test runner",
+      "file": "Source/Frontend/package.json",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "npm update vitest vite esbuild in Source/Frontend/ (resolved together)",
+      "priority_order": 7,
+      "cross_ref": "Root Cause 2 — Vite ecosystem upgrade deferred"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "outdated-dependencies",
+      "source_specialist": "dependency-auditor",
+      "title": "pino 2 majors behind (8→10), uuid 5 majors behind (9→14), express 1 major behind (4→5), react 1 major behind (18→19)",
+      "file": "Source/Backend/package.json, Source/Frontend/package.json",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Phased upgrades: pino@latest + uuid@latest this sprint; express@5 + react@19 next sprint with test coverage.",
+      "priority_order": 11,
+      "cross_ref": "Root Cause 3 — backend dependency age"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P4",
+      "category": "supply-chain-risk",
+      "source_specialist": "dependency-auditor",
+      "title": "643 transitive dependencies; no license-checker; no recurring npm audit in CI",
+      "file": "Source/Backend/package.json, Source/Frontend/package.json",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_summary": "Add npm audit to CI pipeline (monthly). Add npx license-checker to flag GPL/AGPL. Monitor for abandoned packages.",
+      "priority_order": 15
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "dependency-linking feature incomplete in backend",
+      "findings": ["QO-001", "QO-003", "QO-005"],
+      "single_fix": "Complete Plans/dependency-linking implementation sprint (TheFixer)"
+    },
+    {
+      "root_cause": "Vite ecosystem upgrade deferred across frontend stack",
+      "findings": ["DEP-003", "DEP-005", "DEP-007"],
+      "single_fix": "npm update vite esbuild vitest in Source/Frontend/"
+    },
+    {
+      "root_cause": "Backend dependency age — uuid + pino both critically outdated",
+      "findings": ["DEP-002", "DEP-008"],
+      "single_fix": "npm install pino@latest uuid@latest in Source/Backend/"
+    },
+    {
+      "root_cause": "No service-layer abstraction between routes and store",
+      "findings": ["QO-004", "QO-006"],
+      "single_fix": "workItemService.ts extraction + logger consolidation sprint (TheFixer)"
+    }
+  ],
+  "remediation_roadmap": {
+    "block_deployment": [
+      "DEP-001: npm install handlebars@latest (<4h)",
+      "DEP-001: Trigger TheGuardians audit (before release)",
+      "QO-001: Implement GET /api/search route (1-2 days)"
+    ],
+    "this_sprint": [
+      "QO-004: Extract workItemService.ts",
+      "QO-005: Requirements-reviewer adjudicates dispatch-gating spec, then TheFixer implements",
+      "QO-003: Add dependencyCheckDuration histogram",
+      "DEP-002 through DEP-007: npm update vite esbuild uuid postcss"
+    ],
+    "next_sprint": [
+      "QO-002: Add --all-plans flag to traceability enforcer; update CI gate",
+      "QO-006: Consolidate logger abstractions",
+      "QO-007: Add eslint-disable justification or refactor",
+      "DEP-008: Plan pino + uuid major version upgrades"
+    ],
+    "backlog": [
+      "QO-008: Add PriorityBadge, StatusBadge, TypeBadge unit tests",
+      "DEP-009: Add npm audit + license-checker to CI"
+    ]
+  },
+  "metadata": {
+    "run_id": "run-20260502-052351",
+    "generated_at": "2026-05-02T05:23:51Z",
+    "report_path": "Teams/TheInspector/findings/audit-2026-05-02-C.html",
+    "backlog_path": "Teams/TheInspector/findings/bug-backlog-2026-05-02.json",
+    "next_audit_recommendation": "After DEP-001 and QO-001 are resolved; run with live services for dynamic performance and chaos coverage"
+  }
+}

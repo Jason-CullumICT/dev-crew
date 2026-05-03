@@ -1,0 +1,288 @@
+{
+  "audit_id": "run-20260503-054354",
+  "audit_date": "2026-05-03",
+  "grade": "D",
+  "generated_by": "team-leader",
+  "model": "sonnet",
+  "report_file": "Teams/TheInspector/findings/audit-2026-05-03-D.html",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 5,
+    "p3_total": 7,
+    "p4_total": 2,
+    "escalations_total": 2,
+    "fixed_total": 0,
+    "spec_coverage_source_scoped": "97%",
+    "spec_coverage_cross_plan": "60%",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_static_only": ["performance-profiler", "chaos-monkey"]
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "category": "vulnerability-rce",
+      "title": "Handlebars RCE via ts-jest dependency chain — CVSS 9.8",
+      "cve_count": 8,
+      "cvss_max": 9.8,
+      "location": "Source/Backend/package.json",
+      "root": "ts-jest@^29.1.2 → handlebars@^4.7.8 (unpatched)",
+      "fix": "cd Source/Backend && npm update ts-jest && npm audit",
+      "fix_verification": "Confirm handlebars >= 4.7.9 in npm ls output; npm audit shows 0 critical",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "category": "vulnerability-rce",
+      "title": "Protobufjs RCE in platform/orchestrator — CVSS 9.8",
+      "cvss_max": 9.8,
+      "location": "platform/orchestrator/package.json",
+      "root": "Google Cloud client library → protobufjs (vulnerable to RCE via .proto parsing)",
+      "fix": "cd platform/orchestrator && npm update protobufjs && npm audit",
+      "fix_verification": "Confirm protobufjs >= 7.5.5 in npm ls output; npm audit shows 0 critical",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "runtime-broken-feature",
+      "title": "GET /api/search route not wired — DependencyPicker broken at runtime",
+      "detail": "GET /api/search endpoint required by FR-dependency-search is not registered in Source/Backend/src/app.ts. Test file exists and traces FR but documents the route is missing. Feature completely non-functional at runtime.",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "recommendation": "Create Source/Backend/src/routes/search.ts implementing GET /api/search?q=<query> and register in app.ts. Test file specifies full contract.",
+      "assign_to": "TheFixer",
+      "priority_label": "Block deployment",
+      "status": "OPEN",
+      "first_seen": "2026-05-03",
+      "cross_refs": ["FR-dependency-search"]
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "inspector.config.yml excludes portal/ — 50+ FRs invisible to traceability gate",
+      "detail": "source.dirs lists only ['Source/']. The portal/ directory has 30+ source files implementing FR-033..FR-089. Enforcer default run always targets self-judging-workflow (100% PASS) masking all portal gaps.",
+      "files": ["Teams/TheInspector/inspector.config.yml"],
+      "recommendation": "Add portal/Backend/src/ and portal/Frontend/src/ to source.dirs. Add portal tests to test_dirs.",
+      "assign_to": "solo-session",
+      "priority_label": "This sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "POST /api/work-items/:id/dependencies returns wrong response shape",
+      "detail": "api-contracts.md specifies {data: WorkItem} (201). Implementation returns raw DependencyLink object.",
+      "files": ["Source/Backend/src/routes/workflow.ts"],
+      "file_line": 324,
+      "recommendation": "Return {data: updatedWorkItem} (201) from dependency add handler. Update test expectations.",
+      "assign_to": "TheFixer",
+      "priority_label": "This sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03",
+      "cross_refs": ["QO-004"]
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "pending_dependencies status in api-contracts.md absent from WorkItemStatus enum",
+      "detail": "WorkItemStatus enum has no PendingDependencies value. Dispatch route returns HTTP 400 instead of setting pending_dependencies state. Auto-advance cascade from pending_dependencies to approved is also unimplemented.",
+      "files": [
+        "Source/Shared/types/workflow.ts",
+        "Source/Backend/src/routes/workflow.ts"
+      ],
+      "recommendation": "Add PendingDependencies = 'pending_dependencies' to enum. Update VALID_STATUS_TRANSITIONS. Change dispatch logic to set status. Implement auto-advance in onItemResolved. Coordinate-first change (shared types + backend + frontend).",
+      "assign_to": "TheFixer",
+      "priority_label": "This sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03",
+      "cross_refs": ["QO-003", "api-contract agent"]
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "7 plan files have unimplemented FRs not covered by inspector scan",
+      "detail": "~50 FRs across 7 plans target portal/ which is excluded from inspector scan. Most actionable: Plans/duplicate-deprecated-status (APPROVED) FR-DUP-06..FR-DUP-13 (8 FRs).",
+      "files": [
+        "Plans/dependency-linking/requirements.md",
+        "Plans/dev-cycle-traceability/requirements.md",
+        "Plans/orchestrated-dev-cycles/requirements.md",
+        "Plans/orchestrator-cycle-dashboard/requirements.md",
+        "Plans/dev-workflow-platform/requirements.md",
+        "Plans/duplicate-deprecated-status/requirements.md",
+        "Plans/image-upload/requirements.md"
+      ],
+      "recommendation": "Prioritise Plans/duplicate-deprecated-status (approved, bounded). Fix QO-002 first to make these visible to the enforcer.",
+      "assign_to": "TheATeam",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "DA-003",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "vulnerability-redos",
+      "title": "path-to-regexp ReDoS — CVSS 7.5 — affects route parsing",
+      "detail": "Vulnerable path-to-regexp version in portal/orchestrator and platform/orchestrator affects route parsing under adversarial input.",
+      "files": ["portal/orchestrator/package.json"],
+      "recommendation": "npm update in portal/orchestrator to pull path-to-regexp >= 8.x. Verify with npm audit.",
+      "assign_to": "TheFixer",
+      "priority_label": "This sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable react-hooks/exhaustive-deps suppressions without explanation",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts", "Source/Frontend/src/components/DependencyPicker.tsx"],
+      "recommendation": "Add inline comments explaining why the exclusion is safe, or fix the hook to include the missing dependency.",
+      "assign_to": "TheFixer",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "/health endpoint has no spec traceability comment",
+      "files": ["Source/Backend/src/app.ts"],
+      "file_line": 41,
+      "recommendation": "Add FR-WF-014 to requirements.md and // Verifies: FR-WF-014 to app.ts:41, OR document as infrastructure-only.",
+      "assign_to": "TheFixer",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "3 recently-added portal/ files lack Verifies: traceability",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts",
+        "portal/Frontend/src/components/common/RepoSelector.tsx",
+        "portal/Frontend/src/pages/TeamsPage.tsx"
+      ],
+      "recommendation": "Identify which spec these implement. Write spec first if none exists. Add // Verifies: FR-XXX comments.",
+      "assign_to": "TheFixer",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "DA-004",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "vulnerability-outdated",
+      "title": "UUID package 5 major versions behind (v9 in Backend/Portal vs v14 current)",
+      "files": ["Source/Backend/package.json", "portal/Backend/package.json"],
+      "recommendation": "Upgrade uuid to >= 14.x. Note: major version bump — review API changes.",
+      "assign_to": "TheFixer",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "DA-005",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "vulnerability-dev",
+      "title": "Vite/esbuild dev server vulnerabilities (multiple moderate CVEs)",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "recommendation": "npm update in frontend workspaces. Lower risk (dev server only) but include in maintenance PR.",
+      "assign_to": "TheFixer",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "DA-006",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "vulnerability-dev",
+      "title": "PostCSS/brace-expansion moderate CVEs in Source/Frontend dev deps",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Include in dependency maintenance PR. npm update to resolve.",
+      "assign_to": "TheFixer",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "DA-007",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "vulnerability-transitive",
+      "title": "dockerode/gaxios transitive vulnerabilities in platform/orchestrator",
+      "files": ["platform/orchestrator/package.json"],
+      "recommendation": "Monitor dockerode for patches. Include gaxios in npm update pass.",
+      "assign_to": "TheFixer",
+      "priority_label": "Next sprint",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "category": "test-quality",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Remove flat versions after confirming pages/ versions provide equivalent coverage.",
+      "assign_to": "TheFixer",
+      "priority_label": "Backlog",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "playwright.pipeline.config.ts missing Verifies: comment",
+      "files": ["Source/E2E/playwright.pipeline.config.ts"],
+      "recommendation": "Add // Verifies: FR-TMP-003 (E2E runner spec).",
+      "assign_to": "TheFixer",
+      "priority_label": "Backlog",
+      "status": "OPEN",
+      "first_seen": "2026-05-03"
+    }
+  ]
+}

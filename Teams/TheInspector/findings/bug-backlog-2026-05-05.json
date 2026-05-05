@@ -1,0 +1,247 @@
+{
+  "audit_id": "run-20260505-052833",
+  "audit_date": "2026-05-05",
+  "branch": "audit/inspector-2026-05-05-d75020",
+  "overall_grade": "C",
+  "grade_rationale": "2 P1 CVEs (CVSS 9.8) exceed Grade B threshold (max_p1=0). Fits Grade C: max_p1=2, 5 P2s ≤ 15, 82% spec coverage ≥ 40%.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "summary": {
+    "p1": 2,
+    "p2": 5,
+    "p3": 10,
+    "p4": 3,
+    "total": 20,
+    "spec_coverage_pct": 82,
+    "total_cves": 28,
+    "fixed": 0,
+    "new": 20,
+    "still_open": 0,
+    "regressed": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "category": "vulnerability / template-injection",
+      "title": "Handlebars JavaScript Template Injection — Arbitrary Code Execution",
+      "affected": "Source/Backend (transitive via jest → ts-jest → handlebars)",
+      "summary": "Arbitrary code execution via malformed Handlebars templates. Any attacker who can influence template strings (test fixtures, committed template files, CI env injection) can execute arbitrary JS in the Node.js process. Full CI secret exfiltration risk.",
+      "remediation": "cd Source/Backend && npm audit fix",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "category": "vulnerability / prototype-pollution / RCE",
+      "title": "protobufjs Arbitrary Code Execution — RCE in Agent Orchestration Infrastructure",
+      "affected": "platform/orchestrator, portal/Backend (transitive via @opentelemetry packages)",
+      "summary": "Prototype pollution in protobufjs allows RCE via specially crafted .proto file or serialised message. Affects the orchestration layer that dispatches all agent teams. Compromise = full control over AI pipeline.",
+      "remediation": "npm update @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-http @opentelemetry/auto-instrumentations-node (in platform/orchestrator AND portal/Backend). Note: platform/ requires solo-session access.",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift / architecture-violation",
+      "title": "Traceability enforcer blind spot for portal/ and platform/",
+      "files": ["tools/traceability-enforcer.py", "Teams/TheInspector/inspector.config.yml"],
+      "summary": "Enforcer scans only Source/. The dev-workflow-platform.md spec (84 FRs, 653 Verifies comments in portal/) is invisible to the enforcer, producing false-green CI output. The tiered-merge-pipeline.md spec (10 FRs in platform/) is also unscanned.",
+      "remediation": "Add portal/ to source.dirs in inspector.config.yml. Update enforcer to iterate all Plans/*/requirements.md (not just most-recently-modified). Add CI step: python3 tools/traceability-enforcer.py --file Specifications/dev-workflow-platform.md",
+      "cross_refs": ["QO-005", "QO-006"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Direct DB calls in teamDispatches route handler",
+      "files": ["portal/Backend/src/routes/teamDispatches.ts"],
+      "lines": [37, 41, 72],
+      "summary": "Three inline SQL queries (db.prepare(...).all(), db.prepare(...).run()) inside the route handler. CLAUDE.md rule: 'No direct DB calls from route handlers — use the service layer.' No teamDispatchService module exists.",
+      "remediation": "Extract teamDispatchService.ts with listDispatches(filter) and createDispatch(data) functions. Route handler calls service only. Add // Verifies: FR-XXX once owning spec FR is assigned.",
+      "cross_refs": ["QO-005"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "Empty .catch() silently swallows API failures in RepoSelector",
+      "files": ["portal/Frontend/src/components/common/RepoSelector.tsx"],
+      "lines": [20],
+      "summary": "repos.list().then(r => setKnownRepos(r.data)).catch(() => {}) — empty catch discards API failures with no log, no user feedback. CLAUDE.md: 'Never swallow errors silently.'",
+      "remediation": "Replace with .catch((err) => { console.warn('repos.list failed, using defaults', err) }) at minimum, or propagate to component error state.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "vulnerability / ReDoS",
+      "title": "path-to-regexp ReDoS — Denial of Service via malformed route parameters",
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "summary": "path-to-regexp vulnerable to catastrophic backtracking (ReDoS) via specially crafted route parameter strings. Unauthenticated DoS if route handlers are publicly accessible.",
+      "remediation": "npm update express (in platform/orchestrator AND portal/Backend)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "vulnerability / ReDoS",
+      "title": "picomatch ReDoS — Build-time DoS via extglob quantifiers",
+      "affected": ["portal/Frontend"],
+      "summary": "picomatch vulnerable to ReDoS via extglob quantifier patterns. Primarily a build-time risk but can be triggered by malicious glob patterns.",
+      "remediation": "npm update picomatch (in portal/Frontend)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration histogram not implemented (FR-dependency-metrics incomplete)",
+      "files": ["Source/Backend/src/metrics.ts", "Source/Backend/tests/routes/metrics.test.ts"],
+      "summary": "FR-dependency-metrics specifies 4 Prometheus metrics. Only 3 implemented. dependencyCheckDuration histogram is absent — no export, no test coverage.",
+      "remediation": "Add dependency_check_duration_seconds Histogram to metrics.ts with // Verifies: FR-dependency-metrics comment. Add test case to metrics.test.ts.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "spec-drift / untested",
+      "title": "3 recently modified files with zero traceability comments",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts",
+        "portal/Frontend/src/pages/TeamsPage.tsx",
+        "portal/Frontend/src/components/common/RepoSelector.tsx"
+      ],
+      "summary": "All 3 files modified in last 14 days, all lack // Verifies: comments. No spec FR covers Teams Dispatch or Teams Page. Appears to be spec-less scope addition.",
+      "remediation": "Either (a) write spec FR for Teams dispatch feature and add Verifies comments, or (b) mark as // NOTE: exploratory, not spec-backed.",
+      "cross_refs": ["QO-001", "QO-002"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-TMP-001–010 have zero Verifies comments in platform/",
+      "files": [
+        "platform/orchestrator/lib/workflow-engine.js",
+        "platform/orchestrator/lib/dispatch.js"
+      ],
+      "summary": "All 10 tiered-merge-pipeline FRs are implemented in platform/ JS but none have // Verifies: FR-TMP-XXX comments. platform/ is solo-session territory but inline comments are achievable.",
+      "remediation": "Add // Verifies: FR-TMP-XXX comments in relevant sections. Solo-session task.",
+      "route_to": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "untested",
+      "title": "FR-048 frontend test traceability gap in PipelineStepper.test.tsx",
+      "files": ["portal/Frontend/tests/PipelineStepper.test.tsx"],
+      "summary": "FR-048 is referenced in portal/Backend tests but has 0 occurrences in PipelineStepper.test.tsx. The test file has 19 Verifies comments for FR-045/FR-046 only.",
+      "remediation": "Add // Verifies: FR-048 to PipelineStepper.test.tsx header and CycleView integration test cases.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-moderate-group",
+      "severity": "P3",
+      "category": "vulnerability / moderate",
+      "title": "6 moderate CVEs across sub-projects",
+      "items": [
+        {"id": "vite-path-traversal", "package": "vite", "scope": "dev-only", "fix": "npm update vite", "project": "portal/Frontend"},
+        {"id": "postcss-xss", "package": "postcss", "scope": "build", "fix": "npm update postcss", "project": "portal/Frontend"},
+        {"id": "esbuild-cors", "package": "esbuild", "scope": "dev-only", "fix": "npm update vite", "project": "portal/Frontend"},
+        {"id": "brace-expansion-dos", "package": "brace-expansion", "scope": "transitive", "fix": "npm update", "project": "multiple"},
+        {"id": "uuid-buffer", "package": "uuid", "fix": "npm update uuid", "project": "multiple"},
+        {"id": "dockerode-transitive", "package": "dockerode", "fix": "npm update dockerode", "project": "platform/orchestrator"}
+      ],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "10 files exceed 500-line guideline (5 production files)",
+      "files": [
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx (550L)",
+        "portal/Frontend/src/components/bugs/BugDetail.tsx (546L)",
+        "portal/Backend/src/services/cycleService.ts (526L)",
+        "portal/Frontend/src/api/client.ts (525L)",
+        "portal/Backend/src/services/featureRequestService.ts (506L)"
+      ],
+      "remediation": "Split FeatureRequestDetail.tsx and BugDetail.tsx into sub-components. Extract cycleService.ts logical sections (cycle CRUD, pipeline, completion).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "eslint-disable in useWorkItems.ts hook with no explanatory comment",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts"],
+      "lines": [63],
+      "remediation": "Either fix the dependency issue or add inline comment: // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omitted: fetchData is stable via useCallback",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "Enforcer regex generates false-positive IDs from spec prose seed data",
+      "files": ["tools/traceability-enforcer.py"],
+      "lines": [64],
+      "summary": "Regex FR-[A-Z0-9-]+ matches seed data item IDs (FR-0002, FR-0003, etc.) from spec prose, producing false MISSING results.",
+      "remediation": "Tighten regex to require IDs at line/cell boundaries: (^|\\s|\\|)FR-[A-Z][A-Z0-9-]+. Validate extracted IDs against known naming patterns.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Traceability enforcer scopes only to Source/",
+      "findings": ["QO-001", "QO-005", "QO-006"],
+      "single_fix": "Add portal/ to source.dirs in inspector.config.yml + multi-spec enforcer mode"
+    },
+    {
+      "root_cause": "OpenTelemetry packages pull vulnerable protobufjs",
+      "findings": ["DEP-006 (platform/orchestrator)", "DEP-006 (portal/Backend)"],
+      "single_fix": "npm update @opentelemetry/* in both directories"
+    },
+    {
+      "root_cause": "Express version pinned below path-to-regexp fix",
+      "findings": ["DEP-007 (platform/orchestrator)", "DEP-007 (portal/Backend)"],
+      "single_fix": "npm update express in both directories"
+    },
+    {
+      "root_cause": "teamDispatches feature added without spec FR",
+      "findings": ["QO-002", "QO-005 (3 files)"],
+      "single_fix": "Write spec FR for Teams Dispatch + extract teamDispatchService.ts + add Verifies comments"
+    }
+  ],
+  "next_audit_priorities": [
+    "Verify DEP-001 + DEP-006 fixed before next release",
+    "Run performance-profiler + chaos-monkey with services online",
+    "Validate enforcer blind-spot fix covers portal/ in CI"
+  ]
+}

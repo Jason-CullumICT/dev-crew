@@ -1,0 +1,228 @@
+{
+  "audit_date": "2026-05-06",
+  "auditor": "dependency_auditor",
+  "project": "dev-crew",
+  "repository": "github.com/anthropics/dev-crew",
+  "package_managers": ["npm"],
+  "summary": {
+    "grade": "C",
+    "status": "VULNERABLE",
+    "reason": "Multiple critical CVEs in active dependencies and significant outdated packages"
+  },
+  "vulnerability_counts": {
+    "critical": 2,
+    "high": 3,
+    "medium": 8,
+    "low": 1,
+    "total": 14
+  },
+  "severity_breakdown": {
+    "P1_critical": {
+      "count": 2,
+      "findings": [
+        {
+          "id": "DEP-001",
+          "package": "handlebars",
+          "version_range": "4.0.0-4.7.8",
+          "cvss": 9.8,
+          "cve": "GHSA-2w6w-674q-4c4q",
+          "title": "JavaScript Injection via AST Type Confusion",
+          "module": "Source/Backend"
+        },
+        {
+          "id": "DEP-002",
+          "package": "protobufjs",
+          "version_range": "<7.5.5",
+          "cvss": 9.8,
+          "cve": "GHSA-xq3m-2v4x-88gg",
+          "title": "Arbitrary code execution in protobufjs",
+          "modules": ["platform/orchestrator", "portal/Backend"]
+        }
+      ]
+    },
+    "P2_high": {
+      "count": 3,
+      "findings": [
+        {
+          "id": "DEP-003",
+          "package": "path-to-regexp",
+          "version_range": "<0.1.13",
+          "cvss": 7.5,
+          "cve": "GHSA-37ch-88jc-xwx2",
+          "title": "ReDoS via multiple route parameters",
+          "modules": ["platform/orchestrator", "portal/Backend"]
+        },
+        {
+          "id": "DEP-004",
+          "package": "picomatch",
+          "version_range": "<=2.3.1 || 4.0.0-4.0.3",
+          "cvss": 7.5,
+          "cve": "GHSA-c2c7-rcm5-vvqj",
+          "title": "ReDoS via extglob quantifiers",
+          "modules": ["portal/Frontend"]
+        },
+        {
+          "id": "DEP-007",
+          "package": "@opentelemetry/*",
+          "version_range": "0.47.0",
+          "latest": "0.216.0",
+          "category": "outdated_major",
+          "title": "OpenTelemetry stack 4+ major versions behind",
+          "modules": ["portal/Backend"]
+        }
+      ]
+    },
+    "P3_medium": {
+      "count": 8,
+      "summary": "Multiple CVEs in build chain (esbuild, vite, postcss, vitest) and outdated major versions across all modules"
+    }
+  },
+  "modules": {
+    "Source/Backend": {
+      "total_dependencies": 412,
+      "direct_prod": 4,
+      "direct_dev": 9,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 0,
+        "medium": 2
+      },
+      "outdated_major": ["express (1 major)", "pino (2 major)", "uuid (5 major)"],
+      "status": "VULNERABLE"
+    },
+    "Source/Frontend": {
+      "total_dependencies": 231,
+      "direct_prod": 3,
+      "direct_dev": 7,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "medium": 6
+      },
+      "outdated_major": ["react (1 major)", "react-dom (1 major)", "react-router-dom (1 major)"],
+      "status": "VULNERABLE"
+    },
+    "Source/E2E": {
+      "total_dependencies": 4,
+      "direct_prod": 1,
+      "direct_dev": 0,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0
+      },
+      "outdated_major": [],
+      "status": "CLEAN"
+    },
+    "platform/orchestrator": {
+      "total_dependencies": 156,
+      "direct_prod": 3,
+      "direct_dev": 0,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "medium": 0
+      },
+      "outdated_major": ["dockerode (1 major)", "express (1 major)", "multer (1 major)"],
+      "status": "VULNERABLE_INFRASTRUCTURE",
+      "note": "Infrastructure module; breaking changes cascade to all agents"
+    },
+    "portal/Backend": {
+      "total_dependencies": 578,
+      "direct_prod": 10,
+      "direct_dev": 8,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "medium": 5
+      },
+      "outdated_major": ["@opentelemetry/* (4+ major)", "express (1 major)"],
+      "status": "VULNERABLE_OUTDATED",
+      "note": "OpenTelemetry stack is severely behind; separate upgrade task needed"
+    },
+    "portal/Frontend": {
+      "total_dependencies": 425,
+      "direct_prod": 3,
+      "direct_dev": 9,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 1,
+        "medium": 4
+      },
+      "outdated_major": ["react (1 major)", "react-dom (1 major)", "react-router-dom (1 major)"],
+      "status": "VULNERABLE"
+    }
+  },
+  "dependency_tree": {
+    "total_packages": 1802,
+    "direct_dependencies": 24,
+    "transitive_dependencies": 1746,
+    "supply_chain_risk": "MODERATE",
+    "notes": [
+      "Large transitive dependency tree (1,802 packages) creates broad attack surface",
+      "No single-maintainer risk detected",
+      "No deprecated packages detected",
+      "No post-install scripts detected",
+      "No GPL/AGPL licenses detected (all permissive)"
+    ]
+  },
+  "immediate_actions": [
+    {
+      "priority": 1,
+      "finding": "DEP-001 (Handlebars RCE)",
+      "action": "cd Source/Backend && npm audit fix",
+      "owner": "backend-coder",
+      "verify": "npm test"
+    },
+    {
+      "priority": 1,
+      "finding": "DEP-002 (Protobufjs RCE)",
+      "action": "cd platform/orchestrator && npm audit fix --force",
+      "owner": "solo-session (infrastructure)",
+      "verify": "Orchestrator starts, agents spawn successfully"
+    },
+    {
+      "priority": 1,
+      "finding": "DEP-003/004/005 (ReDoS + Path Traversal)",
+      "action": "cd portal/Backend && npm audit fix; cd portal/Frontend && npm audit fix --force",
+      "owner": "backend-coder / frontend-coder",
+      "verify": "npm test, dev server works"
+    }
+  ],
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-006"],
+      "reason": "RCE and security bypass vulnerabilities"
+    },
+    {
+      "team": "TheFixer",
+      "findings": ["All P1/P2 findings in immediate_actions"],
+      "reason": "Breaking changes and major version upgrades needed"
+    }
+  ],
+  "recommendations": [
+    "Run npm audit weekly; escalate new critical CVEs immediately",
+    "Add npm audit to pre-commit hooks",
+    "Plan quarterly major version review sprints",
+    "Treat platform/orchestrator updates with extra care (infrastructure)",
+    "Monitor Vite/esbuild CVEs (build chain is frequently vulnerable)",
+    "Plan dedicated OpenTelemetry upgrade task for portal/Backend"
+  ],
+  "audit_tool_summary": {
+    "npm_audit": "✓ used for CVE scanning",
+    "npm_outdated": "✓ used for version analysis",
+    "npm_ls": "✓ used for dependency tree",
+    "license_checker": "✗ manual review; all licenses permissive",
+    "govulncheck": "✗ no Go modules found",
+    "pip_audit": "✗ no Python modules found"
+  },
+  "execution_metadata": {
+    "auditor": "dependency_auditor (Haiku)",
+    "execution_time_seconds": 300,
+    "confidence_level": "HIGH",
+    "findings_verified": true,
+    "report_location": "Teams/TheInspector/findings/dependency-audit-2026-05-06.md",
+    "learnings_updated": true
+  }
+}

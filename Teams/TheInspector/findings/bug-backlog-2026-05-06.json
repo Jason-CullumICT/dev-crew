@@ -1,0 +1,276 @@
+{
+  "audit_id": "run-20260506-054400",
+  "audit_date": "2026-05-06",
+  "branch": "audit/inspector-2026-05-06-4b161e",
+  "grade": "D",
+  "grade_rationale": "3 P1 findings exceed Grade C threshold (max_p1: 2). Two CVSS 9.8 RCE CVEs in active infrastructure + 1 active test-failing missing endpoint.",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 10,
+    "p3_total": 11,
+    "p4_total": 1,
+    "escalations_total": 4,
+    "fixer_backlog_total": 9,
+    "fixed_total": 0,
+    "first_audit": true
+  },
+  "specialists": {
+    "quality_oracle": { "mode": "static", "grade": "C", "p1": 1, "p2": 5, "p3": 5, "p4": 1 },
+    "dependency_auditor": { "mode": "static", "grade": "C", "p1": 2, "p2": 5, "p3": 7 },
+    "performance_profiler": { "mode": "not_run", "reason": "backend_offline" },
+    "chaos_monkey": { "mode": "not_run", "reason": "services_offline" }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "category": "CVE/code-injection",
+      "title": "Handlebars JavaScript Injection — multiple CVEs (max CVSS 9.8)",
+      "package": "handlebars@<4.7.9",
+      "cve": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"],
+      "cvss_max": 9.8,
+      "module": "Source/Backend",
+      "vector": "transitive via jest/ts-jest",
+      "impact": "Arbitrary JavaScript execution during template compilation",
+      "fix_cmd": "cd Source/Backend && npm audit fix",
+      "guardians_task": "Verify no production code path invokes template compilation on user-controlled input",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "category": "CVE/code-execution",
+      "title": "Protobufjs Arbitrary Code Execution (CVSS 9.8) — orchestrator + portal/Backend",
+      "package": "protobufjs@<7.5.5",
+      "cve": ["GHSA-xq3m-2v4x-88gg"],
+      "cvss_max": 9.8,
+      "modules": ["platform/orchestrator", "portal/Backend"],
+      "vector": "platform/orchestrator via dockerode→gRPC; portal/Backend via @opentelemetry transitive",
+      "impact": "Remote code execution on orchestrator (controls all agent pipelines) and portal/Backend",
+      "fix_cmd": "cd platform/orchestrator && npm audit fix --force  # SOLO-SESSION ONLY — test all agent pipelines after\ncd portal/Backend && npm audit fix",
+      "guardians_task": "Assess attack surface — can external actors send arbitrary protobuf messages to orchestrator or portal endpoints?",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "category": "CVE/ReDoS",
+      "title": "path-to-regexp ReDoS via multiple route parameters (CVSS 7.5)",
+      "package": "path-to-regexp@<0.1.13",
+      "cve": ["GHSA-37ch-88jc-xwx2"],
+      "cvss_max": 7.5,
+      "modules": ["platform/orchestrator", "portal/Backend"],
+      "vector": "transitive via express",
+      "impact": "CPU exhaustion via malformed URL with many route parameters — zero precondition, any network user",
+      "fix_cmd": "cd platform/orchestrator && npm update express path-to-regexp\ncd portal/Backend && npm audit fix",
+      "guardians_task": "Confirm orchestrator and portal/Backend are not directly internet-facing without rate limiting",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "category": "CVE/XSS",
+      "title": "PostCSS XSS via unescaped </style> in stringify output (CVSS 6.1)",
+      "package": "postcss@<8.5.10",
+      "cve": ["GHSA-qx2v-qp2m-jg93"],
+      "cvss_max": 6.1,
+      "modules": ["portal/Frontend", "Source/Frontend"],
+      "vector": "build chain; exploitable if user-controlled content processed as CSS",
+      "impact": "XSS in rendered HTML if user CSS input processed via PostCSS",
+      "fix_cmd": "cd portal/Frontend && npm update postcss\ncd Source/Frontend && npm update postcss",
+      "guardians_task": "Determine if any user input flows through PostCSS processing in portal or Source/Frontend",
+      "status": "NEW"
+    }
+  ],
+  "fixer_backlog": {
+    "p1": [
+      {
+        "id": "QO-001",
+        "severity": "P1",
+        "category": "spec-drift",
+        "title": "GET /api/search not mounted — 5 tests actively failing",
+        "file": "Source/Backend/src/app.ts",
+        "spec": "FR-dependency-search",
+        "description": "Route handler never mounted. searchRouter must be created (Source/Backend/src/routes/search.ts) and wired in app.ts. 5 tests in tests/routes/search.test.ts fail on every npm test.",
+        "recommendation": "Create search.ts route with GET /api/search?q= doing fuzzy match on workItemStore. Mount with app.use('/api', searchRouter).",
+        "owner": "backend-coder",
+        "team": "TheFixer",
+        "status": "NEW"
+      }
+    ],
+    "p2": [
+      {
+        "id": "QO-002",
+        "severity": "P2",
+        "category": "spec-drift",
+        "title": "Traceability enforcer blind to 88% of spec surface",
+        "file": "tools/traceability-enforcer.py",
+        "description": "Enforcer only validates Plans/*/requirements.md → Source/ + E2E/. Leaves portal/ (1073 Verifies: comments), platform/ (FR-TMP-*), and Specifications/ (80+ FRs) completely unvalidated. Also non-deterministic when multiple requirements.md share same mtime.",
+        "recommendation": "Extend enforcer to accept multi-dir config. Add alphabetical mtime tiebreaking. Add inspector.config.yml spec→code pairs. Solo session or tooling owner.",
+        "owner": "solo-session",
+        "team": "Solo",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-003",
+        "severity": "P2",
+        "category": "spec-drift",
+        "title": "FR-TMP Verifies: comments stripped after docker→platform rename",
+        "file": "platform/orchestrator/lib/workflow-engine.js",
+        "description": "All 10 FR-TMP-* Verifies: comments lost during docker/→platform/ rename. grep -c 'FR-TMP' returns 0. Implementation (riskLevel, _runPlaywrightE2E, _createPR, _aiReviewPR, _autoMerge) is present but unlinked to spec.",
+        "recommendation": "Restore // Verifies: FR-TMP-XXX comments per the traceability-report-run3.md FR matrix. SOLO-SESSION ONLY — platform/ is off-limits to pipeline agents.",
+        "owner": "solo-session",
+        "team": "Solo",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-004",
+        "severity": "P2",
+        "category": "spec-drift",
+        "title": "blocked_by missing from portal UpdateBugInput and UpdateFeatureRequestInput",
+        "file": "portal/Shared/api.ts",
+        "lines": "32-67",
+        "spec": "FR-dependency-api-types",
+        "description": "UpdateFeatureRequestInput and UpdateBugInput both lack blocked_by?: string[]. DependencyPicker uses 'as any' cast as workaround — type safety hole.",
+        "recommendation": "Add blocked_by?: string[] to both interfaces. Remove 'as any' casts from portal/Frontend/src/components/shared/DependencyPicker.tsx.",
+        "owner": "api-contract",
+        "team": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-005",
+        "severity": "P2",
+        "category": "spec-drift",
+        "title": "portal/Backend seed.ts missing — dependency seeding absent",
+        "file": "portal/Backend/src/database/seed.ts",
+        "spec": "FR-dependency-seed",
+        "description": "No seed.ts exists. Required to create 8 known dependency relationships idempotently. Without it, dependency UI shows empty and E2E smoke tests cannot validate the full flow.",
+        "recommendation": "Create seed.ts with idempotent seedDependencies() for 8 known relationships. Wire into portal/Backend/src/index.ts startup after base data seeding.",
+        "owner": "portal-backend-coder",
+        "team": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-006",
+        "severity": "P2",
+        "category": "untested",
+        "title": "Two portal frontend test files missing",
+        "files": [
+          "portal/Frontend/tests/DependencySection.test.tsx",
+          "portal/Frontend/tests/BlockedBadge.test.tsx"
+        ],
+        "spec": "FR-dependency-frontend-tests",
+        "description": "Both test files never created. DependencySection.tsx (226 lines) and BlockedBadge.tsx (both amber + red states) have zero test coverage.",
+        "recommendation": "Create both test files. Each must carry // Verifies: FR-dependency-section and // Verifies: FR-dependency-blocked-badge comments respectively.",
+        "owner": "portal-frontend-coder",
+        "team": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-004",
+        "severity": "P2",
+        "category": "CVE/ReDoS",
+        "title": "picomatch ReDoS via extglob quantifiers (CVSS 7.5)",
+        "package": "picomatch@<2.3.2",
+        "cve": ["GHSA-c2c7-rcm5-vvqj"],
+        "cvss": 7.5,
+        "module": "portal/Frontend",
+        "fix_cmd": "cd portal/Frontend && npm update picomatch",
+        "owner": "frontend-coder",
+        "team": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-005",
+        "severity": "P2",
+        "category": "CVE/path-traversal",
+        "title": "Vite path traversal in optimized deps .map handling",
+        "package": "vite@<=6.4.1",
+        "cve": ["GHSA-4w7w-66w2-5vf9"],
+        "modules": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+        "fix_cmd": "# Update vite to >=6.5.0 in each module\ncd Source/Frontend && npm update vite\ncd portal/Backend && npm update vite\ncd portal/Frontend && npm update vite",
+        "note": "Major version bump — verify React + Vitest compatibility after upgrade",
+        "owner": "frontend-coder",
+        "team": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-007",
+        "severity": "P2",
+        "category": "outdated",
+        "title": "OpenTelemetry SDK 4+ major versions behind (0.47.0 vs 0.216.0)",
+        "packages": [
+          "@opentelemetry/auto-instrumentations-node@0.40.0 → 0.74.0",
+          "@opentelemetry/exporter-trace-otlp-http@0.47.0 → 0.216.0",
+          "@opentelemetry/sdk-node@0.47.0 → 0.216.0"
+        ],
+        "module": "portal/Backend",
+        "description": "169-minor-version gap. Missing security patches and bug fixes in tracing infrastructure. Dedicated upgrade task required due to breaking API changes.",
+        "recommendation": "Create separate sprint: audit breaking changes 0.47 → 0.74, update tracing implementation, test with OTEL collector.",
+        "owner": "portal-backend-coder",
+        "team": "TheFixer",
+        "status": "NEW"
+      }
+    ],
+    "p3": [
+      { "id": "QO-007", "severity": "P3", "title": "Source/Frontend BlockedBadge missing amber pending_dependencies state", "file": "Source/Frontend/src/components/BlockedBadge.tsx", "owner": "frontend-coder", "team": "TheFixer", "status": "NEW" },
+      { "id": "QO-008", "severity": "P3", "title": "eslint-disable suppression undocumented (react-hooks/exhaustive-deps ×2)", "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"], "owner": "frontend-coder", "team": "TheFixer", "status": "NEW" },
+      { "id": "QO-009", "severity": "P3", "title": "Silent .catch(()=>({})) in API client — violates architecture error-handling rule", "file": "Source/Frontend/src/api/client.ts:26", "owner": "frontend-coder", "team": "TheFixer", "status": "NEW" },
+      { "id": "QO-010", "severity": "P3", "title": "playwright.pipeline.config.ts hardcoded to past-run testDir", "file": "Source/E2E/playwright.pipeline.config.ts", "owner": "frontend-coder", "team": "TheFixer", "status": "NEW" },
+      { "id": "QO-011", "severity": "P3", "title": "workflow.ts at 374 lines — exceeds 300-line guideline", "file": "Source/Backend/src/routes/workflow.ts", "owner": "backend-coder", "team": "TheFixer", "status": "NEW" },
+      { "id": "DEP-008", "severity": "P3", "title": "brace-expansion zero-step sequence DoS (CVSS 6.5)", "package": "brace-expansion@<1.1.13", "module": "Source/Backend", "fix_cmd": "cd Source/Backend && npm update brace-expansion", "team": "TheFixer", "status": "NEW" },
+      { "id": "DEP-009", "severity": "P3", "title": "esbuild CORS bypass in dev server (CVSS 5.3)", "package": "esbuild@<=0.24.2", "modules": ["Source/Frontend", "portal/Backend", "portal/Frontend"], "fix_cmd": "Update vite (bundles esbuild) to latest in all three modules", "team": "TheFixer", "status": "NEW" },
+      { "id": "DEP-010", "severity": "P3", "title": "Vitest/Vite-Node dependency chain issues in portal modules", "modules": ["portal/Backend", "portal/Frontend"], "fix_cmd": "cd portal/Backend && npm install vitest@4.1.5+; cd portal/Frontend && npm install vitest@4.1.5+", "team": "TheFixer", "status": "NEW" },
+      { "id": "DEP-011", "severity": "P3", "title": "Backend prod deps outdated (express@4, pino@8, uuid@9)", "module": "Source/Backend", "team": "TheFixer", "status": "NEW" },
+      { "id": "DEP-012", "severity": "P3", "title": "Frontend prod deps outdated (react@18, react-router-dom@6)", "module": "Source/Frontend", "team": "TheFixer", "status": "NEW" },
+      { "id": "DEP-013", "severity": "P3", "title": "Orchestrator deps outdated (dockerode@4, express@4, multer@1)", "module": "platform/orchestrator", "note": "Solo-session only — infrastructure module", "team": "Solo", "status": "NEW" }
+    ],
+    "p4": [
+      { "id": "QO-012", "severity": "P4", "title": "Route handlers bypass service layer — workItemStore CRUD in routes", "files": ["Source/Backend/src/routes/workItems.ts", "Source/Backend/src/routes/workflow.ts"], "owner": "backend-coder", "team": "TheFixer", "status": "NEW" }
+    ]
+  },
+  "cross_reference_map": [
+    {
+      "root_cause": "Deferred npm dependency maintenance in infrastructure modules",
+      "findings": ["DEP-002", "DEP-003", "DEP-007"],
+      "single_fix": "npm audit fix in platform/orchestrator (solo-session) and portal/Backend",
+      "fix_impact": "Resolves 1 P1 + 2 P2 findings across infrastructure"
+    },
+    {
+      "root_cause": "Incomplete dependency-linking feature across portal layers",
+      "findings": ["QO-004", "QO-005", "QO-006"],
+      "single_fix": "One TheFixer sprint: blocked_by types + seed.ts + 2 test files in portal",
+      "fix_impact": "Resolves 3 P2 findings; completes FR-dependency-* implementation"
+    },
+    {
+      "root_cause": "docker→platform directory rename lost all traceability artifacts",
+      "findings": ["QO-002", "QO-003"],
+      "single_fix": "Solo session: restore Verifies: comments + extend traceability enforcer scope",
+      "fix_impact": "Resolves 2 P2 findings; restores spec coverage visibility for 88% of spec surface"
+    },
+    {
+      "root_cause": "Outdated Vite/esbuild build toolchain across frontend and portal modules",
+      "findings": ["DEP-005", "DEP-009", "DEP-010"],
+      "single_fix": "Update vite to >=6.5.0 across Source/Frontend, portal/Backend, portal/Frontend",
+      "fix_impact": "Resolves 1 P2 + 2 P3 findings across build chain"
+    }
+  ],
+  "grading_applied": {
+    "thresholds": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+      "D": { "max_p1": 999 }
+    },
+    "actual": { "p1_count": 3, "p2_count": 10, "spec_coverage_enforcer": "12%", "spec_coverage_estimated": "88%" },
+    "grade_D_reason": "3 P1 findings exceed Grade C threshold of max_p1: 2"
+  }
+}

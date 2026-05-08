@@ -1,0 +1,267 @@
+{
+  "audit_id": "run-20260508-051619",
+  "audit_date": "2026-05-08",
+  "branch": "audit/inspector-2026-05-08-c9c547",
+  "grade": "C",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "summary": {
+    "p1_total": 1,
+    "p2_total": 4,
+    "p3_total": 10,
+    "p4_total": 3,
+    "total_findings": 18,
+    "spec_coverage_pct": 99,
+    "escalations_total": 1,
+    "fixed_total": 0,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "Handlebars.js Multiple Critical CVEs via ts-jest (Build Pipeline)",
+      "route": "TheGuardians",
+      "finding_summary": "Handlebars ≤4.7.8 carries CVSS 9.8 JavaScript injection CVEs in Source/Backend build chain via ts-jest@29.x — dev-time only currently, but requires security validation",
+      "package": "handlebars",
+      "affected_file": "Source/Backend/package-lock.json",
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "fix": "npm install ts-jest@latest (requires ts-jest >= 30.0.0)",
+      "status": "open",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift/tool-gap",
+      "title": "Traceability enforcer blind to portal/ and platform/",
+      "file": "tools/traceability-enforcer.py:70",
+      "detail": "Enforcer hardcodes source_dirs = ['Source', 'E2E']. portal/ and platform/ are invisible — 76 false-negative warnings, real gaps go undetected.",
+      "recommendation": "Add 'portal' and 'platform' to source_dirs in check_traceability(). One-line fix.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle",
+      "cross_ref": ["QO-005", "QO-010"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Direct DB queries in teamDispatches route handler",
+      "file": "portal/Backend/src/routes/teamDispatches.ts:37-43,72-75",
+      "detail": "Route calls db.prepare(...).all() and db.prepare(...).run() directly — no service layer. CLAUDE.md: 'No direct DB calls from route handlers — use the service layer.'",
+      "recommendation": "Extract teamDispatchService.ts with listDispatches(db) and createDispatch(db). Move TeamDispatch to portal/Shared/types.ts.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle",
+      "cross_ref": ["QO-004", "QO-006"]
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "Vite path-traversal CVE (GHSA-4w7w-66w2-5vf9)",
+      "file": "Source/Frontend/package.json",
+      "package": "vite@5.4.0",
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "fix": "npm install vite@latest (>= 6.5.0)",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "dependency-auditor",
+      "cross_ref": ["DEP-003", "DEP-004"]
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "Vitest CVE cascade from outdated vite dependency chain",
+      "file": "Source/Frontend/package.json",
+      "package": "vitest@2.0.5",
+      "fix": "npm install vitest@latest (>= 4.1.5)",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "dependency-auditor",
+      "cross_ref": ["DEP-002"]
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "3 empty .catch(() => {}) blocks swallow errors silently",
+      "files": [
+        "portal/Frontend/src/components/bugs/BugDetail.tsx:82",
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx:80",
+        "portal/Frontend/src/components/common/RepoSelector.tsx:20"
+      ],
+      "recommendation": "Replace with catch((err) => { logger.error('...', err); }) or surface error toast. If intentional, add comment.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "3 production files with zero Verifies comments (incl. unspecced feature)",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts",
+        "portal/Frontend/src/components/common/RepoSelector.tsx",
+        "portal/Frontend/src/pages/TeamsPage.tsx"
+      ],
+      "recommendation": "Write spec entries in Plans/ for team-dispatches API and Teams page. Backfill // Verifies: comments.",
+      "route": "TheFixer + requirements-reviewer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-DUP-06 missing Verifies comment",
+      "files": [
+        "portal/Backend/src/routes/bugs.ts",
+        "portal/Backend/src/routes/featureRequests.ts"
+      ],
+      "recommendation": "Add // Verifies: FR-DUP-06 to the /:id GET handlers in bugs.ts and featureRequests.ts.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "Inline TeamDispatch type defined in route file",
+      "file": "portal/Backend/src/routes/teamDispatches.ts:14-22",
+      "recommendation": "Move TeamDispatch interface to portal/Shared/types.ts and import from there.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "doc-stale",
+      "title": "FR-070 to FR-095 not backported to Specifications/",
+      "file": "Specifications/dev-workflow-platform.md",
+      "recommendation": "Append FR-070-095 and FR-DUP-* to Specifications/dev-workflow-platform.md. Documentation only.",
+      "route": "requirements-reviewer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "PostCSS CSS stringify XSS (GHSA-qx2v-qp2m-jg93) via Vite",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "postcss < 8.5.10",
+      "fix": "Update vite to latest (brings postcss >= 8.5.10)",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "Brace-expansion DoS (GHSA-f886-m6hf-6m8v)",
+      "file": "Source/Backend/package-lock.json",
+      "package": "brace-expansion < 1.1.13",
+      "fix": "Update ts-jest/jest dependencies to pull in patched brace-expansion",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "outdated-major",
+      "title": "express@4.18.2 — 3 major versions behind (latest 5.2.1)",
+      "file": "Source/Backend/package.json",
+      "recommendation": "Plan Express v5 migration (breaking: async error handling). Patch to 4.22.1 first as intermediate step.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "outdated-major",
+      "title": "pino@8.17.0 — 2 major versions behind (latest 10.3.1)",
+      "file": "Source/Backend/package.json",
+      "recommendation": "Update to pino@8.21+ (patch) first, then plan v9/v10 migration.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "outdated-major",
+      "title": "React ecosystem 1 major behind (v18→v19) + react-router-dom v6→v7",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "Plan React 19 migration (breaking: JSX runtime changes). Separate sprint recommended.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "2 eslint-disable suppressions without explanatory comments",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Add inline comment explaining why react-hooks/exhaustive-deps is intentionally suppressed.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "5 source files exceed 500-line threshold",
+      "files": [
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx (550 lines)",
+        "portal/Frontend/src/components/bugs/BugDetail.tsx (546 lines)",
+        "portal/Backend/src/services/cycleService.ts (526 lines)",
+        "portal/Frontend/src/api/client.ts (525 lines)",
+        "portal/Backend/src/services/featureRequestService.ts (506 lines)"
+      ],
+      "recommendation": "Extract sub-components from detail views; split cycleService into pipeline lifecycle + ticket management.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 lacks Verifies comment in Dockerfile.worker",
+      "file": "platform/Dockerfile.worker:32-40",
+      "recommendation": "Add # Verifies: FR-TMP-008 comment. Optionally add smoke test for gh/playwright version.",
+      "route": "TheFixer",
+      "status": "open",
+      "specialist": "quality-oracle"
+    }
+  ]
+}

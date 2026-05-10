@@ -1,0 +1,219 @@
+{
+  "audit": {
+    "date": "2026-05-10",
+    "auditor": "dependency_auditor",
+    "status": "complete",
+    "overall_grade": "B"
+  },
+  "scope": {
+    "projects_scanned": 3,
+    "package_managers": ["npm"],
+    "locations": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E"
+    ]
+  },
+  "vulnerability_summary": {
+    "total_cves": 9,
+    "by_severity": {
+      "critical": 1,
+      "high": 0,
+      "moderate": 8,
+      "low": 0
+    },
+    "cves_by_project": {
+      "backend": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 1,
+        "low": 0,
+        "total": 2
+      },
+      "frontend": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 6,
+        "low": 0,
+        "total": 6
+      },
+      "e2e": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      }
+    }
+  },
+  "dependencies": {
+    "backend": {
+      "direct_prod": 4,
+      "direct_dev": 8,
+      "total_direct": 12,
+      "total_transitive": 411,
+      "total_unique_packages": 412,
+      "postinstall_scripts": 0
+    },
+    "frontend": {
+      "direct_prod": 3,
+      "direct_dev": 10,
+      "total_direct": 13,
+      "total_transitive": 230,
+      "total_unique_packages": 231,
+      "postinstall_scripts": 0
+    },
+    "e2e": {
+      "direct_prod": 1,
+      "direct_dev": 0,
+      "total_direct": 1,
+      "total_transitive": null,
+      "total_unique_packages": null,
+      "postinstall_scripts": 0
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Multiple Critical JavaScript Injection Vulnerabilities",
+      "severity": "P1",
+      "category": "cve",
+      "package": "handlebars@4.7.8",
+      "affected_versions": "4.0.0 - 4.7.8",
+      "location": "Source/Backend/package-lock.json (transitive via ts-jest → handlebars)",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q (CVSS 9.8, RCE)",
+        "GHSA-3mfm-83xf-c92r (CVSS 8.1, RCE via @partial-block)",
+        "GHSA-xhpv-hc6g-r9c6 (CVSS 8.1, RCE via dynamic partial)",
+        "GHSA-9cx6-37pm-9jff (CVSS 7.5, DoS)",
+        "GHSA-xjpj-3mr7-gcpf (CVSS 8.2, CLI injection)",
+        "GHSA-2qvq-rjwj-gvw9 (CVSS 4.7, Prototype pollution)",
+        "GHSA-7rx3-28cr-v5wh (CVSS 4.8, Access control gap)",
+        "GHSA-442j-39wm-28r2 (CVSS 3.7, Property access bypass)"
+      ],
+      "entry_point": "Backend test framework (ts-jest@29.1.2)",
+      "risk_assessment": "Dev dependency chain, but code execution possible if test templates compromised",
+      "immediate_action": "npm update ts-jest && npm audit fix",
+      "alternative_solution": "Replace ts-jest with @swc/jest to eliminate handlebars entirely",
+      "escalation": "TheGuardians (for RCE risk assessment)"
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-002",
+      "title": "Vite Path Traversal in Optimized Deps .map Handling",
+      "severity": "P2",
+      "category": "cve",
+      "package": "vite@5.4.0",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "cvss": 0,
+      "location": "Source/Frontend/package.json (direct dev dependency)",
+      "risk": "Development-only; source code leakage possible via .map file traversal",
+      "fix": "npm update vite (to latest 5.x or 8.x)",
+      "note": "Vite 8.x is major version bump; test thoroughly"
+    },
+    {
+      "id": "DEP-003",
+      "title": "esbuild Dev Server CORS Bypass",
+      "severity": "P2",
+      "category": "cve",
+      "package": "esbuild@<=0.24.2",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvss": 5.3,
+      "location": "Source/Frontend (transitive via vite → esbuild)",
+      "risk": "Any website can make requests to dev server; leaks sensitive data",
+      "fix": "npm update vite (which updates esbuild)"
+    },
+    {
+      "id": "DEP-004",
+      "title": "PostCSS XSS via Unescaped </style>",
+      "severity": "P2",
+      "category": "cve",
+      "package": "postcss@<8.5.10",
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "cvss": 6.1,
+      "location": "Source/Frontend (transitive via vite → postcss)",
+      "risk": "XSS if user-controlled CSS strings are processed",
+      "fix": "npm update postcss (to 8.5.10+)"
+    },
+    {
+      "id": "DEP-005",
+      "title": "brace-expansion Zero-step Sequence DoS",
+      "severity": "P3",
+      "category": "cve",
+      "package": "brace-expansion@<1.1.13",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cvss": 6.5,
+      "location": "Source/Backend (transitive)",
+      "risk": "Process hang/memory exhaustion if zero-step glob patterns are processed",
+      "fix": "npm update brace-expansion (auto-fixed by npm audit fix)"
+    }
+  ],
+  "supply_chain_risks": {
+    "postinstall_scripts": {
+      "detected": 0,
+      "status": "SAFE"
+    },
+    "abandoned_packages": {
+      "detected": 0,
+      "status": "SAFE"
+    },
+    "high_multiplier_dependencies": [
+      {
+        "project": "backend",
+        "direct": 4,
+        "transitive": 411,
+        "multiplier": 102.75,
+        "risk": "MODERATE",
+        "note": "Typical for Node.js; ts-jest brings many transitive deps"
+      }
+    ],
+    "dependency_width_risk": "MODERATE"
+  },
+  "license_compliance": {
+    "audit_tool": "manual_review",
+    "gpl_agpl_detected": 0,
+    "unknown_licenses": 0,
+    "status": "COMPLIANT",
+    "note": "MIT/Apache-2.0 licenses dominate; no viral license risk"
+  },
+  "recommendations": {
+    "immediate": [
+      "Backend: npm update ts-jest && npm audit fix (handlebars critical CVE)",
+      "Frontend: npm update vite vitest && npm test && npm run build (dev CVE chain)"
+    ],
+    "short_term": [
+      "Architecture: Replace ts-jest with @swc/jest to eliminate handlebars entirely",
+      "CI/CD: Add npm audit to pull request checks; fail on critical CVEs",
+      "Automation: Set up Dependabot or npm auto-updates for patch versions"
+    ],
+    "medium_term": [
+      "License Compliance: Install license-checker in CI/CD",
+      "Periodic Audit: Run quarterly (next: 2026-08-10)",
+      "Dependency Width: Monitor transitive dependency growth"
+    ]
+  },
+  "cross_team_escalations": [
+    {
+      "team": "TheGuardians",
+      "reason": "Handlebars RCE vulnerabilities in test infrastructure",
+      "finding_id": "DEP-001",
+      "action": "Assess code execution risk if test infra is compromised; review if tests are part of deployed CI/CD image"
+    }
+  ],
+  "audit_metadata": {
+    "tools_used": [
+      "npm audit --json",
+      "npm list --depth=0",
+      "package-lock.json analysis (Python JSON parsing)"
+    ],
+    "files_scanned": [
+      "Source/Backend/package.json",
+      "Source/Backend/package-lock.json",
+      "Source/Frontend/package.json",
+      "Source/Frontend/package-lock.json",
+      "Source/E2E/package.json"
+    ],
+    "audit_completeness": "Full CVE sweep; no Python/Go/Rust projects; license audit manual only"
+  }
+}

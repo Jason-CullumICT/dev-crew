@@ -1,0 +1,297 @@
+{
+  "audit": {
+    "id": "run-20260510-054949",
+    "date": "2026-05-10",
+    "grade": "D",
+    "branch": "audit/inspector-2026-05-10-444c66",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline — static mode only; no dynamic reports generated",
+    "prior_audit": null,
+    "trend": "first-audit"
+  },
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 6,
+    "p3_total": 6,
+    "p4_total": 2,
+    "total_findings": 17,
+    "escalations": 1,
+    "fixed_since_prior": 0,
+    "spec_coverage_active_plans_pct": 96,
+    "spec_coverage_all_specs_pct": 27
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Multiple Critical JavaScript Injection Vulnerabilities (CVSS 9.8)",
+      "severity": "P1",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "package": "handlebars@4.7.8",
+      "location": "Source/Backend/package-lock.json",
+      "chain": "ts-jest@29.1.2 → handlebars@4.7.8",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q (CVSS 9.8, RCE via AST type confusion)",
+        "GHSA-3mfm-83xf-c92r (CVSS 8.1, RCE via @partial-block)",
+        "GHSA-xhpv-hc6g-r9c6 (CVSS 8.1, RCE via dynamic partial)",
+        "GHSA-9cx6-37pm-9jff (CVSS 7.5, DoS via malformed decorator)",
+        "GHSA-xjpj-3mr7-gcpf (CVSS 8.2, CLI injection)",
+        "GHSA-2qvq-rjwj-gvw9 (CVSS 4.7, Prototype pollution → XSS)",
+        "GHSA-7rx3-28cr-v5wh (CVSS 4.8, Access control gap)",
+        "GHSA-442j-39wm-28r2 (CVSS 3.7, Property access bypass)"
+      ],
+      "exploit_scenario": "If test infrastructure is compromised (supply chain attack on ts-jest), or if custom Handlebars templates are compiled with untrusted input, remote code execution is possible in the Backend dev/test environment. Risk escalates if Backend test containers are part of the deployed CI/CD image.",
+      "impact": "Remote Code Execution in test environment; prototype pollution; process crash/DoS",
+      "immediate_action": "cd Source/Backend && npm update ts-jest && npm audit fix",
+      "architecture_fix": "Replace ts-jest with @swc/jest to eliminate handlebars entirely",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Primary Domain Spec Entirely Untraced — 74 Requirements at 0% Coverage",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "Specifications/dev-workflow-platform.md (FR-001–FR-069) is listed as domain truth in CLAUDE.md but has zero // Verifies: FR-0XX traces in any source file. The codebase implements the workflow engine spec instead, with no deprecation notice on the old spec.",
+      "exploit_scenario": "Not externally exploitable. Governance risk: any agent or developer reading CLAUDE.md is directed to a spec that describes a completely different system, causing spec drift to compound indefinitely.",
+      "impact": "All agents operating on this codebase believe they are building to a spec that was never implemented. Compliance, feature completeness, and audit reports against this spec are meaningless.",
+      "recommendation": "Add a deprecation header to Specifications/dev-workflow-platform.md pointing to workflow-engine.md, OR move file to Specifications/_archived/. Then add formal FR-IDs to workflow-engine.md.",
+      "cross_refs": ["QO-002", "QO-006", "QO-010"],
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "title": "Traceability Enforcer Targets Wrong Spec — Emits False PASS",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "The enforcer uses a 'most recently modified requirements.md' heuristic, currently targeting Plans/self-judging-workflow/requirements.md (100% traced). It never checks Specifications/dev-workflow-platform.md. Every agent in every pipeline receives a false PASSED signal.",
+      "exploit_scenario": "Not externally exploitable. Pipeline integrity risk: verification gate is non-functional for 74 domain requirements.",
+      "impact": "All pipeline agents have been given false green on traceability. Any audit relying on python3 tools/traceability-enforcer.py is meaningless for the primary spec.",
+      "recommendation": "Extend enforcer to also scan Specifications/ for FR-IDs (or run with --file Specifications/dev-workflow-platform.md as a second invocation). Must be fixed before QO-001 can be verified as resolved.",
+      "cross_refs": ["QO-001"],
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "title": "Business Logic in Route Handlers — Service Layer Bypassed",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "lines": "approve: 93-141, reject: 155-208, dispatch: 212-290",
+      "detail": "approve, reject, dispatch handlers each perform state-machine transition validation, change history construction, and direct store writes. Architecture rule violated: No direct DB calls from route handlers; Business logic has no framework imports.",
+      "recommendation": "Extract approveWorkItem(), rejectWorkItem(), dispatchWorkItem() into Source/Backend/src/services/workflow.ts. Route handlers: validate input → call service → return result.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "title": "GET /api/search Not Wired — Tests Falsely Satisfy FR-dependency-search",
+      "severity": "P2",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/tests/routes/search.test.ts",
+      "detail": "search.test.ts lines 3-6 explicitly state the route is NOT wired into app.ts. Tests return 404 in practice. Frontend searchItems() API client points to the missing route. Traceability enforcer counts this as satisfying FR-dependency-search.",
+      "recommendation": "Implement GET /api/search?q= route and wire it into app.ts, OR mark FR-dependency-search as explicitly deferred.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "title": "Duplicate Diverged Frontend Test Files — Hidden Failures Risk",
+      "severity": "P2",
+      "category": "test-quality",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx (19 tests, incomplete mocks — DELETE)",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx (16 tests, incomplete mocks — DELETE)",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx (20 tests, complete — KEEP)",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx (12 tests, complete — KEEP)"
+      ],
+      "detail": "Two test files per component. Older root-level files have incomplete mocks. Both run in CI, inflating counts without reliable signal.",
+      "recommendation": "Delete the four older root-level test files. Verify no unique cases before deletion.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vite Path Traversal in Optimized Deps .map Handling",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "package": "vite@5.4.0",
+      "file": "Source/Frontend/package.json",
+      "detail": "Vite ≤6.4.1 allows path traversal in optimized deps .map file handling. Attacker could access .map files outside intended directory, potentially leaking source code or .env contents.",
+      "recommendation": "cd Source/Frontend && npm update vite && npm run build (verify production build passes)",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "title": "esbuild Dev Server CORS Bypass — Cross-Origin Request Leakage",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "package": "esbuild@<=0.24.2",
+      "file": "Source/Frontend (transitive via vite → esbuild)",
+      "detail": "Any website can make requests to esbuild dev server and read responses. Sensitive data in dev server responses (API responses, build artifacts) exposed cross-origin.",
+      "recommendation": "Resolved by npm update vite (updates esbuild transitively). [CROSS-REF: DEP-002, DEP-004]",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "title": "PostCSS XSS via Unescaped </style> in CSS Output",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "cvss": 6.1,
+      "package": "postcss@<8.5.10",
+      "file": "Source/Frontend (transitive via vite → postcss)",
+      "detail": "If CSS includes user-controlled strings, unescaped HTML tags in PostCSS output enable XSS.",
+      "recommendation": "Resolved by npm update vite (updates postcss transitively). [CROSS-REF: DEP-002, DEP-003]",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "title": "FR-dependency-* Requirements Reference Non-Existent Spec IDs (FR-070–FR-085)",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Plans/dependency-linking/requirements.md:5",
+      "recommendation": "Add FR-070–FR-085 to Specifications/dev-workflow-platform.md (or replacement spec), OR update plan to mark requirements as standalone.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "title": "eslint-disable-next-line in Production Frontend Source (2 instances)",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Review each suppression. Document with inline comment if suppression is intentional, or fix the dep array if not.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "title": "Hardcoded localhost:4200 URL in DebugPortalPage",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:5",
+      "recommendation": "Remove hardcoded fallback. Throw config error if VITE_PORTAL_URL is unset, or disable page in non-dev builds.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-009",
+      "title": "Domain Type BlockerRef Defined Inline in UI Component",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:7-11",
+      "recommendation": "Move BlockerRef to Source/Shared/types/workflow.ts referencing WorkItemType enum.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-010",
+      "title": "workflow-engine.md Spec Has No Formal FR-IDs",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Specifications/workflow-engine.md",
+      "recommendation": "Add Formal Requirements section embedding or referencing FR-WF-XXX IDs from Plans/self-judging-workflow/requirements.md.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "title": "brace-expansion Zero-Step Sequence DoS",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cvss": 6.5,
+      "package": "brace-expansion@<1.1.13",
+      "file": "Source/Backend (transitive)",
+      "recommendation": "cd Source/Backend && npm audit fix (auto-resolves this transitive dep)",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-011",
+      "title": "22+ Backend Test Cases Missing // Verifies: Comments",
+      "severity": "P4",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Backend/tests/services/dependency.test.ts (22 untraced)",
+        "Source/Backend/tests/routes/workItems.test.ts (7 untraced)",
+        "Source/Backend/tests/store/workItemStore.test.ts (6 untraced)",
+        "Source/Backend/tests/services/dashboard.test.ts (2 untraced)",
+        "Source/Backend/tests/services/changeHistory.test.ts (1 untraced)"
+      ],
+      "recommendation": "Add // Verifies: FR-WF-XXX or // Verifies: FR-dependency-XXX to each unlinked test case.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-012",
+      "title": "E2E Test Suite Not Implemented",
+      "severity": "P4",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "file": "Source/E2E/package.json:10",
+      "detail": "test script is 'exit 1'. No Playwright test specs exist despite playwright.config.ts being present.",
+      "recommendation": "Implement smoke tests: create work item → route → assess → approve → dispatch.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Spec governance breakdown — primary spec never updated or retired",
+      "affected_findings": ["QO-001", "QO-002", "QO-006", "QO-010"],
+      "single_fix": "Deprecate/archive Specifications/dev-workflow-platform.md + add FR-IDs to workflow-engine.md + fix enforcer to scan Specifications/",
+      "fix_impact": "Resolves 4 findings (2 P1 + 2 P3); restores trust in verification gate"
+    },
+    {
+      "root_cause": "Incomplete service layer — workflow actions bypass service abstraction",
+      "affected_findings": ["QO-003", "QO-004"],
+      "single_fix": "Extract approveWorkItem/rejectWorkItem/dispatchWorkItem services + implement GET /api/search",
+      "fix_impact": "Resolves 2 P2 findings; restores architecture compliance for workflow.ts"
+    },
+    {
+      "root_cause": "Outdated Vite/Vitest/esbuild ecosystem (dev dependencies)",
+      "affected_findings": ["DEP-002", "DEP-003", "DEP-004"],
+      "single_fix": "cd Source/Frontend && npm update vite vitest && npm audit fix --force && npm test && npm run build",
+      "fix_impact": "Patches 3 P2 CVEs in a single npm update command"
+    }
+  ]
+}

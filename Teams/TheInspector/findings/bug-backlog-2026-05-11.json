@@ -1,0 +1,221 @@
+{
+  "audit_id": "run-20260511-061200",
+  "date": "2026-05-11",
+  "branch": "audit/inspector-2026-05-11-5b5cb6",
+  "grade": "C",
+  "generated_by": "TheInspector team-leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend and frontend services offline — static-only mode",
+  "summary": {
+    "p1": 2,
+    "p2": 4,
+    "p3": 9,
+    "p4": 2,
+    "total": 17,
+    "spec_coverage_pct": 96,
+    "fixed": 0,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DA-P1-001",
+      "severity": "P1",
+      "category": "Vulnerable Dependency — RCE",
+      "title": "handlebars@4.7.8 JavaScript Template Injection → Remote Code Execution",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "fixed_version": ">=4.7.9",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "affected_project": "Source/Backend",
+      "file": "Source/Backend/package.json",
+      "exploit_scenario": "An attacker who can influence Handlebars template strings (e.g., via user-supplied template content or crafted input to any API that passes data into template compilation) can execute arbitrary JavaScript in the Node.js process with the server's privileges.",
+      "impact": "Full server compromise. Attacker gains code execution as the backend service account. Data exfiltration, lateral movement, or service destruction possible.",
+      "recommendation": "npm install handlebars@latest --prefix Source/Backend — then run npm audit to confirm zero critical CVEs.",
+      "exploitability": "Authenticated",
+      "route": "TheGuardians",
+      "status": "NEW",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DA-P1-002",
+      "severity": "P1",
+      "category": "Vulnerable Dependency — ACE",
+      "title": "protobufjs@7.5.4 Arbitrary Code Execution in Protobuf Deserialization",
+      "package": "protobufjs",
+      "version": "7.5.4",
+      "fixed_version": ">=7.5.5",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "affected_project": "platform/orchestrator, portal/Backend",
+      "file": "platform/orchestrator/package.json, portal/Backend/package.json",
+      "exploit_scenario": "A crafted protobuf payload sent to any endpoint that deserializes protobuf data can trigger arbitrary code execution in the receiving process. The orchestrator and portal backend are both affected.",
+      "impact": "Orchestrator or portal backend fully compromised. Pipeline integrity lost — an attacker could inject malicious agent tasks or alter run state.",
+      "recommendation": "npm update protobufjs --prefix platform/orchestrator && npm update protobufjs --prefix portal/Backend — verify fixed version >=7.5.5 installed.",
+      "exploitability": "Authenticated",
+      "route": "TheGuardians",
+      "status": "NEW",
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "p1_findings": [],
+  "p2_findings": [
+    {
+      "id": "QO-P2-001",
+      "severity": "P2",
+      "category": "Architecture Violation",
+      "title": "Direct DB calls from route handlers — 51 violations across 9 files",
+      "specialist": "quality-oracle",
+      "file": "portal/Backend/src/routes/{bugs,featureRequests,cycles,pipelines,dashboard,teamDispatches,learnings,search,features}.ts",
+      "description": "51 direct getDb() calls in route handlers bypass the service layer. Violates CLAUDE.md hard rule: 'No direct DB calls from route handlers — use the service layer.'",
+      "recommendation": "Move all SQL into service functions. Priority: cycles → pipelines → teamDispatches. Routes call services; services own getDb().",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-001",
+      "severity": "P2",
+      "category": "Vulnerable Dependency — ReDoS",
+      "title": "path-to-regexp ReDoS on route parameter matching",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "package": "path-to-regexp",
+      "affected_project": "platform/orchestrator",
+      "file": "platform/orchestrator/package.json",
+      "description": "Crafted request paths can trigger catastrophic regex backtracking in the orchestrator's route matching, causing 100% CPU utilisation and request queue exhaustion.",
+      "recommendation": "npm update path-to-regexp --prefix platform/orchestrator",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-002",
+      "severity": "P2",
+      "category": "Vulnerable Dependency — ReDoS",
+      "title": "picomatch ReDoS in path glob matching",
+      "specialist": "dependency-auditor",
+      "package": "picomatch",
+      "affected_project": "portal/Frontend",
+      "file": "portal/Frontend/package.json",
+      "description": "Dev-dependency ReDoS risk in glob path matching. Lower runtime impact but should be resolved to keep npm audit clean.",
+      "recommendation": "npm update picomatch --prefix portal/Frontend",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-003",
+      "severity": "P2",
+      "category": "Vulnerable Dependency — Build Tools",
+      "title": "vite / vitest / esbuild build tool CVEs — multiple advisories",
+      "specialist": "dependency-auditor",
+      "package": "vite, vitest, esbuild",
+      "affected_project": "Source/Frontend, portal/Frontend",
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "description": "Multiple moderate-to-high CVEs in vite, vitest, and esbuild. Build-time risk: a compromised build pipeline could inject malicious code into production bundles.",
+      "recommendation": "npm update vite vitest esbuild --prefix Source/Frontend && npm update vite vitest esbuild --prefix portal/Frontend",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-P3-001",
+      "severity": "P3",
+      "category": "Spec Drift",
+      "title": "FR-dependency-api-types: blocked_by field missing from UpdateBugInput / UpdateFeatureRequestInput",
+      "specialist": "quality-oracle",
+      "file": "portal/Shared/api.ts",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-P3-002",
+      "severity": "P3",
+      "category": "Spec Drift",
+      "title": "FR-dependency-seed: seed.ts absent — dependency relationships not seeded on startup",
+      "specialist": "quality-oracle",
+      "file": "portal/Backend/src/database/",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-P3-003",
+      "severity": "P3",
+      "category": "Untested Requirement",
+      "title": "FR-dependency-frontend-tests: DependencySection.test.tsx and BlockedBadge.test.tsx missing",
+      "specialist": "quality-oracle",
+      "file": "portal/Frontend/tests/",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-P3-004",
+      "severity": "P3",
+      "category": "Spec Drift",
+      "title": "FR-TMP-008 has no Verifies comment in platform/Dockerfile.worker",
+      "specialist": "quality-oracle",
+      "file": "platform/Dockerfile.worker",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-P3-005",
+      "severity": "P3",
+      "category": "Spec Drift",
+      "title": "FR-DUP-06 GET detail handlers missing Verifies comment",
+      "specialist": "quality-oracle",
+      "file": "portal/Backend/src/routes/bugs.ts, portal/Backend/src/routes/featureRequests.ts",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-001",
+      "severity": "P3",
+      "category": "Outdated Dependency",
+      "title": "uuid 9.0.0 is 5 major versions behind (latest: 14.0.0)",
+      "specialist": "dependency-auditor",
+      "package": "uuid",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-002",
+      "severity": "P3",
+      "category": "Outdated Dependency",
+      "title": "pino 8.x is 2 major versions behind (latest: 10.3.1)",
+      "specialist": "dependency-auditor",
+      "package": "pino",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-003",
+      "severity": "P3",
+      "category": "Outdated Dependency",
+      "title": "express 4.x — express 5.x is available",
+      "specialist": "dependency-auditor",
+      "package": "express",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-004",
+      "severity": "P3",
+      "category": "Outdated Dependency",
+      "title": "react 18.x — react 19.x is available",
+      "specialist": "dependency-auditor",
+      "package": "react",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-P4-001",
+      "severity": "P4",
+      "category": "Pattern Violation",
+      "title": "eslint-disable react-hooks/exhaustive-deps in 2 production files",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:82, Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-P4-002",
+      "severity": "P4",
+      "category": "Pattern Violation",
+      "title": "Duplicate logger abstraction in Source/Backend",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/src/logger.ts",
+      "status": "NEW"
+    }
+  ]
+}

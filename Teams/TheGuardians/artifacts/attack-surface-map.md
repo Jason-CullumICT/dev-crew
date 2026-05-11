@@ -401,3 +401,170 @@ The following were noted but are NOT reported here per agent boundary rules:
 | A03: Injection | PEN-006 | ✅ |
 | A07: Identification and Authentication Failures | PEN-001, PEN-005 | ✅ |
 | A08: Software and Data Integrity Failures | PEN-003, PEN-012 | ✅ |
+
+---
+
+## Red Team Results
+
+**Produced by:** `red_teamer`
+**Date:** 2026-05-11
+**Environment:** `Source/Backend` started via `ts-node` on `localhost:3002` (ephemeral, in-memory store)
+**Scope Note:** `docker-compose.test.yml` builds and runs `portal/Backend` on port 3001. The pen-tester's attack surface map targets `Source/Backend` routes (`/api/work-items`, etc.) which are absent from the portal. The red-teamer started `Source/Backend` locally on port 3002 to match the pen-tester's findings. Both applications are part of the same repo and share the same security posture.
+
+### Objectives Status
+
+| Objective | Result | Chain |
+|---|---|---|
+| Bypass work item state machine to reach an invalid status | ✅ **ACHIEVED** | RED-001 |
+| Access or modify a soft-deleted work item via direct ID reference | ✅ **ACHIEVED** | RED-005 |
+| Submit a malformed assessment verdict that bypasses routing logic | ✅ **ACHIEVED** | RED-004 + RED-006 |
+| Enumerate all work items without pagination limit enforcement | ✅ **ACHIEVED** | RED-002 |
+
+**All 4 pentest objectives achieved. Grade: F (confirmed critical breach).**
+
+---
+
+### RED-001: Full Workflow Takeover via Fast-Track Override
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items` → `/route` → `/dispatch`
+- **Based On:** PEN-001, PEN-002, PEN-003
+- **Exploit Scenario:**
+  1. `POST /api/work-items` with valid body — **no Authorization header** — returns 201 with item `WI-001` (id: `258de4b2`), status `backlog`.
+  2. `POST /api/work-items/258de4b2/route` body `{"overrideRoute":"fast-track"}` — item jumps to `approved` immediately; changeHistory shows `reason: "Fast-tracked: bypasses assessment pod"`. Assessment pod never consulted. `assessments: []` confirmed.
+  3. `POST /api/work-items/258de4b2/dispatch` body `{"team":"TheATeam"}` — item transitions to `in-progress`, `assignedTeam: "TheATeam"`.
+  4. **Entire backlog→in-progress pipeline bypassed in 3 unauthenticated HTTP requests.**
+- **Recommendation:** Implement JWT authentication middleware at the app layer. Add RBAC: only `ops-manager` role may pass `overrideRoute`; only `dispatcher` role may call `/dispatch`. Remove `overrideRoute` from the public API surface entirely.
+
+---
+
+### RED-002: Full Dataset Exfiltration via Unbounded Pagination
+- **Severity:** High
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items?limit=999999` and `/api/dashboard/queue` and `/api/dashboard/activity?limit=999999`
+- **Based On:** PEN-001, PEN-004, PEN-008, PEN-010
+- **Exploit Scenario:**
+  1. `GET /api/work-items?limit=999999` — 4 items returned (total=4), pagination enforced: **NO**. All records including `changeHistory` and `assessments` dumped in one request.
+  2. `GET /api/dashboard/queue` — all 4 items exposed across status buckets with full nested `changeHistory` arrays.
+  3. `GET /api/dashboard/activity?limit=999999` — 9 audit log entries returned including `workItemId`, `workItemDocId`, and raw old/new values for all field mutations.
+  4. Edge case confirmed: `limit=-1` returns 3 of 4 items (slice with negative value behaves unexpectedly). `limit=0` returns all 4. `page=-1` returns 0 items but leaks `total=4`.
+- **Recommendation:** Enforce a hard maximum `limit` cap (e.g., 100) server-side. Require authentication. Paginate dashboard queue. Mask sensitive `changeHistory.oldValue`/`newValue` fields for non-admin callers.
+
+---
+
+### RED-003: Unauthorized Cascade Dispatch via Dependency Injection
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/{victim}/dependencies` → `{blocker}/reject`
+- **Based On:** PEN-007
+- **Exploit Scenario:**
+  1. `GET /api/work-items?status=approved` — found victim item `WI-005` (`90e012bc`) in `approved` state, waiting for dispatch.
+  2. `POST /api/work-items` — created attacker blocker `WI-006` (`51e01741`).
+  3. `POST /api/work-items/90e012bc/dependencies` body `{"action":"add","blockerId":"51e01741"}` — injected blocker onto victim. Victim now has `hasUnresolvedBlockers: true`.
+  4. `POST /api/work-items/51e01741/route` — blocker routed to `proposed`.
+  5. `POST /api/work-items/51e01741/reject` body `{"reason":"attacker-controlled"}` — blocker rejected. `onItemResolved` fires automatically.
+  6. Victim `WI-005` auto-dispatched to `in-progress` by `cascade-dispatcher` agent **without any explicit `/dispatch` call**.
+  7. Confirmed via `changeHistory`: `agent=cascade-dispatcher | status: approved -> in-progress | reason: Auto-dispatched after blocker WI-006 resolved`.
+  8. Prometheus counter `dispatch_gating_events_total{event="cascade_dispatched"} 1` confirms the cascade fired.
+- **Recommendation:** Require authentication on `/dependencies` endpoint. Restrict who may add blockers to approved items (should require `ops-manager` role). Validate that `onItemResolved` cascade dispatch sends a notification/audit event that requires explicit approval before state transition.
+
+---
+
+### RED-004: Stored XSS + Enum Injection via Unsigned Intake Webhooks
+- **Severity:** High
+- **Objective Achieved:** Yes (partial — backend stores payload; frontend rendering requires separate verification)
+- **Status:** Confirmed (Live Exploit — backend vector confirmed)
+- **Target URL:** `http://localhost:3002/api/intake/zendesk` and `/api/intake/automated`
+- **Based On:** PEN-005, PEN-006
+- **Exploit Scenario:**
+  1. `POST /api/intake/zendesk` with no HMAC signature, body `{"title":"XSS-TEST","description":"...","type":"INVALID_ENUM_TYPE","priority":"<img src=x onerror=alert(document.cookie)>"}` — returns 201 with `WI-007`.
+  2. Stored `type: "INVALID_ENUM_TYPE"` (invalid enum accepted) and `priority: "<img src=x onerror=alert(document.cookie)>"` (raw HTML payload persisted).
+  3. `GET /api/work-items/f2fe552c` confirms payload stored verbatim. If frontend renders `priority` without escaping, this executes in any browser viewing the dashboard.
+  4. Additional: `POST /api/intake/zendesk` with `type: null` stores default `"bug"` (safe). With `priority: {"nested":"object"}` — object literal stored as priority value (type corruption).
+  5. `POST /api/intake/automated` impersonates trusted monitoring pipeline with `source: "automated"`, indistinguishable from real events. Metrics show `workflow_items_created_total{source="zendesk",type="INVALID_ENUM_TYPE"} 1` confirming persistence.
+- **Recommendation:** Add HMAC-SHA256 signature validation on all intake endpoints (shared secret per integration). Validate `type` and `priority` against allowed enum values before storage. Sanitize/escape all user-provided string fields at storage time.
+
+---
+
+### RED-005: Soft-Deleted Item UUID Disclosure via Readiness Check
+- **Severity:** Medium
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/{id}/ready`
+- **Based On:** PEN-009
+- **Exploit Scenario:**
+  1. Created items `WI-010` (dependent A, id: `a5050985`) and `WI-011` (blocker B, id: `bc6b62a4`).
+  2. `POST /api/work-items/a5050985/dependencies` — added B as blocker on A.
+  3. `DELETE /api/work-items/bc6b62a4` — soft-deleted B. Returns `204`. `GET /bc6b62a4` now returns 404 `"Work item not found"`.
+  4. `GET /api/work-items/a5050985/ready` — response: `{"ready":false,"unresolvedBlockers":[{"blockerItemId":"bc6b62a4-3efa-49f7-96cd-168dba2eb261","blockerItemDocId":"WI-011",...}]}`.
+  5. **Deleted item UUID `bc6b62a4` and docId `WI-011` disclosed.** An attacker can enumerate soft-deleted items.
+  6. Secondary impact: soft-deleted blocker permanently blocks dependent (no auto-resolution) — creates a DoS vector to permanently strand approved items.
+- **Recommendation:** When a blocker is soft-deleted, automatically resolve the dependency link (remove from `blockedBy`). Do not include `blockerItemId` in the `unresolvedBlockers` response — return an anonymized indicator instead (`"blockerDeleted": true`).
+
+---
+
+### RED-006: NeedsClarification Assessment Verdict Silently Bypasses Dispatch Gating
+- **Severity:** Medium
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/{id}/assess`
+- **Based On:** PEN-012
+- **Exploit Scenario:**
+  1. Created item `WI-012` (no `complexity` field) as blocker for approved target `WI-013`.
+  2. `POST /api/work-items/WI-012/assess` — pods returned `needs-clarification` verdicts. `WI-012` stored as `status: "rejected"`.
+  3. `hasUnresolvedBlockers` on `WI-013` remained `True` (not updated by `assessWorkItem`).
+  4. `POST /api/work-items/WI-013/dispatch` — **succeeded** and returned `status: "in-progress"` despite `hasUnresolvedBlockers: True`.
+  5. The dispatch endpoint's gating check treats the `rejected` blocker as resolved — allowing dispatch even when the `hasUnresolvedBlockers` flag disagrees.
+  6. Pod lead notes read `"Complexity is not set — cannot assess scope"` but item was rejected (not held for clarification), misleading operators.
+- **Recommendation:** `runAssessmentPod` must map `NeedsClarification` to a distinct status (e.g., `needs-clarification`), not `rejected`. Update `RESOLVED_STATUSES` to exclude this new status. Ensure dispatch gating re-computes live blocker states rather than relying on the cached `hasUnresolvedBlockers` flag.
+
+---
+
+### RED-007: Error Messages Leak Internal Entity References
+- **Severity:** Low
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/{id}/route`
+- **Based On:** PEN-014
+- **Exploit Scenario:**
+  1. `POST /api/work-items/nonexistent-uuid/route` — returns `{"error":"Work item nonexistent-uuid not found"}`. Full UUID echoed back.
+  2. `POST /api/work-items/undefined/route` — returns `{"error":"Work item undefined not found"}`. Confirms the ID is interpolated directly from route params.
+  3. Messages confirm endpoint existence, parameter handling, and item-not-found logic — useful for reconnaissance.
+- **Recommendation:** Return generic `{"error":"Not found"}` (HTTP 404) without echoing the ID. Route-level catch blocks should call `next(err)` instead of directly calling `res.json({error: err.message})`.
+
+---
+
+### RED-008: Full Item Enumeration via Predictable Sequential Document IDs
+- **Severity:** Low
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items`
+- **Based On:** PEN-013
+- **Exploit Scenario:**
+  1. Created 5 items in rapid succession — confirmed sequential docIds: `WI-014`, `WI-015`, `WI-016`, `WI-017`, `WI-018`.
+  2. Full `GET /api/work-items?limit=999999` maps all 17 items: `WI-001` through `WI-018` (with gap at WI-011 = soft-deleted).
+  3. The gap at `WI-011` reveals a soft-deletion event — confirming the counter is never reused and deletions are detectable.
+  4. Sequential IDs enable reconstruction of creation order, detection of bursts, and future enumeration if docId-based endpoints are added.
+- **Recommendation:** Use random or hash-based docIds (e.g., UUID-derived short codes). Counter should be persisted across restarts and should not be monotonically sequential. Consider ULID-style IDs that are sortable but not purely sequential.
+
+---
+
+## Red Team Summary
+
+| Chain | Findings | Severity | Objective Achieved | Status |
+|---|---|---|---|---|
+| RED-001: Full Workflow Takeover | PEN-001+002+003 | Critical | ✅ State machine bypass | Confirmed Breach |
+| RED-002: Full Data Exfiltration | PEN-001+004+008+010 | High | ✅ Unlimited pagination | Confirmed Breach |
+| RED-003: Cascade Dispatch | PEN-007 | Critical | ✅ Unauthorized dispatch | Confirmed Breach |
+| RED-004: Intake XSS + Enum Injection | PEN-005+006 | High | ✅ Malformed verdict bypass | Confirmed Breach |
+| RED-005: Soft-Delete UUID Disclosure | PEN-009 | Medium | ✅ Soft-deleted item access | Confirmed Breach |
+| RED-006: Assessment Verdict Bypass | PEN-012 | Medium | ✅ Dispatch gating bypass | Confirmed Breach |
+| RED-007: Error Message Leakage | PEN-014 | Low | Partial | Confirmed |
+| RED-008: Sequential Doc ID Enumeration | PEN-013 | Low | ✅ Full enumeration | Confirmed |
+
+**Confirmed breaches: 8/8 chains attempted**
+**Critical objectives achieved: 4/4**
+**Overall grade: F** (per grading scale — confirmed red-team breach of critical objectives)

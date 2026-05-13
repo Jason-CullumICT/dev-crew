@@ -1,0 +1,288 @@
+{
+  "audit_id": "run-20260513-060032",
+  "audit_date": "2026-05-13",
+  "branch": "audit/inspector-2026-05-13-ab02dd",
+  "grade": "C",
+  "grading_rationale": "2 P1 CVEs (exceeds A/B threshold of 0), 7 P2 findings, 11 P3 findings. Meets C threshold (max_p1=2, max_p2=15). Active spec coverage 100% for workflow-engine (meets C min 40%).",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend (http://localhost:3001) and Frontend (http://localhost:5173) services offline during audit window",
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 7,
+    "p3_total": 11,
+    "p4_total": 0,
+    "total_findings": 20,
+    "escalations_to_TheGuardians": 2,
+    "routed_to_TheFixer": 2,
+    "routed_to_TheATeam": 1
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Handlebars.js — Multiple JavaScript Injection / RCE Vulnerabilities",
+      "package": "handlebars@4.7.8",
+      "module": "Source/Backend",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "exploit_scenario": "If work item descriptions or assessment templates are compiled through Handlebars with untrusted input, attacker achieves remote code execution with full Node.js process privileges.",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "target_version": ">=4.7.9",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Arbitrary code execution in template processing — verify if work item content can be templated.",
+      "status": "OPEN",
+      "priority": "Block deployment"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "protobufjs — Arbitrary Code Execution via Proto Schema Code Generation",
+      "package": "protobufjs@<=7.5.5",
+      "module": "platform/orchestrator + portal/Backend",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-66ff-xgx4-vchm",
+        "GHSA-75px-5xx7-5xc7",
+        "GHSA-jvwf-75h9-cwgg",
+        "GHSA-685m-2w69-288q"
+      ],
+      "exploit_scenario": "Orchestrator: arbitrary code execution via crafted proto schemas. Portal/Backend: malicious OpenTelemetry exporter response triggers RCE.",
+      "fix": "cd platform/orchestrator && npm update protobufjs; cd portal/Backend && npm update",
+      "target_version": ">=7.6.0",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Supply chain vulnerability affecting infrastructure orchestrator — coordinated deployment patch required.",
+      "status": "OPEN",
+      "priority": "Block deployment"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift/architecture-violation",
+      "title": "Traceability enforcer blind spot over portal/ and platform/",
+      "file": "tools/traceability-enforcer.py + Teams/TheInspector/inspector.config.yml",
+      "detail": "CLAUDE.md verification gate passes green even though 76 FRs (portal/) and 13 FRs (platform/) have zero enforced coverage. Two of three application specs are entirely unverified.",
+      "recommendation": "Extend enforcer to support multiple scan directories; add two enforcer invocations targeting portal/ and platform/ to the verification gate.",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Duplicate logger abstraction — shim wrapper over canonical",
+      "file": "Source/Backend/src/logger.ts (shim) vs Source/Backend/src/utils/logger.ts (canonical)",
+      "detail": "Two logger files exist. workItemStore.ts imports canonical directly; all 8 other files import the shim. CLAUDE.md single-source-of-truth rule violated.",
+      "recommendation": "Remove logger.ts shim; consolidate all imports to utils/logger.ts with a proper default export.",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "test-quality",
+      "title": "Duplicate frontend test files for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/*.test.tsx + Source/Frontend/tests/pages/*.test.tsx",
+      "detail": "39 test cases for WorkItemDetailPage and 28 for WorkItemListPage split across 4 files from two independent agent runs. Maintenance burden; fixes must be applied in two places.",
+      "recommendation": "Keep tests/pages/ variants (more recent/complete); delete root-level duplicates.",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift/untested",
+      "title": "Three open dependency-linking plan delta items (api-types, seed, wrong test directory)",
+      "file": "Plans/dependency-linking/requirements.md (delta table)",
+      "detail": "FR-dependency-api-types: blocked_by field missing from portal API types; DependencyPicker.tsx uses 'as any' cast. FR-dependency-seed: No seed.ts in portal/Backend. FR-dependency-frontend-tests: Tests created in Source/Frontend instead of portal/Frontend.",
+      "recommendation": "Route to TheATeam: add blocked_by to portal shared types, create seed.ts with idempotent seeding, move dependency tests to portal/Frontend/tests/.",
+      "route_to": "TheATeam",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE-DoS-ReDoS",
+      "title": "path-to-regexp ReDoS on Express route matching (CVSS 7.5)",
+      "package": "path-to-regexp@<0.1.13",
+      "module": "platform/orchestrator + portal/Backend",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "fix": "cd platform/orchestrator && npm update express path-to-regexp; cd portal/Backend && npm update express path-to-regexp",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "title": "@opentelemetry/auto-instrumentations-node Prometheus exporter crash (CVSS 7.5)",
+      "package": "@opentelemetry/auto-instrumentations-node@<=0.74.0",
+      "module": "portal/Backend",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "fix": "cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node @opentelemetry/sdk-node",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE-DoS-ReDoS",
+      "title": "picomatch ReDoS via extglob quantifiers (CVSS 7.5) — build-time",
+      "package": "picomatch@<=2.3.1 or 4.0.0-4.0.3",
+      "module": "portal/Frontend",
+      "cve": "GHSA-c2c7-rcm5-vvqj",
+      "fix": "cd portal/Frontend && npm update picomatch",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppressing react-hooks/exhaustive-deps in 2 production files",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "doc-stale",
+      "title": "Spec-to-directory ownership mapping undocumented",
+      "files": ["CLAUDE.md", "Teams/TheInspector/inspector.config.yml"],
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE-InfoDisclosure",
+      "title": "Vite path traversal in .map file handling (CWE-22)",
+      "package": "vite@<=6.4.1",
+      "modules": ["Source/Frontend", "portal/Frontend"],
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "CVE-CORS",
+      "title": "esbuild dev server CORS bypass — dev-time only (CVSS 5.3)",
+      "package": "esbuild@<=0.24.2",
+      "modules": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "CVE-XSS",
+      "title": "PostCSS unescaped </style> XSS if user CSS processed (CVSS 6.1)",
+      "package": "postcss@<8.5.10",
+      "modules": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "CVE-DoS",
+      "title": "brace-expansion process hang via zero-step sequences (CVSS 6.5)",
+      "package": "brace-expansion@<1.1.13",
+      "module": "Source/Backend",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "CVE-build-time",
+      "title": "Vitest transitive vulnerabilities (multiple, build-time only)",
+      "packages": ["vitest@<=2.0.5", "vitest@<=1.4.0", "vitest@<=2.2.0-beta.2"],
+      "modules": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Express 4.x — 1 major version behind (5.x available)",
+      "package": "express@^4.x",
+      "modules": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Pino 8.x in Source/Backend — 2 majors behind (10.x available)",
+      "package": "pino@^8.17.0",
+      "module": "Source/Backend",
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "UUID 9.x — 5 major versions behind (14.x available)",
+      "package": "uuid@^9.0.0",
+      "modules": ["Source/Backend", "portal/Backend"],
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "React 18.x — 1 major behind React 19.x",
+      "packages": ["react@^18.3.1", "react@^18.2.0"],
+      "modules": ["Source/Frontend", "portal/Frontend"],
+      "status": "OPEN",
+      "first_seen": "2026-05-13"
+    }
+  ],
+  "p4_findings": [],
+  "remediation_phases": {
+    "phase_1_block_deploy": {
+      "deadline": "Immediate — before next production deployment",
+      "items": ["DEP-001", "DEP-002"]
+    },
+    "phase_2_this_sprint": {
+      "deadline": "Within current sprint",
+      "items": ["DEP-003", "DEP-004", "QO-001", "QO-004"]
+    },
+    "phase_3_next_sprint": {
+      "deadline": "Next sprint",
+      "items": ["QO-002", "QO-003", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009"]
+    },
+    "phase_4_backlog": {
+      "deadline": "Next quarter",
+      "items": ["QO-005", "QO-006", "DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014"]
+    }
+  }
+}

@@ -1,0 +1,203 @@
+{
+  "audit": {
+    "date": "2026-05-15",
+    "agent": "dependency-auditor",
+    "status": "completed"
+  },
+  "summary": {
+    "projects_audited": 4,
+    "package_manager": "npm",
+    "total_direct_dependencies": 32,
+    "total_transitive_dependencies": 799
+  },
+  "vulnerabilities": {
+    "total": 9,
+    "by_severity": {
+      "critical": 2,
+      "high": 1,
+      "moderate": 6,
+      "low": 0
+    },
+    "findings": [
+      {
+        "id": "DEP-001",
+        "title": "Handlebars JavaScript Injection",
+        "severity": "CRITICAL",
+        "cvss": 9.8,
+        "package": "handlebars",
+        "version": "4.7.8",
+        "location": "Source/Backend (transitive)",
+        "affected_versions": "4.0.0 ≤ version ≤ 4.7.8",
+        "fix_available": true,
+        "fix_version": "4.7.9+",
+        "escalate_to": "TheGuardians"
+      },
+      {
+        "id": "DEP-002",
+        "title": "Protobufjs Arbitrary Code Execution",
+        "severity": "CRITICAL",
+        "cvss": 9.8,
+        "package": "protobufjs",
+        "version": "7.5.4",
+        "location": "platform/orchestrator (direct)",
+        "affected_versions": "≤7.5.5",
+        "fix_available": true,
+        "fix_version": "7.5.6+",
+        "escalate_to": "TheGuardians",
+        "blocking": true
+      },
+      {
+        "id": "DEP-003",
+        "title": "path-to-regexp ReDoS",
+        "severity": "HIGH",
+        "cvss": 7.5,
+        "package": "path-to-regexp",
+        "version": "0.1.12",
+        "location": "platform/orchestrator (transitive via express)",
+        "affected_versions": "<0.1.13",
+        "fix_available": true,
+        "fix_version": "0.1.13+"
+      },
+      {
+        "id": "DEP-004",
+        "title": "Vite Path Traversal in .map Handling",
+        "severity": "MODERATE",
+        "cvss": 5.3,
+        "package": "vite",
+        "version": "5.4.0",
+        "location": "Source/Frontend (direct)",
+        "affected_versions": "≤6.4.1",
+        "fix_available": true,
+        "fix_version": "6.4.2+"
+      },
+      {
+        "id": "DEP-005",
+        "title": "Vitest Transitive Vulnerabilities",
+        "severity": "MODERATE",
+        "package": "vitest",
+        "version": "2.0.5",
+        "location": "Source/Frontend (direct)",
+        "root_cause": "inherited from vite"
+      },
+      {
+        "id": "DEP-006",
+        "title": "PostCSS XSS via </style> Injection",
+        "severity": "MODERATE",
+        "cvss": 6.1,
+        "package": "postcss",
+        "version": "8.5.9",
+        "location": "Source/Frontend (transitive via vite)",
+        "affected_versions": "<8.5.10",
+        "fix_available": true,
+        "fix_version": "8.5.10+"
+      },
+      {
+        "id": "DEP-007",
+        "title": "Esbuild CSRF/SSRF in Dev Server",
+        "severity": "MODERATE",
+        "cvss": 5.3,
+        "package": "esbuild",
+        "version": "0.24.2",
+        "location": "Source/Frontend (transitive via vite)",
+        "affected_versions": "≤0.24.2"
+      },
+      {
+        "id": "DEP-008",
+        "title": "Brace-expansion ReDoS",
+        "severity": "MODERATE",
+        "cvss": 6.5,
+        "package": "brace-expansion",
+        "location": "Source/Backend (transitive)",
+        "affected_versions": "<1.1.13"
+      },
+      {
+        "id": "DEP-009",
+        "title": "@protobufjs/utf8 UTF-8 Decoding Bypass",
+        "severity": "MODERATE",
+        "cvss": 5.3,
+        "package": "@protobufjs/utf8",
+        "location": "platform/orchestrator (transitive via protobufjs)"
+      }
+    ]
+  },
+  "outdated_major_versions": {
+    "total": 8,
+    "packages": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "gap": "1 major",
+        "project": "Source/Backend"
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.3.1",
+        "gap": "2 major",
+        "project": "Source/Backend"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "14.0.0",
+        "gap": "5 major",
+        "project": "Source/Backend"
+      },
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.2.6",
+        "gap": "1 major",
+        "project": "Source/Frontend"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "latest": "19.2.6",
+        "gap": "1 major",
+        "project": "Source/Frontend"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "latest": "7.15.1",
+        "gap": "1 major",
+        "project": "Source/Frontend"
+      }
+    ]
+  },
+  "supply_chain_assessment": {
+    "post_install_scripts": 0,
+    "abandoned_packages": 0,
+    "license_compliance": "No GPL/AGPL in direct dependencies",
+    "risk_level": "MODERATE (multiple critical CVEs, but no supply chain indicators)"
+  },
+  "recommendations": {
+    "immediate": [
+      "Upgrade handlebars (Source/Backend) — npm audit fix",
+      "Upgrade protobufjs (platform/orchestrator) — HOTFIX REQUIRED"
+    ],
+    "this_sprint": [
+      "Upgrade path-to-regexp (via express in orchestrator)",
+      "Upgrade vite (Source/Frontend) — cascades to vitest, postcss, esbuild"
+    ],
+    "next_sprint": [
+      "Plan major version upgrades: react, express, react-router (breaking changes)"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: Handlebars RCE in build pipeline",
+      "DEP-002: Protobufjs RCE in critical infrastructure"
+    ]
+  },
+  "metrics": {
+    "cves_critical": 2,
+    "cves_high": 1,
+    "cves_moderate": 6,
+    "cves_low": 0,
+    "outdated_major": 8,
+    "blocking_issues": 1
+  }
+}

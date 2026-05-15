@@ -1,0 +1,353 @@
+{
+  "audit": {
+    "id": "run-20260515-060710",
+    "date": "2026-05-15",
+    "branch": "audit/inspector-2026-05-15-b2bef2",
+    "grade": "C",
+    "specialists": ["quality-oracle", "dependency-auditor"],
+    "specialists_absent": ["performance-profiler", "chaos-monkey"],
+    "spec_coverage_pct": 96.3,
+    "total_frs": 108,
+    "covered_frs": 104,
+    "prior_audit": null,
+    "is_first_run": true
+  },
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 5,
+    "p3_total": 9,
+    "p4_total": 2,
+    "escalations_total": 2,
+    "cross_refs_total": 4,
+    "fixed_total": 0,
+    "new_total": 18
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "category": "CVE-RCE",
+      "title": "Handlebars JavaScript Injection — 8 CVEs in Source/Backend",
+      "package": "handlebars@4.7.8",
+      "location": "Source/Backend/package.json (transitive via dev deps)",
+      "affected_versions": "4.0.0 ≤ version ≤ 4.7.8",
+      "fix_available": true,
+      "fix_version": "4.7.9+",
+      "fix_command": "cd Source/Backend && npm audit fix",
+      "exploit_scenario": "Attacker controls template input via AST type confusion or partial-block tampering to execute arbitrary JavaScript in build pipeline context",
+      "impact": "Remote code execution in build/CI environment; supply chain compromise risk",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ]
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "cvss": 9.8,
+      "category": "CVE-RCE",
+      "title": "Protobufjs Arbitrary Code Execution in Orchestrator — 9 CVEs (BLOCKING)",
+      "package": "protobufjs@7.5.4",
+      "location": "platform/orchestrator/package.json (direct dep)",
+      "affected_versions": "≤ 7.5.5",
+      "fix_available": true,
+      "fix_version": "7.5.6+",
+      "fix_command": "cd platform/orchestrator && npm update protobufjs",
+      "exploit_scenario": "Attacker submits crafted protobuf message → prototype pollution → RCE chain in orchestrator; orchestrator runs agent pipelines so code execution = full pipeline hijack",
+      "impact": "Full RCE in orchestrator; pipeline hijack; lateral movement potential to all services reachable from orchestrator network",
+      "escalate_to": "TheGuardians",
+      "blocking": true,
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-66ff-xgx4-vchm",
+        "GHSA-75px-5xx7-5xc7",
+        "GHSA-jvwf-75h9-cwgg",
+        "GHSA-685m-2w69-288q",
+        "GHSA-2pr8-phx7-x9h3",
+        "GHSA-fx83-v9x8-x52w",
+        "GHSA-q6x5-8v7m-xcrf"
+      ]
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "tooling",
+      "title": "Traceability enforcer hardcoded to Source/ and E2E/ — false failures for portal and platform",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "source_dirs = [\"Source\", \"E2E\"] — portal/ and platform/ never scanned; all 69 portal FRs and all FR-TMP-* show as 0% in spec-drift-report.json",
+      "recommendation": "Add \"portal\" and \"platform\" to source_dirs, or add per-plan config override",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-006", "QO-007"],
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-api-types STILL OPEN — blocked_by missing + as any casts",
+      "files": [
+        "portal/Shared/api.ts:32 (UpdateFeatureRequestInput)",
+        "portal/Shared/api.ts:59 (UpdateBugInput)",
+        "portal/Frontend/src/components/shared/DependencyPicker.tsx:291",
+        "portal/Frontend/src/components/shared/DependencyPicker.tsx:293"
+      ],
+      "detail": "Neither UpdateFeatureRequestInput nor UpdateBugInput has blocked_by?: string[]; DependencyPicker uses as any on both PATCH calls creating type-safety gap",
+      "recommendation": "Add blocked_by?: string[] to both types in portal/Shared/api.ts; remove as any casts from DependencyPicker.tsx:291,293",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-003", "QO-005"],
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed STILL OPEN — no seed.ts in portal/Backend/src/database/",
+      "file": "portal/Backend/src/database/",
+      "detail": "Fresh deployments have dependency UI wired but no example relationships. Spec requires idempotent seeding of BUG-0010 blocked_by BUG-0003/0004/0005/0006/0007 etc.",
+      "recommendation": "Create portal/Backend/src/database/seed.ts with idempotent dependency seeding; wire into portal/Backend/src/index.ts after DB init",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-002", "QO-005"],
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Direct DB calls in teamDispatches.ts route handler — service layer bypassed",
+      "file": "portal/Backend/src/routes/teamDispatches.ts:37-43,72-75",
+      "detail": "db.prepare(...).all() and db.prepare(...).run() called directly in route handler bodies. Violates CLAUDE.md: No direct DB calls from route handlers — use the service layer.",
+      "recommendation": "Extract teamDispatchService.ts with listDispatches(db, {team, limit}) and createDispatch(db, data); route handler calls service only",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-007"],
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "title": "path-to-regexp ReDoS (CVSS 7.5) — crafted routes hang orchestrator",
+      "package": "path-to-regexp@0.1.12",
+      "location": "platform/orchestrator (transitive via express@^4.21.0)",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "detail": "Attacker can craft routes with many parameters to trigger ReDoS, hanging the orchestrator HTTP server",
+      "fix_command": "cd platform/orchestrator && npm update path-to-regexp (may require npm update express)",
+      "fix_version": "0.1.13+",
+      "route_to": "TheFixer",
+      "cross_ref": ["DEP-002"],
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "untested",
+      "title": "FR-dependency-frontend-tests: 2 portal test files missing",
+      "files": [
+        "portal/Frontend/tests/DependencySection.test.tsx (MISSING)",
+        "portal/Frontend/tests/BlockedBadge.test.tsx (MISSING)"
+      ],
+      "detail": "Source/Frontend/tests/components/DependencySection.test.tsx exists but covers workflow-engine app component, not portal component. Portal DependencySection and BlockedBadge are untested.",
+      "recommendation": "Create both files with // Verifies: FR-dependency-section and FR-dependency-blocked-badge traceability comments",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-002", "QO-003"],
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 has no Verifies comment — Dockerfile.worker prerequisites untraced",
+      "file": "platform/ (no // Verifies: FR-TMP-008 anywhere)",
+      "detail": "FR-TMP-008 specifies Dockerfile.worker must have gh CLI, Playwright installable, GITHUB_TOKEN passthrough. No traceability comment. Sole gap in tiered-merge-pipeline spec.",
+      "recommendation": "Add // Verifies: FR-TMP-008 to Dockerfile.worker section. Confirm gh CLI presence.",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-001"],
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "teamDispatches/TeamsPage/RepoSelector have no spec FR — untracked implementation",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts",
+        "portal/Frontend/src/pages/TeamsPage.tsx",
+        "portal/Frontend/src/components/common/RepoSelector.tsx"
+      ],
+      "detail": "All three recently added (within 14 days), no // Verifies: comments, no FR in any specification. Violates spec-first principle.",
+      "recommendation": "Write FR(s) in Specifications/dev-workflow-platform.md and back-fill traceability comments, OR document why exempt in a spec note",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-004"],
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "CVE-info-disclosure",
+      "title": "Vite Path Traversal in .map handling (CVSS 5.3) — dev server only",
+      "package": "vite@5.4.0",
+      "location": "Source/Frontend/package.json (direct dep)",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "fix_command": "cd Source/Frontend && npm update vite (major bump 5→6, test for breaking changes)",
+      "fix_version": "6.4.2+",
+      "route_to": "TheFixer",
+      "cross_ref": ["DEP-005", "DEP-006", "DEP-007"],
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE-transitive",
+      "title": "Vitest transitive vulnerabilities (inherited from vite@5.4.0)",
+      "package": "vitest@2.0.5",
+      "location": "Source/Frontend/package.json (direct dep)",
+      "fix_command": "cd Source/Frontend && npm update vite (cascades to vitest)",
+      "route_to": "TheFixer",
+      "cross_ref": ["DEP-004"],
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE-XSS",
+      "title": "PostCSS XSS via </style> injection (CVSS 6.1)",
+      "package": "postcss@8.5.9",
+      "location": "Source/Frontend (transitive via vite)",
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "fix_command": "cd Source/Frontend && npm update vite (cascades to postcss)",
+      "fix_version": "8.5.10+",
+      "route_to": "TheFixer",
+      "cross_ref": ["DEP-004"],
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "CVE-CSRF",
+      "title": "Esbuild CSRF/SSRF in dev server (CVSS 5.3)",
+      "package": "esbuild@0.24.2",
+      "location": "Source/Frontend (transitive via vite)",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "fix_command": "cd Source/Frontend && npm update vite (cascades to esbuild)",
+      "route_to": "TheFixer",
+      "cross_ref": ["DEP-004"],
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "CVE-DoS",
+      "title": "Brace-expansion ReDoS — zero-step sequence causes process hang (CVSS 6.5)",
+      "package": "brace-expansion<1.1.13",
+      "location": "Source/Backend (transitive)",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "fix_command": "cd Source/Backend && npm audit fix",
+      "fix_version": "1.1.13+",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "CVE-logic",
+      "title": "@protobufjs/utf8 overlong UTF-8 decoding bypass (CVSS 5.3)",
+      "package": "@protobufjs/utf8 ≤ 1.1.0",
+      "location": "platform/orchestrator (transitive via protobufjs)",
+      "cve": "GHSA-q6x5-8v7m-xcrf",
+      "fix_command": "cd platform/orchestrator && npm update protobufjs (cascades to @protobufjs/utf8)",
+      "route_to": "TheFixer",
+      "cross_ref": ["DEP-002"],
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "eslint-disable for react-hooks/exhaustive-deps in 3 production files",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "portal/Frontend/src/hooks/useApi.ts:35"
+      ],
+      "detail": "Suppressing exhaustive-deps is a common source of stale closure bugs",
+      "recommendation": "Review whether suppression is correct; if intentional add explanatory comment",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "missing-traceability",
+      "title": "playwright.pipeline.config.ts lacks Verifies comment for FR-TMP-003",
+      "file": "Source/E2E/playwright.pipeline.config.ts",
+      "recommendation": "Add // Verifies: FR-TMP-003 to the file",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Vite ecosystem outdated",
+      "findings": ["DEP-004", "DEP-005", "DEP-006", "DEP-007"],
+      "single_fix": "cd Source/Frontend && npm update vite",
+      "impact": "Resolves 4 CVEs (path traversal, vitest chain, PostCSS XSS, esbuild CSRF) in one command"
+    },
+    {
+      "root_cause": "protobufjs outdated in orchestrator",
+      "findings": ["DEP-002", "DEP-009"],
+      "single_fix": "cd platform/orchestrator && npm update protobufjs",
+      "impact": "Resolves RCE + UTF-8 bypass; unblocks all deployments"
+    },
+    {
+      "root_cause": "Unspecced feature teamDispatches added without spec or service layer",
+      "findings": ["QO-004", "QO-007"],
+      "single_fix": "Write spec FR(s) in Specifications/dev-workflow-platform.md + extract teamDispatchService.ts",
+      "impact": "Closes architecture violation and scope-creep finding simultaneously"
+    },
+    {
+      "root_cause": "Dependency-linking plan partially complete",
+      "findings": ["QO-002", "QO-003", "QO-005"],
+      "single_fix": "Add blocked_by types + create seed.ts + create 2 portal test files",
+      "impact": "Closes all 3 remaining dependency-linking open items in one TheFixer pass"
+    }
+  ],
+  "grading": {
+    "grade": "C",
+    "rationale": "2 P1 findings (both CVE/CRITICAL, escalated to TheGuardians) exceeds the B threshold (max_p1: 0). C threshold met: max_p1: 2 satisfied, 5 P2s ≤ 15, spec coverage 96.3% ≥ 40%. F excluded (no exploitable auth bypass or critical domain failure).",
+    "thresholds_applied": {
+      "A": "max_p1: 0 — FAIL (2 P1s)",
+      "B": "max_p1: 0 — FAIL (2 P1s)",
+      "C": "max_p1: 2, max_p2: 15, min_spec_coverage: 40% — PASS",
+      "D": "would apply if C fails — not needed"
+    }
+  }
+}

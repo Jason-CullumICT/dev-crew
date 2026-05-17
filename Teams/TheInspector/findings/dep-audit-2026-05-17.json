@@ -1,0 +1,363 @@
+{
+  "audit_metadata": {
+    "date": "2026-05-17",
+    "auditor": "dependency_auditor",
+    "project": "dev-crew",
+    "status": "CRITICAL_ISSUES",
+    "grade": "C",
+    "recommendation": "Do not deploy to production until critical CVEs are patched"
+  },
+  "summary": {
+    "total_dependencies": 1806,
+    "direct_dependencies": 674,
+    "dev_dependencies": 1129,
+    "vulnerabilities": {
+      "critical": 3,
+      "high": 5,
+      "moderate": 19,
+      "low": 0,
+      "total": 27
+    },
+    "outdated": {
+      "major_versions_behind": 8,
+      "abandoned_packages": 0
+    },
+    "compliance": {
+      "license_blocking_issues": 0,
+      "post_install_scripts": 0,
+      "gpl_agpl_detected": false
+    }
+  },
+  "by_directory": {
+    "Source/Backend": {
+      "prod_deps": 102,
+      "dev_deps": 310,
+      "total_deps": 412,
+      "critical": 1,
+      "high": 0,
+      "moderate": 1,
+      "low": 0,
+      "blockers": [
+        "handlebars@4.7.8: CRITICAL JS injection (via jest)"
+      ]
+    },
+    "Source/Frontend": {
+      "prod_deps": 9,
+      "dev_deps": 222,
+      "total_deps": 231,
+      "critical": 0,
+      "high": 0,
+      "moderate": 6,
+      "low": 0,
+      "blockers": [
+        "vite: MODERATE path traversal (dev-only)"
+      ]
+    },
+    "Source/E2E": {
+      "prod_deps": 4,
+      "dev_deps": 0,
+      "total_deps": 4,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "blockers": []
+    },
+    "platform/orchestrator": {
+      "prod_deps": 153,
+      "dev_deps": 0,
+      "total_deps": 156,
+      "critical": 1,
+      "high": 1,
+      "moderate": 1,
+      "low": 0,
+      "blockers": [
+        "protobufjs@7.5.5: CRITICAL code execution",
+        "path-to-regexp: HIGH ReDoS"
+      ]
+    },
+    "portal/Backend": {
+      "prod_deps": 397,
+      "dev_deps": 181,
+      "total_deps": 578,
+      "critical": 1,
+      "high": 3,
+      "moderate": 6,
+      "low": 0,
+      "blockers": [
+        "protobufjs@7.5.5: CRITICAL code execution",
+        "@opentelemetry packages: HIGH severity crash (Prometheus DoS)",
+        "path-to-regexp: HIGH ReDoS"
+      ]
+    },
+    "portal/Frontend": {
+      "prod_deps": 9,
+      "dev_deps": 416,
+      "total_deps": 425,
+      "critical": 0,
+      "high": 1,
+      "moderate": 5,
+      "low": 0,
+      "blockers": [
+        "picomatch: HIGH ReDoS"
+      ]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection",
+      "package": "handlebars@4.7.8",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "affected_files": [
+        "Source/Backend/package-lock.json"
+      ],
+      "root_cause": "jest/ts-jest bundled with vulnerable handlebars",
+      "impact": "Arbitrary JavaScript execution during test compilation",
+      "fix": "npm install jest@30+ ts-jest@latest --save-dev (Source/Backend)",
+      "priority": "P1",
+      "timeline_days": 1
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs@7.5.5",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-66ff-xgx4-vchm",
+        "GHSA-75px-5xx7-5xc7"
+      ],
+      "affected_files": [
+        "portal/Backend/package-lock.json",
+        "platform/orchestrator/package-lock.json"
+      ],
+      "root_cause": "@opentelemetry/exporter-trace-otlp-http@0.47.0 pulls protobufjs<=7.5.5",
+      "impact": "Remote code execution via OTLP trace data injection",
+      "fix": "npm install @opentelemetry/auto-instrumentations-node@0.75.0+ @opentelemetry/sdk-node@0.217.0+ @opentelemetry/exporter-trace-otlp-http@0.218.0+ --save (portal/Backend)",
+      "priority": "P1",
+      "timeline_days": 1,
+      "escalation": "TheGuardians (exploitability assessment)"
+    },
+    {
+      "id": "DEP-003",
+      "title": "OpenTelemetry Prometheus Exporter DoS",
+      "package": "@opentelemetry/auto-instrumentations-node@0.40.0",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cves": [
+        "GHSA-q7rr-3cgh-j5r3"
+      ],
+      "affected_files": [
+        "portal/Backend/package-lock.json"
+      ],
+      "root_cause": "Malformed HTTP request crashes Prometheus exporter",
+      "impact": "Denial of service to observability pipeline; cascading app downtime",
+      "fix": "Bundled with DEP-002 update",
+      "priority": "P2",
+      "timeline_days": 1
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "title": "path-to-regexp ReDoS",
+      "package": "path-to-regexp@<0.1.13",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "affected_files": [
+        "portal/Backend/package-lock.json",
+        "platform/orchestrator/package-lock.json"
+      ],
+      "priority": "P2",
+      "timeline_days": 7
+    },
+    {
+      "id": "DEP-005",
+      "title": "Picomatch ReDoS",
+      "package": "picomatch@<=2.3.1",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cves": ["GHSA-c2c7-rcm5-vvqj"],
+      "affected_files": [
+        "portal/Frontend/package-lock.json"
+      ],
+      "priority": "P2",
+      "timeline_days": 7
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "current": "0.40.0",
+      "latest": "0.76.0",
+      "gap_versions": 36,
+      "gap_severity": "CRITICAL_PATCH_LAG",
+      "location": "portal/Backend"
+    },
+    {
+      "package": "@opentelemetry/exporter-trace-otlp-http",
+      "current": "0.47.0",
+      "latest": "0.218.0",
+      "gap_versions": 171,
+      "gap_severity": "CRITICAL_PATCH_LAG",
+      "location": "portal/Backend"
+    },
+    {
+      "package": "@opentelemetry/sdk-node",
+      "current": "0.47.0",
+      "latest": "0.218.0",
+      "gap_versions": 171,
+      "gap_severity": "CRITICAL_PATCH_LAG",
+      "location": "portal/Backend"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "gap_majors": 2,
+      "gap_severity": "MODERATE",
+      "location": "Source/Backend"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.0",
+      "gap_majors": 5,
+      "gap_severity": "MODERATE",
+      "location": "Source/Backend, Source/Frontend, portal/Backend"
+    },
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "gap_majors": 1,
+      "gap_severity": "MODERATE",
+      "location": "Source/Backend, portal/Backend, platform/orchestrator"
+    }
+  ],
+  "remediation_roadmap": {
+    "sprint_1_immediate": {
+      "name": "Critical CVE Patching",
+      "duration_days": 1,
+      "tasks": [
+        {
+          "task": "DEP-001: Update jest/ts-jest",
+          "command": "cd Source/Backend && npm install jest@30+ ts-jest@latest --save-dev && npm test",
+          "verification": "Tests pass, no handlebars vulnerabilities"
+        },
+        {
+          "task": "DEP-002: Update OpenTelemetry packages",
+          "command": "cd portal/Backend && npm install @opentelemetry/auto-instrumentations-node@0.75.0+ @opentelemetry/sdk-node@0.217.0+ @opentelemetry/exporter-trace-otlp-http@0.218.0+ --save",
+          "verification": "npm audit shows zero critical/high"
+        }
+      ],
+      "blocks_production_deployment": true
+    },
+    "sprint_2_recommended": {
+      "name": "High Severity & Major Version Updates",
+      "duration_days": 7,
+      "tasks": [
+        {
+          "task": "DEP-004: Update express",
+          "command": "npm install express@4.22.2+ --save",
+          "verification": "Route tests pass"
+        },
+        {
+          "task": "DEP-005: Update picomatch",
+          "command": "cd portal/Frontend && npm install picomatch@2.3.2+ --save",
+          "verification": "Build succeeds"
+        }
+      ],
+      "blocks_production_deployment": false
+    },
+    "sprint_3_hardening": {
+      "name": "Dev & Build Environment Hardening",
+      "duration_days": 14,
+      "tasks": [
+        {
+          "task": "DEP-006: Update Vite",
+          "command": "npm install vite@8.0.13+ --save-dev",
+          "verification": "Dev server starts, build succeeds"
+        },
+        {
+          "task": "DEP-007: Update PostCSS",
+          "command": "npm install postcss@8.5.10+ --save",
+          "verification": "Build succeeds, styles render"
+        }
+      ],
+      "blocks_production_deployment": false
+    }
+  },
+  "license_analysis": {
+    "status": "COMPLIANT",
+    "licenses_found": {
+      "MIT": 1500,
+      "BSD-3-Clause": 5,
+      "ISC": 2,
+      "Apache-2.0": 10
+    },
+    "blocking_licenses": [],
+    "viral_licenses": []
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": {
+      "count": 0,
+      "status": "SAFE",
+      "risk": "none"
+    },
+    "large_transitive_closure": {
+      "status": "MODERATE",
+      "largest": {
+        "directory": "portal/Backend",
+        "count": 578,
+        "risk": "surface area for unknown vulnerabilities"
+      }
+    },
+    "package_duplication": {
+      "status": "SAFE",
+      "critical_duplicates": 0
+    },
+    "abandoned_packages": {
+      "count": 0,
+      "status": "SAFE"
+    }
+  },
+  "cross_team_escalations": [
+    {
+      "finding_id": "DEP-001",
+      "team": "TheGuardians",
+      "reason": "Verify whether tests process untrusted template data",
+      "severity": "CRITICAL"
+    },
+    {
+      "finding_id": "DEP-002",
+      "team": "TheGuardians",
+      "reason": "Assess exploitability of OTLP endpoint and telemetry data sources",
+      "severity": "CRITICAL"
+    },
+    {
+      "finding_id": "DEP-004, DEP-005",
+      "team": "red-teamer",
+      "reason": "Confirm ReDoS exploitability in URL patterns and glob matching",
+      "severity": "HIGH"
+    }
+  ],
+  "verification_commands": {
+    "post_update": [
+      "npm audit --workspaces",
+      "npm test --workspaces",
+      "npm run build --workspaces",
+      "python3 tools/traceability-enforcer.py"
+    ]
+  }
+}

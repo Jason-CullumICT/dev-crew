@@ -1,0 +1,371 @@
+{
+  "audit_id": "run-20260517-060236",
+  "date": "2026-05-17",
+  "branch": "audit/inspector-2026-05-17-1a043f",
+  "grade": "D",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 8,
+    "p3_total": 9,
+    "p4_total": 2,
+    "escalations": 2,
+    "spec_coverage_pct": 95,
+    "cves_critical": 2,
+    "cves_high": 3,
+    "cves_medium": 5,
+    "total_deps": 1806,
+    "license_blocks": 0,
+    "fixed_count": 0,
+    "trend": "first-audit-no-baseline"
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Handlebars JavaScript Injection via jest/ts-jest",
+      "cvss": 9.8,
+      "package": "handlebars@4.7.8",
+      "file": "Source/Backend/package-lock.json",
+      "escalation_trigger": "injection",
+      "escalate_to": "TheGuardians",
+      "summary": "CVSS 9.8 arbitrary JavaScript execution during test compilation via crafted Handlebars templates. 8 CVEs including GHSA-2w6w-674q-4c4q (AST type confusion injection) and GHSA-2qvq-rjwj-gvw9 (prototype pollution XSS).",
+      "fix": "cd Source/Backend && npm install jest@30+ ts-jest@latest --save-dev",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "Protobufjs Arbitrary Code Execution via OpenTelemetry",
+      "cvss": 9.8,
+      "package": "protobufjs@7.5.5",
+      "files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "escalation_trigger": "injection",
+      "escalate_to": "TheGuardians",
+      "summary": "CVSS 9.8 RCE via crafted OTLP trace data in OpenTelemetry exporter. 8 CVEs including GHSA-xq3m-2v4x-88gg (arbitrary code execution) and GHSA-66ff-xgx4-vchm (code injection via bytes field defaults). Root package 171 versions behind.",
+      "fix": "cd portal/Backend && npm install @opentelemetry/auto-instrumentations-node@0.75.0+ @opentelemetry/sdk-node@0.217.0+ @opentelemetry/exporter-trace-otlp-http@0.218.0+ --save",
+      "status": "NEW"
+    }
+  ],
+
+  "p1": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "FR-070 requirement ID collision between Plans/image-upload and Plans/orchestrator-cycle-dashboard",
+      "files": [
+        "Plans/image-upload/requirements.md",
+        "Plans/orchestrator-cycle-dashboard/requirements.md",
+        "portal/Frontend/src/api/client.ts"
+      ],
+      "detail": "Two plans both assign FR-070 to unrelated features. Dependency-linking plan references FR-070-FR-085 in Specifications/ — those IDs do not exist there. Traceability integrity broken.",
+      "recommendation": "Renumber image-upload FRs to FR-IMG-001+, orchestrator-cycle FRs to FR-OCD-001+. Add PR gate blocking duplicate FR-NNN IDs.",
+      "route": "spec-author (solo session)",
+      "status": "NEW"
+    }
+  ],
+
+  "p2": [
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer does not scan portal/ — PASSED result is meaningless for largest codebase",
+      "file": "tools/traceability-enforcer.py:78",
+      "detail": "source_dirs = ['Source', 'E2E'] — portal/ (2× more code, 69+ FRs) invisible to enforcer",
+      "recommendation": "Add 'portal' to source_dirs. Add --all-plans mode.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "Root-Cause-C (portal/ tooling blindspot)"
+    },
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed unimplemented — seed.ts missing from portal/Backend",
+      "file": "portal/Backend/src/database/seed.ts (missing)",
+      "detail": "9 seeded dependency relationships required. Acceptance criterion GET /api/bugs/BUG-0010 returns 5 items will fail.",
+      "recommendation": "Create seed.ts per FR-dependency-seed specification.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "arch-violation",
+      "title": "UpdateBugInput/UpdateFeatureRequestInput missing blocked_by field — forces as any cast",
+      "file": "portal/Frontend/src/components/shared/DependencyPicker.tsx:291-293",
+      "detail": "Missing blocked_by?: string[] in portal/Shared/api.ts update types. Worked around with as any on DependencyPicker:291-293.",
+      "recommendation": "Add blocked_by?: string[] to both update types. Remove as any casts.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "Root-Cause-C (portal/ tooling blindspot)"
+    },
+    {
+      "id": "QO-005",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "arch-violation",
+      "title": "Silent .catch(() => {}) in 3 user-facing portal components",
+      "files": [
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx:80",
+        "portal/Frontend/src/components/common/RepoSelector.tsx:20",
+        "portal/Frontend/src/components/bugs/BugDetail.tsx:82"
+      ],
+      "detail": "Empty catch blocks discard all errors. CLAUDE.md rule: Never swallow errors silently.",
+      "recommendation": "Replace with at-minimum .catch((err) => logger.warn({ err }, 'non-critical fetch failed')) or set UI error state.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "39 extension FRs absent from Specifications/ — image upload, orchestrator dashboard, dup/deprecated status",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "FR-070..FR-095 and FR-DUP-01..FR-DUP-13 fully implemented but not in canonical spec. New agents will not see these features.",
+      "recommendation": "Append extension sections to Specifications/dev-workflow-platform.md with non-colliding IDs.",
+      "route": "requirements-reviewer (solo session)",
+      "status": "NEW",
+      "cross_ref": "Root-Cause-B (spec governance gap)"
+    },
+    {
+      "id": "DEP-003",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "OTel Prometheus exporter crash on malformed HTTP requests — CVSS 7.5",
+      "package": "@opentelemetry/auto-instrumentations-node@0.40.0",
+      "file": "portal/Backend/package-lock.json",
+      "cvss": 7.5,
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "detail": "Unauthenticated attacker can crash telemetry subsystem via malformed HTTP to metrics endpoint.",
+      "recommendation": "Bundled with DEP-002 OpenTelemetry upgrade.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "Root-Cause-D (OTel package chain outdated)"
+    },
+    {
+      "id": "DEP-004",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "path-to-regexp ReDoS via many URL parameters — CVSS 7.5",
+      "package": "path-to-regexp@<0.1.13",
+      "files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "cvss": 7.5,
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "detail": "Malicious URL with many parameters causes catastrophic backtracking in Express routing, blocking all requests.",
+      "recommendation": "npm install express@4.22.2+ --save (all backends)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "picomatch ReDoS via extglob quantifiers — CVSS 7.5",
+      "package": "picomatch@<=2.3.1",
+      "file": "portal/Frontend/package-lock.json",
+      "cvss": 7.5,
+      "cve": "GHSA-c2c7-rcm5-vvqj",
+      "detail": "Glob pattern matching has ReDoS via @(...|...)* patterns in build tools and file watchers.",
+      "recommendation": "cd portal/Frontend && npm install picomatch@2.3.2+ --save",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "p3": [
+    {
+      "id": "QO-007",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "traceability",
+      "title": "Phantom FR-0001 references (x5) in DependencySection.tsx — no such ID exists",
+      "file": "portal/Frontend/src/components/shared/DependencySection.tsx",
+      "recommendation": "Replace FR-0001 with FR-dependency-section throughout.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "Root-Cause-C (portal/ tooling blindspot)"
+    },
+    {
+      "id": "QO-008",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "untested",
+      "title": "No test files for search.ts and teamDispatches.ts portal backend routes",
+      "file": "portal/Backend/tests/ (missing search.test.ts, teamDispatches.test.ts)",
+      "recommendation": "Add test files covering empty query, keyword filter, partial match, no-results cases.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "Root-Cause-C (portal/ tooling blindspot)"
+    },
+    {
+      "id": "QO-009",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "5 production files exceed 500-line threshold",
+      "files": [
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx (550 lines)",
+        "portal/Frontend/src/components/bugs/BugDetail.tsx (546 lines)",
+        "portal/Backend/src/services/cycleService.ts (526 lines)",
+        "portal/Frontend/src/api/client.ts (525 lines)",
+        "portal/Backend/src/services/featureRequestService.ts (506 lines)"
+      ],
+      "recommendation": "Split detail components and client.ts into domain sub-modules.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "4 eslint-disable suppressions — stale-closure risk in hooks",
+      "files": [
+        "portal/Frontend/src/hooks/useApi.ts:35",
+        "portal/Backend/src/middleware/errorHandler.ts:21",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Restructure hooks or use useCallback. Use _next parameter in errorHandler.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/info-disclosure",
+      "title": "Vite path traversal in .map files — dev-mode only",
+      "package": "vite@<=6.4.1",
+      "files": ["Source/Frontend/package-lock.json", "portal/Frontend/package-lock.json"],
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "recommendation": "npm install vite@8.0.13+",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/XSS",
+      "title": "PostCSS XSS via unescaped </style> — CVSS 6.1",
+      "package": "postcss@<8.5.10",
+      "cvss": 6.1,
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "recommendation": "npm install postcss@8.5.10+",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/DoS",
+      "title": "brace-expansion memory exhaustion — CVSS 6.5",
+      "package": "brace-expansion@<1.1.13",
+      "cvss": 6.5,
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "recommendation": "Bundled with jest upgrade (DEP-001).",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/info-disclosure",
+      "title": "esbuild dev server allows cross-origin requests — dev-only",
+      "package": "esbuild@<=0.24.2",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "recommendation": "Bundled with Vite upgrade (DEP-006).",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/transitive",
+      "title": "Vitest/vite-node transitive CVEs",
+      "package": "vitest@<=3.0.0-beta.4",
+      "recommendation": "Bundled with Vite/Vitest stable release upgrade.",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "p4": [
+    {
+      "id": "QO-011",
+      "specialist": "quality-oracle",
+      "severity": "P4",
+      "category": "traceability",
+      "title": "FR-TMP-008 has no traceability anchor in platform/Dockerfile.worker",
+      "file": "platform/Dockerfile.worker",
+      "recommendation": "Add # Verifies: FR-TMP-008 near the gh CLI install section.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-012",
+      "specialist": "quality-oracle",
+      "severity": "P4",
+      "category": "traceability",
+      "title": "DebugPortalPage uses free-text traceability description instead of FR-XXX ID",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "recommendation": "Create minimal plan entry FR-WF-014 or equivalent; update comment.",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "cross_reference_map": [
+    {
+      "root_cause": "A: Dependency freshness policy absent",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005"],
+      "single_fix": "Enable Dependabot/Renovate + execute Sprint 1 manual update commands"
+    },
+    {
+      "root_cause": "B: Spec governance gap — no FR ID registry, no canonical spec update workflow",
+      "findings": ["QO-001", "QO-006"],
+      "single_fix": "Create Specifications/fr-registry.yml + PR gate + update dev-workflow-platform.md"
+    },
+    {
+      "root_cause": "C: portal/ invisible to tooling",
+      "findings": ["QO-002", "QO-007", "QO-008"],
+      "single_fix": "Add 'portal' to source_dirs in tools/traceability-enforcer.py:78 (one-line fix)"
+    },
+    {
+      "root_cause": "D: OTel package chain severely outdated (90-171 versions behind)",
+      "findings": ["DEP-002", "DEP-003"],
+      "single_fix": "Single npm install in portal/Backend per DEP-002 fix command"
+    }
+  ],
+
+  "routing": {
+    "TheGuardians_escalation": ["DEP-001", "DEP-002"],
+    "TheFixer_this_sprint": ["QO-002", "QO-003", "QO-004", "QO-005", "DEP-003", "DEP-004"],
+    "TheFixer_next_sprint": ["QO-007", "QO-008", "QO-009", "QO-010", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "QO-011", "QO-012"],
+    "requirements_reviewer_solo": ["QO-006"],
+    "spec_author_solo": ["QO-001", "QO-006"]
+  },
+
+  "next_audit": {
+    "recommended_date": "2026-05-24",
+    "rationale": "Weekly cadence until P1 CVEs patched. Run with services live to unlock performance-profiler and chaos-monkey.",
+    "expected_grade_after_sprint1_fixes": "C (3 P1s resolved → 0 P1; 8 P2s remain → within C threshold)"
+  }
+}

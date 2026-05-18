@@ -1,0 +1,224 @@
+{
+  "audit_date": "2026-05-18",
+  "audit_tool": "dependency-auditor (haiku)",
+  "summary": {
+    "projects_scanned": 7,
+    "total_dependencies": 1799,
+    "vulnerabilities": {
+      "critical": 3,
+      "high": 5,
+      "moderate": 18,
+      "total": 26
+    },
+    "outdated_major_versions": 9,
+    "verdict": "CRITICAL_BLOCK"
+  },
+  "projects": {
+    "Source/Backend": {
+      "dependencies": 411,
+      "cves": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 1
+      },
+      "outdated_major": 3,
+      "status": "CRITICAL"
+    },
+    "Source/Frontend": {
+      "dependencies": 230,
+      "cves": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 6
+      },
+      "outdated_major": 2,
+      "status": "FIX_REQUIRED"
+    },
+    "Source/E2E": {
+      "dependencies": 4,
+      "cves": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0
+      },
+      "outdated_major": 0,
+      "status": "PASS"
+    },
+    "Portal/Backend": {
+      "dependencies": 577,
+      "cves": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 6
+      },
+      "outdated_major": 4,
+      "status": "CRITICAL_BLOCK"
+    },
+    "Portal/Frontend": {
+      "dependencies": 424,
+      "cves": {
+        "critical": 0,
+        "high": 1,
+        "moderate": 5
+      },
+      "outdated_major": 2,
+      "status": "FIX_REQUIRED"
+    },
+    "Platform/Orchestrator": {
+      "dependencies": 155,
+      "cves": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 1
+      },
+      "outdated_major": 0,
+      "status": "CRITICAL_BLOCK"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Critical JavaScript Injection",
+      "severity": "P1",
+      "package": "handlebars",
+      "affected_versions": "4.0.0 - 4.7.8",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "cvss_score": 9.8,
+      "project": "Source/Backend",
+      "escalate_to": "TheGuardians",
+      "reason": "RCE vector in test pipeline via template injection"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "package": "protobufjs",
+      "affected_versions": "<=7.5.5",
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-75px-5xx7-5xc7",
+        "GHSA-jvwf-75h9-cwgg",
+        "GHSA-685m-2w69-288q",
+        "GHSA-66ff-xgx4-vchm"
+      ],
+      "cvss_score": 9.8,
+      "projects": ["Portal/Backend", "Platform/Orchestrator"],
+      "root_cause": "OpenTelemetry dependencies 4+ major versions behind",
+      "escalate_to": "TheGuardians",
+      "reason": "RCE possible via crafted protobuf messages in observability pipeline"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Path-to-regexp ReDoS",
+      "severity": "P1",
+      "package": "path-to-regexp",
+      "affected_versions": "<0.1.13",
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "cvss_score": 7.5,
+      "projects": ["Portal/Backend", "Platform/Orchestrator"],
+      "reason": "DoS vector against orchestrator API via malformed route patterns"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "OpenTelemetry SDK",
+      "issue": "Prometheus exporter process crash",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-005",
+      "package": "vite",
+      "issue": "Path traversal in optimized deps",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "cvss": 0
+    },
+    {
+      "id": "DEP-006",
+      "package": "picomatch",
+      "issue": "ReDoS via extglob quantifiers",
+      "cve": "GHSA-c2c7-rcm5-vvqj",
+      "cvss": 7.5
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "gap": "1 major",
+      "projects": ["Source/Backend", "Portal/Backend", "Platform/Orchestrator"]
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "gap": "2 major",
+      "projects": ["Source/Backend"]
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.0",
+      "gap": "5 major",
+      "projects": ["Source/Backend"]
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.6",
+      "gap": "1 major",
+      "projects": ["Source/Frontend", "Portal/Frontend"]
+    },
+    {
+      "package": "@opentelemetry/sdk-node",
+      "current": "0.47.0",
+      "latest": "0.218.0",
+      "gap": "4+ major",
+      "projects": ["Portal/Backend"],
+      "critical": true
+    }
+  ],
+  "supply_chain_risks": {
+    "post_install_scripts": "PASS - None detected",
+    "transitive_dependencies": "High - Backend: 411, Portal/Backend: 577",
+    "duplicate_versions": "Found - esbuild, vite-node, picomatch duplicates",
+    "license_compliance": "PASS - No GPL/AGPL, all permissive"
+  },
+  "remediation_phases": {
+    "phase_1_critical": {
+      "week": 1,
+      "items": [
+        "Update jest/ts-jest (handlebars RCE)",
+        "Update @opentelemetry packages (protobufjs RCE)",
+        "Update path-to-regexp indirectly via express",
+        "Run full test suite + verification gates"
+      ]
+    },
+    "phase_2_high": {
+      "week": 2,
+      "items": [
+        "Update vite/vitest",
+        "Update picomatch",
+        "Update postcss"
+      ]
+    },
+    "phase_3_routine": {
+      "sprint": "Current+1",
+      "items": [
+        "React 18→19 migration",
+        "React Router 6→7 migration",
+        "Express 4→5 migration",
+        "Minor updates (pino, uuid)"
+      ]
+    }
+  },
+  "dashboard_note": "RUN_ID not provided in task prompt. To report to dashboard, provide RUN_ID and execute: bash tools/pipeline-update.sh --team TheInspector --run $RUN_ID --agent dependency_auditor --action complete --verdict failed --metrics '{...}'"
+}

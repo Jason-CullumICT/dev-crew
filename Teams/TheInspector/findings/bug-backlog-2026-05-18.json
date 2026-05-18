@@ -1,0 +1,234 @@
+{
+  "audit_id": "run-20260518-062751",
+  "audit_date": "2026-05-18",
+  "branch": "audit/inspector-2026-05-18-08ca5a",
+  "grade": "D",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services unavailable — static mode only",
+  "totals": {
+    "p1": 4,
+    "p2": 9,
+    "p3": 13,
+    "p4": 6,
+    "total": 32,
+    "spec_coverage_pct": 15.8,
+    "fixed": 0,
+    "new": 32,
+    "regressed": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE — JavaScript Injection",
+      "title": "Handlebars.js Critical RCE in Backend test toolchain",
+      "package": "handlebars 4.0.0–4.7.8",
+      "cvss": 9.8,
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"],
+      "file": "Source/Backend/package-lock.json",
+      "escalation_target": "TheGuardians",
+      "trigger": "injection",
+      "fix": "npm install jest@latest ts-jest@latest in Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE — Arbitrary Code Execution (injection)",
+      "title": "Protobufjs RCE in Portal and Orchestrator via outdated OpenTelemetry",
+      "package": "protobufjs ≤7.5.5",
+      "cvss": 9.8,
+      "cve_ids": ["GHSA-xq3m-2v4x-88gg", "GHSA-75px-5xx7-5xc7", "GHSA-jvwf-75h9-cwgg", "GHSA-685m-2w69-288q", "GHSA-66ff-xgx4-vchm"],
+      "files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "escalation_target": "TheGuardians",
+      "trigger": "injection",
+      "root_cause": "OpenTelemetry dependencies 4+ major versions behind (0.47 → 0.218)",
+      "fix": "Upgrade @opentelemetry/* packages to latest in portal/Backend and platform/orchestrator",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift / untested",
+      "title": "GET /api/search not wired in app.ts — test suite intentionally failing",
+      "file": "Source/Backend/src/app.ts",
+      "test_file": "Source/Backend/tests/routes/search.test.ts",
+      "exploit_scenario": "FR-dependency-search (DependencyPicker typeahead) is completely unimplemented. Five test cases document the expected contract and fail. Any call to GET /api/search returns 404.",
+      "impact": "Dependency typeahead feature non-functional. Users cannot search work items when selecting dependencies.",
+      "recommendation": "Add GET /api/search handler to app.ts filtering store.findAll() by q param on title/description.",
+      "assign_to": "TheFixer",
+      "cross_ref": [],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "CVE — ReDoS",
+      "title": "path-to-regexp ReDoS in Portal and Orchestrator",
+      "package": "path-to-regexp <0.1.13",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-37ch-88jc-xwx2"],
+      "files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "exploit_scenario": "Attacker sends malformed route URLs with many parameters to orchestrator API causing regex catastrophic backtracking, resulting in 100% CPU and process hang (DoS).",
+      "impact": "Complete orchestrator API availability loss. Pipeline execution blocked.",
+      "recommendation": "Upgrade express to latest (5.x) which pulls in path-to-regexp ≥0.1.13.",
+      "assign_to": "TheFixer",
+      "cross_ref": [],
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md — 69 FRs (FR-001–069) with 0% source coverage",
+      "file": "Specifications/dev-workflow-platform.md",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Specifications/tiered-merge-pipeline.md — 10 FRs (FR-TMP-001–010) with 0% source coverage",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer only scans 13 FRs — produces false PASS against 95 spec requirements",
+      "file": "tools/traceability-enforcer.py",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "pending_dependencies WorkItemStatus missing from enum — dispatch returns 400 instead of transitioning",
+      "file": "Source/Shared/types/workflow.ts",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE — DoS",
+      "title": "OpenTelemetry Prometheus exporter crashes on malformed HTTP request (Portal/Backend)",
+      "package": "@opentelemetry/sdk-node 0.47.0",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-q7rr-3cgh-j5r3"],
+      "file": "portal/Backend/package-lock.json",
+      "assign_to": "TheFixer",
+      "cross_ref": "DEP-002",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE — Path Traversal",
+      "title": "Vite path traversal in dev server optimized deps (.map files)",
+      "package": "vite ≤6.4.1",
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "files": ["Source/Frontend/package-lock.json", "portal/Frontend/package-lock.json"],
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE — ReDoS",
+      "title": "Picomatch ReDoS via extglob quantifiers in Portal/Frontend build",
+      "package": "picomatch ≤2.3.1",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-c2c7-rcm5-vvqj"],
+      "file": "portal/Frontend/package-lock.json",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE — XSS",
+      "title": "PostCSS XSS via unescaped </style> in CSS stringify output",
+      "package": "postcss <8.5.10",
+      "cvss": 6.1,
+      "cve_ids": ["GHSA-qx2v-qp2m-jg93"],
+      "files": ["portal/Frontend/package-lock.json", "Source/Frontend/package-lock.json"],
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "Outdated — Critical CVE chain",
+      "title": "OpenTelemetry packages 4+ major versions behind in portal/Backend (root cause of DEP-002/DEP-004)",
+      "packages": ["@opentelemetry/sdk-node 0.47.0→0.218.0", "@opentelemetry/auto-instrumentations-node 0.40.0→0.76.0"],
+      "file": "portal/Backend/package.json",
+      "assign_to": "TheFixer",
+      "cross_ref": ["DEP-002", "DEP-004"],
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    { "id": "QO-006", "severity": "P3", "specialist": "quality-oracle", "title": "Missing dependencyCheckDuration Histogram (FR-dependency-metrics)", "file": "Source/Backend/src/metrics.ts", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-007", "severity": "P3", "specialist": "quality-oracle", "title": "No Prometheus route latency histogram (architecture rule violation)", "file": "Source/Backend/src/app.ts", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-008", "severity": "P3", "specialist": "quality-oracle", "title": "No OpenTelemetry tracing in Source/Backend (architecture rule violation)", "file": "Source/Backend/src/app.ts", "assign_to": "TheFixer", "cross_ref": ["DEP-002", "DEP-016"], "status": "NEW" },
+    { "id": "QO-009", "severity": "P3", "specialist": "quality-oracle", "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage", "files": ["Source/Frontend/tests/WorkItemDetailPage.test.tsx", "Source/Frontend/tests/WorkItemListPage.test.tsx"], "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-010", "severity": "P3", "specialist": "quality-oracle", "title": "FR-dependency-seed not implemented (seed data spec)", "file": "Specifications/dev-workflow-platform.md", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-008", "severity": "P3", "specialist": "dependency-auditor", "title": "brace-expansion DoS in Backend (jest/babel chain)", "package": "brace-expansion <1.1.13", "file": "Source/Backend/package-lock.json", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-009", "severity": "P3", "specialist": "dependency-auditor", "title": "esbuild dev server CORS issue", "package": "esbuild ≤0.24.2", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-010", "severity": "P3", "specialist": "dependency-auditor", "title": "Protobufjs additional moderate CVEs (resolved by DEP-002 fix)", "package": "protobufjs ≤7.5.5", "assign_to": "TheFixer", "cross_ref": "DEP-002", "status": "NEW" },
+    { "id": "DEP-011", "severity": "P3", "specialist": "dependency-auditor", "title": "Express 4 → 5 version gap (Source/Backend)", "package": "express 4.18.2", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-012", "severity": "P3", "specialist": "dependency-auditor", "title": "Pino 2 major versions behind (8.17.0 → 10.3.1)", "package": "pino 8.17.0", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-013", "severity": "P3", "specialist": "dependency-auditor", "title": "UUID 5 major versions behind (9.0.0 → 14.0.0)", "package": "uuid 9.0.0", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-014", "severity": "P3", "specialist": "dependency-auditor", "title": "React 18 → 19 version gap (both frontends)", "package": "react 18.3.1", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-015", "severity": "P3", "specialist": "dependency-auditor", "title": "React Router 6 → 7 version gap (both frontends)", "package": "react-router-dom 6.26.0", "assign_to": "TheFixer", "status": "NEW" }
+  ],
+  "p4_findings": [
+    { "id": "QO-011", "severity": "P4", "specialist": "quality-oracle", "title": "eslint-disable suppressions in 2 frontend files (react-hooks/exhaustive-deps)", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-013", "severity": "P4", "specialist": "quality-oracle", "title": "Low per-test Verifies density (11–19%)", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-014", "severity": "P4", "specialist": "quality-oracle", "title": "WorkItemDetailPage.tsx at 426 lines approaching 500-line split threshold", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-017", "severity": "P4", "specialist": "dependency-auditor", "title": "High transitive dependency count (1,799 total)", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-019", "severity": "P4", "specialist": "dependency-auditor", "title": "Duplicate transitive dependencies (esbuild, vite-node, picomatch)", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-020", "severity": "P4", "specialist": "dependency-auditor", "title": "License audit: Source/Frontend UNLICENSED — monitor for GPL additions", "assign_to": "TheFixer", "status": "NEW" }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "OpenTelemetry packages severely outdated across all projects",
+      "affected_findings": ["DEP-002", "DEP-004", "DEP-010", "DEP-016", "QO-008"],
+      "single_fix": "Upgrade @opentelemetry/* packages to latest in portal/Backend, platform/orchestrator, and implement OTel initialisation in Source/Backend",
+      "fix_impact": "Resolves 2 P1s (DEP-002), 1 P2 (DEP-004), and 1 P3 (QO-008) with a single upgrade pass"
+    },
+    {
+      "root_cause": "jest/ts-jest test toolchain carrying vulnerable transitive dependencies",
+      "affected_findings": ["DEP-001", "DEP-008"],
+      "single_fix": "npm install jest@latest ts-jest@latest in Source/Backend",
+      "fix_impact": "Resolves 1 P1 (DEP-001 handlebars RCE) and 1 P3 (DEP-008 brace-expansion DoS)"
+    },
+    {
+      "root_cause": "Route observability incomplete — no latency histogram middleware",
+      "affected_findings": ["QO-007", "DEP-004"],
+      "single_fix": "Add http_request_duration_seconds Histogram to metrics.ts + middleware in app.ts + harden metrics endpoint after OTel upgrade",
+      "fix_impact": "Satisfies CLAUDE.md architecture rule (QO-007) and removes metrics endpoint crash risk (DEP-004)"
+    }
+  ]
+}

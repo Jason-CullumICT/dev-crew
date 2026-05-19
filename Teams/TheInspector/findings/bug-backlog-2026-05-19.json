@@ -1,0 +1,405 @@
+{
+  "audit_id": "audit-2026-05-19",
+  "audit_date": "2026-05-19",
+  "branch": "audit/inspector-2026-05-19-831859",
+  "grade": "D",
+  "report_file": "Teams/TheInspector/findings/audit-2026-05-19-D.html",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 7,
+    "p3_total": 11,
+    "p4_total": 0,
+    "escalations": 2,
+    "spec_coverage_actual": "~92%",
+    "spec_coverage_enforcer": "100% (misleading — Source/ only)",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"]
+  },
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "spec-drift/untested",
+      "title": "GET /api/search route unregistered in app.ts — 5 tests will fail",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "requirement": "FR-dependency-search",
+      "recommendation": "Create Source/Backend/src/routes/search.ts, register in app.ts with app.use('/api', searchRouter)",
+      "priority": "block-deployment"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer blind to portal/ and platform/ — false green on every run",
+      "source": "quality-oracle",
+      "files": [
+        "tools/traceability-enforcer.py"
+      ],
+      "line": 78,
+      "recommendation": "Extend source_dirs to ['Source', 'portal', 'platform', 'E2E']. Add configurable enforcer_target from inspector.config.yml.",
+      "priority": "this-sprint",
+      "cross_ref": ["QO-007"]
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Histogram missing from metrics.ts (FR-dependency-metrics)",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Backend/src/metrics.ts",
+        "Source/Backend/src/services/dependency.ts"
+      ],
+      "requirement": "FR-dependency-metrics",
+      "recommendation": "Add dependencyCheckDurationHistogram export to metrics.ts. Instrument hasUnresolvedBlockers() in services/dependency.ts.",
+      "priority": "this-sprint",
+      "cross_ref": ["QO-001"]
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "spec-drift",
+      "title": "FR-070–095 image-upload features implemented without a Specification file (spec-first violation)",
+      "source": "quality-oracle",
+      "files": [
+        "Plans/image-upload/requirements.md"
+      ],
+      "recommendation": "Create Specifications/image-upload.md with domain model (ImageAttachment entity, upload rules, storage contract, API shape).",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "test-hygiene",
+      "title": "Duplicate frontend test files for WorkItemDetailPage and WorkItemListPage inflate coverage",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Delete root-level duplicates. Promote tests/pages/ versions as canonical.",
+      "priority": "this-sprint"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "title": "path-to-regexp <0.1.13 — Regular Expression Denial of Service (CVSS 7.5)",
+      "source": "dependency-auditor",
+      "package": "path-to-regexp",
+      "affected_versions": "<0.1.13",
+      "cvss": 7.5,
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "files": [
+        "platform/orchestrator/package.json",
+        "portal/Backend/package.json"
+      ],
+      "fix": "Update via express/framework upgrade. Verify path-to-regexp >=0.1.13 in lock files.",
+      "priority": "this-sprint",
+      "exploitability": "zero-precondition"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "title": "picomatch <2.3.2 or 4.0.0–4.0.3 — ReDoS + prototype pollution (CVSS 7.5, dev-only)",
+      "source": "dependency-auditor",
+      "package": "picomatch",
+      "affected_versions": "<2.3.2 or 4.0.0-4.0.3",
+      "cvss": 7.5,
+      "cves": ["GHSA-c2c7-rcm5-vvqj", "GHSA-3v7f-55p6-f55p"],
+      "files": [
+        "portal/Frontend/package.json"
+      ],
+      "fix": "npm update picomatch to >=2.3.2 or >=4.0.4",
+      "note": "Dev dependency — build/dev environment risk only",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "title": "@opentelemetry/sdk-node + auto-instrumentations — Prometheus endpoint crash on malformed requests (CVSS 7.5)",
+      "source": "dependency-auditor",
+      "packages": ["@opentelemetry/sdk-node", "@opentelemetry/auto-instrumentations-node"],
+      "affected_versions": "sdk-node <0.217.0, auto-instrumentations <0.75.0",
+      "cvss": 7.5,
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "files": [
+        "portal/Backend/package.json"
+      ],
+      "fix": "npm update @opentelemetry/sdk-node to >=0.217.0 and @opentelemetry/auto-instrumentations-node to >=0.75.0",
+      "priority": "this-sprint",
+      "exploitability": "zero-precondition"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 (Dockerfile.worker prereqs) has no # Verifies: traceability comment",
+      "source": "quality-oracle",
+      "files": ["platform/Dockerfile.worker"],
+      "recommendation": "Add # Verifies: FR-TMP-008 to the relevant Dockerfile.worker RUN instruction.",
+      "priority": "backlog"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer uses mtime-based plan selection — non-deterministic",
+      "source": "quality-oracle",
+      "files": ["tools/traceability-enforcer.py"],
+      "line": 57,
+      "recommendation": "Add enforcer_target to inspector.config.yml; make enforcer prefer configured target over mtime.",
+      "priority": "this-sprint",
+      "cross_ref": ["QO-002"]
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "spec-drift",
+      "title": "Specifications/workflow-engine.md has no formal FR-XXX IDs — traces to Plan, not Spec",
+      "source": "quality-oracle",
+      "files": ["Specifications/workflow-engine.md"],
+      "recommendation": "Add FR-WF-* table to workflow-engine.md or move plan FR table into the spec.",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed not implemented in Source/",
+      "source": "quality-oracle",
+      "files": ["Source/Backend/"],
+      "recommendation": "Verify portal/ seed coverage. If Source/ needs seeding, create Source/Backend/src/seed.ts.",
+      "priority": "backlog"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "pattern-violation",
+      "title": "DebugPortalPage.tsx uses non-standard // Verifies: comment (no FR-XXX ID)",
+      "source": "quality-oracle",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx"],
+      "line": 1,
+      "recommendation": "Replace with a formal FR-XXX ID or document why no requirement applies.",
+      "priority": "backlog"
+    },
+    {
+      "id": "QO-011",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "pattern-violation",
+      "title": "2 eslint-disable react-hooks/exhaustive-deps without documented justification",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "lines": [82, 63],
+      "recommendation": "Add comments explaining why the dep is intentionally excluded to prevent stale-closure bugs.",
+      "priority": "backlog"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "cve",
+      "title": "vite <=6.4.1 — path traversal in optimised deps .map handling (dev-only)",
+      "source": "dependency-auditor",
+      "package": "vite",
+      "affected_versions": "<=6.4.1",
+      "cves": ["GHSA-4w7w-66w2-5vf9"],
+      "files": [
+        "Source/Frontend/package.json",
+        "platform/orchestrator/package.json",
+        "portal/Backend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "fix": "npm update vite to >=6.4.2",
+      "note": "Dev dependency — risk limited to development environment",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "cve",
+      "title": "postcss <8.5.10 — XSS via unescaped </style> (CVSS 6.1)",
+      "source": "dependency-auditor",
+      "package": "postcss",
+      "affected_versions": "<8.5.10",
+      "cvss": 6.1,
+      "cves": ["GHSA-qx2v-qp2m-jg93"],
+      "files": [
+        "Source/Frontend/package.json",
+        "portal/Backend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "fix": "npm update postcss to >=8.5.10",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "cve",
+      "title": "esbuild <=0.24.2 — CORS bypass on dev server (CVSS 5.3, dev-only)",
+      "source": "dependency-auditor",
+      "package": "esbuild",
+      "affected_versions": "<=0.24.2",
+      "cvss": 5.3,
+      "cves": ["GHSA-67mh-4wv8-2f99"],
+      "files": [
+        "Source/Frontend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "fix": "Update via vite update (esbuild is bundled with vite)",
+      "note": "Dev dependency — risk limited to development environment",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "cve",
+      "title": "ws 8.0.0–8.20.0 — uninitialized memory disclosure (CVSS 4.4)",
+      "source": "dependency-auditor",
+      "package": "ws",
+      "affected_versions": "8.0.0 - 8.20.0",
+      "cvss": 4.4,
+      "cves": ["GHSA-58qx-3vcg-4xpx"],
+      "files": [
+        "Source/Frontend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "fix": "npm update ws to >=8.20.1",
+      "priority": "next-sprint"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "cve",
+      "title": "brace-expansion <1.1.13 — process hang on zero-step sequences (CVSS 6.5)",
+      "source": "dependency-auditor",
+      "package": "brace-expansion",
+      "affected_versions": "<1.1.13",
+      "cvss": 6.5,
+      "cves": ["GHSA-f886-m6hf-6m8v"],
+      "files": [
+        "Source/Backend/package.json"
+      ],
+      "fix": "Transitive update via minimatch or glob updates",
+      "priority": "next-sprint"
+    }
+  ],
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "status": "ESCALATED",
+      "escalate_to": "TheGuardians",
+      "category": "cve/arbitrary-code-execution",
+      "title": "protobufjs <=7.5.5 — Arbitrary Code Execution (CVSS 9.8)",
+      "source": "dependency-auditor",
+      "package": "protobufjs",
+      "affected_versions": "<=7.5.5",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-66ff-xgx4-vchm",
+        "GHSA-2pr8-phx7-x9h3",
+        "GHSA-fx83-v9x8-x52w",
+        "GHSA-75px-5xx7-5xc7",
+        "GHSA-jvwf-75h9-cwgg",
+        "GHSA-685m-2w69-288q",
+        "GHSA-q6x5-8v7m-xcrf"
+      ],
+      "files": [
+        "platform/orchestrator/package.json",
+        "portal/Backend/package.json"
+      ],
+      "fix": "npm update protobufjs to >=7.5.6 in both locations. Verify with npm audit.",
+      "exploitability": "zero-precondition",
+      "impact": "Arbitrary code execution in orchestrator and portal/Backend processes",
+      "reason_for_escalation": "Arbitrary code execution — critical security vulnerability requiring TheGuardians security validation before deployment"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "status": "ESCALATED",
+      "escalate_to": "TheGuardians",
+      "category": "cve/javascript-injection",
+      "title": "handlebars 4.0.0–4.7.8 — JavaScript Injection via AST Type Confusion (CVSS 9.8)",
+      "source": "dependency-auditor",
+      "package": "handlebars",
+      "affected_versions": "4.0.0 - 4.7.8",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "files": [
+        "Source/Backend/package.json"
+      ],
+      "fix": "npm update handlebars to >=4.7.9. Identify and pin transitive chain root. Audit all Handlebars template usage.",
+      "exploitability": "zero-precondition-if-template-input-from-http",
+      "impact": "Server-side JavaScript execution in Source/Backend context",
+      "reason_for_escalation": "JavaScript injection in template engine — critical vulnerability requiring TheGuardians security validation before deployment"
+    }
+  ],
+  "grading": {
+    "grade": "D",
+    "rationale": "3 P1 findings exceeds the C-grade threshold of max_p1=2 defined in inspector.config.yml. Two P1s are critical CVEs (CVSS 9.8) escalated to TheGuardians; one is an unimplemented required route with 5 documented test failures.",
+    "thresholds_applied": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+      "D": "max_p1_exceeded"
+    },
+    "actual": {
+      "p1": 3,
+      "p2": 7,
+      "spec_coverage_actual": 92
+    }
+  },
+  "next_audit": "2026-06-19",
+  "metadata": {
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "mode": "static",
+    "services_status": {
+      "backend": "offline",
+      "frontend": "offline"
+    },
+    "git_commit": "23e4d79",
+    "generated_by": "team-leader",
+    "model": "sonnet"
+  }
+}

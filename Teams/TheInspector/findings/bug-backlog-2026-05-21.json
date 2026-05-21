@@ -1,0 +1,302 @@
+{
+  "audit_id": "run-20260521-062422",
+  "audit_date": "2026-05-21",
+  "project": "dev-crew Source App",
+  "overall_grade": "D",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — backend (http://localhost:3001/) and frontend (http://localhost:5173) unreachable; dynamic-mode testing not possible",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 7,
+    "p3_total": 7,
+    "p4_total": 2,
+    "total_findings": 19,
+    "escalations_count": 1,
+    "fixed_since_last_audit": 0,
+    "prior_audit": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "category": "CVE-RCE",
+      "title": "Handlebars.js Remote Code Execution via ts-jest",
+      "package": "handlebars@4.7.8",
+      "path": "Source/Backend/package-lock.json",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "detail": "ts-jest@29.1.2 depends on handlebars@4.7.8 (transitive). Handlebars has 5 high/critical CVEs including JavaScript injection via AST type confusion (CVSS 9.8). RCE possible in template compilation pipeline.",
+      "recommendation": "Update ts-jest to a version that removes handlebars dependency, or replace ts-jest with an alternative. Block PRs until patched.",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "untested",
+      "title": "Verification gates entirely non-functional — node_modules not installed",
+      "files": ["Source/Backend/node_modules/", "Source/Frontend/node_modules/"],
+      "detail": "Source/Backend/node_modules contains only .vite (20 KB). Source/Frontend has no node_modules at all. All 14 backend test files fail with ERR_MODULE_NOT_FOUND. npm test --workspaces cannot pass.",
+      "recommendation": "Run npm install in Source/Backend/ and Source/Frontend/ before any pipeline run. Add a pre-flight dependency check to the pipeline entry script.",
+      "status": "NEW",
+      "source": "quality-oracle",
+      "sprint": "This sprint — blocks all other testing"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Traceability enforcer has critical blind spot — portal/ and platform/ not scanned",
+      "files": ["tools/traceability-enforcer.py"],
+      "detail": "Enforcer scans only Source/ and E2E/. It reports TRACEABILITY PASSED while portal/ (95+ FRs) and platform/ (FR-TMP-001–010) are completely invisible. Running against dev-workflow-platform plan returns 34 MISSING. PASSED is a false green.",
+      "recommendation": "Add portal/ and platform/ to enforcer scan paths, or create separate enforcer invocations per app. Update inspector.config.yml to enumerate all three source dirs.",
+      "status": "NEW",
+      "source": "quality-oracle",
+      "sprint": "This sprint — corrupts audit baseline"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "GET /api/search not wired in Source/Backend/src/app.ts",
+      "files": ["Source/Backend/src/app.ts", "Source/Backend/tests/routes/search.test.ts"],
+      "spec_refs": ["FR-dependency-search"],
+      "detail": "search.test.ts explicitly flags endpoint NOT wired. app.ts registers 5 route prefixes but has no /api/search. Any request returns 404.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts and register it in app.ts. Test contract already documented in search.test.ts.",
+      "status": "NEW",
+      "source": "quality-oracle",
+      "sprint": "This sprint"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Prometheus histogram missing from metrics.ts",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "spec_refs": ["FR-dependency-metrics"],
+      "detail": "FR-dependency-metrics requires 4 metrics. metrics.ts exports only 3. dependencyCheckDuration histogram is absent. Acceptance criteria: all 4 metrics visible at GET /metrics.",
+      "recommendation": "Add Histogram export to metrics.ts and record it in dependency.ts around computeHasUnresolvedBlockers and isReady calls.",
+      "status": "NEW",
+      "source": "quality-oracle",
+      "sprint": "This sprint"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry tracing not implemented anywhere in Source/Backend",
+      "files": ["Source/Backend/src/"],
+      "spec_refs": ["FR-021", "FR-WF-013"],
+      "detail": "CLAUDE.md mandates OTel tracing with traceparent propagation and auto-instrumentation. Zero OTel packages or spans anywhere in Source/Backend. Structured logging and Prometheus present; tracing entirely absent.",
+      "recommendation": "Install @opentelemetry/api, @opentelemetry/sdk-node, @opentelemetry/auto-instrumentations-node. Add instrumentation.ts entrypoint before app.ts loads. Add // Verifies: FR-021.",
+      "status": "NEW",
+      "source": "quality-oracle",
+      "sprint": "Next sprint"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "outdated-dependency",
+      "title": "Express 4.18.2 is 4 minor versions behind (missing security patches)",
+      "files": ["Source/Backend/package.json"],
+      "detail": "express@4.18.2 vs current 4.22.2. 4 minor versions behind = potential missing security patches. express@5.2.1 also available (breaking API changes).",
+      "recommendation": "cd Source/Backend && npm update express@4 (low risk, patch-level)",
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "sprint": "This sprint — low effort"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "outdated-dependency",
+      "title": "Pino 8.17.0 is two major versions behind",
+      "files": ["Source/Backend/package.json"],
+      "detail": "pino@8.17.0 vs latest 10.3.1. Two major versions behind suggests significant changes.",
+      "recommendation": "cd Source/Backend && npm update pino@8 (conservative) or evaluate pino@10 breaking changes.",
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "sprint": "Next sprint"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE-moderate",
+      "title": "Vite 5.4.0 has 4 moderate CVEs (path traversal, esbuild injection)",
+      "files": ["Source/Frontend/package.json"],
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-67mh-4wv8-2f99"],
+      "detail": "vite@5.4.0 has path traversal in optimized deps .map handling and esbuild enables any website to send requests to dev server. Cascades to @vitest/mocker and vite-node.",
+      "recommendation": "cd Source/Frontend && npm update vite (latest 8.0.13 has fix). Major version jump 5→8 — test build pipeline thoroughly.",
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "sprint": "Next sprint — needs testing"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "outdated-dependency",
+      "title": "React 18.3.1 is one major version behind React 19",
+      "files": ["Source/Frontend/package.json"],
+      "detail": "react@18.3.1 vs latest 19.2.6. React 19 now stable; 18.x will receive fewer security updates.",
+      "recommendation": "Plan React 19 migration (non-trivial, 1-2 sprint effort). Not an immediate blocker.",
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "sprint": "Backlog — roadmap item"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "Two logger abstractions violate single-sink rule",
+      "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "recommendation": "Consolidate: extend utils/logger.ts to export a default accepting both call signatures. Delete logger.ts. Update all imports.",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Suppressed react-hooks/exhaustive-deps in 2 recently modified files",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "recommendation": "Resolve underlying hook dependency issue via useCallback/useMemo. If intentional, add comment explaining why no stale closure risk.",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE-moderate",
+      "title": "PostCSS XSS via unescaped </style> in CSS stringify output",
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "cvss": 6.1,
+      "recommendation": "Resolved by updating Vite (DEP-004 fix). Cross-ref: DEP-004.",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "CVE-moderate",
+      "title": "Vitest 2.0.5 affected by Vite cascade CVEs (@vitest/mocker, vite-node)",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Resolved by updating Vite (DEP-004 fix). Cross-ref: DEP-004.",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "outdated-dependency",
+      "title": "UUID 9.0.0 is five major versions behind",
+      "files": ["Source/Backend/package.json"],
+      "recommendation": "cd Source/Backend && npm update uuid. Test for breaking API changes.",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "outdated-dependency",
+      "title": "React Router 6.26.0 is one major version behind (7.x available)",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Test with react-router-dom@7 (likely safe update).",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "CVE-moderate",
+      "title": "WS 8.x uninitialized memory disclosure (via Vite)",
+      "cve": "GHSA-58qx-3vcg-4xpx",
+      "cvss": 4.4,
+      "recommendation": "Resolved by updating Vite (DEP-004 fix). Cross-ref: DEP-004.",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 implemented in Dockerfile.worker but unannotated",
+      "files": ["platform/Dockerfile.worker:31-40"],
+      "recommendation": "Add # Verifies: FR-TMP-008 comment near the gh install section.",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "Silent catch on JSON parse in api/client.ts violates no-silent-swallow rule",
+      "files": ["Source/Frontend/src/api/client.ts:26"],
+      "recommendation": "Log parse failure before returning default: response.json().catch((e) => { logger.error('Failed to parse error body', e); return {}; })",
+      "status": "NEW",
+      "source": "quality-oracle"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "npm dependencies not installed in pipeline/local setup",
+      "affected_findings": ["QO-001", "QO-003", "QO-004"],
+      "single_fix": "Run npm install in Source/Backend/ and Source/Frontend/; add pre-flight check to pipeline entry"
+    },
+    {
+      "root_cause": "Traceability enforcer scope limited to Source/ — multi-app repo",
+      "affected_findings": ["QO-002", "QO-008"],
+      "single_fix": "Extend enforcer scan paths to include portal/ and platform/"
+    },
+    {
+      "root_cause": "Observability implementation incomplete — missing OTel foundation",
+      "affected_findings": ["QO-004", "QO-005"],
+      "single_fix": "Add instrumentation.ts with OTel setup + missing histogram in metrics.ts"
+    },
+    {
+      "root_cause": "ts-jest using vulnerable Handlebars in test compilation",
+      "affected_findings": ["DEP-001"],
+      "single_fix": "Update ts-jest to version without handlebars dependency (ESCALATED to TheGuardians)"
+    },
+    {
+      "root_cause": "Stale Vite 5.x dev build toolchain",
+      "affected_findings": ["DEP-004", "DEP-006", "DEP-007", "DEP-010"],
+      "single_fix": "Update vite to 8.x — resolves all 4 findings in one operation"
+    }
+  ],
+  "recommendations": {
+    "block_deployment": [
+      "DEP-001: Patch Handlebars RCE (update ts-jest) — ESCALATED to TheGuardians"
+    ],
+    "this_sprint": [
+      "QO-001: Run npm install in Source/Backend and Source/Frontend — unblocks all testing",
+      "QO-002: Extend traceability enforcer to scan portal/ and platform/",
+      "QO-003: Wire GET /api/search in Source/Backend/src/app.ts",
+      "QO-004: Add dependencyCheckDuration histogram to metrics.ts",
+      "DEP-002: Update express to 4.22.x (low-risk patch)"
+    ],
+    "next_sprint": [
+      "QO-005: Implement OpenTelemetry tracing in Source/Backend",
+      "DEP-003: Evaluate pino@10 migration",
+      "DEP-004: Update Vite to 8.x (resolves DEP-004, DEP-006, DEP-007, DEP-010)",
+      "QO-006: Consolidate dual logger abstractions",
+      "QO-007: Fix suppressed react-hooks/exhaustive-deps in DependencyPicker.tsx and useWorkItems.ts"
+    ],
+    "backlog": [
+      "DEP-005: Plan React 19 migration (1-2 sprint effort)",
+      "DEP-008: Update uuid library",
+      "DEP-009: Evaluate react-router-dom@7",
+      "QO-008: Add # Verifies: FR-TMP-008 to Dockerfile.worker",
+      "QO-009: Fix silent catch in api/client.ts",
+      "Add npm audit to CI/pre-commit hooks",
+      "Enable GitHub Dependabot for continuous monitoring"
+    ]
+  }
+}

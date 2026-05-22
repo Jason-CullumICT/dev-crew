@@ -1,0 +1,297 @@
+{
+  "audit_id": "run-20260522-062207",
+  "audit_date": "2026-05-22",
+  "grade": "D",
+  "generated_by": "team_leader",
+  "project": "dev-crew Source App",
+  "scope": "Full codebase — 2 specialists (quality-oracle, dependency-auditor); performance-profiler and chaos-monkey skipped (services offline)",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 4,
+    "p3_total": 19,
+    "p4_total": 2,
+    "spec_coverage_pct": 88,
+    "escalations_to_guardians": 2,
+    "fixed_since_prior": 0,
+    "prior_audit": "none — first synthesized audit"
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve-rce-injection",
+      "title": "Handlebars.js Remote Code Execution — Source/Backend",
+      "route": "TheGuardians",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "package": "handlebars (transitive)",
+      "affected_path": "Source/Backend",
+      "detail": "Any backend template compiled from attacker-controlled input executes arbitrary code. JavaScript injection via AST Type Confusion.",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "trigger": "injection — RCE via template input"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve-rce-prototype-pollution",
+      "title": "protobufjs Arbitrary Code Execution — platform/orchestrator",
+      "route": "TheGuardians",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "package": "protobufjs (transitive)",
+      "affected_path": "platform/orchestrator",
+      "detail": "Prototype pollution allows arbitrary code generation attacks on protobuf/JSON inputs. Orchestrator likely processes untrusted external messages.",
+      "fix": "cd platform/orchestrator && npm update protobufjs",
+      "trigger": "injection — RCE via protobuf message parsing"
+    }
+  ],
+
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Traceability Enforcer Scope Gap — 96 requirements invisible to gate",
+      "file": "tools/traceability-enforcer.py:48-57",
+      "status": "NEW",
+      "route": "TheFixer",
+      "detail": "Enforcer covers only 13 of 109 requirements (12%). Reports PASSED while Specifications/dev-workflow-platform.md (86 reqs) and Specifications/tiered-merge-pipeline.md (10 reqs) are never evaluated. Green CI gate is a false confidence signal.",
+      "recommendation": "Extend enforcer to accept --specs-dir Specifications/ flag and add portal/ + platform/ to scan dirs.",
+      "cross_ref": "Root cause for QO-002 going undetected"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Ghost Requirements — FR-070..095 and FR-DUP-* referenced but never specified",
+      "file": "portal/Frontend/src/components/ (multiple files)",
+      "status": "NEW",
+      "route": "TheFixer → requirements-reviewer + portal frontend-coder",
+      "detail": "50+ Verifies comments cite FR-070..095 and FR-DUP-01..FR-DUP-13. None of these IDs exist in any Specifications/ file. Inverted traceability — code claims to verify unwritten requirements.",
+      "recommendation": "(a) Write specs for FR-070..095 and FR-DUP-* in Specifications/dev-workflow-platform.md; (b) update code comments to canonical IDs. Option (a) is correct per spec-first mandate.",
+      "cross_ref": "Detected because QO-001 was found; fixing QO-001 enables automated detection"
+    }
+  ],
+
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR-dependency-metrics: dependencyCheckDuration Histogram missing",
+      "file": "Source/Backend/src/metrics.ts",
+      "status": "NEW",
+      "route": "TheFixer → backend-coder",
+      "detail": "Spec requires 4 metrics; only 3 implemented. dependencyCheckDuration Histogram completely absent.",
+      "recommendation": "Add Histogram 'dependency_check_duration_seconds' to metrics.ts; instrument in dependency.ts; add test.",
+      "cross_ref": "Part of FR-dependency-* incomplete implementation cluster (QO-003, QO-004, QO-005)"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed: Seed data completely unimplemented",
+      "file": "Source/Backend/ (missing file)",
+      "status": "NEW",
+      "route": "TheFixer → backend-coder",
+      "detail": "No seed script or data fixture exists for required dependency relationships (BUG-0010 blocked_by BUG-0003..0007; FR-0004 blocked_by FR-0003, etc.).",
+      "recommendation": "Create Source/Backend/src/store/seed.ts with idempotent startup seeding; guard with existence checks.",
+      "cross_ref": "Part of FR-dependency-* incomplete implementation cluster"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "pending_dependencies not in WorkItemStatus enum despite documented usage",
+      "file": "Source/Shared/types/workflow.ts:5-15",
+      "status": "NEW",
+      "route": "TheFixer → api-contract",
+      "detail": "api-contracts.md documents pending_dependencies as required dispatch-gating status. Enum has no PendingDependencies value; VALID_STATUS_TRANSITIONS has no entry. Shared-type change affects backend + frontend.",
+      "recommendation": "Add PendingDependencies = 'pending_dependencies'; add transitions; coordinate backend + frontend layers.",
+      "cross_ref": "Part of FR-dependency-* incomplete implementation cluster"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-dos",
+      "title": "path-to-regexp ReDoS — platform/orchestrator",
+      "file": "platform/orchestrator/package.json (indirect)",
+      "status": "NEW",
+      "route": "TheFixer (after orchestrator npm update)",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "detail": "Malicious URLs cause catastrophic regex backtracking, making orchestrator routing unresponsive.",
+      "recommendation": "cd platform/orchestrator && npm update path-to-regexp (auto-fixed with protobufjs update).",
+      "cross_ref": "CROSS-REF: DEP-002 — same npm update in platform/orchestrator resolves both"
+    }
+  ],
+
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Portal uses non-canonical FR-dependency-* naming aliases",
+      "file": "portal/Backend/src/services/dependencyService.ts; portal/Shared/types.ts",
+      "status": "NEW",
+      "route": "TheFixer → portal frontend-coder/backend-coder"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "untested",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/ (two paths per component)",
+      "status": "NEW",
+      "route": "TheFixer → frontend-coder"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "untested",
+      "title": "E2E package test script is unrunnable stub",
+      "file": "Source/E2E/package.json:10",
+      "status": "NEW",
+      "route": "TheFixer → solo-session or TheFixer"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Undocumented eslint-disable react-hooks/exhaustive-deps in 2 production files",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:82; Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "status": "NEW",
+      "route": "TheFixer → frontend-coder"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "cve-dos",
+      "title": "brace-expansion Memory Exhaustion — Source/Backend",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cvss": 6.5,
+      "status": "NEW",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated",
+      "title": "uuid direct dependency outdated — Source/Backend",
+      "status": "NEW",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "cve-cors",
+      "title": "esbuild CORS bypass (dev) — Source/Frontend",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvss": 5.3,
+      "status": "NEW",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "cve-dev-dependency",
+      "title": "vite/vitest/ws/postcss moderate CVEs — Source/Frontend",
+      "status": "NEW",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "cve-supply-chain",
+      "title": "dockerode indirect uuid vulnerability — platform/orchestrator",
+      "status": "NEW",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "cve-encoding",
+      "title": "@protobufjs/utf8 overlong UTF-8 decoding — platform/orchestrator",
+      "cve": "GHSA-q6x5-8v7m-xcrf",
+      "cvss": 5.3,
+      "status": "NEW",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-major",
+      "title": "React 18 → 19 upgrade available — Source/Frontend",
+      "status": "NEW",
+      "route": "TheFixer (planned sprint)"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-major",
+      "title": "React Router 6 → 7 upgrade available — Source/Frontend",
+      "status": "NEW",
+      "route": "TheFixer (planned sprint)"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-major",
+      "title": "Express 4 → 5 upgrade available — Source/Backend",
+      "status": "NEW",
+      "route": "TheFixer (planned sprint)"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-major",
+      "title": "Pino 8 → 10 upgrade available — Source/Backend",
+      "status": "NEW",
+      "route": "TheFixer (planned sprint)"
+    }
+  ],
+
+  "p4_findings": [
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "FR-TMP-008 has no Verifies comment in Dockerfile.worker",
+      "file": "platform/Dockerfile.worker:39-40",
+      "status": "NEW",
+      "route": "solo-session"
+    },
+    {
+      "id": "QO-011",
+      "severity": "P4",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "FR-0001 zero-pad typo in portal code",
+      "file": "portal/ (grep FR-0001)",
+      "status": "NEW",
+      "route": "TheFixer → portal frontend-coder"
+    }
+  ]
+}

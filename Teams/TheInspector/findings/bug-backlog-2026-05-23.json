@@ -1,0 +1,218 @@
+{
+  "audit_id": "inspector-2026-05-23",
+  "generated_at": "2026-05-23T06:00:00Z",
+  "grade": "D",
+  "branch": "main",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — static mode only; no performance or chaos reports generated",
+  "totals": {
+    "p1": 4,
+    "p2": 11,
+    "p3": 12,
+    "p4": 4,
+    "total": 31,
+    "escalations": 2
+  },
+  "escalations": [
+    {
+      "id": "DEP-032",
+      "title": "Protobufjs Arbitrary Code Execution in Orchestrator",
+      "package": "protobufjs <=7.5.7 (via dockerode@4.0.10)",
+      "location": "platform/orchestrator/package-lock.json",
+      "severity": "P1",
+      "cvss": "Critical",
+      "primary_cve": "GHSA-xq3m-2v4x-88gg",
+      "cve_count": 9,
+      "escalate_to": "TheGuardians",
+      "reason": "Arbitrary code execution in production orchestrator infrastructure. If attacker controls Docker API responses or crafts protobuf messages, can execute arbitrary code in orchestrator process.",
+      "immediate_fix": "Upgrade dockerode to >=5.0.0",
+      "owner": "solo-session"
+    },
+    {
+      "id": "DEP-001",
+      "title": "Handlebars Template Injection (via ts-jest dev dependency chain)",
+      "package": "handlebars@4.7.8 (transitive via ts-jest@29.4.6)",
+      "location": "Source/Backend/package-lock.json",
+      "severity": "P1",
+      "cvss": "Critical (CVSS 9.8)",
+      "primary_cve": "GHSA-2w6w-674q-4c4q",
+      "cve_count": 8,
+      "escalate_to": "TheGuardians",
+      "reason": "Multiple template injection CVEs (8 GHSA advisories). Dev-time only — verify ts-jest never compiles user-controlled template data during CI builds.",
+      "immediate_fix": "Upgrade ts-jest to latest; coordinate handlebars upgrade path",
+      "owner": "frontend-coder"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "title": "Traceability Enforcer Blind to portal/ and platform/ Codebases",
+      "category": "spec-drift / architecture-violation",
+      "file": "tools/traceability-enforcer.py:69-98",
+      "severity": "P1",
+      "status": "NEW",
+      "description": "The enforcer scans only Source/ and E2E/ — two entire codebases (portal/, platform/) with ~95 requirements are excluded. Default gate reports PASS while most requirements are unverified.",
+      "recommendation": "Extend source_dirs in traceability-enforcer.py to include portal/ and platform/. Add per-codebase enforcer invocations to CLAUDE.md.",
+      "owner": "TheFixer",
+      "priority": "This sprint"
+    },
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "title": "pending_dependencies Status Missing from WorkItemStatus Enum",
+      "category": "spec-drift",
+      "file": "Source/Shared/types/workflow.ts",
+      "severity": "P1",
+      "status": "NEW",
+      "description": "api-contracts.md and FR-dependency-dispatch-gating specify status transition to pending_dependencies when blockers exist. Enum has no such member, transition table lacks entry, dispatch endpoint returns 400 instead. Verifies comment is a false claim.",
+      "recommendation": "Add PendingDependencies to WorkItemStatus enum. Add transition rules. Update approve/dispatch endpoints. Mirror portal/ implementation.",
+      "owner": "TheFixer",
+      "priority": "This sprint"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "title": "dependencyCheckDuration Histogram Missing from Source/ Metrics",
+      "category": "spec-drift",
+      "file": "Source/Backend/src/metrics.ts",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Add dependencyCheckDuration Histogram; instrument isReady() and computeHasUnresolvedBlockers().",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "title": "FR-dependency-api-types Open: as any Casts in portal/ DependencyPicker",
+      "category": "spec-drift",
+      "file": "portal/Frontend/src/components/shared/DependencyPicker.tsx:291,293",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Add blocked_by?: string[] to UpdateBugInput and UpdateFeatureRequestInput in portal/Shared/api.ts. Remove as any casts.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "title": "FR-dependency-seed Missing: No seed.ts in portal/Backend/src/database/",
+      "category": "spec-drift",
+      "file": "portal/Backend/src/database/",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Create seed.ts with 8 idempotent dependency relationship inserts. Wire into server startup.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "title": "Duplicate Frontend Test Files Have Diverged",
+      "category": "test-quality",
+      "file": "Source/Frontend/tests/ (WorkItemDetailPage, WorkItemListPage)",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Consolidate into tests/pages/ canonical location. Remove root-level duplicates after merging coverage.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "title": "Enforcer Regex False-Matches Seed Data IDs as Requirements",
+      "category": "pattern-violation",
+      "file": "tools/traceability-enforcer.py:62-65",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Tighten regex: require FR- followed by uppercase letters (not pure digits). Add word boundary anchors.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "title": "QS Stringify DoS via Express (GHSA-q8mj-m7cp-5q26)",
+      "category": "CVE-Moderate",
+      "file": "Source/Backend/package-lock.json",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Run npm audit fix on Source/Backend — upgrades qs to >=6.15.2.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "title": "UUID Buffer Bounds Check Missing (GHSA-w5hq-g745-h8pq)",
+      "category": "CVE-Moderate",
+      "file": "Source/Backend/package-lock.json",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Upgrade uuid to 9.0.2+ or 14.0.0. Verify no v3/v5/v6 usage.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-022",
+      "source": "dependency-auditor",
+      "title": "Vite Path Traversal via Map Handling (GHSA-4w7w-66w2-5vf9)",
+      "category": "CVE-Moderate",
+      "file": "Source/Frontend/package-lock.json",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Upgrade vite to >=5.4.3. Fixes esbuild CORS bypass (DEP-023) simultaneously.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-023",
+      "source": "dependency-auditor",
+      "title": "Esbuild Dev Server CORS Bypass (GHSA-67mh-4wv8-2f99)",
+      "category": "CVE-Moderate",
+      "file": "Source/Frontend/package-lock.json",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Covered by vite upgrade (DEP-022 fix). Dev-time risk on shared networks.",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-033",
+      "source": "dependency-auditor",
+      "title": "Path-to-Regexp ReDoS in Orchestrator (GHSA-37ch-88jc-xwx2)",
+      "category": "CVE-High",
+      "file": "platform/orchestrator/package-lock.json",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Covered by dockerode@5.0.0 upgrade which brings updated express dependency.",
+      "owner": "solo-session"
+    },
+    {
+      "id": "DEP-034",
+      "source": "dependency-auditor",
+      "title": "UUID Buffer Bounds in Orchestrator (same as DEP-003)",
+      "category": "CVE-Moderate",
+      "file": "platform/orchestrator/package-lock.json",
+      "severity": "P2",
+      "status": "NEW",
+      "recommendation": "Covered by dockerode@5.0.0 upgrade.",
+      "owner": "solo-session"
+    }
+  ],
+  "p3_findings": [
+    {"id": "QO-008", "source": "quality-oracle", "title": "FR-WF-* IDs Exist Only in Plans/, Not in Specifications/", "severity": "P3", "status": "NEW"},
+    {"id": "QO-009", "source": "quality-oracle", "title": "FR-TMP-008 Has No Verifies Comment in Dockerfile.worker", "severity": "P3", "status": "NEW"},
+    {"id": "QO-010", "source": "quality-oracle", "title": "Two eslint-disable Suppressions Without Justification Comments", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-004", "source": "dependency-auditor", "title": "Brace-Expansion ReDoS (GHSA-f886-m6hf-6m8v) in Backend test chain", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-024", "source": "dependency-auditor", "title": "PostCSS XSS via Unescaped Style Tags (GHSA-qx2v-qp2m-jg93)", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-025", "source": "dependency-auditor", "title": "WS Uninitialized Memory Disclosure (GHSA-58qx-3vcg-4xpx)", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-035", "source": "dependency-auditor", "title": "QS DoS in Orchestrator (same as DEP-002)", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-007-018", "source": "dependency-auditor", "title": "Outdated Type Definitions (5 packages, @types/* multiple major versions behind)", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-019", "source": "dependency-auditor", "title": "Express v4 Approaching EOL (all 3 projects)", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-020", "source": "dependency-auditor", "title": "Pino Logger v8 (2 major versions behind)", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-021", "source": "dependency-auditor", "title": "TypeScript v5 (v6 available)", "severity": "P3", "status": "NEW"},
+    {"id": "DEP-026-031", "source": "dependency-auditor", "title": "Frontend Stack Outdated: React 18→19, vite 5→8, vitest 2→4, jsdom 24→29", "severity": "P3", "status": "NEW"}
+  ],
+  "p4_findings": [
+    {"id": "QO-011", "source": "quality-oracle", "title": "DashboardPage.tsx Missing File-Level Verifies Comment", "severity": "P4", "status": "NEW"},
+    {"id": "DEP-005", "source": "dependency-auditor", "title": "Deprecated Supertest v6 (dev dependency)", "severity": "P4", "status": "NEW"},
+    {"id": "DEP-006", "source": "dependency-auditor", "title": "Deprecated Glob v7 (indirect test dependency)", "severity": "P4", "status": "NEW"},
+    {"id": "DEP-036-038", "source": "dependency-auditor", "title": "Outdated Transitive Dependencies in Orchestrator", "severity": "P4", "status": "NEW"}
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "audit_id": "dep-audit-2026-05-23",
+  "timestamp": "2026-05-23T05:50:00Z",
+  "status": "completed",
+  "auditor": "dependency_auditor",
+  "summary": {
+    "projects_audited": 3,
+    "total_findings": 38,
+    "total_vulnerabilities": 21
+  },
+  "vulnerabilities": {
+    "critical": {
+      "count": 2,
+      "findings": [
+        {
+          "id": "DEP-001",
+          "package": "handlebars",
+          "version": "4.7.8",
+          "location": "Source/Backend (via ts-jest)",
+          "severity": "CRITICAL",
+          "cve_count": 8,
+          "primary_cve": "GHSA-2w6w-674q-4c4q",
+          "risk_level": "P1",
+          "type": "Template Injection (RCE in template compilation)"
+        },
+        {
+          "id": "DEP-032",
+          "package": "protobufjs",
+          "version": "<=7.5.7",
+          "location": "platform/orchestrator (via dockerode)",
+          "severity": "CRITICAL",
+          "cve_count": 9,
+          "primary_cve": "GHSA-xq3m-2v4x-88gg",
+          "risk_level": "P1",
+          "type": "Arbitrary Code Execution",
+          "escalation": "TheGuardians"
+        }
+      ]
+    },
+    "high": {
+      "count": 1,
+      "findings": [
+        {
+          "id": "DEP-033",
+          "package": "path-to-regexp",
+          "location": "platform/orchestrator (via express)",
+          "severity": "HIGH",
+          "cve": "GHSA-37ch-88jc-xwx2",
+          "risk_level": "P2",
+          "type": "ReDoS"
+        }
+      ]
+    },
+    "moderate": {
+      "count": 18,
+      "by_project": {
+        "Source/Backend": 5,
+        "Source/Frontend": 4,
+        "platform/orchestrator": 4,
+        "portal/Backend": 5
+      }
+    }
+  },
+  "outdated_packages": {
+    "total_with_updates": 12,
+    "by_severity": {
+      "P2": 3,
+      "P3": 9,
+      "P4": 0
+    },
+    "critical_updates": [
+      "express: 4.22.1 → 5.2.1 (major)",
+      "react: 18.3.1 → 19.2.6 (major)",
+      "typescript: 5.9.3 → 6.0.3 (major)"
+    ]
+  },
+  "supply_chain_analysis": {
+    "post_install_scripts": {
+      "count": 0,
+      "status": "clean"
+    },
+    "dependencies": {
+      "Source/Backend": {
+        "direct": 13,
+        "transitive": 412
+      },
+      "Source/Frontend": {
+        "direct": 13,
+        "transitive": 231
+      },
+      "platform/orchestrator": {
+        "direct": 3,
+        "transitive": 156
+      }
+    },
+    "total_transitive": 799,
+    "license_issues": {
+      "count": 0,
+      "status": "compliant"
+    },
+    "high_risk_packages": 0
+  },
+  "remediation_plan": {
+    "immediate": [
+      {
+        "action": "Upgrade dockerode@5.0.0",
+        "fixes": ["DEP-032 (protobufjs RCE)"],
+        "owner": "solo-session",
+        "timeline": "ASAP",
+        "impact": "High — production infrastructure"
+      },
+      {
+        "action": "Run npm audit fix (Backend)",
+        "fixes": ["DEP-002 (qs DoS)", "DEP-004 (brace-expansion)"],
+        "owner": "backend-coder",
+        "timeline": "This sprint",
+        "impact": "Medium — fixes DoS vulnerabilities"
+      }
+    ],
+    "short_term": [
+      {
+        "action": "Upgrade vite to >=5.4.3",
+        "fixes": ["DEP-022 (path traversal)", "DEP-023 (esbuild CORS)"],
+        "owner": "frontend-coder",
+        "timeline": "1-2 weeks",
+        "impact": "Low-Medium — dev-time security"
+      },
+      {
+        "action": "Coordinate ts-jest upgrade",
+        "fixes": ["DEP-001 (handlebars)"],
+        "owner": "frontend-coder",
+        "timeline": "1-2 weeks",
+        "impact": "Medium — dev dependency chain"
+      }
+    ],
+    "medium_term": [
+      {
+        "action": "Plan React 19 + tooling upgrade",
+        "fixes": ["DEP-026–031 (outdated frontend stack)"],
+        "owner": "frontend-coder",
+        "timeline": "Next 4-6 weeks",
+        "impact": "Medium — major version upgrades"
+      },
+      {
+        "action": "Plan Express v5 migration",
+        "fixes": ["DEP-019 (express EOL)"],
+        "owner": "backend-coder",
+        "timeline": "Next quarter",
+        "impact": "High — affects all 3+ projects"
+      }
+    ]
+  },
+  "grading": {
+    "vulnerabilities": "C",
+    "reasoning": "2 critical CVEs (1 RCE in infrastructure, 1 template injection in dev), but limited production exposure. 18 moderate issues mostly fixable via audit fix.",
+    "supply_chain": "A",
+    "reasoning": "Clean post-install scripts, compliant licenses, healthy maintenance of major packages",
+    "overall": "B",
+    "reasoning": "Significant security issues require attention but remediation paths are clear. Supply chain health is strong."
+  },
+  "cross_team_escalations": [
+    {
+      "finding_id": "DEP-032",
+      "package": "protobufjs",
+      "escalate_to": "TheGuardians",
+      "reason": "Arbitrary code execution in infrastructure (orchestrator). Requires security review post-upgrade."
+    },
+    {
+      "finding_id": "DEP-001",
+      "package": "handlebars",
+      "escalate_to": "TheGuardians",
+      "reason": "Multiple template injection CVEs. Verify ts-jest doesn't execute untrusted templates during build."
+    }
+  ],
+  "next_audit_date": "2026-08-23",
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-05-23.md"
+}

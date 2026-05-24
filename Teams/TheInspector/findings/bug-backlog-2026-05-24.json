@@ -1,0 +1,388 @@
+{
+  "audit_id": "run-20260524-061647",
+  "audit_date": "2026-05-24",
+  "grade": "C",
+  "branch": "audit/inspector-2026-05-24-a0b86b",
+  "project": "dev-crew Source App — Self-Judging Workflow Engine",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend service (localhost:3001) and frontend (localhost:5173) not running at audit time",
+  "summary": {
+    "p1_total": 3,
+    "p1_confirmed": 2,
+    "p1_unconfirmed": 1,
+    "p2_total": 6,
+    "p3_total": 8,
+    "p4_total": 2,
+    "total_findings": 19,
+    "escalations_to_guardians": 2,
+    "spec_coverage_active_pct": 100,
+    "spec_coverage_overall_pct": 28,
+    "license_compliance_pct": 100,
+    "new_findings": 19,
+    "fixed_findings": 0,
+    "still_open_findings": 0,
+    "regressed_findings": 0
+  },
+  "grade_rationale": "2 confirmed P1s + 1 unconfirmed P1 (DEP-002 pending verification). Config threshold: C = max_p1:2, max_p2:15, min_spec_coverage:40. Active spec coverage 100% exceeds all thresholds. P1 count at boundary of C/D — grade C assigned pending DEP-002 confirmation; if confirmed, re-evaluate for D.",
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript/Template Injection — 8 CVEs (CVSS max 9.8)",
+      "severity": "P1",
+      "category": "injection",
+      "trigger": "injection vulnerability",
+      "escalate_to": "TheGuardians",
+      "package": "handlebars ≤4.7.8",
+      "location": "Source/Backend",
+      "max_cvss": 9.8,
+      "cves": [
+        "GHSA-2qvq-rjwj-gvw9", "GHSA-3mfm-83xf-c92r", "GHSA-2w6w-674q-4c4q",
+        "GHSA-7rx3-28cr-v5wh", "GHSA-442j-39wm-28r2", "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "immediate_fix": "cd Source/Backend && npm update handlebars --depth=999",
+      "status": "confirmed",
+      "timeline_hours": 24
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution (CVSS 9.8) — Pending Verification",
+      "severity": "P1",
+      "category": "arbitrary-code-execution",
+      "trigger": "injection vulnerability (code injection)",
+      "escalate_to": "TheGuardians",
+      "package": "protobufjs <7.5.5",
+      "location": "platform/orchestrator, portal/Backend",
+      "max_cvss": 9.8,
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "immediate_action": "Run 'npm ls protobufjs' after clean install in platform/orchestrator and portal/Backend to confirm usage",
+      "status": "unconfirmed — may be lock-file orphan",
+      "timeline_hours": 24
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search Endpoint Not Implemented",
+      "severity": "P1",
+      "category": "spec-drift/untested",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "description": "The GET /api/search endpoint called by DependencyPicker frontend component does not exist. 5 tests in search.test.ts are explicitly marked as failing until implemented.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts implementing GET /api/search?q= returning {data: WorkItem[]}, register in app.ts, add // Verifies: FR-dependency-search",
+      "route_to": "TheFixer",
+      "effort": "medium"
+    },
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript/Template Injection — 8 CVEs (max CVSS 9.8)",
+      "severity": "P1",
+      "category": "CVE/injection",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalated": true,
+      "escalate_to": "TheGuardians",
+      "location": "Source/Backend",
+      "recommendation": "cd Source/Backend && npm update handlebars --depth=999. TheGuardians to review template usage for user-supplied input.",
+      "route_to": "TheGuardians",
+      "effort": "low (patch), medium (security review)"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution (CVSS 9.8) — Unconfirmed",
+      "severity": "P1-pending",
+      "category": "CVE/code-injection",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalated": true,
+      "escalate_to": "TheGuardians",
+      "location": "platform/orchestrator, portal/Backend",
+      "notes": "npm ls protobufjs returns empty — may be lock-file orphan. Investigate before dismissing.",
+      "recommendation": "Run npm ls protobufjs after clean install in both projects. Update to >=7.5.5 if confirmed present.",
+      "route_to": "TheGuardians",
+      "effort": "low to verify, medium if confirmed"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "Traceability Enforcer Only Scans 1 of 8 Plans — False Green Gate",
+      "severity": "P2",
+      "category": "pattern-violation/spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": ["tools/traceability-enforcer.py"],
+      "recommendation": "Add --all-plans mode OR update CLAUDE.md gate to explicit plan name. See QO-005 for regex fix to bundle with this.",
+      "route_to": "TheFixer",
+      "effort": "low"
+    },
+    {
+      "id": "QO-003",
+      "title": "Route Handlers Directly Access Store — Architecture Violation",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "recommendation": "Extract workItemService.ts wrapping store CRUD. Route handlers call service, not store directly. Follow dashboardService.ts pattern.",
+      "route_to": "TheFixer",
+      "effort": "medium"
+    },
+    {
+      "id": "QO-004",
+      "title": "Orphaned Spec dev-workflow-platform.md Has 70+ Untraced FRs",
+      "severity": "P2",
+      "category": "spec-drift/doc-stale",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "recommendation": "Add ARCHIVED/SUPERSEDED banner at top, or move to docs/archive/. References workflow-engine.md as replacement.",
+      "route_to": "TheFixer",
+      "effort": "trivial"
+    },
+    {
+      "id": "DEP-003",
+      "title": "OpenTelemetry SDK Prometheus Exporter DoS (CVSS 7.5)",
+      "severity": "P2",
+      "category": "CVE/denial-of-service",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "portal/Backend",
+      "package": "@opentelemetry/sdk-node <0.217.0",
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "recommendation": "cd portal/Backend && npm update @opentelemetry/sdk-node. Coordinate with observability team; test metrics endpoint after update.",
+      "cross_ref": "DEP-005 (same fix resolves both)",
+      "route_to": "TheFixer",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-004",
+      "title": "path-to-regexp ReDoS — CPU Exhaustion via Crafted URLs (CVSS 7.5)",
+      "severity": "P2",
+      "category": "CVE/denial-of-service",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "platform/orchestrator, portal/Backend",
+      "package": "path-to-regexp <0.1.13",
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "recommendation": "npm update express path-to-regexp in both projects. Run ReDoS fuzz test after patch.",
+      "cross_ref": "performance-profiler (latency spike risk under attack)",
+      "route_to": "TheFixer",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-005",
+      "title": "OpenTelemetry Auto-Instrumentations Inherits High Severity",
+      "severity": "P2",
+      "category": "CVE/denial-of-service",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "portal/Backend",
+      "package": "@opentelemetry/auto-instrumentations-node <0.40.0",
+      "recommendation": "Update parent @opentelemetry/sdk-node (same fix as DEP-003) — this resolves DEP-005 transitively.",
+      "cross_ref": "DEP-003",
+      "route_to": "TheFixer",
+      "effort": "none (bundled with DEP-003)"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "title": "Traceability Enforcer Regex Misses Lowercase FR IDs",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": ["tools/traceability-enforcer.py"],
+      "recommendation": "Change regex from FR-[A-Z0-9-]+ to FR-[A-Za-z0-9-]+",
+      "route_to": "TheFixer",
+      "effort": "trivial"
+    },
+    {
+      "id": "QO-006",
+      "title": "Duplicate Frontend Test Files for WorkItemDetailPage and WorkItemListPage",
+      "severity": "P3",
+      "category": "untested/pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Delete root-level duplicates; keep tests/pages/ versions which are more complete.",
+      "route_to": "TheFixer",
+      "effort": "trivial"
+    },
+    {
+      "id": "QO-007",
+      "title": "eslint-disable Comments in Production Source (2 occurrences)",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "recommendation": "Replace eslint-disable with useRef stable ref or useMemo for filters object.",
+      "route_to": "TheFixer",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-006",
+      "title": "Express / body-parser / qs Parameter Pollution (Moderate)",
+      "severity": "P3",
+      "category": "CVE/moderate",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "Source/Backend, platform/orchestrator, portal/Backend, portal/Frontend",
+      "recommendation": "npm update express qs across all projects.",
+      "route_to": "TheFixer",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-007",
+      "title": "Brace-Expansion Memory Exhaustion DoS (CVSS 6.5)",
+      "severity": "P3",
+      "category": "CVE/denial-of-service",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "Source/Backend",
+      "package": "brace-expansion <1.1.13",
+      "cves": ["GHSA-f886-m6hf-6m8v"],
+      "recommendation": "Update to >=1.1.13 in next patch cycle.",
+      "route_to": "TheFixer",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vite / Vitest / esbuild Dev Vulnerabilities (Path Traversal, CORS)",
+      "severity": "P3",
+      "category": "CVE/dev-time",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "Source/Frontend (dev dependency)",
+      "recommendation": "cd Source/Frontend && npm update vite vitest",
+      "route_to": "TheFixer",
+      "effort": "low"
+    },
+    {
+      "id": "DEP-009",
+      "title": "PostCSS Unescaped CSS Output XSS (CVSS 6.1, dev-time)",
+      "severity": "P3",
+      "category": "CVE/XSS/dev-time",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "Source/Frontend (dev dependency)",
+      "package": "postcss <8.5.10",
+      "cves": ["GHSA-qx2v-qp2m-jg93"],
+      "recommendation": "Update postcss to >=8.5.10.",
+      "route_to": "TheFixer",
+      "effort": "trivial"
+    },
+    {
+      "id": "DEP-010",
+      "title": "ws WebSocket Uninitialized Memory Disclosure (CVSS 4.4)",
+      "severity": "P3",
+      "category": "CVE/information-disclosure",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "location": "Source/Frontend (transitive dev dependency)",
+      "package": "ws 8.0.0-8.20.0",
+      "cves": ["GHSA-58qx-3vcg-4xpx"],
+      "recommendation": "Update ws to >=8.20.1 (transitive — update parent package).",
+      "route_to": "TheFixer",
+      "effort": "low"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "title": "3 Files Approaching 500-Line Split Threshold",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "Source/Frontend/src/pages/WorkItemDetailPage.tsx (426 lines)",
+        "Source/Frontend/src/components/DependencyPicker.tsx (376 lines)",
+        "Source/Backend/src/routes/workflow.ts (374 lines)"
+      ],
+      "recommendation": "Extract sub-components and custom hooks in next refactor pass. No immediate action.",
+      "route_to": "TheFixer",
+      "effort": "medium"
+    },
+    {
+      "id": "QO-009",
+      "title": "setup.ts Test Infrastructure File Missing Intentional-Omission Comment",
+      "severity": "P4",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": ["Source/Frontend/tests/setup.ts"],
+      "recommendation": "Add // Testing infrastructure — no FR traceability required comment.",
+      "route_to": "TheFixer",
+      "effort": "trivial"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "OpenTelemetry SDK version pinned too low",
+      "findings": ["DEP-003", "DEP-005"],
+      "single_fix": "cd portal/Backend && npm update @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node",
+      "impact": "Resolves 2 P2 findings"
+    },
+    {
+      "root_cause": "Traceability enforcer tooling gaps (plan scope + regex)",
+      "findings": ["QO-002", "QO-005"],
+      "single_fix": "Add --all-plans mode to tools/traceability-enforcer.py and change regex to FR-[A-Za-z0-9-]+",
+      "impact": "Resolves P2 + P3 findings; makes verification gate reliable"
+    },
+    {
+      "root_cause": "Injection/RCE vulnerabilities in dependency tree",
+      "findings": ["DEP-001", "DEP-002"],
+      "single_fix": "npm update handlebars + verify/update protobufjs + TheGuardians review",
+      "impact": "Resolves 2 P1 escalations; enables grade improvement to B"
+    },
+    {
+      "root_cause": "path-to-regexp ReDoS (cross-specialist)",
+      "findings": ["DEP-004"],
+      "single_fix": "npm update express path-to-regexp",
+      "impact": "Resolves P2 DoS + would address performance-profiler latency spike risk"
+    },
+    {
+      "root_cause": "Orphaned spec misleads tooling and agents",
+      "findings": ["QO-004", "QO-002"],
+      "single_fix": "Add ARCHIVED banner to Specifications/dev-workflow-platform.md",
+      "impact": "Reduces noise in enforcer scans; prevents agent confusion"
+    }
+  ],
+  "next_audit": {
+    "date": "2026-06-24",
+    "target_grade": "B",
+    "requirements": [
+      "Resolve QO-001 (GET /api/search implemented)",
+      "DEP-001 patched and TheGuardians cleared",
+      "DEP-002 verified (false positive documented OR patched and cleared)",
+      "P2 count reduced from 6 to ≤8 (already fine if escalations resolved)",
+      "performance-profiler and chaos-monkey run with live services"
+    ]
+  },
+  "metadata": {
+    "generated_by": "team_leader (TheInspector)",
+    "model": "sonnet",
+    "run_id": "run-20260524-061647",
+    "report_html": "Teams/TheInspector/findings/audit-2026-05-24-C.html",
+    "prior_audit": null,
+    "first_audit": true
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "audit_date": "2026-05-24",
+  "agent": "dependency_auditor",
+  "status": "critical",
+  "summary": {
+    "total_vulnerabilities": 43,
+    "critical": 3,
+    "high": 5,
+    "moderate": 35,
+    "low": 0,
+    "info": 0
+  },
+  "projects_scanned": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E",
+    "platform/orchestrator",
+    "portal/Backend",
+    "portal/Frontend"
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection (Multiple CVEs)",
+      "package": "handlebars",
+      "version_range": "<=4.7.8",
+      "severity": "critical",
+      "affected_projects": ["Source/Backend"],
+      "cves": [
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "max_cvss": 9.8,
+      "recommendation": "Update to >=4.7.9 immediately"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "version_range": "<7.5.5",
+      "severity": "critical",
+      "affected_projects": [
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "max_cvss": 9.8,
+      "notes": "Transitive dependency; unconfirmed if actually used. Run 'npm ls protobufjs' to verify.",
+      "recommendation": "Verify usage; if used, update to >=7.5.5 immediately"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-003",
+      "title": "OpenTelemetry SDK Prometheus Exporter DoS",
+      "package": "@opentelemetry/sdk-node",
+      "version_range": "<0.217.0",
+      "severity": "high",
+      "affected_projects": ["portal/Backend"],
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "max_cvss": 7.5,
+      "recommendation": "Update to >=0.217.0; coordinate with observability team"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Path-to-Regexp ReDoS (Regular Expression Denial of Service)",
+      "package": "path-to-regexp",
+      "version_range": "<0.1.13",
+      "severity": "high",
+      "affected_projects": [
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "max_cvss": 7.5,
+      "attack_vector": "Craft malicious URL with repeated route parameters to cause CPU exhaustion",
+      "recommendation": "Update express (will pull in fixed path-to-regexp); test ReDoS resistant after patch"
+    },
+    {
+      "id": "DEP-005",
+      "title": "OpenTelemetry Auto Instrumentation Node (inherits High)",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "version_range": "<0.40.0",
+      "severity": "high",
+      "affected_projects": ["portal/Backend"],
+      "recommendation": "Update parent @opentelemetry/sdk-node to fix transitive"
+    }
+  ],
+  "dependency_statistics": {
+    "package_managers": ["npm"],
+    "package_json_count": 10,
+    "projects_with_critical": 3,
+    "projects_with_high": 2,
+    "projects_clean": 1,
+    "supply_chain_risk": "portal/Backend has 120 transitive dependencies (above 100 threshold)"
+  },
+  "licenses": {
+    "status": "compliant",
+    "notes": "No GPL/AGPL violations; all dependencies MIT/Apache 2.0/BSD compatible"
+  },
+  "abandoned_packages": {
+    "count": 0,
+    "status": "none detected"
+  },
+  "remediation_plan": {
+    "immediate": [
+      "Update handlebars in Source/Backend",
+      "Verify protobufjs usage; update if confirmed"
+    ],
+    "high_priority": [
+      "Update @opentelemetry/sdk-node in portal/Backend",
+      "Update path-to-regexp / express across all projects"
+    ],
+    "medium_priority": [
+      "Update dev dependencies (vite, vitest, esbuild, postcss, ws)",
+      "Update express, qs in all projects"
+    ]
+  },
+  "escalations": [
+    {
+      "type": "investigate",
+      "finding": "handlebars JavaScript injection",
+      "next_team": "TheGuardians",
+      "reason": "If handlebars renders untrusted user templates, requires security review"
+    },
+    {
+      "type": "investigate",
+      "finding": "protobufjs arbitrary code execution",
+      "next_team": "red-teamer",
+      "reason": "If confirmed in use, critical RCE risk requires threat modeling"
+    }
+  ],
+  "metrics": {
+    "cves_critical": 3,
+    "cves_high": 5,
+    "cves_moderate": 35,
+    "cves_low": 0,
+    "cves_total": 43,
+    "projects_audited": 6,
+    "projects_with_vulns": 5,
+    "automated_fixes_available": true,
+    "license_compliance_score": 100
+  },
+  "next_audit": "2026-06-24"
+}

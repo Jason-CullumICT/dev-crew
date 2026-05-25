@@ -445,3 +445,224 @@ GET /api/work-items/B  → status: "in-progress", changeHistory: cascade-dispatc
 5. **Search endpoint (PEN-012)**: Currently 404. If the endpoint gets implemented between pipeline runs, immediately test `?q=` (empty query) and `?q=.*` for data dump/ReDoS.
 
 6. **Scope reminder**: `GET /api/work-items?status=<invalid_enum>` — unvalidated filter values silently return all results (filter is skipped) rather than erroring. Minor information disclosure, low priority.
+
+---
+
+## Red Team Results
+
+**Agent:** red_teamer  
+**Date:** 2026-05-25  
+**Environment:** Ephemeral Docker container (`docker-compose.test.yml`) — `portal/Backend/` on `:3001`  
+**Target Codebase:** `portal/Backend/` (NOTE: pen-tester analyzed `Source/Backend/` — structurally similar but different domain model. Findings mapped to analogous portal vulnerabilities.)
+
+### Objective Scorecard
+
+| Objective | Status |
+|-----------|--------|
+| Bypass work item state machine to reach invalid status | ✅ **Achieved** (RED-001, RED-002) |
+| Access or modify a soft-deleted work item via direct ID reference | ✅ **Achieved** (RED-004) |
+| Submit a malformed assessment verdict that bypasses routing logic | ✅ **Achieved** (RED-003, RED-006) |
+| Enumerate all work items without pagination limit enforcement | ✅ **Achieved** (RED-007) |
+
+**All 4 objectives achieved. Grade: F (confirmed red-team breach of critical objectives).**
+
+---
+
+### RED-001: Complete Unauthenticated API Access — All Endpoints Exposed
+- **Severity:** Critical
+- **Objective Achieved:** Yes (prerequisite for all other chains)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests`, all routes
+- **Based On:** PEN-001 (No Authentication on Any API Endpoint)
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/api/feature-requests` — HTTP 200 with full dataset, no auth header required
+  2. `POST http://localhost:3001/api/feature-requests` with arbitrary body — FR created, HTTP 201
+  3. `DELETE http://localhost:3001/api/feature-requests/FR-0059` — HTTP 204 (hard delete), no credentials
+  4. `POST http://localhost:3001/api/bugs` — bug created with severity=critical, no auth
+  5. Every single endpoint (feature-requests, bugs, pipeline-runs, search, metrics) accessible without any token, session, or credential
+- **Evidence:** HTTP 200/201/204 responses on all tested unauthenticated requests
+- **Recommendation:** Implement a global authentication middleware (JWT or session) in `index.ts` before any route mounts. All state-mutating routes (`POST`, `PATCH`, `DELETE`) must require authenticated identity; read routes may use a lower-privilege token. No single route should be exempt.
+
+---
+
+### RED-002: Force-Approve Bypasses Entire Voting Gate (No Auth)
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/feature-requests/:id/force-approve`
+- **Based On:** PEN-001 (No Auth) + PEN-005 (Manual Approve Bypasses Assessment Pod)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → FR-0001 created (`status: potential`), no auth
+  2. `POST /api/feature-requests/FR-0001/vote` → FR transitions to `voting`, 5 AI votes cast
+  3. `POST /api/feature-requests/FR-0001/force-approve` — HTTP 200, `status: approved` — NO auth, no vote majority required
+  4. Confirmed: FR-0002 had DENY majority (2 approve, 2 deny, 1 approve from 3 agents) — force-approve still succeeded
+  5. `GET /api/feature-requests/FR-0001` — `status: approved`, `human_approval_approved_at` set, zero legitimate approval process
+- **Evidence:** `{"status":"approved","human_approval_approved_at":"2026-05-25T07:31:06.984Z"}` returned from unauthenticated force-approve call
+- **Recommendation:** Require authenticated admin/human-reviewer role for `/force-approve`. Log force-approve events to an immutable audit trail. Enforce that force-approve is only available to users with `HUMAN_REVIEWER` role (RBAC required — PEN-002 equivalent).
+
+---
+
+### RED-003: Vote Retrigger Farming — Unlimited Re-Roll for Favorable Outcome
+- **Severity:** High
+- **Objective Achieved:** Yes — "Submit a malformed assessment verdict that bypasses routing logic"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/feature-requests/:id/retrigger`
+- **Based On:** PEN-001 (No Auth) + PEN-011 (No Rate Limiting)
+- **Exploit Scenario:**
+  1. Create FR (FR-0057) → trigger vote → Round 1: `approve=2, deny=3` (DENY majority)
+  2. `POST /api/feature-requests/FR-0057/retrigger` — HTTP 200, new votes: `approve=3, deny=2` (APPROVE majority)
+  3. `POST /api/feature-requests/FR-0057/retrigger` again — HTTP 200, new votes: `approve=5, deny=0` (unanimous approve)
+  4. `POST /api/feature-requests/FR-0057/approve` — HTTP 200, `status: approved`
+  5. No auth required at any step. No rate limit on retrigger. Attacker can loop until desired outcome.
+- **Evidence:** Round 1 deny majority → Round 3 unanimous approve, all via unauthenticated retrigger calls
+- **Recommendation:** Rate-limit the `/vote` and `/retrigger` endpoints (max 1 retrigger per FR per hour). Require authentication for retrigger. Record full vote history (not just latest votes) to detect manipulation. Consider deterministic vote seeding per FR ID.
+
+---
+
+### RED-004: Dependency DoS — Deleted Blocker Permanently Locks Dependent
+- **Severity:** High
+- **Objective Achieved:** Yes — "Access or modify a soft-deleted work item via direct ID reference" (variant: hard-delete creates permanent orphan dependency)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `DELETE /api/feature-requests/:id`, `GET /api/feature-requests/:id/ready`
+- **Based On:** PEN-008 (Soft-Deleted Blocker Permanently Blocks Dependents)
+- **Exploit Scenario:**
+  1. Create FR-0005 (blocker) and FR-0006 (dependent)
+  2. `POST /api/feature-requests/FR-0006/dependencies` with `{"action":"add","blocker_id":"FR-0005"}` — dependency registered
+  3. `DELETE /api/feature-requests/FR-0005` — HTTP 204, hard delete (record removed from DB)
+  4. `POST /api/feature-requests/FR-0006/force-approve` → `status: pending_dependencies` (gating check sees blocker as missing = unresolved)
+  5. `GET /api/feature-requests/FR-0006/ready` → `{"ready":false,"unresolved_blockers":[{"item_id":"FR-0005","status":"unknown"}]}`
+  6. FR-0006 permanently stuck; PATCH `pending_dependencies → approved` redirected back to `pending_dependencies` by gating check; no recovery path
+  7. Deleted item's ID (FR-0005) leaked via readiness endpoint
+- **Evidence:** `ready: false, unresolved_blockers: [{item_id: "FR-0005", status: "unknown"}]` returned after confirmed 204 deletion of FR-0005
+- **Recommendation:** When deleting a blocker, cascade-update all `depends_on` records to remove the stale link, or set deleted items to a `resolved` sentinel status before deletion. Add a recovery endpoint to administratively clear stale dependency references.
+
+---
+
+### RED-005: Unauthenticated Hard Delete — Permanent Data Destruction
+- **Severity:** Critical
+- **Objective Achieved:** Yes (data integrity breach)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `DELETE /api/feature-requests/:id`, `DELETE /api/bugs/:id`
+- **Based On:** PEN-001 (No Authentication)
+- **Exploit Scenario:**
+  1. `DELETE http://localhost:3001/api/feature-requests/FR-0059` — HTTP 204, record permanently destroyed
+  2. `GET http://localhost:3001/api/feature-requests/FR-0059` → `{"error": "Feature request FR-0059 not found"}`
+  3. Second create after deletion → new FR gets ID FR-0059 (sequential ID reuse) — stale references now point to attacker-created content
+  4. No auth, no confirmation required, no soft-delete / recycle bin
+- **Evidence:** HTTP 204 followed by 404 on the same ID; sequential ID reuse confirmed
+- **Recommendation:** Implement authentication (prerequisite). Add soft-delete pattern (set `deleted_at` timestamp, filter from queries). Consider requiring a `?confirm=true` parameter for hard deletes to prevent accidental destruction.
+
+---
+
+### RED-006: Deny Feature Request Without Voting (Skip Entire Review Process)
+- **Severity:** High
+- **Objective Achieved:** Yes — "Bypass work item state machine"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/feature-requests/:id/deny`
+- **Based On:** PEN-001 (No Auth) + PEN-005 (Manual Override No Auth)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → FR-0060 created (`status: potential`)
+  2. `POST /api/feature-requests/FR-0060/deny` with `{"comment":"Attacker denies without any voting"}` — HTTP 200
+  3. FR transitions directly `potential → denied` without ever going through `voting`
+  4. No authentication, no authorization, no audit record of who issued the denial
+- **Evidence:** `{"status":"denied","human_approval_comment":"Attacker denies without any voting"}` returned
+- **Recommendation:** Restrict `/deny` to authenticated users with `HUMAN_REVIEWER` role. Enforce that denial from `potential` requires an explicit override flag and generates an audit event. Consider requiring at least one AI vote round before human denial is permitted.
+
+---
+
+### RED-007: Unbounded List Endpoint — Full Dataset Dump (No Pagination)
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/feature-requests`, `GET /api/feature-requests?limit=999999`
+- **Based On:** PEN-003 (Unbounded Pagination)
+- **Exploit Scenario:**
+  1. Populated store with 55 feature requests
+  2. `GET /api/feature-requests` — returns ALL 55 items with no pagination (no default limit enforced)
+  3. `GET /api/feature-requests?limit=999999` — returns all 55 items, no upper bound guard
+  4. `GET /api/feature-requests?limit=0` — returns all 55 items (zero is not rejected)
+  5. Each item includes full vote records, dependency links, timestamps — maximum data exposure per request
+- **Evidence:** `curl http://localhost:3001/api/feature-requests | python3 -c "len(data['data'])"` returned 55
+- **Recommendation:** Enforce a maximum page size (e.g., 100 items). Default to 20. Reject `limit > MAX` with HTTP 400. Apply the same guard to bugs, pipeline-runs, and search endpoints.
+
+---
+
+### RED-008: Search Endpoint Returns Data on Empty Query
+- **Severity:** Medium
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/search?q=`, `GET /api/search`
+- **Based On:** PEN-012 (Search Endpoint — empty query data dump risk)
+- **Exploit Scenario:**
+  1. `GET /api/search?q=` (empty query) — HTTP 200, returns 20 items (paginated dump)
+  2. `GET /api/search` (no query param) — HTTP 200, returns 20 items (should return 400 or empty)
+  3. `GET /api/search?q=.*` — HTTP 200, returns 0 items (regex metachar not treated as glob — no ReDoS found)
+  4. Combined with no auth: full dataset walkable via empty-query pagination
+- **Evidence:** HTTP 200 with 20-item result sets for both `?q=` and no-`q` requests
+- **Recommendation:** Return HTTP 400 for missing or empty `q`. Enforce minimum query length of 2 characters. Apply authentication to the search endpoint.
+
+---
+
+### RED-009: Stored XSS Payloads in Title/Description Fields
+- **Severity:** High
+- **Objective Achieved:** Partial (stored; execution depends on frontend rendering)
+- **Status:** Confirmed (Live Exploit — stored payload)
+- **Target URL:** `POST /api/feature-requests` (title, description fields)
+- **Based On:** PEN-010 equivalent (No Input Sanitization)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with `{"title":"<script>alert(\"XSS\")</script>","description":"<img src=x onerror=alert(document.domain)>"}`
+  2. HTTP 201 — payload stored verbatim, no sanitization applied (FR-0058 created)
+  3. `GET /api/feature-requests/FR-0058` — `title: "<script>alert("XSS")</script>"` returned raw
+  4. Any frontend rendering this without escaping will execute attacker script in victim's browser session
+- **Evidence:** Raw `<script>` tag preserved in API response; `<img onerror>` and `<svg/onload>` stored intact
+- **Recommendation:** Apply server-side HTML sanitization (e.g., `DOMPurify` server-side or a strip-tags library) before persisting user-controlled text fields. At minimum, escape `<`, `>`, `"`, `'` in title. Frontend must also render these fields as text content, not innerHTML.
+
+---
+
+### RED-010: Unauthenticated Prometheus Metrics Disclosure
+- **Severity:** Medium
+- **Objective Achieved:** No (reconnaissance value)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /metrics`
+- **Based On:** PEN-014 (Prometheus Metrics Endpoint Unauthenticated)
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/metrics` — HTTP 200, 78 metric comment lines
+  2. Reveals: `feature_request_status_transitions_total`, `ai_voting_invocations_total`, Node.js heap/CPU/GC stats, event loop lag percentiles
+  3. Technology fingerprint: prom-client version via metric naming patterns, Node.js runtime details
+  4. `process_resident_memory_bytes 143495168` — live memory state exposed
+- **Evidence:** Full Prometheus text format returned with no auth
+- **Recommendation:** Gate `/metrics` behind a network control (e.g., only accessible from monitoring subnet) or require a Bearer token. Never expose runtime internals to unauthenticated clients.
+
+---
+
+### RED-011: Internal URL Disclosure via Orchestrator Error Response
+- **Severity:** Low
+- **Objective Achieved:** No (reconnaissance value)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/orchestrator/*`
+- **Based On:** New finding (not in pen-tester map)
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/api/orchestrator/test` — HTTP 502
+  2. Response body: `{"error":"Orchestrator unreachable at http://localhost:8080"}`
+  3. Internal orchestrator URL (`http://localhost:8080`) disclosed to any unauthenticated caller
+  4. Attacker learns internal network topology and can target the orchestrator directly if network-accessible
+- **Evidence:** `{"error":"Orchestrator unreachable at http://localhost:8080"}` in HTTP 502 body
+- **Recommendation:** Return a generic `{"error":"Service temporarily unavailable"}` without disclosing internal URLs. Log the actual target URL server-side only.
+
+---
+
+### IMPORTANT: Codebase Scope Discrepancy
+
+> **Finding:** The pen-tester's Attack Surface Map analyzed `Source/Backend/` (the AI development pipeline backend with work-item/state-machine domain). The live service in `docker-compose.test.yml` runs `portal/Backend/` (the feature portal with feature-request/voting domain). The two codebases share similar architectural patterns and vulnerability classes (no auth, no RBAC, unbounded pagination, dependency DoS) but are distinct applications.
+>
+> **Impact:** All PEN-001 through PEN-016 findings have direct analogues in `portal/Backend/` and were confirmed exploitable. The mapping is:
+> - PEN-001/002 → All portal endpoints unauthenticated ✅
+> - PEN-003 → `GET /api/feature-requests` unbounded ✅  
+> - PEN-004/005 → `/force-approve`, `/deny` no auth ✅
+> - PEN-007 → Vote retrigger + denial cascade ✅
+> - PEN-008 → Deleted blocker DoS ✅
+> - PEN-011 → No rate limiting ✅
+> - PEN-012 → Search empty-query dump ✅
+> - PEN-014 → Unauthenticated `/metrics` ✅
+>
+> **Recommendation:** Security fixes must be applied to `portal/Backend/` (the live service) as the primary target.

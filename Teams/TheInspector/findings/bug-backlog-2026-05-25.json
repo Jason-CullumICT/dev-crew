@@ -1,0 +1,370 @@
+{
+  "audit_id": "run-20260525-065040",
+  "audit_date": "2026-05-25",
+  "project": "dev-crew Source App",
+  "branch": "audit/inspector-2026-05-25-f91378",
+  "overall_grade": "D",
+  "grade_rationale": "3 P1 findings (exceeds C threshold of max_p1=2). Spec coverage 99.3% is excellent. P1 count driven by 2 RCE-level transitive CVEs and 1 critical tooling misalignment. Grade rebounds to B immediately upon patching DEP-001/DEP-002 and fixing QO-001.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline at audit time — dynamic mode unavailable",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 4,
+    "p3_total": 13,
+    "p4_total": 3,
+    "total": 23,
+    "spec_coverage_pct": 99.3,
+    "fixed_since_prior": 0,
+    "prior_audit": "none — first combined audit"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "Handlebars.js JavaScript Injection & Type Confusion",
+      "package": "handlebars@≤4.7.8",
+      "location": "Source/Backend/package-lock.json",
+      "cvss": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "impact": "Code execution if untrusted templates are compiled; XSS in template output",
+      "fix": "npm update handlebars to ≥4.7.9 in Source/Backend",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "protobufjs Remote Code Execution & DoS",
+      "package": "protobufjs@≤7.5.7",
+      "location": "platform/orchestrator/package-lock.json",
+      "cvss": 9.8,
+      "cve_ids": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-75px-5xx7-5xc7",
+        "GHSA-jvwf-75h9-cwgg",
+        "GHSA-685m-2w69-288q",
+        "GHSA-66ff-xgx4-vchm",
+        "GHSA-2pr8-phx7-x9h3",
+        "GHSA-fx83-v9x8-x52w",
+        "GHSA-jggg-4jg4-v7c6",
+        "GHSA-q6x5-8v7m-xcrf"
+      ],
+      "impact": "Remote code execution if orchestrator accepts untrusted protobuf messages; process crashes",
+      "fix": "npm update protobufjs to ≥7.5.8 in platform/orchestrator",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Traceability enforcer scope is fatally misaligned",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py:69",
+      "detail": "The mandatory gate scans only Source/ and E2E/. The portal/ directory (implementing ~80% of FRs) is invisible. Only 13 of ~140 total requirements are validated despite the gate reporting PASSED.",
+      "exploit_scenario": "Teams ship unimplemented requirements without detection. The gate creates false confidence in traceability completeness.",
+      "recommendation": "Add portal/ and platform/ to source_dirs. Add --all-plans flag to loop over all Plans/*/requirements.md files.",
+      "escalate_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["QO-004"]
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers bypass service layer",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/intake.ts:4"
+      ],
+      "detail": "Three route handlers call store.createWorkItem, store.findById, store.updateWorkItem, store.softDelete directly. CLAUDE.md architecture rule violated.",
+      "recommendation": "Create Source/Backend/src/services/workItemService.ts. Route handlers call service functions only.",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed is unimplemented — seed.ts missing",
+      "specialist": "quality-oracle",
+      "file": "portal/Backend/src/database/seed.ts (missing)",
+      "detail": "Dependency-linking plan requires idempotent seed data creation. No seed.ts exists. Fresh install cannot satisfy acceptance criteria (BUG-0010 blocked_by 5 items).",
+      "recommendation": "Create portal/Backend/src/database/seed.ts per spec. Add seed call to app.ts after migrations.",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "Traceability enforcer produces false positives on entity IDs",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py:63",
+      "detail": "Regex FR-[A-Z0-9-]+ captures entity record IDs in prose (FR-0007 blocked_by FR-0003) as requirement IDs. Also: placeholder IDs (FR-XXX) in 4 requirements files cause permanent false failures.",
+      "recommendation": "Add enforcer blocklist for FR-0\\d{3} pattern. Use backtick notation for entity refs in prose. Remove placeholder IDs.",
+      "escalate_to": "TheFixer",
+      "status": "NEW",
+      "cross_refs": ["QO-001"]
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "path-to-regexp Regular Expression DoS",
+      "specialist": "dependency-auditor",
+      "package": "path-to-regexp@<0.1.13",
+      "location": "platform/orchestrator/package-lock.json",
+      "cvss": 7.5,
+      "cve_id": "GHSA-37ch-88jc-xwx2",
+      "detail": "ReDoS via multiple route parameters causes CPU exhaustion on malformed routes. Orchestrator API becomes unresponsive.",
+      "recommendation": "npm update express in platform/orchestrator (pulls in path-to-regexp fix via express@4.22.2+)",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-070-095 and FR-DUP-01-13 not in Specifications/ (only in Plans/)",
+      "specialist": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "38 requirement IDs for image upload, orchestrator dashboard, and duplicate status tracking are implemented in portal/ but have no entry in Specifications/. Inverts the specs-are-source-of-truth rule.",
+      "recommendation": "Extend Specifications/dev-workflow-platform.md with domain-level coverage for these feature groups.",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Unexplained eslint-disable suppressions in production frontend",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "detail": "Two eslint-disable-next-line react-hooks/exhaustive-deps with no inline explanation.",
+      "recommendation": "Add explanatory comment. Audit if dependency should actually be included.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "qs Query String DoS",
+      "specialist": "dependency-auditor",
+      "package": "qs@6.11.1-6.15.1",
+      "cvss": 5.3,
+      "cve_id": "GHSA-q8mj-m7cp-5q26",
+      "recommendation": "npm update (latest qs ≥6.15.2)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "express via qs vulnerability (outdated)",
+      "specialist": "dependency-auditor",
+      "package": "express@4.18.2",
+      "recommendation": "Update express to 4.22.2 in Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "brace-expansion Zero-Step Sequence Hang",
+      "specialist": "dependency-auditor",
+      "package": "brace-expansion@<1.1.13",
+      "cvss": 6.5,
+      "cve_id": "GHSA-f886-m6hf-6m8v",
+      "recommendation": "npm update in Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "uuid Missing Buffer Bounds Check",
+      "specialist": "dependency-auditor",
+      "package": "uuid@<11.1.1",
+      "cvss": 7.5,
+      "cve_id": "GHSA-w5hq-g745-h8pq",
+      "recommendation": "Update uuid to ≥11.1.1 (major version bump, test buffer usage)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "PostCSS XSS via Unescaped </style>",
+      "specialist": "dependency-auditor",
+      "package": "postcss@<8.5.10",
+      "cvss": 6.1,
+      "cve_id": "GHSA-qx2v-qp2m-jg93",
+      "recommendation": "npm update in Source/Frontend (vite update pulls postcss fix)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "Vite Path Traversal in .map Files (dev server)",
+      "specialist": "dependency-auditor",
+      "package": "vite@≤6.4.1",
+      "cve_id": "GHSA-4w7w-66w2-5vf9",
+      "recommendation": "Update vite to ≥6.4.2 or ≥8.0.14",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "esbuild CORS Bypass (Dev-Only)",
+      "specialist": "dependency-auditor",
+      "package": "esbuild@≤0.24.2",
+      "cvss": 5.3,
+      "cve_id": "GHSA-67mh-4wv8-2f99",
+      "note": "Dev server only; not a production issue",
+      "recommendation": "Update esbuild via vite major bump",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "ws Uninitialized Memory Disclosure",
+      "specialist": "dependency-auditor",
+      "package": "ws@8.0.0-8.20.0",
+      "cvss": 4.4,
+      "cve_id": "GHSA-58qx-3vcg-4xpx",
+      "recommendation": "Update ws to ≥8.20.1 (via vitest update)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "vitest/vite-node/mocker Chain Vulnerabilities",
+      "specialist": "dependency-auditor",
+      "package": "vitest@^2.0.5",
+      "recommendation": "Update vitest to ≥4.1.7 (major bump, test frontend)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "dockerode inherits uuid vulnerability",
+      "specialist": "dependency-auditor",
+      "package": "dockerode@≤4.0.12",
+      "recommendation": "Update dockerode to ≥5.0.0 in platform/orchestrator",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "@protobufjs/utf8 Overlong UTF-8 Decoding",
+      "specialist": "dependency-auditor",
+      "package": "@protobufjs/utf8@≤1.1.0",
+      "cvss": 5.3,
+      "cve_id": "GHSA-q6x5-8v7m-xcrf",
+      "recommendation": "Resolved by protobufjs update (DEP-002 fix)",
+      "status": "NEW",
+      "cross_refs": ["DEP-002"]
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "category": "untested",
+      "title": "DebugPortalPage has no test coverage",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "recommendation": "Add smoke test verifying iframe renders with correct src attribute.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P4",
+      "category": "technical-debt",
+      "title": "8 packages are ≥1 major version outdated",
+      "specialist": "dependency-auditor",
+      "packages": ["express", "pino", "uuid", "react", "react-dom", "react-router-dom", "dockerode", "vite", "vitest"],
+      "recommendation": "Phase updates: patch first, then minor, then major bumps with full test run per phase.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P4",
+      "category": "supply-chain-risk",
+      "title": "Disproportionate transitive dependency expansion",
+      "specialist": "dependency-auditor",
+      "detail": "Backend: 31x expansion (13→411). Orchestrator: 52x expansion (3→155).",
+      "recommendation": "Audit for unused transitive deps. Add npm audit to CI/CD (fail on P1/P2).",
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Traceability tooling is under-configured",
+      "single_fix": "Update tools/traceability-enforcer.py: expand source_dirs to include portal/ and platform/; add entity-ID blocklist; add --all-plans flag",
+      "affected_findings": ["QO-001", "QO-004"],
+      "fix_impact": "Resolves 1 P1 + 1 P2 finding — gate becomes reliable for all 140 requirements"
+    },
+    {
+      "root_cause": "platform/orchestrator express version is stale",
+      "single_fix": "npm update express in platform/orchestrator (to ≥4.22.2)",
+      "affected_findings": ["DEP-003", "DEP-005"],
+      "fix_impact": "Resolves 1 P2 + 1 P3 finding — pulls in path-to-regexp fix and qs fix transitively"
+    },
+    {
+      "root_cause": "protobufjs is critically outdated",
+      "single_fix": "npm update protobufjs to ≥7.5.8 in platform/orchestrator",
+      "affected_findings": ["DEP-002", "DEP-014"],
+      "fix_impact": "Resolves 1 P1 + 1 P3 finding — @protobufjs/utf8 is updated as part of the same package"
+    },
+    {
+      "root_cause": "Frontend build toolchain (vite + esbuild + postcss) is outdated",
+      "single_fix": "npm update vite to ≥8.0.14 in Source/Frontend (pulls postcss 8.5.10+, esbuild fix)",
+      "affected_findings": ["DEP-008", "DEP-009", "DEP-010"],
+      "fix_impact": "Resolves 3 P3 findings in one dependency upgrade"
+    },
+    {
+      "root_cause": "vitest pulls stale vite + ws + esbuild chain",
+      "single_fix": "npm update vitest to ≥4.1.7 in Source/Frontend",
+      "affected_findings": ["DEP-011", "DEP-012"],
+      "fix_impact": "Resolves 2 P3 findings via vitest major bump"
+    }
+  ],
+  "thefixer_backlog": [
+    "QO-001", "QO-002", "QO-003", "QO-004",
+    "QO-005", "QO-006", "QO-007",
+    "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007",
+    "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012",
+    "DEP-013", "DEP-014", "DEP-015", "DEP-016"
+  ],
+  "theguardians_escalations": ["DEP-001", "DEP-002"]
+}

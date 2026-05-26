@@ -1,0 +1,490 @@
+{
+  "audit_metadata": {
+    "timestamp": "2026-05-26T00:00:00Z",
+    "agent": "dependency_auditor",
+    "project": "dev-crew",
+    "projects_scanned": 6,
+    "package_managers": ["npm"],
+    "environment": {
+      "npm_version": "10.x",
+      "node_version": "unknown"
+    }
+  },
+  "summary": {
+    "total_vulnerabilities": 40,
+    "by_severity": {
+      "critical": 2,
+      "high": 6,
+      "moderate": 32,
+      "low": 0
+    },
+    "by_category": {
+      "cve": 34,
+      "outdated": 6,
+      "abandoned": 0,
+      "license": 0,
+      "supply_chain": 1
+    }
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection",
+      "severity": "critical",
+      "category": "cve",
+      "package": "handlebars",
+      "version_range": "4.0.0 - 4.7.8",
+      "is_direct": false,
+      "locations": [
+        "Source/Backend"
+      ],
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "cvss_scores": [9.8, 8.1, 8.1, 7.5, 4.7, 4.8, 3.7],
+      "cwe": ["CWE-94", "CWE-843", "CWE-79", "CWE-1321"],
+      "fix_available": true,
+      "fix_version": ">=4.7.9",
+      "action": "npm audit fix"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "critical",
+      "category": "cve",
+      "package": "protobufjs",
+      "version_range": "<=7.5.7",
+      "is_direct": false,
+      "locations": [
+        "portal/Backend",
+        "platform/orchestrator"
+      ],
+      "cve_ids": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-66ff-xgx4-vchm",
+        "GHSA-75px-5xx7-5xc7",
+        "GHSA-jvwf-75h9-cwgg",
+        "GHSA-685m-2w69-288q",
+        "GHSA-2pr8-phx7-x9h3",
+        "GHSA-fx83-v9x8-x52w",
+        "GHSA-q6x5-8v7m-xcrf",
+        "GHSA-jggg-4jg4-v7c6"
+      ],
+      "cvss_scores": [9.8, 8.1, 7.5, 7.5, 5.3, 5.3, 5.3, 5.3],
+      "cwe": ["CWE-94", "CWE-674", "CWE-1321", "CWE-20", "CWE-176"],
+      "fix_available": true,
+      "fix_version": ">=7.5.8",
+      "root_cause": "Likely via @opentelemetry packages",
+      "action": "Update @opentelemetry/auto-instrumentations-node and @opentelemetry/sdk-node"
+    },
+    {
+      "id": "DEP-003",
+      "title": "OpenTelemetry Prometheus DoS",
+      "severity": "high",
+      "category": "cve",
+      "packages": [
+        "@opentelemetry/auto-instrumentations-node",
+        "@opentelemetry/sdk-node"
+      ],
+      "version_ranges": [
+        "<0.75.0",
+        "<0.217.0"
+      ],
+      "current_versions": {
+        "@opentelemetry/auto-instrumentations-node": "0.40.0",
+        "@opentelemetry/sdk-node": "0.47.0"
+      },
+      "is_direct": true,
+      "locations": [
+        "portal/Backend"
+      ],
+      "cve_ids": ["GHSA-q7rr-3cgh-j5r3"],
+      "cvss_score": 7.5,
+      "cwe": ["CWE-755"],
+      "fix_available": true,
+      "fix_versions": {
+        "@opentelemetry/auto-instrumentations-node": ">=0.76.0",
+        "@opentelemetry/sdk-node": ">=0.218.0"
+      },
+      "action": "npm install @opentelemetry/auto-instrumentations-node@^0.76.0 @opentelemetry/sdk-node@^0.218.0"
+    },
+    {
+      "id": "DEP-004",
+      "title": "path-to-regexp ReDoS",
+      "severity": "high",
+      "category": "cve",
+      "package": "path-to-regexp",
+      "version_range": "<0.1.13",
+      "is_direct": false,
+      "locations": [
+        "portal/Backend",
+        "platform/orchestrator"
+      ],
+      "cve_ids": ["GHSA-37ch-88jc-xwx2"],
+      "cvss_score": 7.5,
+      "cwe": ["CWE-1333"],
+      "fix_available": true,
+      "fix_version": ">=0.1.13",
+      "root_cause": "Via express 4.x",
+      "action": "Update express to >=4.22.0"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Picomatch ReDoS",
+      "severity": "high",
+      "category": "cve",
+      "package": "picomatch",
+      "version_ranges": ["<2.3.2", "4.0.0-4.0.3"],
+      "is_direct": false,
+      "locations": [
+        "portal/Frontend"
+      ],
+      "cve_ids": [
+        "GHSA-c2c7-rcm5-vvqj",
+        "GHSA-3v7f-55p6-f55p"
+      ],
+      "cvss_scores": [7.5, 5.3],
+      "cwe": ["CWE-1333", "CWE-1321"],
+      "fix_available": true,
+      "fix_versions": [">=2.3.2", ">=4.0.4"],
+      "root_cause": "Via vitest/vite",
+      "action": "Update vitest to >=4.1.7"
+    },
+    {
+      "id": "DEP-006",
+      "title": "UUID Buffer Bounds Check",
+      "severity": "moderate",
+      "category": "cve",
+      "package": "uuid",
+      "version_range": "<11.1.1",
+      "is_direct": true,
+      "locations": [
+        "Source/Backend",
+        "portal/Backend"
+      ],
+      "current_versions": {
+        "Source/Backend": "^9.0.0",
+        "portal/Backend": "^9.0.0"
+      },
+      "cve_ids": ["GHSA-w5hq-g745-h8pq"],
+      "cvss_score": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "fix_available": true,
+      "fix_version": ">=14.0.0",
+      "action": "npm install uuid@^14.0.0"
+    },
+    {
+      "id": "DEP-007",
+      "title": "Qs Query String DoS",
+      "severity": "moderate",
+      "category": "cve",
+      "package": "qs",
+      "version_range": "6.11.1-6.15.1",
+      "is_direct": false,
+      "locations": [
+        "Source/Backend",
+        "portal/Backend"
+      ],
+      "cve_ids": ["GHSA-q8mj-m7cp-5q26"],
+      "cvss_score": 5.3,
+      "cwe": ["CWE-476"],
+      "fix_available": true,
+      "root_cause": "Via express",
+      "action": "Update express"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Brace Expansion DoS",
+      "severity": "moderate",
+      "category": "cve",
+      "package": "brace-expansion",
+      "version_range": "<1.1.13",
+      "is_direct": false,
+      "locations": [
+        "Source/Backend"
+      ],
+      "cve_ids": ["GHSA-f886-m6hf-6m8v"],
+      "cvss_score": 6.5,
+      "cwe": ["CWE-400"],
+      "fix_available": true,
+      "fix_version": ">=1.1.13",
+      "action": "npm audit fix"
+    },
+    {
+      "id": "DEP-009",
+      "title": "Vite Path Traversal",
+      "severity": "moderate",
+      "category": "cve",
+      "package": "vite",
+      "version_range": "<=6.4.1",
+      "is_direct": false,
+      "locations": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "cvss_score": 0,
+      "cwe": ["CWE-22", "CWE-200"],
+      "fix_available": true,
+      "fix_version": ">=6.4.2",
+      "action": "Update vitest or vite directly"
+    },
+    {
+      "id": "DEP-010",
+      "title": "Esbuild Dev Server CSRF",
+      "severity": "moderate",
+      "category": "cve",
+      "package": "esbuild",
+      "version_range": "<=0.24.2",
+      "is_direct": false,
+      "locations": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "cvss_score": 5.3,
+      "cwe": ["CWE-346"],
+      "fix_available": true,
+      "note": "Dev-only; not production risk",
+      "action": "Update vite"
+    },
+    {
+      "id": "DEP-011",
+      "title": "PostCSS XSS",
+      "severity": "moderate",
+      "category": "cve",
+      "package": "postcss",
+      "version_range": "<8.5.10",
+      "is_direct": true,
+      "locations": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "cve_ids": ["GHSA-qx2v-qp2m-jg93"],
+      "cvss_score": 6.1,
+      "cwe": ["CWE-79"],
+      "fix_available": true,
+      "fix_version": ">=8.5.10",
+      "action": "npm install postcss@^8.5.10"
+    },
+    {
+      "id": "DEP-012",
+      "title": "WebSocket Memory Disclosure",
+      "severity": "moderate",
+      "category": "cve",
+      "package": "ws",
+      "version_range": "8.0.0-8.20.0",
+      "is_direct": false,
+      "locations": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "cve_ids": ["GHSA-58qx-3vcg-4xpx"],
+      "cvss_score": 4.4,
+      "cwe": ["CWE-908"],
+      "fix_available": true,
+      "fix_version": ">=8.20.1",
+      "action": "Update vitest/vite"
+    },
+    {
+      "id": "DEP-015",
+      "title": "Express Outdated",
+      "severity": "moderate",
+      "category": "outdated",
+      "package": "express",
+      "current": "^4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "major_versions_behind": 2,
+      "is_direct": true,
+      "locations": [
+        "Source/Backend",
+        "portal/Backend",
+        "platform/orchestrator"
+      ],
+      "action": "Update to ^4.22.2 or ^5.2.1 (requires testing)"
+    },
+    {
+      "id": "DEP-016",
+      "title": "Pino Outdated",
+      "severity": "moderate",
+      "category": "outdated",
+      "package": "pino",
+      "current": "^8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2,
+      "is_direct": true,
+      "locations": [
+        "Source/Backend",
+        "portal/Backend"
+      ],
+      "action": "Review changelog and update to ^10.3.1"
+    },
+    {
+      "id": "DEP-017",
+      "title": "React Outdated",
+      "severity": "moderate",
+      "category": "outdated",
+      "package": "react",
+      "current": "^18.3.1",
+      "wanted": "18.3.1",
+      "latest": "19.2.6",
+      "major_versions_behind": 1,
+      "is_direct": true,
+      "locations": [
+        "Source/Frontend"
+      ],
+      "action": "Test with React 19.x"
+    },
+    {
+      "id": "DEP-018",
+      "title": "React Router Outdated",
+      "severity": "moderate",
+      "category": "outdated",
+      "package": "react-router-dom",
+      "current": "^6.30.3",
+      "wanted": "6.30.3",
+      "latest": "7.15.1",
+      "major_versions_behind": 1,
+      "is_direct": true,
+      "locations": [
+        "Source/Frontend"
+      ],
+      "action": "Test with v7.x and coordinate with React 19"
+    },
+    {
+      "id": "DEP-019",
+      "title": "UUID Outdated + CVE",
+      "severity": "moderate",
+      "category": "outdated",
+      "package": "uuid",
+      "current": "^9.0.0",
+      "wanted": "9.0.1",
+      "latest": "14.0.0",
+      "major_versions_behind": 5,
+      "is_direct": true,
+      "has_cve": true,
+      "locations": [
+        "Source/Backend",
+        "portal/Backend"
+      ],
+      "action": "Update to ^14.0.0 (also resolves CVE)"
+    },
+    {
+      "id": "DEP-020",
+      "title": "License Compliance Audit Pending",
+      "severity": "low",
+      "category": "license",
+      "status": "pending",
+      "issue": "license-checker tool not available",
+      "action": "Run npx license-checker --json in each project"
+    }
+  ],
+  "dependency_stats": {
+    "by_project": {
+      "Source/Backend": {
+        "total_dependencies": 411,
+        "prod": 102,
+        "dev": 310,
+        "vulnerabilities": 6,
+        "critical": 1,
+        "high": 0,
+        "moderate": 5
+      },
+      "Source/Frontend": {
+        "total_dependencies": 230,
+        "prod": 9,
+        "dev": 221,
+        "vulnerabilities": 7,
+        "critical": 0,
+        "high": 0,
+        "moderate": 7
+      },
+      "Source/E2E": {
+        "total_dependencies": 4,
+        "prod": 4,
+        "dev": 0,
+        "vulnerabilities": 0
+      },
+      "portal/Backend": {
+        "total_dependencies": 577,
+        "prod": 397,
+        "dev": 181,
+        "vulnerabilities": 15,
+        "critical": 1,
+        "high": 3,
+        "moderate": 11
+      },
+      "portal/Frontend": {
+        "total_dependencies": 424,
+        "prod": 9,
+        "dev": 416,
+        "vulnerabilities": 7,
+        "critical": 0,
+        "high": 1,
+        "moderate": 6
+      },
+      "platform/orchestrator": {
+        "estimated_dependencies": 500,
+        "vulnerabilities_estimated": "multiple high/critical"
+      }
+    },
+    "supply_chain_risk": {
+      "total_transitive_dependencies": 2500,
+      "risk_level": "moderate",
+      "largest_projects": [
+        "portal/Backend (577)",
+        "platform/orchestrator (est. 500+)",
+        "Source/Backend (411)",
+        "portal/Frontend (424)"
+      ],
+      "recommendation": "Regularly audit transitive dependencies"
+    }
+  },
+  "remediation_timeline": {
+    "immediate_24h": [
+      "DEP-001 (handlebars)",
+      "DEP-002 (protobufjs)",
+      "DEP-003 (opentelemetry)"
+    ],
+    "one_week": [
+      "DEP-004 (path-to-regexp)",
+      "DEP-005 (picomatch)",
+      "DEP-006 (uuid)",
+      "DEP-007 to DEP-012 (other moderates)"
+    ],
+    "two_weeks": [
+      "DEP-015 to DEP-019 (outdated)",
+      "DEP-020 (license audit)"
+    ]
+  },
+  "cross_references": [
+    {
+      "finding_id": "DEP-002",
+      "team": "TheGuardians",
+      "reason": "Protobufjs arbitrary code execution is exploitable if untrusted protobuf messages are processed"
+    },
+    {
+      "finding_id": "DEP-009",
+      "team": "TheGuardians",
+      "reason": "Vite path traversal may allow source code disclosure in dev builds"
+    },
+    {
+      "finding_id": "DEP-011",
+      "team": "TheGuardians",
+      "reason": "PostCSS XSS if user-controlled CSS is processed"
+    },
+    {
+      "finding_id": "DEP-004",
+      "team": "red-teamer",
+      "reason": "path-to-regexp ReDoS can be chained for amplified DoS attacks"
+    }
+  ]
+}

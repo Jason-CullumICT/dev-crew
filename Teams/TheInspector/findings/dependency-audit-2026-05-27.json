@@ -1,0 +1,323 @@
+{
+  "audit_date": "2026-05-27",
+  "auditor": "dependency-auditor",
+  "overall_grade": "C",
+  "summary": {
+    "total_cves": 13,
+    "critical": 1,
+    "high": 0,
+    "moderate": 12,
+    "low": 0,
+    "license_compliant": true,
+    "abandoned_packages": 0
+  },
+  "severity_breakdown": {
+    "p1": 1,
+    "p2": 5,
+    "p3": 4,
+    "p4": 1
+  },
+  "workspaces": {
+    "backend": {
+      "path": "Source/Backend",
+      "manager": "npm",
+      "direct_dependencies": 4,
+      "transitive_dependencies": 412,
+      "vulnerabilities": 6,
+      "cves": [
+        {
+          "id": "DEP-001",
+          "name": "Handlebars.js JavaScript Injection",
+          "severity": "critical",
+          "package": "handlebars",
+          "affected_versions": "<=4.7.8",
+          "cvss_score": 9.8,
+          "cve_ids": [
+            "GHSA-2w6w-674q-4c4q",
+            "GHSA-3mfm-83xf-c92r",
+            "GHSA-xhpv-hc6g-r9c6",
+            "GHSA-9cx6-37pm-9jff",
+            "GHSA-xjpj-3mr7-gcpf"
+          ],
+          "is_direct": false,
+          "fix_available": true,
+          "escalate_to": "TheGuardians"
+        },
+        {
+          "id": "DEP-002",
+          "name": "Express.js qs DoS",
+          "severity": "moderate",
+          "package": "express",
+          "affected_versions": "4.21.0-4.22.1, 5.0.0-5.0.1",
+          "cvss_score": 5.3,
+          "cve_ids": ["GHSA-q8mj-m7cp-5q26"],
+          "is_direct": true,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-003",
+          "name": "brace-expansion ReDoS",
+          "severity": "moderate",
+          "package": "brace-expansion",
+          "affected_versions": "<1.1.13",
+          "cvss_score": 6.5,
+          "cve_ids": ["GHSA-f886-m6hf-6m8v"],
+          "is_direct": false,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-004",
+          "name": "uuid Buffer Bounds Check",
+          "severity": "moderate",
+          "package": "uuid",
+          "affected_versions": "<11.1.1",
+          "cvss_score": 7.5,
+          "cve_ids": ["GHSA-w5hq-g745-h8pq"],
+          "is_direct": true,
+          "fix_available": true,
+          "major_version_bump_required": true
+        }
+      ],
+      "outdated_packages": [
+        {
+          "name": "express",
+          "current": "4.18.2",
+          "wanted": "4.22.2",
+          "latest": "5.2.1",
+          "major_gap": 1
+        },
+        {
+          "name": "pino",
+          "current": "8.17.0",
+          "wanted": "8.21.0",
+          "latest": "10.3.1",
+          "major_gap": 2
+        },
+        {
+          "name": "uuid",
+          "current": "9.0.0",
+          "wanted": "9.0.1",
+          "latest": "14.0.0",
+          "major_gap": 5
+        }
+      ]
+    },
+    "frontend": {
+      "path": "Source/Frontend",
+      "manager": "npm",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 240,
+      "vulnerabilities": 7,
+      "build_blockers": [
+        {
+          "id": "DEP-011",
+          "name": "Missing node_modules Installation",
+          "package": "react, react-dom, react-router-dom",
+          "status": "MISSING",
+          "fix": "npm install"
+        }
+      ],
+      "cves": [
+        {
+          "id": "DEP-006",
+          "name": "Vite Path Traversal",
+          "severity": "moderate",
+          "package": "vite",
+          "affected_versions": "<=6.4.1",
+          "cvss_score": 0,
+          "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+          "is_direct": true,
+          "fix_available": true,
+          "major_version_bump_required": true,
+          "escalate_to": "TheGuardians"
+        },
+        {
+          "id": "DEP-007",
+          "name": "esbuild Dev Server CORS Bypass",
+          "severity": "moderate",
+          "package": "esbuild",
+          "affected_versions": "<=0.24.2",
+          "cvss_score": 5.3,
+          "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+          "is_direct": false,
+          "fix_available": true,
+          "escalate_to": "TheGuardians"
+        },
+        {
+          "id": "DEP-008",
+          "name": "PostCSS XSS",
+          "severity": "moderate",
+          "package": "postcss",
+          "affected_versions": "<8.5.10",
+          "cvss_score": 6.1,
+          "cve_ids": ["GHSA-qx2v-qp2m-jg93"],
+          "is_direct": false,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-009",
+          "name": "ws Uninitialized Memory Disclosure",
+          "severity": "moderate",
+          "package": "ws",
+          "affected_versions": "8.0.0-8.20.0",
+          "cvss_score": 4.4,
+          "cve_ids": ["GHSA-58qx-3vcg-4xpx"],
+          "is_direct": false,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-010",
+          "name": "Vitest Cascading Vulnerabilities",
+          "severity": "moderate",
+          "package": "vitest",
+          "affected_versions": "<=3.0.0-beta.4",
+          "cvss_score": 0,
+          "cve_ids": [],
+          "is_direct": true,
+          "fix_available": true,
+          "major_version_bump_required": true
+        }
+      ],
+      "outdated_packages": [
+        {
+          "name": "react",
+          "current": "MISSING",
+          "wanted": "18.3.1",
+          "latest": "19.2.6",
+          "major_gap": 1,
+          "status": "BUILD_BLOCKER"
+        },
+        {
+          "name": "react-dom",
+          "current": "MISSING",
+          "wanted": "18.3.1",
+          "latest": "19.2.6",
+          "major_gap": 1,
+          "status": "BUILD_BLOCKER"
+        },
+        {
+          "name": "react-router-dom",
+          "current": "MISSING",
+          "wanted": "6.30.3",
+          "latest": "7.15.1",
+          "major_gap": 1,
+          "status": "BUILD_BLOCKER"
+        },
+        {
+          "name": "vite",
+          "current": "5.4.0",
+          "wanted": "5.4.0",
+          "latest": "8.0.14",
+          "major_gap": 3
+        },
+        {
+          "name": "vitest",
+          "current": "2.0.5",
+          "wanted": "2.0.5",
+          "latest": "4.1.7",
+          "major_gap": 2
+        }
+      ]
+    },
+    "e2e": {
+      "path": "Source/E2E",
+      "manager": "npm",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 4,
+      "vulnerabilities": 0,
+      "status": "CLEAN"
+    }
+  },
+  "supply_chain_risk": {
+    "total_transitive_dependencies": 645,
+    "risk_level": "moderate",
+    "factors": {
+      "no_dangerous_postinstall_scripts": true,
+      "all_high_popularity_packages": true,
+      "no_single_maintainer_critical_packages": true,
+      "no_recent_suspicious_transfers": true
+    }
+  },
+  "license_compliance": {
+    "status": "compliant",
+    "all_mit_or_compatible": true,
+    "gpl_agpl_risk": "none",
+    "unknown_licenses": "none"
+  },
+  "recommended_fixes": {
+    "tier_1_critical": [
+      {
+        "priority": 1,
+        "finding": "DEP-001: Handlebars.js injection",
+        "command": "cd Source/Backend && npm audit fix --force",
+        "estimated_time_minutes": 15,
+        "testing_required": true
+      }
+    ],
+    "tier_2_high_priority": [
+      {
+        "priority": 2,
+        "finding": "DEP-011: Frontend node_modules missing",
+        "command": "cd Source/Frontend && npm install",
+        "estimated_time_minutes": 10
+      },
+      {
+        "priority": 3,
+        "finding": "DEP-006/007/010: Frontend dev toolchain",
+        "command": "cd Source/Frontend && npm update vite vitest",
+        "estimated_time_minutes": 20,
+        "testing_required": true
+      },
+      {
+        "priority": 4,
+        "finding": "DEP-004: uuid major version",
+        "command": "cd Source/Backend && npm update uuid",
+        "estimated_time_minutes": 15,
+        "testing_required": true
+      },
+      {
+        "priority": 5,
+        "finding": "DEP-002/003: express + qs + brace-expansion",
+        "command": "cd Source/Backend && npm update express",
+        "estimated_time_minutes": 15,
+        "testing_required": true
+      }
+    ],
+    "tier_3_nice_to_have": [
+      {
+        "priority": 6,
+        "finding": "DEP-009: postcss XSS",
+        "included_in": "Frontend vite update"
+      },
+      {
+        "priority": 7,
+        "finding": "Backend logging update",
+        "command": "cd Source/Backend && npm update pino",
+        "estimated_time_minutes": 10
+      }
+    ]
+  },
+  "escalations": {
+    "to_the_guardians": [
+      {
+        "finding": "DEP-001",
+        "reason": "User-controlled template injection check required",
+        "severity": "critical"
+      },
+      {
+        "finding": "DEP-006, DEP-007",
+        "reason": "Dev server security exposure (path traversal, CORS bypass)",
+        "severity": "high"
+      }
+    ]
+  },
+  "testing_checklist": [
+    "cd Source/Backend && npm audit",
+    "cd Source/Backend && npm test",
+    "cd Source/Backend && npm run build",
+    "cd Source/Frontend && npm audit",
+    "cd Source/Frontend && npm test",
+    "cd Source/Frontend && npm run build",
+    "python3 tools/traceability-enforcer.py"
+  ]
+}

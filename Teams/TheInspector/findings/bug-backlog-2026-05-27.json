@@ -1,0 +1,445 @@
+{
+  "meta": {
+    "audit_id": "run-20260527-064037",
+    "audit_date": "2026-05-27",
+    "branch": "audit/inspector-2026-05-27-8ca404",
+    "grade": "D",
+    "generated_by": "TheInspector/team-leader",
+    "report_html": "Teams/TheInspector/findings/audit-2026-05-27-D.html",
+    "prior_audit": null,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend and frontend services offline at audit time"
+  },
+  "summary": {
+    "total_findings": 21,
+    "p1": 2,
+    "p2": 10,
+    "p3": 7,
+    "p4": 2,
+    "escalated_to_guardians": 3,
+    "solo_session_required": 3,
+    "thefixer_candidates": 8,
+    "fixed_since_last_audit": 0,
+    "spec_coverage_pct": 25.7,
+    "spec_requirements_total": 113,
+    "spec_requirements_traced": 29
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection — CVSS 9.8",
+      "severity": "P1",
+      "category": "CVE/injection",
+      "package": "handlebars ≤4.7.8",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Template injection — requires code-path audit to verify no user-controlled template input exists",
+      "immediate_fix": "cd Source/Backend && npm audit fix --force",
+      "fix_complete_when": "npm audit fix applied AND TheGuardians confirms no user-controlled template injection vectors"
+    },
+    {
+      "id": "DEP-006",
+      "title": "Vite Path Traversal — dev server source leak",
+      "severity": "P2",
+      "category": "CVE/path-traversal",
+      "package": "vite@5.4.0 (direct, frontend)",
+      "cvss_score": null,
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "file": "Source/Frontend/package.json",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Dev server path traversal — if dev server is exposed to untrusted networks, source maps are readable",
+      "immediate_fix": "cd Source/Frontend && npm update vite",
+      "fix_complete_when": "Vite updated to ≥6.4.2 (or latest v8)"
+    },
+    {
+      "id": "DEP-007",
+      "title": "esbuild Dev Server CORS Bypass — CVSS 5.3",
+      "severity": "P2",
+      "category": "CVE/cors-bypass",
+      "package": "esbuild ≤0.24.2 (transitive via vite)",
+      "cvss_score": 5.3,
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Dev server CORS bypass — any website can read dev server responses if exposed",
+      "immediate_fix": "cd Source/Frontend && npm update vite (includes esbuild fix)",
+      "fix_complete_when": "Vite updated to ≥6.4.2 (bundles fixed esbuild)"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search not wired — 5 tests will fail at CI",
+      "severity": "P1",
+      "category": "spec-drift/untested",
+      "fr": "FR-dependency-search",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Add GET /api/search?q= route handler filtering work items by title/description, register in app.ts. Return {data: WorkItem[]}. Test contract already complete in search.test.ts.",
+      "estimated_effort": "1-2 hours"
+    },
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection CVSS 9.8",
+      "severity": "P1",
+      "category": "CVE/injection",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "see_escalations": true
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "Route handlers call store directly — service layer missing",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts"
+      ],
+      "detail": "12 store call sites across both route files. CLAUDE.md: 'No direct DB calls from route handlers — use the service layer.'",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Create Source/Backend/src/services/workItemService.ts wrapping store calls. Route handlers become thin HTTP adapters.",
+      "estimated_effort": "1-2 hours",
+      "cross_ref": "Root Cause 3 (see cross-reference map)"
+    },
+    {
+      "id": "QO-003",
+      "title": "dependency_check_duration histogram missing — FR-dependency-metrics gap",
+      "severity": "P2",
+      "category": "spec-drift",
+      "fr": "FR-dependency-metrics",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "detail": "FR-dependency-metrics specifies 4 metrics; only 3 implemented. dependencyCheckDuration histogram absent.",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Add dependencyCheckDurationHistogram export in metrics.ts, instrument isReady()/hasUnresolvedBlockers() calls in dependency.ts.",
+      "estimated_effort": "1 hour"
+    },
+    {
+      "id": "QO-004",
+      "title": "dev-workflow-platform.md: 74 FRs with 0% source coverage",
+      "severity": "P2",
+      "category": "spec-drift",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "detail": "74 FRs (FR-001 through FR-069+) covering FeatureRequests, BugReports, DevelopmentCycles, Tickets, and React SPA have zero source implementation.",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "solo-session",
+      "recommendation": "Decision required: mark spec as PLANNED (Phase N) in document header, or archive if superseded. Do NOT run through TheFixer pipeline.",
+      "estimated_effort": "2-4 hours (decision + doc update)"
+    },
+    {
+      "id": "QO-005",
+      "title": "tiered-merge-pipeline.md: 10 FRs with 0% source coverage",
+      "severity": "P2",
+      "category": "spec-drift",
+      "files": ["Specifications/tiered-merge-pipeline.md", "Source/E2E/"],
+      "detail": "10 FRs (FR-TMP-001–010) for risk classification, Playwright E2E, auto-PR, AI review, auto-merge. No implementation. Source/E2E/tests/ is empty.",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "solo-session",
+      "recommendation": "Create Plans/ entry for this feature with PENDING status. FR-TMP-007/008/009 touch platform/ — solo session only.",
+      "estimated_effort": "1 hour (plan file creation)"
+    },
+    {
+      "id": "QO-006",
+      "title": "Traceability enforcer misses 84 spec FRs — false 100% signal",
+      "severity": "P2",
+      "category": "spec-drift",
+      "files": ["tools/traceability-enforcer.py"],
+      "detail": "Enforcer targets only Plans/self-judging-workflow/requirements.md. Reports PASSED while 74% of spec requirements have no coverage signal.",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "solo-session",
+      "recommendation": "Update enforcer to also scan Specifications/*.md for FR IDs and cross-reference against source, OR document that enforcer scope is intentionally limited to workflow-engine plan.",
+      "estimated_effort": "2-3 hours"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Express.js qs DoS — CVSS 5.3",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "package": "express@4.18.2",
+      "cvss_score": 5.3,
+      "cve_ids": ["GHSA-q8mj-m7cp-5q26"],
+      "files": ["Source/Backend/package.json"],
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "npm update express in Source/Backend (→ express@4.22.2+). Auto-fixes qs transitive dep.",
+      "estimated_effort": "15 minutes"
+    },
+    {
+      "id": "DEP-004",
+      "title": "uuid buffer bounds check — CVSS 7.5",
+      "severity": "P2",
+      "category": "CVE/memory-safety",
+      "package": "uuid@9.0.0",
+      "cvss_score": 7.5,
+      "cve_ids": ["GHSA-w5hq-g745-h8pq"],
+      "files": ["Source/Backend/package.json"],
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "npm update uuid in Source/Backend. Requires major version bump 9.x → 11.x. Update package.json constraint from ^9.0.0 to ^11.0.0.",
+      "estimated_effort": "30 minutes"
+    },
+    {
+      "id": "DEP-006",
+      "title": "Vite Path Traversal",
+      "severity": "P2",
+      "category": "CVE/path-traversal",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "see_escalations": true
+    },
+    {
+      "id": "DEP-007",
+      "title": "esbuild Dev Server CORS Bypass",
+      "severity": "P2",
+      "category": "CVE/cors-bypass",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "see_escalations": true
+    },
+    {
+      "id": "DEP-010-011",
+      "title": "Frontend node_modules missing (build blocker) + Vitest cascading vulnerabilities",
+      "severity": "P2",
+      "category": "build-blocker/CVE-cascade",
+      "packages": ["react (MISSING)", "react-dom (MISSING)", "react-router-dom (MISSING)", "vitest@2.0.5"],
+      "files": ["Source/Frontend/package.json"],
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "cd Source/Frontend && npm install && npm update vite vitest (→ vitest@4.1.7)",
+      "estimated_effort": "30 minutes",
+      "cross_ref": "Root Cause 1 (see cross-reference map)"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "title": "eslint-disable without justification in 2 frontend files",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Replace with proper useCallback dep array or add inline comment explaining intentional omission."
+    },
+    {
+      "id": "QO-008",
+      "title": "Silent error swallow in API client catch block",
+      "severity": "P3",
+      "category": "pattern-violation/architecture",
+      "files": ["Source/Frontend/src/api/client.ts:26"],
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Log parse failure (debug level) or annotate with comment explaining intentional recovery. CLAUDE.md rule: never swallow errors silently."
+    },
+    {
+      "id": "QO-009",
+      "title": "Duplicate frontend test files — ambiguous coverage",
+      "severity": "P3",
+      "category": "test-quality",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx (DELETE)",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx (DELETE)",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx (KEEP)",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx (KEEP)"
+      ],
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Delete root-level versions, consolidate all cases into tests/pages/ versions."
+    },
+    {
+      "id": "DEP-003",
+      "title": "brace-expansion ReDoS — CVSS 6.5",
+      "severity": "P3",
+      "category": "CVE/DoS",
+      "package": "brace-expansion <1.1.13",
+      "cvss_score": 6.5,
+      "cve_ids": ["GHSA-f886-m6hf-6m8v"],
+      "files": ["Source/Backend/package-lock.json"],
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "npm audit fix in Source/Backend (auto-updates to ^1.1.13). Included in express update."
+    },
+    {
+      "id": "DEP-008",
+      "title": "PostCSS XSS — CVSS 6.1",
+      "severity": "P3",
+      "category": "CVE/XSS",
+      "package": "postcss <8.5.10",
+      "cvss_score": 6.1,
+      "cve_ids": ["GHSA-qx2v-qp2m-jg93"],
+      "files": ["Source/Frontend/package-lock.json"],
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "npm update vite in Source/Frontend (includes postcss@8.5.10+). Low runtime risk — build-time only."
+    },
+    {
+      "id": "DEP-009",
+      "title": "ws uninitialized memory disclosure — CVSS 4.4",
+      "severity": "P3",
+      "category": "CVE/info-disclosure",
+      "package": "ws@8.0.0-8.20.0",
+      "cvss_score": 4.4,
+      "cve_ids": ["GHSA-58qx-3vcg-4xpx"],
+      "files": ["Source/Frontend/package-lock.json"],
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "npm update ws in Source/Frontend. Also resolved by vite ecosystem update."
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-010",
+      "title": "Non-standard Verifies reference in DebugPortalPage.tsx",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx:1"],
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Map to a real FR-XXX identifier or remove the comment."
+    },
+    {
+      "id": "DEP-005",
+      "title": "License compliance audit — all MIT (informational)",
+      "severity": "P4",
+      "category": "license-compliance",
+      "specialist": "dependency-auditor",
+      "status": "PASS",
+      "route_to": "none",
+      "recommendation": "No action required. All 645+ dependencies are MIT-compatible. No GPL/AGPL risk."
+    }
+  ],
+  "fix_sequence": {
+    "block_deployment": [
+      {
+        "step": 1,
+        "action": "Handlebars injection fix + TheGuardians audit",
+        "command": "cd Source/Backend && npm audit fix --force",
+        "findings": ["DEP-001"],
+        "estimated_minutes": 15,
+        "requires_followup": "TheGuardians code-path verification"
+      },
+      {
+        "step": 2,
+        "action": "Implement GET /api/search route",
+        "command": "Add route handler to Source/Backend/src/routes/search.ts and register in app.ts",
+        "findings": ["QO-001"],
+        "estimated_minutes": 90
+      },
+      {
+        "step": 3,
+        "action": "Install Frontend node_modules",
+        "command": "cd Source/Frontend && npm install",
+        "findings": ["DEP-011"],
+        "estimated_minutes": 10
+      }
+    ],
+    "this_sprint": [
+      {
+        "step": 4,
+        "action": "Update Frontend Vite/Vitest ecosystem",
+        "command": "cd Source/Frontend && npm update vite vitest",
+        "findings": ["DEP-006", "DEP-007", "DEP-010", "DEP-008", "DEP-009"],
+        "estimated_minutes": 30
+      },
+      {
+        "step": 5,
+        "action": "Update Backend uuid and Express",
+        "command": "cd Source/Backend && npm update express uuid",
+        "findings": ["DEP-002", "DEP-003", "DEP-004"],
+        "estimated_minutes": 30
+      },
+      {
+        "step": 6,
+        "action": "Create workItemService.ts — refactor routes",
+        "findings": ["QO-002"],
+        "estimated_minutes": 90
+      },
+      {
+        "step": 7,
+        "action": "Add dependencyCheckDurationHistogram to metrics.ts",
+        "findings": ["QO-003"],
+        "estimated_minutes": 60
+      }
+    ],
+    "next_sprint": [
+      {
+        "step": 8,
+        "action": "Update traceability enforcer scope — solo session",
+        "findings": ["QO-006"],
+        "estimated_minutes": 120
+      },
+      {
+        "step": 9,
+        "action": "Clarify spec status for dev-workflow-platform.md and tiered-merge-pipeline.md — solo session",
+        "findings": ["QO-004", "QO-005"],
+        "estimated_minutes": 180
+      },
+      {
+        "step": 10,
+        "action": "Fix silent catch, duplicate tests, eslint-disable",
+        "findings": ["QO-007", "QO-008", "QO-009"],
+        "estimated_minutes": 90
+      }
+    ],
+    "backlog": [
+      {
+        "step": 11,
+        "action": "Fix non-standard Verifies comment in DebugPortalPage.tsx",
+        "findings": ["QO-010"],
+        "estimated_minutes": 5
+      },
+      {
+        "step": 12,
+        "action": "Update pino to latest (maintenance hygiene)",
+        "command": "cd Source/Backend && npm update pino",
+        "findings": [],
+        "estimated_minutes": 15
+      }
+    ]
+  }
+}

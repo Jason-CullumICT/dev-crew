@@ -1,0 +1,305 @@
+{
+  "audit_date": "2026-05-28",
+  "project": "dev-crew",
+  "status": "AUDIT_COMPLETE",
+  "overall_grade": "B",
+  "summary": {
+    "total_cves": 13,
+    "critical": 1,
+    "high": 0,
+    "moderate": 12,
+    "low": 0,
+    "info": 0
+  },
+  "packages_analyzed": 3,
+  "workspaces": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E"
+  ],
+  "dependency_stats": {
+    "backend": {
+      "direct_prod": 4,
+      "direct_dev": 8,
+      "transitive": 390,
+      "total_unique": 412
+    },
+    "frontend": {
+      "direct_prod": 3,
+      "direct_dev": 8,
+      "transitive": 220,
+      "total_unique": 231
+    },
+    "e2e": {
+      "direct_prod": 1,
+      "direct_dev": 0,
+      "transitive": 3,
+      "total_unique": 4
+    }
+  },
+  "license_compliance": {
+    "status": "COMPLIANT",
+    "gpl_found": false,
+    "agpl_found": false,
+    "viral_licenses": 0,
+    "unknown_licenses": 0,
+    "license_breakdown": {
+      "backend": {
+        "MIT": 348,
+        "ISC": 34,
+        "Apache-2.0": 8,
+        "BSD-3-Clause": 15,
+        "BSD-2-Clause": 2,
+        "CC-BY-4.0": 1,
+        "MIT_OR_CC0": 2
+      },
+      "frontend": {
+        "MIT": 211,
+        "ISC": 8,
+        "Apache-2.0": 5,
+        "BSD-3-Clause": 2,
+        "BSD-2-Clause": 2,
+        "CC-BY-4.0": 1,
+        "MIT-0": 1
+      }
+    }
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Critical RCE via AST Type Confusion",
+      "severity": "P1",
+      "category": "cve",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh"
+      ],
+      "location": "Backend -> ts-jest -> handlebars",
+      "description": "Multiple critical JavaScript injection vulnerabilities via AST type confusion allowing remote code execution",
+      "fix": "npm update ts-jest (pulls in handlebars>=4.7.9)",
+      "cross_ref": "TheGuardians - RCE in test harness",
+      "immediate": true
+    },
+    {
+      "id": "DEP-002",
+      "title": "Express Dependency Vulnerability (qs DoS)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "express",
+      "version": "4.18.2",
+      "affected_range": "4.21.0 - 4.22.1",
+      "cvss_score": 5.3,
+      "cve_ids": ["GHSA-q8mj-m7cp-5q26"],
+      "root_cause": "qs@6.11.1-6.15.1",
+      "location": "Backend -> express -> qs",
+      "description": "Remotely triggerable DoS via malformed query strings in qs.stringify()",
+      "fix": "npm update express",
+      "cross_ref": null,
+      "immediate": true
+    },
+    {
+      "id": "DEP-003",
+      "title": "brace-expansion Zero-Step Sequence DoS",
+      "severity": "P2",
+      "category": "cve",
+      "package": "brace-expansion",
+      "version": "<1.1.13",
+      "affected_range": "<1.1.13",
+      "cvss_score": 6.5,
+      "cve_ids": ["GHSA-f886-m6hf-6m8v"],
+      "location": "Backend -> glob/minimatch -> brace-expansion",
+      "description": "Process hang and memory exhaustion via pathological regex patterns",
+      "fix": "npm update (automatic)",
+      "cross_ref": null,
+      "immediate": true
+    },
+    {
+      "id": "DEP-004",
+      "title": "uuid Buffer Bounds Check Missing",
+      "severity": "P2",
+      "category": "cve",
+      "package": "uuid",
+      "version": "9.0.0",
+      "affected_range": "<11.1.1",
+      "cvss_score": 7.5,
+      "cve_ids": ["GHSA-w5hq-g745-h8pq"],
+      "location": "Backend (direct)",
+      "description": "Buffer overflow in uuid v3/v5/v6 when buf parameter provided",
+      "fix": "Upgrade to uuid>=11.1.1 or audit code for v3/v5/v6 usage",
+      "cross_ref": "TheGuardians - Code audit if v3/v5/v6 used",
+      "immediate": true
+    },
+    {
+      "id": "DEP-005",
+      "title": "Vite Path Traversal in .map Handling",
+      "severity": "P2",
+      "category": "cve",
+      "package": "vite",
+      "version": "5.4.0",
+      "affected_range": "<=6.4.1",
+      "cvss_score": 0,
+      "cve_ids": ["GHSA-4w7w-66w2-5vf9"],
+      "location": "Frontend (dev dependency)",
+      "description": "Path traversal vulnerability in optimized deps .map handling (dev-time only)",
+      "fix": "npm update vite",
+      "cross_ref": null,
+      "immediate": false
+    },
+    {
+      "id": "DEP-006",
+      "title": "esbuild Development Server CORS Bypass",
+      "severity": "P2",
+      "category": "cve",
+      "package": "esbuild",
+      "version": "<=0.24.2",
+      "affected_range": "<=0.24.2",
+      "cvss_score": 5.3,
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "location": "Frontend -> vite -> esbuild",
+      "description": "Development server allows CORS bypass to send requests and read responses (dev-time only)",
+      "fix": "npm update vite",
+      "cross_ref": null,
+      "immediate": false
+    },
+    {
+      "id": "DEP-007",
+      "title": "PostCSS XSS via Unescaped </style> Tag",
+      "severity": "P2",
+      "category": "cve",
+      "package": "postcss",
+      "version": "<8.5.10",
+      "affected_range": "<8.5.10",
+      "cvss_score": 6.1,
+      "cve_ids": ["GHSA-qx2v-qp2m-jg93"],
+      "location": "Frontend -> postcss",
+      "description": "XSS via unescaped </style> in CSS stringify output (dev-time build)",
+      "fix": "npm update postcss",
+      "cross_ref": null,
+      "immediate": false
+    },
+    {
+      "id": "DEP-008",
+      "title": "ws Uninitialized Memory Disclosure",
+      "severity": "P2",
+      "category": "cve",
+      "package": "ws",
+      "version": "8.0.0 - 8.20.0",
+      "affected_range": ">=8.0.0 <8.20.1",
+      "cvss_score": 4.4,
+      "cve_ids": ["GHSA-58qx-3vcg-4xpx"],
+      "location": "Frontend -> vite -> ws",
+      "description": "Uninitialized memory disclosure in WebSocket implementation (dev-time only)",
+      "fix": "npm update",
+      "cross_ref": null,
+      "immediate": false
+    },
+    {
+      "id": "DEP-009",
+      "title": "vitest Multiple Transitive Vulnerabilities",
+      "severity": "P2",
+      "category": "cve",
+      "package": "vitest",
+      "version": "2.0.5",
+      "affected_range": "0.0.1 - 3.0.0-beta.4",
+      "cvss_score": null,
+      "cve_ids": ["(inherits from vite, esbuild, @vitest/mocker)"],
+      "location": "Frontend (dev dependency)",
+      "description": "Inherits multiple vulnerabilities from transitive dependencies",
+      "fix": "npm update vitest (to v4+)",
+      "cross_ref": null,
+      "immediate": false
+    },
+    {
+      "id": "DEP-010",
+      "title": "Express Body Parser Moderate Vulnerability",
+      "severity": "P3",
+      "category": "cve",
+      "package": "body-parser",
+      "version": "1.20.3-1.20.4",
+      "affected_range": "1.20.3 - 1.20.4",
+      "cvss_score": null,
+      "cve_ids": ["(via qs)"],
+      "location": "Backend -> express -> body-parser",
+      "description": "Inherits qs vulnerability (P2 root cause already listed as DEP-002)",
+      "fix": "npm update express",
+      "cross_ref": null,
+      "immediate": false
+    },
+    {
+      "id": "DEP-011",
+      "title": "pino Major Version Gap",
+      "severity": "P3",
+      "category": "outdated",
+      "package": "pino",
+      "current_version": "8.17.0",
+      "latest_version": "10.3.1",
+      "major_gap": 2,
+      "location": "Backend (direct)",
+      "description": "2 major versions behind; may miss security patches in v9 and v10",
+      "fix": "npm update pino (requires testing for log format changes)",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-012",
+      "title": "React Major Version Gap",
+      "severity": "P3",
+      "category": "outdated",
+      "package": "react",
+      "current_version": "18.3.1",
+      "latest_version": "19.2.6",
+      "major_gap": 1,
+      "location": "Frontend (direct)",
+      "description": "1 major version behind; React 19 introduces new hooks and patterns",
+      "fix": "npm update react react-dom (requires component testing)",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-013",
+      "title": "Multiple Deprecation Warnings",
+      "severity": "P4",
+      "category": "supply-chain",
+      "packages": ["glob@7.2.3", "supertest@6.3.4", "superagent@8.1.2"],
+      "description": "Packages in maintenance mode or with memory leaks; not security-critical but warrant future updates",
+      "fix": "Queue for future maintenance sprints",
+      "cross_ref": null
+    }
+  ],
+  "supply_chain_assessment": {
+    "post_install_scripts": 0,
+    "post_install_risk": "LOW",
+    "duplicate_major_versions": 0,
+    "duplicate_risk": "LOW",
+    "abandoned_packages": 0,
+    "abandoned_risk": "LOW",
+    "single_maintainer_packages": "unknown (would require npm registry API calls)"
+  },
+  "remediation_summary": {
+    "immediate_actions": [
+      "npm update ts-jest (fixes DEP-001: handlebars RCE)",
+      "npm update express (fixes DEP-002, DEP-003, DEP-010)",
+      "npm update uuid (fixes DEP-004 if v3/v5/v6 used)",
+      "npm update vite vitest (fixes DEP-005, DEP-006, DEP-008, DEP-009)"
+    ],
+    "testing_required": [
+      "Run full test suite after backend updates",
+      "Run E2E tests after frontend build tool updates",
+      "Verify React component compatibility after React 19 upgrade"
+    ],
+    "estimated_effort": "2-4 hours (includes testing)"
+  },
+  "next_actions": [
+    "Review handlebars RCE severity with TheGuardians",
+    "Schedule express, uuid updates for this sprint",
+    "Plan React 19 upgrade for next quarter",
+    "Set up automated dependency scanning (Dependabot / Snyk)"
+  ]
+}

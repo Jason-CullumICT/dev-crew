@@ -1,0 +1,371 @@
+{
+  "audit_id": "run-20260528-062611",
+  "audit_date": "2026-05-28",
+  "branch": "audit/inspector-2026-05-28-883a95",
+  "grade": "D",
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 16,
+    "p3_total": 4,
+    "p4_total": 2,
+    "escalations_count": 1,
+    "spec_coverage_active_pct": 81,
+    "license_compliant": true,
+    "supply_chain_risk": "low"
+  },
+  "grading_applied": {
+    "thresholds": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+      "D": "anything worse than C"
+    },
+    "actual": { "p1": 2, "p2": 16, "spec_coverage_pct": 81 },
+    "grade": "D",
+    "rationale": "2 P1s fall within C threshold (max 2), but 16 P2s exceed C threshold (max 15). Falls to D."
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars RCE via AST Type Confusion",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cve_id": "GHSA-2w6w-674q-4c4q",
+      "package": "handlebars@4.7.8",
+      "path": "Source/Backend → ts-jest → handlebars",
+      "category": "CVE / Code Execution",
+      "exploit_scenario": "Malicious PR includes crafted test template; npm test triggers RCE on CI runner",
+      "impact": "Remote code execution on developer machines and CI/CD pipeline",
+      "fix": "cd Source/Backend && npm update ts-jest",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "RCE vulnerability in test infrastructure — requires security review before merge",
+      "source_specialist": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search not registered in app.ts — DependencyPicker broken",
+      "severity": "P1",
+      "category": "spec-drift",
+      "spec_ref": "FR-dependency-search",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "description": "Cross-entity typeahead endpoint missing from all route files and not registered in app.ts. DependencyPicker UI is completely non-functional.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts; implement GET /api/search?q= filtering store by title/description; register in app.ts.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "Route handlers directly import workItemStore — architecture violation",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "description": "Three route files import workItemStore directly, bypassing the service layer. CLAUDE.md: 'No direct DB calls from route handlers.'",
+      "recommendation": "Extract workItemService.ts; route handlers call service; service calls store.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": ["QO-003", "QO-005"],
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "title": "dependencyCheckDuration histogram missing from metrics.ts",
+      "severity": "P2",
+      "category": "spec-drift",
+      "spec_ref": "FR-dependency-metrics",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "description": "FR-dependency-metrics requires 4 metrics; 3 counters present, Histogram class not imported and histogram absent.",
+      "recommendation": "Add Histogram import and dependencyCheckDuration histogram with appropriate buckets.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "title": "Traceability enforcer regex blind to FR-dependency-* IDs",
+      "severity": "P2",
+      "category": "tooling",
+      "files": ["tools/traceability-enforcer.py"],
+      "line": 64,
+      "description": "Pattern FR-[A-Z0-9-]+ silently skips all lowercase FR IDs. All 16 FR-dependency-* IDs are invisible to the enforcer.",
+      "recommendation": "Change to FR-[A-Za-z0-9-]+. One-line fix restores coverage for all dependency FRs.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-005",
+      "title": "Logger always emits JSON — no development pretty-printing",
+      "severity": "P2",
+      "category": "spec-drift",
+      "spec_ref": "FR-WF-013",
+      "files": ["Source/Backend/src/utils/logger.ts"],
+      "line": 17,
+      "description": "CLAUDE.md: 'structured JSON in production, pretty-printing in development.' The emit() function has no NODE_ENV check.",
+      "recommendation": "Add NODE_ENV === 'development' branch in emit() that calls console.log for pretty output.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Express qs dependency DoS vulnerability",
+      "severity": "P2",
+      "cvss": 5.3,
+      "cve_id": "GHSA-q8mj-m7cp-5q26",
+      "package": "express@4.18.2 (qs transitive)",
+      "description": "qs.stringify() crashes with TypeError on null entries in comma-format arrays. Remotely triggerable DoS.",
+      "fix": "cd Source/Backend && npm update express",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-003",
+      "title": "brace-expansion ReDoS via zero-step sequences",
+      "severity": "P2",
+      "cvss": 6.5,
+      "cve_id": "GHSA-f886-m6hf-6m8v",
+      "package": "brace-expansion <1.1.13 (transitive)",
+      "description": "Zero-step sequences (e.g., {0..0..0}) cause infinite loops and process hang.",
+      "fix": "npm update (auto-resolved transitively)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "title": "uuid buffer bounds check missing in v3/v5/v6",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve_id": "GHSA-w5hq-g745-h8pq",
+      "package": "uuid@9.0.0",
+      "description": "Buffer overflow when custom buf parameter smaller than 16 bytes passed to uuid v3/v5/v6.",
+      "fix": "Audit for uuid.v3/v5/v6 with buf args; upgrade to uuid@>=11.1.1 or document as v4-only safe.",
+      "route_to": "TheFixer",
+      "also_flag_to": "TheGuardians",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Vite path traversal in .map file handling",
+      "severity": "P2",
+      "cve_id": "GHSA-4w7w-66w2-5vf9",
+      "package": "vite@5.4.0",
+      "description": "Path traversal vulnerability in Vite dev server source map handling.",
+      "fix": "cd Source/Frontend && npm update vite",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": ["DEP-006", "DEP-009", "DEP-010"],
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "title": "esbuild dev server CORS bypass",
+      "severity": "P2",
+      "cve_id": "GHSA-67mh-4wv8-2f99",
+      "package": "esbuild@0.24.x (via vite)",
+      "description": "esbuild development server CORS headers bypass allows cross-origin requests.",
+      "fix": "Resolved by updating vite (pulls updated esbuild).",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "title": "PostCSS XSS via unescaped </style> in CSS output",
+      "severity": "P2",
+      "cve_id": "GHSA-qx2v-qp2m-jg93",
+      "package": "postcss@8.5.x",
+      "description": "PostCSS does not escape </style> sequences in CSS output, enabling XSS injection in style tags.",
+      "fix": "cd Source/Frontend && npm update postcss",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "title": "ws WebSocket uninitialized memory disclosure",
+      "severity": "P2",
+      "cve_id": "GHSA-58qx-3vcg-4xpx",
+      "package": "ws@8.0.0–8.20.0",
+      "description": "Uninitialized memory can be disclosed in certain WebSocket protocol conditions.",
+      "fix": "npm update ws",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "title": "vitest multiple CVEs via vite/esbuild transitive dependencies",
+      "severity": "P2",
+      "package": "vitest@2.0.5",
+      "description": "Inherits vite path traversal and esbuild CORS issues through transitive deps.",
+      "fix": "cd Source/Frontend && npm update vitest",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-010",
+      "title": "@vitest/mocker inherits vite vulnerabilities",
+      "severity": "P2",
+      "package": "@vitest/mocker",
+      "description": "Inherits vite issues. Resolved by vitest upgrade.",
+      "fix": "Resolved by DEP-009 fix (vitest update).",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "title": "In-memory store has no file persistence (FR-WF-001 gap)",
+      "severity": "P3",
+      "category": "spec-drift",
+      "spec_ref": "FR-WF-001",
+      "files": ["Source/Backend/src/store/workItemStore.ts"],
+      "description": "FR-WF-001 acceptance criteria requires 'CRUD operations on in-memory store with file persistence.' Store is plain Map; state lost on restart.",
+      "recommendation": "Serialize to .data/workItems.json on write; hydrate on startup.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-007",
+      "title": "FR-dependency-seed not implemented",
+      "severity": "P3",
+      "category": "spec-drift",
+      "spec_ref": "FR-dependency-seed",
+      "files": ["Source/Backend/src/"],
+      "description": "No seed.ts exists. DependencySection has nothing useful to display on fresh install.",
+      "recommendation": "Create Source/Backend/src/store/seed.ts; call idempotently from app.ts.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-008",
+      "title": "Specifications/dev-workflow-platform.md is a dormant 69-FR spec (0% coverage)",
+      "severity": "P3",
+      "category": "doc-stale",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "description": "Project pivoted; 69 FRs describe an unbuilt product. Misleads agents reading Specifications/.",
+      "recommendation": "Add ARCHIVED status banner or move to docs/archive/.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-009",
+      "title": "Plans/dependency-linking/requirements.md targets wrong portal/ paths",
+      "severity": "P3",
+      "category": "doc-stale",
+      "files": ["Plans/dependency-linking/requirements.md"],
+      "description": "All file paths reference portal/ which no longer exists; implementation is under Source/. Delta table is stale.",
+      "recommendation": "Update all portal/ references to Source/ equivalents; refresh delta table.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-010",
+      "title": "eslint-disable suppressing react-hooks/exhaustive-deps",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "description": "Two eslint-disable-next-line suppressions masking potential stale closure bugs.",
+      "recommendation": "Fix hook dependency arrays; use useCallback for stable refs.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-011",
+      "title": "Dual logger abstraction — logger.ts wraps utils/logger.ts",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "files": [
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "description": "Two logger files with different calling conventions used inconsistently across codebase.",
+      "recommendation": "Standardize on one convention; eliminate the wrapper shim.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source_specialist": "quality-oracle"
+    }
+  ],
+  "deferred_specialists": [
+    {
+      "specialist": "performance-profiler",
+      "reason": "Backend service offline (http://localhost:3001/ unreachable)",
+      "deferred_checks": [
+        "Unbounded Map iteration on GET /api/work-items",
+        "p95 latency vs 100ms budget for /api/work-items",
+        "p95 latency vs 150ms budget for /api/dashboard",
+        "Large payload serialization risk"
+      ]
+    },
+    {
+      "specialist": "chaos-monkey",
+      "reason": "Both services offline",
+      "deferred_scenarios": [
+        "Backend restart recovery (process-kill)",
+        "Concurrent state transitions (static-analysis)",
+        "Malformed request body injection (static-analysis)"
+      ]
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Missing service layer",
+      "affected": ["QO-002", "QO-003", "QO-005"],
+      "single_fix": "Create workItemService.ts",
+      "impact": "Resolves 3 P2s"
+    },
+    {
+      "root_cause": "FR-dependency-* incomplete implementation",
+      "affected": ["QO-001", "QO-007"],
+      "single_fix": "Implement routes/search.ts and store/seed.ts",
+      "impact": "Resolves 1 P1 + 1 P3"
+    },
+    {
+      "root_cause": "Traceability enforcer regex bug",
+      "affected": ["QO-004"],
+      "single_fix": "One-line regex change in tools/traceability-enforcer.py:64",
+      "impact": "Restores CI coverage for 16 FRs"
+    },
+    {
+      "root_cause": "Outdated frontend build toolchain",
+      "affected": ["DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010"],
+      "single_fix": "cd Source/Frontend && npm update vite vitest",
+      "impact": "Resolves 6 P2 CVEs"
+    },
+    {
+      "root_cause": "Stale documentation targeting wrong paths",
+      "affected": ["QO-008", "QO-009"],
+      "single_fix": "Archive dev-workflow-platform.md; update dependency-linking paths",
+      "impact": "Resolves 2 P3s"
+    }
+  ]
+}

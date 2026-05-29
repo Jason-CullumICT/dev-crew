@@ -1,25 +1,74 @@
-# TheInspector Findings Directory
+# TheInspector Audit Findings
 
-This directory receives audit reports and bug-backlogs from TheInspector audit runs post-merge.
+This directory contains security, quality, and dependency audit findings from TheInspector team.
 
-## File Patterns
+## Recent Audits
 
-- **Audit reports**: `audit-YYYY-MM-DD-{grade}.html`
-  - Example: `audit-2026-04-07-A.html`, `audit-2026-04-07-B-.html`
-  - Grade can be: A, B+, B, B-, C+, C, C-, D, F
-  - Contains detailed security, chaos, performance, and quality findings
+### Dependency Audit — 2026-05-29
+- **Grade:** D (CRITICAL vulnerabilities present)
+- **Critical Issues:** 3
+  - Handlebars.js RCE (9.8 CVSS)
+  - protobufjs RCE (9.8 CVSS)
+  - OpenTelemetry Prometheus DoS
+- **High Issues:** 4
+- **Moderate Issues:** 27+
 
-- **Bug backlogs**: `bug-backlog-YYYY-MM-DD.json`
-  - Example: `bug-backlog-2026-04-07.json`
-  - JSON structure with discovered bugs, severity levels, and remediation guidance
+**Files:**
+- `DEPENDENCY-AUDIT-2026-05-29.md` — Full findings report with remediation
+- `dependency-audit-2026-05-29.json` — Structured audit data
 
-## .gitignore
+**Status:** Awaiting development team for immediate remediation of critical CVEs.
 
-HTML audit reports are large and not committed to git. The `.gitignore` in this directory excludes `*.html` files to keep the repository lean. Bug-backlog JSON files are tracked for record-keeping and trend analysis.
+---
 
-## Workflow
+## How to Read the Findings
 
-1. TheInspector team runs post-merge audits
-2. Reports are generated and written to this directory
-3. Bug backlog is updated with newly discovered issues
-4. Team lead aggregates findings into sprint planning
+1. **Start with the summary** in each audit markdown file (top section)
+2. **Check your project's status** in the dependency tree health table
+3. **Find your CVEs** by project name in the vulnerability details
+4. **Follow the fix commands** in the remediation section
+5. **Escalations** are marked with `[ESCALATE → Team]` or `[CROSS-REF: Role]`
+
+---
+
+## Escalation Protocol
+
+- **[ESCALATE → TheGuardians]** — Security findings; route to red-teamer for exploitation risk assessment
+- **[ESCALATE → TheFixer]** — Bug fixes and code quality issues
+- **[CROSS-REF: X]** — Findings that overlap with another specialist's domain
+
+---
+
+## Audit Tools & Methods
+
+- **npm audit --json** — CVE scanning for npm packages
+- **npm outdated --json** — Detects packages behind major versions
+- **Lock file analysis** — Transitive dependency size and health
+
+---
+
+## Verification After Fixes
+
+After applying remediation, verify with:
+
+```bash
+# Run audit in each project
+cd Source/Backend && npm audit
+cd Source/Frontend && npm audit
+cd platform/orchestrator && npm audit
+cd portal/Backend && npm audit
+cd portal/Frontend && npm audit
+
+# Run full test suite
+npm test --workspaces --if-present
+
+# Verify apps still start
+npm run dev --workspace=Source/Backend
+npm run dev --workspace=Source/Frontend
+```
+
+---
+
+## Contact
+
+For questions about findings, contact the dependency auditor via Teams/TheInspector.

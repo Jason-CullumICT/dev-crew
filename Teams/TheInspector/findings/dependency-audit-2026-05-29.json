@@ -1,0 +1,340 @@
+{
+  "audit_metadata": {
+    "date": "2026-05-29",
+    "run_id": "dependency-auditor-20260529",
+    "agent": "dependency_auditor",
+    "overall_grade": "D",
+    "projects_scanned": 10,
+    "total_direct_deps": 1027,
+    "total_transitive_deps": 4300
+  },
+  "summary": {
+    "critical": 3,
+    "high": 4,
+    "moderate": 27,
+    "low": 0,
+    "total_vulnerabilities": 34
+  },
+  "vulnerability_details": {
+    "DEP-001": {
+      "id": "DEP-001",
+      "title": "Handlebars.js Multiple Code Injection Vulnerabilities",
+      "severity": "P1",
+      "category": "CVE",
+      "package": "handlebars",
+      "affected_version": "<=4.7.8",
+      "fixed_version": ">=4.7.9",
+      "projects": ["Source/Backend"],
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "max_cvss": 9.8,
+      "cwe": ["CWE-94", "CWE-843", "CWE-79"],
+      "description": "JavaScript injection via AST type confusion in handlebars template engine; allows arbitrary code execution if untrusted templates are processed",
+      "fix_command": "cd Source/Backend && npm install --save handlebars@latest",
+      "escalation": "TheGuardians"
+    },
+    "DEP-002": {
+      "id": "DEP-002",
+      "title": "protobufjs Multiple Critical Vulnerabilities",
+      "severity": "P1",
+      "category": "CVE",
+      "package": "protobufjs",
+      "affected_version": "<=7.5.7",
+      "fixed_version": ">=7.5.8",
+      "projects": ["platform/orchestrator", "portal/Backend"],
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-66ff-xgx4-vchm",
+        "GHSA-75px-5xx7-5xc7",
+        "GHSA-jvwf-75h9-cwgg",
+        "GHSA-685m-2w69-288q"
+      ],
+      "max_cvss": 9.8,
+      "cwe": ["CWE-94", "CWE-1321", "CWE-674"],
+      "description": "Arbitrary code execution via prototype pollution gadget in protobufjs code generation; used for gRPC/protobuf serialization",
+      "fix_command": "cd platform/orchestrator && npm install --save protobufjs@latest && cd portal/Backend && npm install --save protobufjs@latest",
+      "escalation": "TheGuardians"
+    },
+    "DEP-003": {
+      "id": "DEP-003",
+      "title": "OpenTelemetry Auto-Instrumentation Prometheus Exporter DoS",
+      "severity": "P1",
+      "category": "CVE",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "affected_version": "<=0.74.0",
+      "fixed_version": ">=0.75.0",
+      "projects": ["portal/Backend"],
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "max_cvss": 7.5,
+      "cwe": ["CWE-755"],
+      "description": "Prometheus exporter crashes on malformed HTTP requests; causes observability pipeline failure and metrics/traces loss",
+      "fix_command": "cd portal/Backend && npm install --save @opentelemetry/auto-instrumentations-node@latest @opentelemetry/sdk-node@latest"
+    },
+    "DEP-004": {
+      "id": "DEP-004",
+      "title": "path-to-regexp Regular Expression Denial of Service (ReDoS)",
+      "severity": "P2",
+      "category": "CVE",
+      "package": "path-to-regexp",
+      "affected_version": "<0.1.13",
+      "fixed_version": ">=0.1.13",
+      "projects": ["platform/orchestrator"],
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "max_cvss": 7.5,
+      "cwe": ["CWE-1333"],
+      "description": "Catastrophic backtracking in route parameter parsing; attacker can craft malicious route patterns causing server hang"
+    },
+    "DEP-005": {
+      "id": "DEP-005",
+      "title": "picomatch ReDoS and Method Injection Vulnerabilities",
+      "severity": "P2",
+      "category": "CVE",
+      "package": "picomatch",
+      "affected_version": "<=2.3.1 || 4.0.0-4.0.3",
+      "fixed_version": ">=2.3.2 || >=4.0.4",
+      "projects": ["portal/Frontend"],
+      "cves": ["GHSA-c2c7-rcm5-vvqj", "GHSA-3v7f-55p6-f55p"],
+      "max_cvss": 7.5,
+      "cwe": ["CWE-1333", "CWE-1321"],
+      "description": "ReDoS via extglob quantifiers and method injection in POSIX character classes; affects glob pattern matching in build tools"
+    },
+    "DEP-006": {
+      "id": "DEP-006",
+      "title": "Vite Path Traversal and File Access Security Issues",
+      "severity": "P2",
+      "category": "CVE",
+      "package": "vite",
+      "affected_version": "<=6.4.1 or 8.0.0-8.0.4",
+      "fixed_version": ">=6.4.2 or >=8.1.0",
+      "projects": ["Source/Frontend", "portal/Frontend", "abac-demo"],
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-v2wj-q39q-566r", "GHSA-p9ff-h696-f583"],
+      "max_cvss": 0,
+      "cwe": ["CWE-22", "CWE-200", "CWE-180", "CWE-284", "CWE-306"],
+      "description": "Dev server path traversal and arbitrary file read via WebSocket; dev-mode only but allows reading private files"
+    },
+    "DEP-008": {
+      "id": "DEP-008",
+      "title": "uuid Buffer Bounds Check Missing",
+      "severity": "P2",
+      "category": "CVE",
+      "package": "uuid",
+      "affected_version": "<11.1.1",
+      "fixed_version": ">=11.1.1",
+      "projects": ["Source/Backend", "platform/orchestrator", "portal/Backend", "abac-demo"],
+      "cves": ["GHSA-w5hq-g745-h8pq"],
+      "max_cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "description": "Missing buffer bounds check in uuid v3/v5/v6 functions; potential buffer overflow if unsafe buffers passed"
+    },
+    "DEP-009": {
+      "id": "DEP-009",
+      "title": "qs Remote DoS via Stringify Crash",
+      "severity": "P3",
+      "category": "CVE",
+      "package": "qs",
+      "affected_version": "6.11.1-6.15.1",
+      "fixed_version": ">=6.15.2",
+      "projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "cves": ["GHSA-q8mj-m7cp-5q26"],
+      "max_cvss": 5.3,
+      "cwe": ["CWE-476"]
+    },
+    "DEP-010": {
+      "id": "DEP-010",
+      "title": "brace-expansion DoS",
+      "severity": "P3",
+      "category": "CVE",
+      "package": "brace-expansion",
+      "affected_version": "<1.1.13 (Backend) or 5.0.0-5.0.5 (abac-demo)",
+      "fixed_version": ">=1.1.13",
+      "projects": ["Source/Backend", "abac-demo"],
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-jxxr-4gwj-5jf2"],
+      "max_cvss": 6.5,
+      "cwe": ["CWE-400"]
+    },
+    "DEP-011": {
+      "id": "DEP-011",
+      "title": "PostCSS XSS via CSS Stringify",
+      "severity": "P3",
+      "category": "CVE",
+      "package": "postcss",
+      "affected_version": "<8.5.10",
+      "fixed_version": ">=8.5.10",
+      "projects": ["Source/Frontend", "portal/Frontend", "abac-demo"],
+      "cves": ["GHSA-qx2v-qp2m-jg93"],
+      "max_cvss": 6.1,
+      "cwe": ["CWE-79"]
+    },
+    "DEP-012": {
+      "id": "DEP-012",
+      "title": "ws (WebSocket) Uninitialized Memory Disclosure",
+      "severity": "P3",
+      "category": "CVE",
+      "package": "ws",
+      "affected_version": "8.0.0-8.20.0",
+      "fixed_version": ">=8.20.1",
+      "projects": ["Source/Frontend", "portal/Frontend"],
+      "cves": ["GHSA-58qx-3vcg-4xpx"],
+      "max_cvss": 4.4,
+      "cwe": ["CWE-908"]
+    }
+  },
+  "outdated_packages": {
+    "Source/Backend": [
+      {
+        "package": "express",
+        "current": "4.22.2",
+        "latest": "5.2.1",
+        "major_versions_behind": 1
+      },
+      {
+        "package": "pino",
+        "current": "8.21.0",
+        "latest": "10.3.1",
+        "major_versions_behind": 2
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.1",
+        "latest": "14.0.0",
+        "major_versions_behind": 5
+      }
+    ],
+    "Source/Frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.2.6",
+        "major_versions_behind": 1
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "latest": "19.2.6",
+        "major_versions_behind": 1
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.30.3",
+        "latest": "7.16.0",
+        "major_versions_behind": 1
+      }
+    ],
+    "platform/orchestrator": [
+      {
+        "package": "express",
+        "current": "4.22.2",
+        "latest": "5.2.1",
+        "major_versions_behind": 1
+      },
+      {
+        "package": "dockerode",
+        "current": "4.0.12",
+        "latest": "5.0.0",
+        "major_versions_behind": 1
+      },
+      {
+        "package": "multer",
+        "current": "1.4.5-lts.2",
+        "latest": "2.1.1",
+        "major_versions_behind": 1
+      }
+    ]
+  },
+  "dependency_tree_health": {
+    "Source/Backend": {
+      "direct": 102,
+      "transitive": 309,
+      "total": 411,
+      "complexity": "Moderate"
+    },
+    "Source/Frontend": {
+      "direct": 9,
+      "transitive": 221,
+      "total": 230,
+      "complexity": "Moderate"
+    },
+    "Source/E2E": {
+      "direct": 4,
+      "transitive": 0,
+      "total": 4,
+      "complexity": "Minimal"
+    },
+    "platform/orchestrator": {
+      "direct": 153,
+      "transitive": 2,
+      "total": 155,
+      "complexity": "Low"
+    },
+    "portal/Backend": {
+      "direct": 397,
+      "transitive": 179,
+      "total": 576,
+      "complexity": "High"
+    },
+    "portal/Frontend": {
+      "direct": 9,
+      "transitive": 415,
+      "total": 424,
+      "complexity": "High"
+    },
+    "monorepo_totals": {
+      "direct": 1027,
+      "transitive": 3300,
+      "total": 4327,
+      "complexity": "High"
+    }
+  },
+  "remediation_plan": {
+    "immediate_this_week": [
+      {
+        "priority": 1,
+        "finding": "DEP-001",
+        "description": "handlebars RCE (9.8 CVSS)",
+        "project": "Source/Backend",
+        "action": "npm install --save handlebars@latest"
+      },
+      {
+        "priority": 2,
+        "finding": "DEP-002",
+        "description": "protobufjs RCE (9.8 CVSS)",
+        "project": "platform/orchestrator, portal/Backend",
+        "action": "npm install --save protobufjs@latest (in both projects)"
+      },
+      {
+        "priority": 3,
+        "finding": "DEP-003",
+        "description": "OpenTelemetry DoS (observability)",
+        "project": "portal/Backend",
+        "action": "npm install --save @opentelemetry/auto-instrumentations-node@latest @opentelemetry/sdk-node@latest"
+      }
+    ],
+    "high_priority_next_sprint": [
+      "DEP-004 (path-to-regexp) — platform/orchestrator",
+      "DEP-005 (picomatch) — portal/Frontend",
+      "DEP-006 (Vite) — Source/Frontend, portal/Frontend, abac-demo",
+      "DEP-008 (uuid) — All projects"
+    ],
+    "normal_priority_next_2_sprints": [
+      "Express upgrade (4.22.2 → 5.2.1)",
+      "React upgrade (18.3.1 → 19.2.6)",
+      "Pino upgrade (8.21.0 → 10.3.1)"
+    ]
+  },
+  "grading": {
+    "grade": "D",
+    "rationale": "3 CRITICAL vulnerabilities + 1 HIGH vulnerability",
+    "grade_thresholds": {
+      "A": "max_p1: 0, max_p2: 3, min_spec_coverage: 80%",
+      "B": "max_p1: 0, max_p2: 8, min_spec_coverage: 60%",
+      "C": "max_p1: 2, max_p2: 15, min_spec_coverage: 40%",
+      "D": "max_p1: >2 or max_p2: >15",
+      "F": "exploitable auth bypass + critical domain failure"
+    }
+  }
+}

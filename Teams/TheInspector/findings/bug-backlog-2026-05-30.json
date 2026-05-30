@@ -1,0 +1,319 @@
+{
+  "audit_id": "run-20260530-055942",
+  "date": "2026-05-30",
+  "branch": "audit/inspector-2026-05-30-35f447",
+  "grade": "D",
+  "grade_note": "4 P1 findings (exceeds C threshold of max_p1:2); spec coverage 9% (below C threshold of 40%). Operational spec coverage is 100% — grade reflects structural spec governance gap, not implementation quality.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": [
+    {"name": "performance-profiler", "reason": "backend service offline"},
+    {"name": "chaos-monkey", "reason": "all services offline"}
+  ],
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 7,
+    "p3_total": 12,
+    "p4_total": 2,
+    "total_findings": 25,
+    "escalations": 2,
+    "fixed": 0,
+    "still_open": 0,
+    "regressed": 0,
+    "new": 25,
+    "spec_coverage_overall": "9%",
+    "spec_coverage_operational": "100%",
+    "cve_critical": 2,
+    "cve_high": 3,
+    "cve_moderate": 10,
+    "cve_total": 18
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "title": "handlebars 4.0.0–4.7.8 — JavaScript Injection via AST Type Confusion",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "location": "Source/Backend (transitive)",
+      "description": "Remote attacker can inject arbitrary JavaScript via @partial-block tampering if handlebars processes user-controlled template strings. Enables arbitrary code execution on the backend server.",
+      "fix": "Upgrade handlebars to 4.7.9+ in Source/Backend. Verify usage: grep -r 'handlebars' Source/Backend/src",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "title": "protobufjs ≤7.5.7 — Arbitrary Code Execution",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "location": "platform/orchestrator (transitive via gRPC or @google-cloud/*)",
+      "description": "Remote attacker achieves arbitrary code execution via malformed protobuf definitions. Orchestrator compromise means full pipeline takeover. Note: platform/ is solo-session only per CLAUDE.md.",
+      "fix": "cd platform/orchestrator && npm install protobufjs@^7.5.8 --save && npm audit fix",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Traceability enforcer has dangerous auto-selection blind spot",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Without --plan flag, enforcer picks the most recently modified requirements.md (currently self-judging-workflow, 100% passing) and silently skips 4 other plans with 61 unimplemented FRs. CI gate shows green when it should fail.",
+      "recommendation": "Change CI to iterate all Plans/*/requirements.md files. Quick fix: for plan in Plans/*/; do [ -f \"${plan}requirements.md\" ] && python3 tools/traceability-enforcer.py --file \"${plan}requirements.md\" || true; done",
+      "route": "TheFixer",
+      "status": "NEW",
+      "affected_plans": [
+        {"plan": "image-upload", "missing_frs": 21},
+        {"plan": "orchestrated-dev-cycles", "missing_frs": 18},
+        {"plan": "duplicate-deprecated-status", "missing_frs": 15},
+        {"plan": "dependency-linking", "missing_frs": 7}
+      ]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift / architecture-violation",
+      "title": "Primary specification has zero source implementation traces (0/69 FRs)",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "The authoritative domain spec defines 69 FRs for a Feature Request/Bug/Dev Cycle platform with zero source implementation. The actual product (work-item routing engine) traces to a different spec. This is a governance issue requiring a team decision.",
+      "recommendation": "Team decision required: (a) retire/move to Specifications/roadmap/, (b) rewrite spec to match actual product, or (c) create implementation plans for each unimplemented FR group.",
+      "route": "TheFixer (governance escalation)",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR namespace fragmentation breaks cross-plan traceability",
+      "file": "Multiple source files + plans",
+      "description": "Three incompatible FR naming conventions coexist: FR-WF-XXX, FR-dependency-XXX, and FR-001..FR-069. The FR-dependency-* IDs used in source have no matching plan file, causing false enforcer failures for implemented features.",
+      "recommendation": "Standardise on FR-{short-plan-slug}-{NNN} format. Update Plans/dependency-linking/requirements.md to use FR-dependency-XXX IDs that source already carries.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "NFR coverage has zero traceability",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "description": "Three non-functional requirements (NFR-1: pipeline timing, NFR-2: additive phases, NFR-3: graceful degradation) have no source traceability. The enforcer regex FR-[A-Z0-9-]+ structurally excludes NFR- prefixed IDs.",
+      "recommendation": "Add NFR-[0-9]+ to enforcer pattern. Add // Verifies: NFR-X comments in E2E/pipeline configuration.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable in two production source files (react-hooks/exhaustive-deps)",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "description": "Both files suppress react-hooks/exhaustive-deps without explanation. This rule prevents stale closure bugs in useEffect. Suppression without documentation is a latent correctness risk and an architecture rule violation.",
+      "recommendation": "Refactor effects to satisfy the dependency rule, or add dated comments explaining why suppression is safe.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "test-quality",
+      "title": "Duplicate frontend test files for same components",
+      "file": "Source/Frontend/tests/WorkItemDetailPage.test.tsx (×2), Source/Frontend/tests/WorkItemListPage.test.tsx (×2)",
+      "description": "Root-level and tests/pages/ copies of same test files both run on npm test. Ambiguity about canonical version; potential duplicate coverage counts.",
+      "recommendation": "Designate tests/pages/ as canonical. Delete stale root-level duplicates after confirming coverage parity.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / DoS",
+      "title": "path-to-regexp <0.1.13 ReDoS — API route denial of service",
+      "package": "path-to-regexp",
+      "affected_versions": "<0.1.13",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "location": "platform/orchestrator (transitive via express)",
+      "fix": "npm install path-to-regexp@^0.1.13",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / DoS",
+      "title": "picomatch ReDoS via extglob quantifiers",
+      "package": "picomatch",
+      "affected_versions": "<2.3.2 or 4.0.0-4.0.3",
+      "cve": "GHSA-c2c7-rcm5-vvqj",
+      "cvss": 7.5,
+      "location": "portal/Frontend (transitive via file watching)",
+      "fix": "cd portal/Frontend && npm audit fix",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / DoS",
+      "title": "OpenTelemetry Prometheus exporter crash — observability blackout",
+      "package": "@opentelemetry/auto-instrumentations-node, @opentelemetry/sdk-node",
+      "affected_versions": "<0.75.0, <0.217.0",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "location": "portal/Backend",
+      "fix": "cd portal/Backend && npm install @opentelemetry/auto-instrumentations-node@^0.76.0 @opentelemetry/sdk-node@^0.218.0",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007", "severity": "P3", "specialist": "quality-oracle", "category": "architecture-violation",
+      "title": "DebugPortalPage lacks valid FR traceability",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "recommendation": "Add page to a spec with proper FR ID or mark as infrastructure exempt.",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "QO-008", "severity": "P3", "specialist": "quality-oracle", "category": "spec-drift",
+      "title": "tiered-merge-pipeline NFRs have no enforcement path",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "recommendation": "Move NFR verification to E2E tests or document CI runtime evidence as verification.",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "QO-009", "severity": "P3", "specialist": "quality-oracle", "category": "spec-drift",
+      "title": "3 approved plans with unimplemented requirements (54 FRs)",
+      "file": "Plans/image-upload/, Plans/orchestrated-dev-cycles/, Plans/duplicate-deprecated-status/",
+      "recommendation": "Triage each plan: confirm in-progress / deferred / cancelled; update plan STATUS field accordingly.",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "QO-010", "severity": "P3", "specialist": "quality-oracle", "category": "pattern-violation",
+      "title": "Hardcoded localhost:4200 fallback in DebugPortalPage",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:5",
+      "recommendation": "Remove fallback or add env-guard that warns/errors in non-development mode.",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-006", "severity": "P3", "specialist": "dependency-auditor", "category": "CVE",
+      "title": "uuid <11.1.1 missing buffer bounds check",
+      "package": "uuid", "affected_versions": "^9.0.0 (affected)", "cve": "GHSA-w5hq-g745-h8pq", "cvss": 7.5,
+      "location": "Source/Backend, platform/orchestrator",
+      "fix": "npm install uuid@^14.0.0 (major version bump — test API compat)",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-007", "severity": "P3", "specialist": "dependency-auditor", "category": "CVE / DoS",
+      "title": "qs 6.11.1–6.15.1 query string DoS via null/undefined arrays",
+      "package": "qs", "affected_versions": "6.11.1–6.15.1", "cve": "GHSA-q8mj-m7cp-5q26", "cvss": 5.3,
+      "location": "Source/Backend, platform/orchestrator, portal/Backend (transitive via express)",
+      "fix": "npm install qs@^6.15.2 or npm audit fix --force",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-008", "severity": "P3", "specialist": "dependency-auditor", "category": "CVE",
+      "title": "vite ≤6.4.1 path traversal in optimised deps",
+      "package": "vite", "affected_versions": "≤6.4.1", "cve": "GHSA-4w7w-66w2-5vf9",
+      "location": "Source/Frontend, portal/Frontend",
+      "fix": "npm install vite@^6.5.0",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-009", "severity": "P3", "specialist": "dependency-auditor", "category": "CVE / DoS",
+      "title": "brace-expansion <1.1.13 process hang on zero-step sequences",
+      "package": "brace-expansion", "affected_versions": "<1.1.13", "cve": "GHSA-f886-m6hf-6m8v", "cvss": 6.5,
+      "location": "Source/Backend (transitive)",
+      "fix": "npm install brace-expansion@^1.1.13",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-010", "severity": "P3", "specialist": "dependency-auditor", "category": "CVE / XSS",
+      "title": "postcss <8.5.10 unescaped </style> XSS injection",
+      "package": "postcss", "affected_versions": "<8.5.10", "cve": "GHSA-qx2v-qp2m-jg93", "cvss": 6.1,
+      "location": "Source/Frontend, portal/Frontend",
+      "fix": "npm install postcss@^8.5.10",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-011", "severity": "P3", "specialist": "dependency-auditor", "category": "CVE (chained)",
+      "title": "vitest 0.0.1–3.0.0-beta.4 transitive vulnerabilities via vite/esbuild chain",
+      "package": "vitest", "affected_versions": "^2.0.5",
+      "location": "Source/Frontend (dev dependency)",
+      "fix": "npm install vitest@^4.1.7",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-012", "severity": "P3", "specialist": "dependency-auditor", "category": "Maintenance",
+      "title": "Outdated major versions — uuid 9→14, vite 5→8, dockerode 4→5, express version skew",
+      "location": "Multiple workspaces",
+      "recommendation": "Create update plan per CLAUDE.md workflow. Schedule dependency update sprint.",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-014", "severity": "P3", "specialist": "dependency-auditor", "category": "Supply Chain",
+      "title": "No npm audit gate in CI/CD — P1/P2 CVEs can merge undetected",
+      "location": "CI configuration",
+      "recommendation": "Add npm audit --audit-level=high as mandatory CI gate that fails the build.",
+      "route": "TheFixer", "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-013", "severity": "P4", "specialist": "dependency-auditor", "category": "License",
+      "title": "License compliance cannot be audited without npm install",
+      "recommendation": "Add npx license-checker --json --production to CI after npm install step.",
+      "route": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-015", "severity": "P4", "specialist": "dependency-auditor", "category": "Supply Chain",
+      "title": "pino and prom-client maintenance cadence not monitored",
+      "recommendation": "Add to dependency watch list. Set up Dependabot or Snyk for continuous monitoring.",
+      "route": "TheFixer", "status": "NEW"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Stale npm lockfiles (6+ months)",
+      "findings": ["DEP-001","DEP-002","DEP-003","DEP-004","DEP-005","DEP-006","DEP-007","DEP-008","DEP-009","DEP-010","DEP-011"],
+      "single_fix": "Run npm audit fix + manual upgrades per remediation roadmap in one sprint"
+    },
+    {
+      "root_cause": "Traceability enforcer checks only the most recently modified plan",
+      "findings": ["QO-001","QO-009"],
+      "single_fix": "Change CI enforcer step to iterate all Plans/*/requirements.md files"
+    },
+    {
+      "root_cause": "No CI/CD security gates",
+      "findings": ["DEP-014","QO-001"],
+      "single_fix": "Add npm audit --audit-level=high + enforcer-all-plans as mandatory CI gates"
+    },
+    {
+      "root_cause": "No spec lifecycle governance process",
+      "findings": ["QO-002","QO-003","QO-008","QO-009"],
+      "single_fix": "Team decision to reconcile dev-workflow-platform.md + create spec lifecycle policy (STATUS: PLANNED / ACTIVE / DEFERRED / RETIRED)"
+    }
+  ],
+  "next_audit": {
+    "scheduled": "2026-06-27",
+    "targets": {
+      "grade": "C or better",
+      "p1_cve_resolved": true,
+      "description": "All P1 CVEs resolved; CI gate fixed; spec governance decision documented"
+    }
+  }
+}

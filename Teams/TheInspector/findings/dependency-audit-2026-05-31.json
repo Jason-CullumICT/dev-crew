@@ -1,0 +1,230 @@
+{
+  "audit_date": "2026-05-31",
+  "auditor": "dependency_auditor",
+  "project": "dev-crew",
+  "summary": {
+    "total_vulnerabilities": 29,
+    "critical_count": 2,
+    "high_count": 6,
+    "moderate_count": 21,
+    "overall_grade": "D",
+    "health_status": "CRITICAL"
+  },
+  "critical_packages": [
+    {
+      "name": "handlebars",
+      "current_version": "4.0.0 - 4.7.8",
+      "affected_version_range": "<=4.7.8",
+      "cves": 8,
+      "cvss_max": 9.8,
+      "primary_cve": "GHSA-2w6w-674q-4c4q",
+      "title": "JavaScript Injection (RCE via AST Type Confusion)",
+      "workspace": "Source/Backend",
+      "recommendation": "Upgrade to >=4.7.9 immediately",
+      "risk_level": "P1"
+    },
+    {
+      "name": "protobufjs",
+      "current_version": "<=7.5.7",
+      "affected_version_range": "<=7.5.7",
+      "cves": 9,
+      "cvss_max": 9.8,
+      "primary_cve": "GHSA-xq3m-2v4x-88gg",
+      "title": "Arbitrary Code Execution in protobuf deserialization",
+      "workspace": "portal/Backend",
+      "recommendation": "Upgrade to >=7.6.0 immediately",
+      "risk_level": "P1"
+    }
+  ],
+  "high_severity_cves": [
+    {
+      "name": "@opentelemetry/auto-instrumentations-node",
+      "current_version": "0.40.0",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "title": "Prometheus exporter DoS via malformed HTTP request",
+      "cvss": 7.5,
+      "workspace": "portal/Backend",
+      "risk_level": "P2"
+    },
+    {
+      "name": "@opentelemetry/sdk-node",
+      "current_version": "0.47.0",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "title": "Prometheus exporter DoS via malformed HTTP request",
+      "cvss": 7.5,
+      "workspace": "portal/Backend",
+      "risk_level": "P2"
+    },
+    {
+      "name": "path-to-regexp",
+      "current_version": "<0.1.13",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "title": "ReDoS via multiple route parameters",
+      "cvss": 7.5,
+      "workspace": "portal/Backend",
+      "risk_level": "P2"
+    }
+  ],
+  "workspaces": {
+    "Source/Backend": {
+      "vulnerabilities": 6,
+      "critical": 1,
+      "high": 0,
+      "moderate": 5,
+      "direct_deps": 13,
+      "transitive_deps": 412,
+      "status": "RED",
+      "critical_packages": ["handlebars"],
+      "recommendation": "Upgrade handlebars immediately; run npm audit after upgrade"
+    },
+    "Source/Frontend": {
+      "vulnerabilities": 7,
+      "critical": 0,
+      "high": 0,
+      "moderate": 7,
+      "direct_deps": 13,
+      "transitive_deps": 230,
+      "status": "YELLOW",
+      "critical_packages": [],
+      "recommendation": "Upgrade vite/vitest to latest (major version bumps); dev-only impact"
+    },
+    "Source/E2E": {
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "direct_deps": 1,
+      "transitive_deps": 50,
+      "status": "GREEN",
+      "critical_packages": [],
+      "recommendation": "Monitor quarterly; minimal dependencies"
+    },
+    "portal/Backend": {
+      "vulnerabilities": 15,
+      "critical": 1,
+      "high": 3,
+      "moderate": 11,
+      "direct_deps": 22,
+      "transitive_deps": 577,
+      "status": "RED",
+      "critical_packages": ["protobufjs", "@opentelemetry/auto-instrumentations-node", "@opentelemetry/sdk-node"],
+      "recommendation": "URGENT: Upgrade protobufjs, OpenTelemetry packages; 577 deps create high supply chain risk"
+    }
+  },
+  "outdated_major_versions": [
+    {
+      "name": "vite",
+      "current": "5.4.0",
+      "latest": "8.0.14",
+      "behind": "3 major",
+      "workspace": "Source/Frontend",
+      "cves_fixed": 2,
+      "recommendation": "Upgrade to >=8.0.14"
+    },
+    {
+      "name": "vitest",
+      "current": "2.0.5",
+      "latest": "4.1.7",
+      "behind": "2+ major",
+      "workspace": "Source/Frontend",
+      "cves_fixed": 3,
+      "recommendation": "Upgrade to >=4.1.7"
+    },
+    {
+      "name": "@opentelemetry/auto-instrumentations-node",
+      "current": "0.40.0",
+      "latest": "0.76.0",
+      "behind": "36 minor",
+      "workspace": "portal/Backend",
+      "cves_fixed": 1,
+      "risk": "HIGH - not instrumenting new libraries",
+      "recommendation": "Upgrade to >=0.75.0"
+    },
+    {
+      "name": "@opentelemetry/sdk-node",
+      "current": "0.47.0",
+      "latest": "0.218.0+",
+      "behind": "170+ minor",
+      "workspace": "portal/Backend",
+      "cves_fixed": 1,
+      "risk": "HIGH - observability gaps",
+      "recommendation": "Upgrade to >=0.217.0"
+    }
+  ],
+  "supply_chain_risks": {
+    "total_transitive_deps": 1269,
+    "largest_workspace": {
+      "name": "portal/Backend",
+      "transitive_deps": 577,
+      "risk": "HIGH - exceeds safe threshold"
+    },
+    "post_install_scripts": [
+      {
+        "package": "@opentelemetry/auto-instrumentations-node",
+        "action": "Downloads native modules",
+        "risk": "Moderate - legitimate but increases attack surface"
+      },
+      {
+        "package": "better-sqlite3",
+        "action": "Compiles native binding",
+        "risk": "Moderate - legitimate but increases attack surface"
+      }
+    ],
+    "single_maintainer": [
+      {
+        "package": "uuid",
+        "maintainer": "Christoph Tavan",
+        "stability": "Mature, stable releases"
+      },
+      {
+        "package": "pino",
+        "status": "Single maintainer but widely used"
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "SAFE",
+    "findings": "No GPL/AGPL detected; all major deps have standard licenses (MIT, BSD, Apache)",
+    "recommendation": "Run npx license-checker --json quarterly for full transitive tree audit"
+  },
+  "remediation_plan": {
+    "phase_1_immediate": [
+      "Upgrade handlebars to >=4.7.9 in Source/Backend",
+      "Upgrade protobufjs to >=7.6.0 in portal/Backend",
+      "Upgrade @opentelemetry/auto-instrumentations-node to >=0.75.0 in portal/Backend",
+      "Upgrade @opentelemetry/sdk-node to >=0.217.0 in portal/Backend"
+    ],
+    "phase_2_sprint": [
+      "Upgrade uuid to >=11.1.1 in all workspaces",
+      "Upgrade vite/vitest to >=8.0 in Source/Frontend",
+      "Upgrade express in Source/Backend (pulls fixed qs)"
+    ],
+    "phase_3_next_sprint": [
+      "Audit and upgrade all @opentelemetry/* packages to latest",
+      "Review frontend build-tool chain for additional outdated transitive deps"
+    ]
+  },
+  "cross_references": [
+    {
+      "finding": "Handlebars RCE",
+      "team": "red-teamer",
+      "reason": "Exploitable if backend accepts user-controlled template parameters"
+    },
+    {
+      "finding": "Protobufjs RCE",
+      "team": "red-teamer",
+      "reason": "Exploitable if telemetry endpoint is exposed/accessible"
+    }
+  ],
+  "verification_commands": [
+    "npm audit --audit-level=moderate (should show 0 findings post-fix)",
+    "npm outdated --depth=2",
+    "npx license-checker --json > licenses.json"
+  ],
+  "test_areas": [
+    "Template rendering (if Handlebars used)",
+    "Telemetry export (OpenTelemetry)",
+    "Route matching under adversarial paths",
+    "Query parameter parsing with edge cases"
+  ]
+}

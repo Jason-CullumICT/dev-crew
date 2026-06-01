@@ -1,0 +1,258 @@
+{
+  "generated": "2026-06-01",
+  "run_id": "run-20260601-085628",
+  "grade": "F",
+  "summary": {
+    "critical": 4,
+    "high": 3,
+    "medium": 10,
+    "low": 4,
+    "total": 21,
+    "compliance_pass_rate_pct": 14,
+    "compliance_controls_passed": 2,
+    "compliance_controls_total": 15,
+    "red_team_objectives_achieved": 4,
+    "red_team_objectives_total": 4,
+    "confirmed_breaches": 7,
+    "theoretical_findings": 14
+  },
+  "grading_note": "Automatic F: red-team achieved all 4 critical objectives via live exploit. Compliance pass rate 14% (threshold for any passing grade is 60%+).",
+  "scope_process_finding": {
+    "title": "Pen-tester / live-environment scope mismatch",
+    "description": "Pen-tester analysed Source/Backend/ (work-items state machine) while docker-compose.test.yml runs portal/Backend/ (feature-requests, bugs, cycles, pipeline-runs). All 13 PEN-IDs reference routes returning HTTP 404 in the live env. Red-teamer correctly pivoted to portal/Backend and found equivalent or more severe vulnerabilities. Resolution required before next run: align pen-tester scope with live target.",
+    "severity": "Process"
+  },
+  "findings": [
+    {
+      "id": "C-001",
+      "title": "No Authentication on Any Endpoint",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester + red-teamer + compliance-auditor + static-analyzer",
+      "source_ids": ["PEN-001", "RED-001", "COMP-001", "SAST-003"],
+      "cwe": "CWE-306",
+      "owasp": "A07: Identification and Authentication Failures",
+      "remediation": "Mount JWT bearer-token middleware globally in app.ts before all route handlers. Exclude only /health and /ready from auth. Add login_attempt audit events once auth is implemented."
+    },
+    {
+      "id": "C-002",
+      "title": "No Authorization / RBAC — Any Caller Can Perform Any Action",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester + red-teamer + compliance-auditor",
+      "source_ids": ["PEN-002", "RED-005", "COMP-002"],
+      "cwe": "CWE-862",
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Define roles (viewer, operator, admin). Implement authorisation middleware extracting role from JWT claims. Add ownership checks on all PATCH/DELETE endpoints. Emit permission_denied audit event on every 403."
+    },
+    {
+      "id": "C-003",
+      "title": "Assessment / State-Machine Gate Bypass via Force-Approve",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester + red-teamer",
+      "source_ids": ["PEN-004", "PEN-005", "RED-002"],
+      "cwe": "CWE-284",
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Guard /force-approve behind admin role. Log force_approve audit event. Consider removing the endpoint and replacing with a two-approver workflow. In Source/Backend: gate overrideRoute behind admin role check."
+    },
+    {
+      "id": "C-004",
+      "title": "Unauthenticated Supply-Chain Injection via Team Dispatch",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester + red-teamer",
+      "source_ids": ["PEN-003", "RED-003"],
+      "cwe": "CWE-918",
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "Require auth + admin role for POST /api/team-dispatches. Validate actions_url against an allowlist of known GitHub Actions domains. Validate repo field against allowed repositories. For Source/Backend intake webhooks: validate HMAC signature before processing."
+    },
+    {
+      "id": "H-001",
+      "title": "Stored XSS via Unescaped User-Controlled Fields",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-006"],
+      "cwe": "CWE-79",
+      "owasp": "A03: Injection",
+      "remediation": "Sanitize string inputs on ingest using sanitize-html (server-side). Strip all HTML tags from title, description, and other user-controlled text fields. Add Content-Security-Policy header to block inline script execution as backstop."
+    },
+    {
+      "id": "H-002",
+      "title": "Missing Required Audit Log Events (SOC2 CC7.1 Gap)",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-003"],
+      "cwe": "CWE-778",
+      "owasp": "N/A",
+      "remediation": "Create auditLog() wrapper emitting structured events with event, actor, resourceId, outcome, timestamp. Emit state_transition on every status change. Emit login_attempt and permission_denied once auth is implemented."
+    },
+    {
+      "id": "H-003",
+      "title": "No TLS / HTTPS Enforcement — All Traffic in Plaintext",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-004"],
+      "cwe": "CWE-319",
+      "owasp": "A02: Cryptographic Failures",
+      "remediation": "Terminate TLS at reverse proxy (nginx/Caddy). Add Helmet HSTS header. Ensure Vite proxy targets HTTPS in non-local deployments."
+    },
+    {
+      "id": "M-001",
+      "title": "Unbounded Pagination — Full Dataset Enumeration",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester + red-teamer",
+      "source_ids": ["PEN-006", "RED-004"],
+      "cwe": "CWE-400",
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Enforce MAX_LIMIT = 100 on all list endpoints. Pass limit and offset through to service layer / SQL query. Reject or clamp requests exceeding MAX_LIMIT."
+    },
+    {
+      "id": "M-002",
+      "title": "Pipeline Runs Expose Internal Agent Identities and Architecture",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-008"],
+      "cwe": "CWE-200",
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Gate GET /api/pipeline-runs and GET /api/learnings behind authentication. Scrub agent-identity fields for non-admin callers."
+    },
+    {
+      "id": "M-003",
+      "title": "Cascade Auto-Dispatch on Blocker Rejection — Business Logic Flaw",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-007"],
+      "cwe": "CWE-840",
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "Remove Rejected from DISPATCH_TRIGGER_STATUSES. Transition dependents to needs-review status on blocker rejection rather than auto-dispatching them."
+    },
+    {
+      "id": "M-004",
+      "title": "Soft-Deleted Blocker Permanently Blocks Dependent Items",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-008"],
+      "cwe": "CWE-459",
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "On soft-delete, call removeDependency for every item that lists the deleted item as a blocker. Or treat deleted blockers as resolved in computeHasUnresolvedBlockers."
+    },
+    {
+      "id": "M-005",
+      "title": "O(N²) DoS via Chained Dependency Flooding",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-009"],
+      "cwe": "CWE-400",
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "Enforce MAX_DEPTH = 50 on dependency chains. Add rate limiting on POST /api/work-items and POST /:id/dependencies (30 req/min/IP)."
+    },
+    {
+      "id": "M-006",
+      "title": "Missing Security HTTP Headers",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-005"],
+      "cwe": "CWE-693",
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "npm install helmet. Apply app.use(helmet()) in app.ts. Disable X-Powered-By."
+    },
+    {
+      "id": "M-007",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-006"],
+      "cwe": "CWE-770",
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Add express-rate-limit globally (100 req/min/IP) and a tighter limit on mutation endpoints (20 req/min/IP)."
+    },
+    {
+      "id": "M-008",
+      "title": "No Hard-Delete / Right-to-Erasure Mechanism (GDPR Art. 17 Risk)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-009"],
+      "cwe": "CWE-212",
+      "owasp": "N/A",
+      "remediation": "Implement hardDelete(id) in workItemStore.ts. Add DELETE /api/work-items/:id/permanent guarded by admin role. Define and document a data retention policy."
+    },
+    {
+      "id": "M-009",
+      "title": "No CORS Policy Configured",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-010"],
+      "cwe": "CWE-346",
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "npm install cors. Configure explicit origin allowlist from process.env.ALLOWED_ORIGINS. Restrict to GET, POST, PATCH, DELETE methods."
+    },
+    {
+      "id": "M-010",
+      "title": "/api/search Endpoint Missing from Backend",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-010"],
+      "cwe": "CWE-476",
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Implement GET /api/search using literal string matching, not RegExp construction from user input. Enforce max q length (200 chars) and result limit (50 items)."
+    },
+    {
+      "id": "L-001",
+      "title": "Prometheus /metrics Endpoint Publicly Accessible",
+      "severity": "Low",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester + red-teamer + compliance-auditor",
+      "source_ids": ["PEN-011", "RED-007", "COMP-008"],
+      "cwe": "CWE-200",
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Restrict /metrics to Prometheus scraper IP via reverse-proxy ACL, or add bearer-token validation middleware on this route."
+    },
+    {
+      "id": "L-002",
+      "title": "Internal Error Messages Forwarded Verbatim to Client (CWE-209)",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "pen-tester + static-analyzer",
+      "source_ids": ["PEN-012", "SAST-001"],
+      "cwe": "CWE-209",
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Standardise all route catch blocks to return generic error message. Log full error details server-side only. Remove per-route err.message forwarding."
+    },
+    {
+      "id": "L-003",
+      "title": "NaN / Negative Pagination Parameters — Silent Wrong Results",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-013"],
+      "cwe": "CWE-20",
+      "owasp": "A03: Injection",
+      "remediation": "Validate and clamp pagination params: default to 1/20 when NaN; reject negative values; cap limit at MAX_LIMIT."
+    },
+    {
+      "id": "L-004",
+      "title": "Sensitive Fields Not Yet in Data Model (Pre-emptive)",
+      "severity": "Low",
+      "status": "Informational",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-011"],
+      "cwe": "N/A",
+      "owasp": "N/A",
+      "remediation": "No action required now. Escalate to High and apply AES-256 encryption at persistence layer if email/password/token/secret/api_key are added to the data model."
+    }
+  ]
+}

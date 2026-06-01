@@ -1,0 +1,161 @@
+{
+  "audit_id": "run-20260601-071623",
+  "date": "2026-06-01",
+  "grade": "C",
+  "project": "dev-crew Source App",
+  "scope": "Full codebase — first audit",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend service unavailable at localhost:3001 — dynamic-mode specialists require running services",
+  "summary": {
+    "p1_total": 1,
+    "p2_total": 4,
+    "p3_total": 3,
+    "p4_total": 3,
+    "escalations_to_guardians": 0,
+    "spec_coverage_pct": 93
+  },
+  "escalations": [],
+  "p1": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "category": "spec-drift / untested",
+      "title": "GET /api/search endpoint unimplemented — 5 tests fail",
+      "status": "NEW",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "fr": "FR-dependency-search",
+      "detail": "The GET /api/search endpoint is not mounted in app.ts. 5 tests explicitly stated to fail until the route is implemented. The frontend DependencyPicker workItemsApi.searchItems() already calls /search?q=... — every typeahead search silently fails in production.",
+      "fix": "Implement and mount a /api/search route filtering non-deleted items by title/description.",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p2": [
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Missing dependencyCheckDuration Prometheus histogram",
+      "status": "NEW",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "fr": "FR-dependency-metrics",
+      "detail": "FR-dependency-metrics specifies 4 metrics. Only 3 counters exist — the dependencyCheckDuration histogram is absent, which is the most diagnostically useful metric.",
+      "fix": "Add new Histogram({ name: 'dependency_check_duration_seconds', ... }) and instrument isReady() / computeHasUnresolvedBlockers().",
+      "cross_ref": "QO-004 (same root: observability gap)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "pending_dependencies status missing — dispatch gating deviates from spec",
+      "status": "NEW",
+      "files": [
+        "Source/Shared/types/workflow.ts",
+        "Source/Backend/src/routes/workflow.ts"
+      ],
+      "fr": "FR-dependency-dispatch-gating",
+      "detail": "WorkItemStatus enum has no pending_dependencies value. Implementation returns HTTP 400 at dispatch instead of parking the item. Any client polling for status === 'pending_dependencies' will never match.",
+      "fix": "Add PendingDependencies = 'pending_dependencies' to enum + transitions, update dispatch to set the state rather than reject, update onItemResolved cascade to advance PendingDependencies → InProgress.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry tracing absent — architecture rule violated",
+      "status": "NEW",
+      "files": ["Source/Backend/src/"],
+      "fr": "arch-rule (CLAUDE.md + workflow-engine.md NFR)",
+      "detail": "Zero OTel instrumentation exists in Source/. Logs do not include trace/span IDs. The W3C traceparent header is not propagated. CLAUDE.md marks this non-negotiable.",
+      "fix": "Add @opentelemetry/sdk-node + auto-instrumentation init in app.ts; inject trace context into logger calls.",
+      "cross_ref": "QO-002 (observability gap), DEP-OTEL-001 (OTel version coordination in portal)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer validates only one plan — multi-plan blind spot gives false-green",
+      "status": "NEW",
+      "files": ["tools/traceability-enforcer.py"],
+      "fr": "arch-rule (CLAUDE.md verification gate)",
+      "detail": "The enforcer auto-selects the most-recently-modified requirements.md. Running against Plans/dependency-linking/requirements.md surfaces 7 untraced IDs. The CI gate python3 tools/traceability-enforcer.py gives false green.",
+      "fix": "Add --all flag to scan all requirements.md files, or enumerate plans explicitly in the gate command.",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p3": [
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Dual logger import paths in workItemStore.ts",
+      "status": "NEW",
+      "files": ["Source/Backend/src/store/workItemStore.ts"],
+      "fix": "Migrate workItemStore.ts to import from ../logger (shim) and update log call sites to object style.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Silent .catch(() => ({})) lacks required documentation comment",
+      "status": "NEW",
+      "files": ["Source/Frontend/src/api/client.ts"],
+      "fix": "Add comment: // Intentional: JSON parse failure on error body is non-fatal; fall back to generic status message",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-OTEL-001",
+      "source": "dependency-auditor",
+      "category": "dependency-coordination",
+      "title": "OpenTelemetry version coordination — loose coupling in portal/Backend",
+      "status": "NEW",
+      "files": ["portal/Backend/package.json"],
+      "fix": "Lock OTel packages together (npm update @opentelemetry/*) and pin in package.json during upgrades.",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p4": [
+    {
+      "id": "QO-008",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Two undocumented eslint-disable suppressions",
+      "status": "NEW",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts",
+        "Source/Frontend/src/components/DependencyPicker.tsx"
+      ],
+      "fix": "Add explanatory comments at each react-hooks/exhaustive-deps suppression site.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-SUPPLY-001",
+      "source": "dependency-auditor",
+      "category": "supply-chain",
+      "title": "Large transitive dependency footprint in portal/Backend (577 deps)",
+      "status": "NEW",
+      "files": ["portal/Backend/package.json"],
+      "fix": "Monitor quarterly for deprecated transitive packages with npm list --depth=5 | grep DEPRECATED",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-REACT-001",
+      "source": "dependency-auditor",
+      "category": "version-consistency",
+      "title": "React version split — Source/Frontend 18.3.1 vs portal/Frontend 18.2.0",
+      "status": "NEW",
+      "files": [
+        "Source/Frontend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "fix": "Align portal/Frontend to react@18.3.1 in next release cycle.",
+      "route_to": "TheFixer"
+    }
+  ]
+}

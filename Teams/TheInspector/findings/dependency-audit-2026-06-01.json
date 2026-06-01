@@ -1,0 +1,125 @@
+{
+  "audit_metadata": {
+    "date": "2026-06-01",
+    "auditor": "dependency_auditor",
+    "model": "haiku",
+    "version": "1.0.0"
+  },
+  "scope": {
+    "projects_scanned": 6,
+    "package_managers_detected": ["npm"],
+    "projects": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E",
+      "portal/Backend",
+      "portal/Frontend",
+      "platform/orchestrator"
+    ]
+  },
+  "statistics": {
+    "dependencies": {
+      "total_direct": 69,
+      "total_transitive": 1801,
+      "average_per_project": 11.5,
+      "by_project": {
+        "Source/Backend": {"direct": 4, "dev": 9, "transitive": 411},
+        "Source/Frontend": {"direct": 3, "dev": 10, "transitive": 230},
+        "Source/E2E": {"direct": 1, "dev": 0, "transitive": 4},
+        "portal/Backend": {"direct": 11, "dev": 11, "transitive": 577},
+        "portal/Frontend": {"direct": 3, "dev": 14, "transitive": 424},
+        "platform/orchestrator": {"direct": 3, "dev": 0, "transitive": 155}
+      }
+    },
+    "cve_analysis": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 0,
+      "total_cves": 0
+    },
+    "license_analysis": {
+      "MIT": 1317,
+      "Apache-2.0": 173,
+      "ISC": 83,
+      "BSD-3-Clause": 48,
+      "BSD-2-Clause": 8,
+      "CC-BY-4.0": 3,
+      "MIT-0": 2,
+      "WTFPL": 1,
+      "Unknown": 4,
+      "viral_licenses": 0,
+      "compliant": true,
+      "permissive_percentage": 99.8
+    },
+    "version_health": {
+      "outdated_major_versions": 0,
+      "abandoned_packages": 0,
+      "all_current": true
+    },
+    "supply_chain": {
+      "max_transitive_per_project": 577,
+      "projects_exceeding_500_deps": 1,
+      "risk_level": "low"
+    }
+  },
+  "findings": [
+    {
+      "id": "DEP-OTEL-001",
+      "severity": "P3",
+      "category": "version-mismatch",
+      "package": "OpenTelemetry packages",
+      "affected_projects": ["portal/Backend"],
+      "title": "OpenTelemetry version coordination",
+      "detail": "Loose version coupling between OTel packages. Current: @api^1.7.0, @sdk-node^0.47.0, @auto-inst^0.40.0, @exporter^0.47.0. Ensure synchronized upgrades.",
+      "recommendation": "Lock OTel packages together during upgrades; verify tracing is functional if versions diverge"
+    },
+    {
+      "id": "DEP-SUPPLY-001",
+      "severity": "P4",
+      "category": "supply-chain",
+      "package": "portal/Backend",
+      "affected_projects": ["portal/Backend"],
+      "title": "Large transitive dependency tree (577)",
+      "detail": "Supply chain risk surface. Driven by OTel instrumentation (~50), testing tools (~100), build tools (~50). Normal for modern Node.js. Monitor for deprecated transitive packages.",
+      "recommendation": "No action required. Run quarterly: npm list --depth=10 | grep DEPRECATED"
+    },
+    {
+      "id": "DEP-REACT-001",
+      "severity": "P4",
+      "category": "version-consistency",
+      "package": "react",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "title": "React version split (18.2.0 vs 18.3.1)",
+      "detail": "Source/Frontend uses react@18.3.1, portal/Frontend uses react@18.2.0. Both are secure and compatible, but version consistency may be desired.",
+      "recommendation": "Optional: align to 18.3.1+ in next release for consistency"
+    }
+  ],
+  "summary": {
+    "health_grade": "A",
+    "verdict": "PASS",
+    "cve_risk": "NONE",
+    "license_risk": "NONE",
+    "supply_chain_risk": "LOW",
+    "actionable_items": [
+      "Monitor OpenTelemetry version coordination",
+      "Enable quarterly npm audit in CI/CD",
+      "Optional: align React versions for consistency"
+    ],
+    "critical_next_steps": "No critical vulnerabilities. Routine maintenance: run npm update before each release."
+  },
+  "escalations": {
+    "to_TheGuardians": "None",
+    "to_TheFixer": "None",
+    "to_DevOps": [
+      "Set up quarterly npm audit CI/CD job",
+      "Monitor OTel package versions before next release"
+    ]
+  },
+  "metadata": {
+    "report_path": "Teams/TheInspector/findings/DEPENDENCY-AUDIT-2026-06-01.md",
+    "learnings_updated": true,
+    "learnings_path": "Teams/TheInspector/learnings/dependency-auditor.md"
+  }
+}

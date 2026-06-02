@@ -1,54 +1,23 @@
 {
-  "summary": {
-    "canonical_frs_in_specs": 10,
-    "canonical_frs_covered": 0,
-    "coverage_percentage": "0.0%",
-    "raw_verifies_ids_in_source": 13,
-    "alias_resolved_count": 0,
-    "unresolved_legacy_ids": 13
+  "generated": "2026-06-02",
+  "note": "Updated by quality-oracle full audit. Prior report had wrong scope (scanned only Source/ vs tiered-merge-pipeline spec).",
+  "spec_coverage": {
+    "workflow_engine_fr_wf": { "total": 13, "covered": 13, "pct": 100 },
+    "dev_workflow_platform_fr_001_032": { "total": 34, "covered": 34, "pct": 100 },
+    "tiered_merge_pipeline_fr_tmp": { "total": 10, "covered": 9, "pct": 90 },
+    "aggregate": { "total": 57, "covered": 56, "pct": 98 }
   },
-  "covered_frs": [],
-  "missing_frs": [
-    "FR-TMP-001",
-    "FR-TMP-002",
-    "FR-TMP-003",
-    "FR-TMP-004",
-    "FR-TMP-005",
-    "FR-TMP-006",
-    "FR-TMP-007",
-    "FR-TMP-008",
-    "FR-TMP-009",
-    "FR-TMP-010"
+  "grade": "C",
+  "p1_findings": 1,
+  "p2_findings": 5,
+  "p3_findings": 3,
+  "p4_findings": 2,
+  "untraced_requirements": ["FR-TMP-008"],
+  "critical_gaps": [
+    "QO-001: Traceability enforcer hardcoded to Source/+E2E/ — misses portal/ app entirely",
+    "QO-003: Direct DB calls in portal/Backend/src/routes/teamDispatches.ts",
+    "QO-005: DependencySection.test.tsx and BlockedBadge.test.tsx missing",
+    "QO-006: BlockedBadge.tsx + DependencySection.tsx reference nonexistent FR-0001"
   ],
-  "untracked_implementations": [
-    "FR-WF-001",
-    "FR-WF-002",
-    "FR-WF-003",
-    "FR-WF-004",
-    "FR-WF-005",
-    "FR-WF-006",
-    "FR-WF-007",
-    "FR-WF-008",
-    "FR-WF-009",
-    "FR-WF-010",
-    "FR-WF-011",
-    "FR-WF-012",
-    "FR-WF-013"
-  ],
-  "unresolved_legacy_ids": [
-    "FR-WF-001",
-    "FR-WF-002",
-    "FR-WF-003",
-    "FR-WF-004",
-    "FR-WF-005",
-    "FR-WF-006",
-    "FR-WF-007",
-    "FR-WF-008",
-    "FR-WF-009",
-    "FR-WF-010",
-    "FR-WF-011",
-    "FR-WF-012",
-    "FR-WF-013"
-  ],
-  "coverage_by_file": {}
+  "report_path": "Teams/TheInspector/findings/quality-oracle-2026-06-02.md"
 }

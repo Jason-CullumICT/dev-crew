@@ -1,0 +1,284 @@
+{
+  "audit_date": "2026-06-03",
+  "audit_scope": "Source/Backend, Source/Frontend (production application)",
+  "package_managers": ["npm"],
+  "overall_grade": "B",
+  "summary": {
+    "total_cves": 13,
+    "critical_cves": 2,
+    "high_cves": 0,
+    "moderate_cves": 11,
+    "low_cves": 0,
+    "outdated_major_versions": 6,
+    "license_issues": 0,
+    "abandoned_dependencies": 0
+  },
+  "severity_distribution": {
+    "p1_critical": 1,
+    "p2_high": 4,
+    "p3_medium": 8,
+    "p4_low_info": 0
+  },
+  "dependencies": {
+    "backend": {
+      "file": "Source/Backend/package.json",
+      "direct_dependencies": 13,
+      "production_dependencies": 4,
+      "development_dependencies": 9,
+      "transitive_total": 412,
+      "transitive_production": 102,
+      "transitive_development": 310
+    },
+    "frontend": {
+      "file": "Source/Frontend/package.json",
+      "direct_dependencies": 13,
+      "production_dependencies": 3,
+      "development_dependencies": 10,
+      "transitive_total": 231,
+      "transitive_production": 9,
+      "transitive_development": 222
+    },
+    "combined": {
+      "total_direct": 17,
+      "total_transitive": 643,
+      "production_only": 111,
+      "development_only": 532,
+      "duplicate_versions": 0
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-002",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "severity": "critical",
+      "cvss": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "category": "cve",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "advisory_url": "https://github.com/advisories/GHSA-2w6w-674q-4c4q",
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "current_version": "4.7.8",
+      "latest_fixed": "4.7.9",
+      "location": "Source/Backend/package-lock.json (transitive: jest → ts-jest → handlebars)",
+      "risk_assessment": "Dev-only, low production risk unless untrusted templates processed",
+      "fix_command": "npm update jest ts-jest",
+      "escalation": "TheGuardians (if backend accepts user-supplied Handlebars templates)"
+    }
+  ],
+  "high_priority_findings": [
+    {
+      "id": "DEP-003",
+      "package": "qs",
+      "version": "6.15.1",
+      "severity": "moderate",
+      "cvss": 5.3,
+      "cwe": ["CWE-476"],
+      "category": "cve",
+      "title": "qs DoS: TypeError on null/undefined array elements with encodeValuesOnly",
+      "advisory_url": "https://github.com/advisories/GHSA-q8mj-m7cp-5q26",
+      "affected_range": ">=6.11.1 <=6.15.1",
+      "current_version": "6.15.1",
+      "latest_fixed": "6.15.2",
+      "location": "Source/Backend/package.json (express → body-parser → qs)",
+      "impact": "Crash/500 error on malformed query strings with null array elements",
+      "fix_command": "npm update express",
+      "fix_version": "4.22.2"
+    },
+    {
+      "id": "DEP-005",
+      "package": "uuid",
+      "version": "9.0.0",
+      "severity": "moderate",
+      "cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "category": "cve",
+      "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "advisory_url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+      "affected_range": "<11.1.1",
+      "current_version": "9.0.0",
+      "latest_fixed": "9.0.1 (hotfix) or 11.1.1 (major)",
+      "location": "Source/Backend/package.json",
+      "impact": "Out-of-bounds write if v3/v5/v6 called with caller-provided buffer",
+      "risk_assessment": "LOW for this project (backend uses v4 only, no buffer param)",
+      "fix_command": "Audit usage; if v4-only, update to 9.0.1+",
+      "verification": "grep -r 'uuid\\.(v[356].*buf|v4)' Source/Backend/src/"
+    },
+    {
+      "id": "DEP-006",
+      "package": "vite",
+      "version": "5.4.0",
+      "severity": "moderate",
+      "cvss": 5.3,
+      "cwe": ["CWE-22", "CWE-346"],
+      "category": "cve",
+      "title": "Vite path traversal in optimized deps .map handling; esbuild CORS bypass",
+      "advisory_url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
+      "affected_range": "<=6.4.1",
+      "current_version": "5.4.0",
+      "latest_fixed": "5.5.0 (minor) or 6.5.0+ (major)",
+      "location": "Source/Frontend/package.json",
+      "impact": "Dev server source map path traversal; CORS allows external sites to read responses",
+      "risk_assessment": "Dev-time only; low in CI, higher in open dev networks",
+      "fix_command": "npm update vite",
+      "mitigation": "Restrict --host to 127.0.0.1 in CI; no --ui flag in production"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "next_recommended": "4.22.2",
+      "major_gap": 1.2,
+      "location": "Source/Backend/package.json",
+      "reason": "Security patches, QS DoS fix",
+      "severity": "p3"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "next_recommended": "8.21.0",
+      "major_gap": 2.2,
+      "location": "Source/Backend/package.json",
+      "reason": "Logging perf regression risk",
+      "severity": "p2"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.0",
+      "next_recommended": "9.0.1+",
+      "major_gap": 5.0,
+      "location": "Source/Backend/package.json",
+      "reason": "Buffer bounds CVE (but low risk for this project)",
+      "severity": "p2"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "next_recommended": "18.3.1",
+      "major_gap": 1.0,
+      "location": "Source/Frontend/package.json",
+      "reason": "Testing framework drift, plan v19 migration separately",
+      "severity": "p3"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "next_recommended": "18.3.1",
+      "major_gap": 1.0,
+      "location": "Source/Frontend/package.json",
+      "reason": "Hydration bug risk; coordinate with react upgrade",
+      "severity": "p3"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.16.0",
+      "next_recommended": "6.30.4+",
+      "major_gap": 0.4,
+      "location": "Source/Frontend/package.json",
+      "reason": "Route matching improvements, but stay in v6 for now",
+      "severity": "p3"
+    }
+  ],
+  "license_compliance": {
+    "status": "PASS",
+    "violations": 0,
+    "notes": "All dependencies use permissive OSS licenses (MIT, ISC, Apache 2.0, BSD). No GPL/AGPL detected. Private packages marked UNLICENSED.",
+    "assessed_packages": 643
+  },
+  "supply_chain_risk": {
+    "post_install_scripts": 0,
+    "single_maintainer_packages": 2,
+    "abandoned_packages": 0,
+    "duplicate_versions": 0,
+    "status": "LOW"
+  },
+  "recommendations": {
+    "immediate_actions": [
+      {
+        "priority": 1,
+        "action": "Verify uuid usage",
+        "command": "grep -r 'uuid\\.(v[356].*buf|v4)' Source/Backend/src/",
+        "expected_result": "Only uuid.v4() calls, no buf parameter",
+        "timeline": "This week"
+      },
+      {
+        "priority": 2,
+        "action": "Test npm audit fix output",
+        "command": "cd Source/Backend && npm audit fix --dry-run && cd ../Frontend && npm audit fix --dry-run",
+        "expected_result": "Shows updates to express, vite, qs",
+        "timeline": "This week"
+      }
+    ],
+    "next_sprint": [
+      {
+        "priority": 1,
+        "action": "Upgrade express and dependencies",
+        "command": "cd Source/Backend && npm update express uuid --save",
+        "reason": "Fixes qs DoS (DEP-003), uuid hotfix (DEP-005), body-parser (DEP-004)",
+        "test": "npm test --forceExit"
+      },
+      {
+        "priority": 2,
+        "action": "Upgrade vite and dependencies",
+        "command": "cd Source/Frontend && npm update vite --save",
+        "reason": "Fixes path traversal (DEP-006), esbuild CORS bypass",
+        "test": "npm test"
+      },
+      {
+        "priority": 3,
+        "action": "Upgrade jest chain for handlebars",
+        "command": "cd Source/Backend && npm update jest ts-jest --save-dev",
+        "reason": "Pulls handlebars 4.7.9+ (DEP-002)",
+        "test": "npm test --forceExit"
+      }
+    ],
+    "future_work": [
+      "Plan vitest 2 → 4 migration (major bump, dev-time only)",
+      "Plan React 18 → 19 migration (requires coordination)",
+      "Add npm audit to CI/CD with --audit-level=moderate"
+    ]
+  },
+  "verification_checklist": {
+    "uuid_usage": {
+      "command": "grep -r 'uuid\\.(v[356].*buf|v4)' Source/Backend/src/",
+      "expected": "Only v4() usage, no buf parameter",
+      "status": "PENDING"
+    },
+    "handlebars_runtime": {
+      "command": "grep -r 'require.*handlebars|import.*handlebars' Source/Backend/src/",
+      "expected": "No matches (dev-only)",
+      "status": "PENDING"
+    },
+    "vite_host_binding": {
+      "command": "grep 'vite' Source/Frontend/package.json | grep -i 'host'",
+      "expected": "No 0.0.0.0 binding in dev script",
+      "status": "PENDING"
+    },
+    "test_query_strings": {
+      "command": "Test POST with null array elements: POST /api/endpoint?ids[0]=1&ids[1]=&ids[2]=3",
+      "expected": "200 OK, not 500 crash",
+      "status": "PENDING"
+    }
+  },
+  "next_audit_date": "2026-07-03",
+  "audit_tool_versions": {
+    "npm": "npm audit v10+",
+    "node": "as detected by CI"
+  },
+  "related_findings": {
+    "escalation_to_guardians": [
+      "DEP-002 (handlebars) if backend accepts user-supplied templates",
+      "DEP-006 (vite) if dev server exposed in production"
+    ],
+    "static_analyzer_scope": "[SEE TheGuardians static-analyzer] for hardcoded secrets, injection in app code",
+    "performance_impact": "uuid and pino version lag may affect latency; profile after updates"
+  }
+}

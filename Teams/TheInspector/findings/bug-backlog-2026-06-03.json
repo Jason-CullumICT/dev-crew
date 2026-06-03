@@ -1,0 +1,306 @@
+{
+  "audit_id": "run-20260603-070910",
+  "audit_date": "2026-06-03",
+  "branch": "audit/inspector-2026-06-03-8cf478",
+  "grade": "D",
+  "grade_basis": {
+    "p1_total": 3,
+    "p2_total": 8,
+    "p3_total": 12,
+    "p4_total": 1,
+    "spec_coverage_pct": 88,
+    "rule_triggered": "C.max_p1 = 2; actual P1 = 3 → falls to D",
+    "mitigating_note": "DEP-002 is dev-only transitive dep (CVSS 9.8 CVE, zero production exposure confirmed pending TheGuardians review)"
+  },
+  "specialists_run": [
+    { "name": "quality-oracle", "mode": "static", "status": "complete" },
+    { "name": "dependency-auditor", "mode": "static", "status": "complete" },
+    { "name": "performance-profiler", "mode": "static", "status": "not_run", "reason": "service unavailable" },
+    { "name": "chaos-monkey", "mode": "static", "status": "not_run", "reason": "service unavailable" }
+  ],
+  "escalations": [
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion (CVSS 9.8)",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "package": "handlebars@4.7.8",
+      "location": "Source/Backend/package-lock.json (transitive: jest → ts-jest → handlebars)",
+      "risk_context": "Dev-only transitive dependency. Production risk is LOW unless backend accepts user-supplied Handlebars templates. TheGuardians must confirm no template rendering path exists.",
+      "cvss": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "advisory_url": "https://github.com/advisories/GHSA-2w6w-674q-4c4q",
+      "fix": "npm update jest ts-jest in Source/Backend"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "tooling-failure",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer is blind to portal/ — CI gate cannot detect spec drift in portal app",
+      "file": "tools/traceability-enforcer.py",
+      "line": 73,
+      "detail": "source_dirs = ['Source', 'E2E'] omits portal/. All FR-001..095 and FR-DUP-* portal-side requirements are never scanned. Running the enforcer reports 34 false-negative missing requirements.",
+      "recommendation": "Add 'portal' to source_dirs at line 73. Tighten extraction regex from FR-[A-Z0-9-]+ to \\bFR-[A-Z]+(?:-[A-Z0-9]+)+\\b to eliminate false positives from seed data IDs.",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Specifications/tiered-merge-pipeline.md has zero implementation (FR-TMP-001..010)",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "detail": "10 functional requirements (risk classification, Playwright E2E generation, live E2E runner, auto-PR creation, AI PR review, auto-merge logic) with zero // Verifies: FR-TMP-* comments anywhere in the codebase. No Plans/ entry exists. Spec was authored but never scheduled.",
+      "recommendation": "(a) Create Plans/tiered-merge-pipeline/requirements.md and schedule implementation via TheATeam, or (b) archive to Specifications/future/ if deferred. Do not leave an unimplemented spec in canonical Specifications/.",
+      "route": "team-leader + TheATeam",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-dependency-api-types: blocked_by missing from UpdateFeatureRequestInput and UpdateBugInput",
+      "file": "portal/Shared/api.ts",
+      "lines": [32, 59],
+      "detail": "Both PATCH input types are missing blocked_by?: string[]. DependencyPicker.tsx compensates with as any casts at lines 291/293. TypeScript provides no type-checking on the blocked_by field in the PATCH flow.",
+      "recommendation": "Add blocked_by?: string[]; to both UpdateFeatureRequestInput and UpdateBugInput; remove as any casts in DependencyPicker.tsx:291,293.",
+      "route": "TheFixer (api-contract role)",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "title": "FR-dependency-frontend-tests: DependencySection.test.tsx and BlockedBadge.test.tsx missing",
+      "file": "portal/Frontend/tests/",
+      "detail": "FR-dependency-frontend-tests requires tests for both DependencySection and BlockedBadge components. Only DependencyPicker.test.tsx exists. Both components are in production use in BugDetail and FeatureRequestDetail.",
+      "recommendation": "Create portal/Frontend/tests/DependencySection.test.tsx and BlockedBadge.test.tsx with // Verifies: FR-dependency-section and // Verifies: FR-dependency-blocked-badge comments.",
+      "route": "TheFixer (frontend-coder role)",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-dependency-seed: no seed.ts in portal/Backend/src/database/",
+      "file": "portal/Backend/src/database/",
+      "detail": "FR-dependency-seed requires an idempotent seed.ts inserting known dependency relationships on startup. Only connection.ts and schema.ts exist. Fresh install shows empty dependency UI; integration tests require manual data setup.",
+      "recommendation": "Create portal/Backend/src/database/seed.ts with 4 described dependency relationships; call from server startup guarded by idempotency check.",
+      "route": "TheFixer (backend-coder role)",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "observability",
+      "specialist": "quality-oracle",
+      "title": "Source/Backend/src/metrics.ts missing dependency_check_duration_seconds histogram",
+      "file": "Source/Backend/src/metrics.ts",
+      "lines": [40, 62],
+      "detail": "FR-dependency-metrics requires 4 metrics: dependency_operations_total, dispatch_gating_events_total, cycle_detection_events_total, and dependency_check_duration_seconds. Only the first three counters are defined. The histogram is absent from Source/. The metrics test only asserts on the three counters, so the gap is not caught by CI.",
+      "recommendation": "Add Histogram for dependency_check_duration_seconds to Source/Backend/src/metrics.ts; add assertion in the metrics test.",
+      "route": "TheFixer (backend-coder role)",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "qs@6.15.1: DoS via TypeError on null/undefined array elements (CVSS 5.3)",
+      "package": "qs",
+      "version": "6.15.1",
+      "cvss": 5.3,
+      "cwe": ["CWE-476"],
+      "advisory_url": "https://github.com/advisories/GHSA-q8mj-m7cp-5q26",
+      "location": "Source/Backend/package.json (express → body-parser → qs)",
+      "fix": "cd Source/Backend && npm update express",
+      "fix_version": "express 4.22.2 pulls qs 6.15.2+",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion: ReDoS via inefficient regex matching",
+      "package": "brace-expansion",
+      "location": "Source/Backend/package-lock.json (npm lifecycle transitive)",
+      "fix": "cd Source/Backend && npm update",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "uuid@9.0.0: Missing buffer bounds check in v3/v5/v6 when buf is provided (CVSS 7.5)",
+      "package": "uuid",
+      "version": "9.0.0",
+      "cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "advisory_url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+      "location": "Source/Backend/package.json",
+      "risk_assessment": "LOW — backend uses v4 only, no buffer parameter. Pending verification.",
+      "fix": "Verify v4-only usage; then: cd Source/Backend && npm update uuid",
+      "verification": "grep -r 'uuid\\.v[356]' Source/Backend/src/",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "vite@5.4.0: Path traversal in optimized deps + esbuild CORS bypass (CVSS 5.3)",
+      "package": "vite",
+      "version": "5.4.0",
+      "cvss": 5.3,
+      "cwe": ["CWE-22", "CWE-346"],
+      "advisory_url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
+      "location": "Source/Frontend/package.json",
+      "risk_assessment": "Dev-time only. Higher risk in open dev networks. Restrict --host to 127.0.0.1 in CI.",
+      "fix": "cd Source/Frontend && npm update vite",
+      "fix_version": "5.5.0+",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Empty catch blocks silently swallow errors (3 locations) — CLAUDE.md violation",
+      "files": [
+        "portal/Frontend/src/components/bugs/BugDetail.tsx:82",
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx:80",
+        "portal/Frontend/src/components/common/RepoSelector.tsx:20"
+      ],
+      "recommendation": "Replace .catch(() => {}) with logger call or explicit suppression comment per architecture rule.",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "test-quality",
+      "specialist": "quality-oracle",
+      "title": "Duplicate test files: WorkItemListPage and WorkItemDetailPage each have two versions",
+      "files": [
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx"
+      ],
+      "recommendation": "Delete top-level duplicates; keep Source/Frontend/tests/pages/ versions only.",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "tooling",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer produces false positives on seed data IDs (FR-0002..FR-0007 format)",
+      "file": "tools/traceability-enforcer.py",
+      "line": 61,
+      "recommendation": "Tighten regex from FR-[A-Z0-9-]+ to \\bFR-[A-Z]+(?:-[A-Z0-9]+)+\\b. CROSS-REF: same fix as QO-001.",
+      "cross_ref": "QO-001",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "5 production files exceed 500-line threshold (split on next touch)",
+      "files": [
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx (550 lines)",
+        "portal/Frontend/src/components/bugs/BugDetail.tsx (546 lines)",
+        "portal/Backend/src/services/cycleService.ts (526 lines)",
+        "portal/Frontend/src/api/client.ts (525 lines)",
+        "portal/Backend/src/services/featureRequestService.ts (506 lines)"
+      ],
+      "recommendation": "Split on next touch. Extract sub-components from detail views; extract pipelineService from cycleService.ts.",
+      "route": "TheFixer (on next touch)",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    },
+    {
+      "id": "QO-011",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable suppressions without justification comments (3 locations)",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "portal/Frontend/src/hooks/useApi.ts:35"
+      ],
+      "recommendation": "Add comment per suppression explaining why the dependency array is intentionally incomplete.",
+      "route": "TheFixer",
+      "status": "OPEN",
+      "first_seen": "2026-06-03"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Traceability enforcer scanning scope and regex",
+      "affected_findings": ["QO-001", "QO-009"],
+      "single_fix": "Update source_dirs in tools/traceability-enforcer.py line 73 to include 'portal'; tighten FR extraction regex. One commit resolves both findings.",
+      "fix_impact": "Eliminates false negatives across portal/ app AND false positives from seed data IDs. CI gate becomes reliable for the full codebase."
+    },
+    {
+      "root_cause": "Incomplete dependency-linking plan implementation",
+      "affected_findings": ["QO-003", "QO-004", "QO-005", "QO-006"],
+      "single_fix": "One TheFixer cycle targeting the dependency-linking plan delta: add blocked_by to api.ts, create 2 test files, create seed.ts, add histogram to metrics.ts.",
+      "fix_impact": "Closes all 4 P2 spec-drift gaps from the dependency-linking feature."
+    },
+    {
+      "root_cause": "Source/Backend npm dependency version lag",
+      "affected_findings": ["DEP-002", "DEP-003", "DEP-004", "DEP-005"],
+      "single_fix": "cd Source/Backend && npm update express uuid jest ts-jest — single command resolves handlebars injection (via ts-jest update), qs DoS, brace-expansion ReDoS, and uuid buffer CVE.",
+      "fix_impact": "Eliminates 4 CVEs (1 P1-escalated, 3 P2) in one npm update commit."
+    },
+    {
+      "root_cause": "Source/Frontend vite/toolchain version lag",
+      "affected_findings": ["DEP-006"],
+      "single_fix": "cd Source/Frontend && npm update vite",
+      "fix_impact": "Resolves path traversal and CORS bypass in dev toolchain."
+    }
+  ],
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 8,
+    "p3_total": 5,
+    "p4_total": 1,
+    "escalations_total": 1,
+    "fixed_total": 0,
+    "new_total": 17,
+    "spec_coverage_pct": 88,
+    "grade": "D",
+    "prior_grade": null,
+    "trend": "First audit — no baseline"
+  }
+}

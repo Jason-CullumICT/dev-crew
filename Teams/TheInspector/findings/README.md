@@ -17,6 +17,25 @@ This directory receives audit reports and bug-backlogs from TheInspector audit r
 
 HTML audit reports are large and not committed to git. The `.gitignore` in this directory excludes `*.html` files to keep the repository lean. Bug-backlog JSON files are tracked for record-keeping and trend analysis.
 
+## Latest Audit: 2026-06-04 (Dependency Auditor)
+
+**Status:** ⚠️ **CRITICAL** — 3 P1 CVEs requiring immediate remediation
+
+| Finding | Count | Status |
+|---------|-------|--------|
+| Critical CVEs (P1) | 3 | Requires immediate action |
+| Moderate CVEs (P2-P3) | 22 | Fix timeline: 1-2 weeks |
+| Outdated majors | 3 | Fix timeline: 2-4 weeks |
+| Code audits required | 2 | (Handlebars, protobufjs) |
+
+**Key Files:**
+- Detailed findings: [`dependency-audit-2026-06-04.md`](dependency-audit-2026-06-04.md)
+- JSON summary: [`dependency-audit-2026-06-04.json`](dependency-audit-2026-06-04.json)
+
+**Grade:** D (due to 3 unmitigated critical CVEs)
+
+---
+
 ## Workflow
 
 1. TheInspector team runs post-merge audits

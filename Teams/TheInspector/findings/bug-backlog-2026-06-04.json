@@ -1,0 +1,324 @@
+{
+  "audit_date": "2026-06-04",
+  "generated_by": "TheInspector — team_leader",
+  "run_id": "run-20260604-065746",
+  "overall_grade": "D",
+  "grade_rationale": "5 P1 findings across two specialists. Config threshold for grade C is max_p1:2; for grade D is max_p1:999. 5 P1s exceed grade-C ceiling (2). Grade is D.",
+  "summary": {
+    "specialists_reporting": ["quality-oracle", "dependency-auditor"],
+    "specialists_not_reporting": ["performance-profiler", "chaos-monkey"],
+    "p1_total": 5,
+    "p2_total": 7,
+    "p3_total": 8,
+    "escalations_to_guardians": 4,
+    "fixes_for_fixer": 8
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server RCE (CVSS 9.8)",
+      "source_specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "critical-cve",
+      "file": "Source/Frontend/package.json",
+      "package": "vitest@2.0.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "description": "Arbitrary file read and code execution when Vitest UI server is listening. Direct dependency in Source/Frontend.",
+      "impact": "RCE on any environment where Vitest UI is exposed",
+      "fix": "npm install vitest@^4.1.8 --save-dev in Source/Frontend",
+      "route_to": "TheGuardians",
+      "escalation_trigger": "injection risk (code execution via test UI server)",
+      "timeline": "This week"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js AST Type Confusion Code Injection (CVSS 9.8)",
+      "source_specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "critical-cve",
+      "file": "Source/Backend/package.json",
+      "package": "handlebars@4.7.8",
+      "dependency_chain": "ts-jest → handlebars",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "description": "JavaScript injection via AST type confusion when Handlebars templates process untrusted input.",
+      "impact": "RCE if any backend route passes user input to Handlebars templates",
+      "fix": "npm update ts-jest in Source/Backend; audit codebase for Handlebars usage with user input",
+      "route_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "requires_code_audit": true,
+      "timeline": "This week"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "source_specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "critical-cve",
+      "file": "platform/orchestrator/package.json",
+      "package": "protobufjs@7.5.4",
+      "dependency_chain": "dockerode → protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "description": "Arbitrary code execution via unsafe.eval and prototype pollution when loading untrusted .proto files.",
+      "impact": "RCE on orchestrator infrastructure",
+      "fix": "npm install dockerode@^5.0.0 in platform/orchestrator; audit for untrusted .proto loading",
+      "route_to": "TheGuardians",
+      "escalation_trigger": "injection risk (code execution via prototype pollution)",
+      "requires_code_audit": true,
+      "timeline": "This week"
+    },
+    {
+      "id": "QO-006",
+      "title": "OpenTelemetry Completely Absent — Architecture Violation",
+      "source_specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "file": "Source/Backend/src/",
+      "description": "Zero OTel SDK packages, no tracing, no traceparent propagation. Missing distributed tracing masks security-relevant request flows — a TheGuardians concern in addition to a TheFixer remediation task.",
+      "fix": "Add @opentelemetry/sdk-node, create src/tracing.ts, inject trace IDs into logger, propagate traceparent header",
+      "route_to": "TheGuardians",
+      "escalation_trigger": "missing access control visibility (tracing masks auth/security flows)",
+      "cross_ref": "[CROSS-REF: quality-oracle]",
+      "timeline": "This sprint"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Orphaned Specification — dev-workflow-platform.md (69 FRs, 0% coverage)",
+      "source_specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "69 FRs (FR-001–FR-069) describing a different application domain. Enforcer returns 76 failures. Misleads coverage metrics and agents.",
+      "recommendation": "Archive to Specifications/archived/ or annotate as superseded. Do not leave as live spec at 0% coverage.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "This sprint"
+    },
+    {
+      "id": "QO-002",
+      "title": "GET /api/search Not Wired — search.test.ts Always Fails",
+      "source_specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "untested",
+      "file": "Source/Backend/tests/routes/search.test.ts",
+      "description": "5 tests in search.test.ts are self-documented as intentionally failing. Route is never registered in app.ts. DependencyPicker typeahead is broken end-to-end.",
+      "recommendation": "Implement GET /api/search?q= in Source/Backend/src/routes/ and register in app.ts.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "[CROSS-REF: quality-oracle QO-007]",
+      "timeline": "This sprint"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "title": "Route Handlers Bypass Service Layer",
+      "source_specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "file": "Source/Backend/src/routes/workItems.ts, Source/Backend/src/routes/workflow.ts",
+      "description": "Both route files import and call the in-memory store directly. Architecture rule requires routes to call a service layer.",
+      "recommendation": "Extract Source/Backend/src/services/workItemService.ts wrapping store ops.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "title": "Traceability Enforcer Has Three Critical Gaps",
+      "source_specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "file": "tools/traceability-enforcer.py",
+      "description": "(1) Auto-targets only the most-recently-modified plan. (2) Regex misses lowercase FR-dependency-* IDs. (3) False-positive matching of domain data IDs.",
+      "recommendation": "Fix pattern to FR-[A-Za-z0-9_-]+, add --all-plans flag, add Verifies: context guard.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "title": "Logger Always JSON — No Dev Pretty-Print Mode",
+      "source_specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "description": "No NODE_ENV check. Dev output is always machine-readable JSON, violating architecture rule and FR-WF-013.",
+      "recommendation": "Add dev-mode pretty-print branch based on process.env.NODE_ENV.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "React Router Open Redirect",
+      "source_specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "moderate-cve",
+      "file": "Source/Frontend/package.json",
+      "package": "react-router-dom@6.26.0",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "description": "Current version safe but update path available.",
+      "recommendation": "npm install react-router-dom@^6.30.4",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Express/qs Prototype Pollution DoS",
+      "source_specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "moderate-cve",
+      "file": "Source/Backend/package.json, platform/orchestrator/package.json",
+      "package": "express@4.21.0",
+      "description": "Prototype pollution and DoS via crafted query strings.",
+      "recommendation": "npm install express@^4.22.2 in Backend and Orchestrator.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "title": "OpenTelemetry Completely Absent — Architecture Violation",
+      "source_specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "file": "Source/Backend/src/",
+      "description": "Zero OTel SDK packages, no tracing, no traceparent propagation.",
+      "recommendation": "Add @opentelemetry/sdk-node, create src/tracing.ts, propagate traceparent header.",
+      "route_to": "TheFixer + TheGuardians",
+      "status": "NEW",
+      "note": "Also escalated to TheGuardians — missing tracing masks security flows"
+    },
+    {
+      "id": "QO-007",
+      "title": "FR-dependency-seed Not Implemented",
+      "source_specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "file": "Plans/dependency-linking/requirements.md",
+      "description": "Implementation delta marks FR-dependency-seed as missing. No seed mechanism exists in Source/Backend.",
+      "recommendation": "Clarify if seed data is required for in-memory store. If yes, create Source/Backend/src/store/seed.ts. If no, update delta to N/A.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-008",
+      "title": "Dual Logger Wrapper Anti-Pattern",
+      "source_specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "file": "Source/Backend/src/logger.ts",
+      "description": "Two logger modules — wrapper adapter pattern adds indirection and maintenance debt.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "title": "eslint-disable Suppresses react-hooks/exhaustive-deps",
+      "source_specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx, Source/Frontend/src/hooks/useWorkItems.ts",
+      "description": "Two production files suppress hooks exhaustive-deps rule.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "title": "E2E Package Test Script Is Broken Placeholder",
+      "source_specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "file": "Source/E2E/package.json",
+      "description": "npm test always exits 1. Playwright config exists but script doesn't invoke it.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-011",
+      "title": "5 Recently-Modified Frontend Components Have No Tests",
+      "source_specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "untested",
+      "file": "Source/Frontend/src/components/StatusBadge.tsx, TypeBadge.tsx, PriorityBadge.tsx, Layout.tsx, src/pages/DebugPortalPage.tsx",
+      "description": "Five recently-modified components/pages lack test files.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-012",
+      "title": "FR-dependency-api-types Open Gap — as any Cast in DependencyPicker",
+      "source_specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "spec-drift",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx",
+      "description": "UpdateBugInput and UpdateFeatureRequestInput lack blocked_by field; frontend uses as any cast.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "uuid 5 Major Versions Behind (9→14)",
+      "source_specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated-package",
+      "file": "Source/Backend/package.json",
+      "package": "uuid@9.0.0",
+      "description": "UUID is 5 major versions behind latest (14.0.0).",
+      "recommendation": "npm install uuid@^14.0.0",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "pino 2 Major Versions Behind (8→10)",
+      "source_specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated-package",
+      "file": "Source/Backend/package.json",
+      "package": "pino@8.17.0",
+      "description": "Pino logging library is 2 major versions behind.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Express 1 Major Version Behind (4→5)",
+      "source_specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated-package",
+      "file": "Source/Backend/package.json, platform/orchestrator/package.json",
+      "package": "express@4.21.0",
+      "description": "Express v5 is available. Minor bump to 4.22.2 is already tracked as P2 (DEP-005).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "fixed_findings": [],
+  "not_covered": ["performance-profiler", "chaos-monkey"],
+  "cross_references": [
+    {
+      "root_cause": "Dependency maintenance policy gap",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008"],
+      "single_fix": "Establish a weekly automated dependency update policy (Dependabot or Renovate). All 8 dependency findings are resolved by keeping dependencies current."
+    },
+    {
+      "root_cause": "Architecture review process gap — services shipped without full architecture compliance",
+      "findings": ["QO-003", "QO-005", "QO-006"],
+      "single_fix": "Add architecture gate to PR reviews: verify (1) no store imports in route handlers, (2) NODE_ENV branch in logger, (3) OTel initialized. All 3 P2 architecture violations are caught by one checklist addition."
+    },
+    {
+      "root_cause": "Traceability tooling deficiency",
+      "findings": ["QO-001", "QO-004", "QO-007", "QO-012"],
+      "single_fix": "Fix enforcer (QO-004) and archive orphaned spec (QO-001). The same enforcer fix that adds lowercase FR ID support will also properly track FR-dependency-seed (QO-007) and FR-dependency-api-types (QO-012)."
+    },
+    {
+      "root_cause": "Incomplete feature implementation — dependency-linking feature",
+      "findings": ["QO-002", "QO-007", "QO-012", "QO-009"],
+      "single_fix": "Complete the dependency-linking feature: implement GET /api/search, add blocked_by to types, remove as any casts. One feature completion sprint resolves all 4 findings."
+    }
+  ]
+}

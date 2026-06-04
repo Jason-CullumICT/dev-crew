@@ -1,0 +1,182 @@
+{
+  "audit_date": "2026-06-04",
+  "auditor": "dependency_auditor",
+  "status": "complete",
+  "grade": "D",
+  "summary": {
+    "projects_scanned": 4,
+    "package_managers": ["npm"],
+    "total_direct_dependencies": 30,
+    "total_transitive_dependencies": 799
+  },
+  "vulnerabilities": {
+    "total": 25,
+    "by_severity": {
+      "critical": 3,
+      "high": 0,
+      "moderate": 22,
+      "low": 0
+    },
+    "by_project": {
+      "Source/Backend": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 5,
+        "total": 6
+      },
+      "Source/Frontend": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 8,
+        "total": 9
+      },
+      "Source/E2E": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "total": 0
+      },
+      "platform/orchestrator": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 8,
+        "total": 9
+      }
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server RCE",
+      "package": "vitest",
+      "version": "2.0.5",
+      "is_direct": true,
+      "project": "Source/Frontend",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss_score": 9.8,
+      "description": "When Vitest UI server is listening, arbitrary file can be read and executed",
+      "impact": "RCE on development environment if UI server is exposed",
+      "fix": "npm install vitest@^4.1.8 --save-dev",
+      "urgency": "immediate"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js AST Type Confusion Code Injection",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "is_direct": false,
+      "project": "Source/Backend",
+      "dependency_chain": "ts-jest → handlebars",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss_score": 9.8,
+      "description": "JavaScript Injection via AST Type Confusion",
+      "impact": "RCE if Handlebars templates process user input",
+      "fix": "npm update ts-jest",
+      "urgency": "immediate",
+      "requires_code_audit": true
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "version": "7.5.4",
+      "is_direct": false,
+      "project": "platform/orchestrator",
+      "dependency_chain": "dockerode → protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss_score": 9.8,
+      "description": "Arbitrary code execution via unsafe.eval and prototype pollution",
+      "impact": "RCE on orchestrator infrastructure if untrusted .proto files are loaded",
+      "fix": "npm install dockerode@^5.0.0",
+      "urgency": "immediate",
+      "requires_code_audit": true
+    }
+  ],
+  "high_priority_moderate": [
+    {
+      "id": "DEP-004",
+      "title": "React Router Open Redirect",
+      "package": "react-router-dom",
+      "version": "6.26.0",
+      "project": "Source/Frontend",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "status": "safe_current_version",
+      "fix": "npm install react-router-dom@^6.30.4",
+      "urgency": "medium"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Express / qs Query String DoS",
+      "package": "express",
+      "version": "4.21.0",
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "impact": "Prototype pollution and DoS via crafted query strings",
+      "fix": "npm install express@^4.22.2",
+      "urgency": "high"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "name": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.0",
+      "major_gap": 5,
+      "projects": ["Source/Backend"],
+      "urgency": "high",
+      "fix": "npm install uuid@^14.0.0"
+    },
+    {
+      "name": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "major_gap": 2,
+      "projects": ["Source/Backend"],
+      "urgency": "medium"
+    },
+    {
+      "name": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "major_gap": 2,
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "urgency": "low",
+      "note": "4.22.2 is safe minor bump for now"
+    }
+  ],
+  "license_compliance": {
+    "issues": 0,
+    "status": "compliant",
+    "notes": "No GPL/AGPL detected; no UNLICENSED packages"
+  },
+  "supply_chain_risk": {
+    "assessment": "moderate",
+    "transitive_deps": 799,
+    "largest_subgraph": "Frontend (231 packages)",
+    "post_install_scripts_found": false,
+    "duplicate_versions_detected": false,
+    "high_risk_packages": [
+      "vitest (server mode vulns)",
+      "handlebars (template injection history)",
+      "protobufjs (code gen gadgets)"
+    ]
+  },
+  "recommendations": {
+    "urgent_within_1_week": [
+      "Update vitest to 4.1.8+ (P1 RCE)",
+      "Update ts-jest (pulls newer handlebars, P1 RCE)",
+      "Update dockerode to 5.0.0+ (P1 infrastructure RCE)",
+      "Update express to 4.22.2+ (P2 DoS)"
+    ],
+    "high_priority_within_2_weeks": [
+      "Update uuid to 14.0.0 (5 major versions behind)",
+      "Update react-router-dom to 6.30.4 (P2 open redirect)"
+    ],
+    "code_audits_required": [
+      "Search Backend for Handlebars usage if templates process user input",
+      "Search Orchestrator for protobufjs.load() with untrusted .proto files",
+      "Verify Vitest UI is never exposed in CI or shared environments"
+    ]
+  },
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-06-04.md",
+  "learnings_updated": "Teams/TheInspector/learnings/dependency-auditor.md"
+}

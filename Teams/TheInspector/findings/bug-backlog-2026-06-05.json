@@ -1,0 +1,385 @@
+{
+  "audit_id": "inspector-2026-06-05",
+  "audit_date": "2026-06-05",
+  "branch": "audit/inspector-2026-06-05-2eb531",
+  "grade": "D",
+  "grade_rationale": "3 P1 findings exceed grade-C maximum of 2; spec coverage 0% vs 40% threshold",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend and frontend services were offline; dynamic-mode testing deferred to next audit",
+  "totals": {
+    "p1": 3,
+    "p2": 10,
+    "p3": 13,
+    "p4": 1,
+    "spec_coverage_specifications_pct": 0,
+    "spec_coverage_plan_self_judging_pct": 100,
+    "escalations_to_guardians": 3,
+    "fixed": 0,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Handlebars JavaScript Injection — Backend test chain (CVSS 9.8)",
+      "package": "handlebars@4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "transitive_path": "jest → babel-jest → @babel/core → handlebars",
+      "impact": "Code execution and secret exfiltration in CI/build context",
+      "fix": "cd Source/Backend && npm update",
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Vitest Arbitrary File Read & Code Execution (CVSS 9.8)",
+      "package": "vitest@2.0.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "cwe": "CWE-862",
+      "impact": "Any LAN host can read arbitrary files and execute code on developer machines running npm test",
+      "fix": "cd Source/Frontend && npm install vitest@^4.1.0 --save-dev",
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-018",
+      "severity": "P2",
+      "category": "cve",
+      "title": "esbuild CORS Bypass — any website reads dev server responses (CVSS 5.3)",
+      "package": "esbuild@<=0.24.2",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvss": 5.3,
+      "impact": "Attacker-controlled webpage reads bundled source code and source maps during local dev",
+      "fix": "cd Source/Frontend && npm update vite",
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Specification domain mismatch — product pivot not documented in Specifications/",
+      "files": ["Specifications/dev-workflow-platform.md", "Specifications/workflow-engine.md"],
+      "detail": "74 FRs in Specifications/ describe a SQLite-backed product that does not exist in Source/. Active product spec (workflow-engine.md) has zero formal FR IDs. Effective spec coverage: 0%.",
+      "recommendation": "Archive dev-workflow-platform.md. Add FR-WF-XXX IDs to workflow-engine.md. Define FR-070–FR-085 formally.",
+      "route_to": "TheFixer",
+      "priority": "Block deployment",
+      "cross_refs": ["QO-003", "QO-004"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers call store directly — 3 files bypass service layer",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "detail": "workItems.ts (10 store calls), workflow.ts (10+ store calls), intake.ts (2 store calls). Violates CLAUDE.md rule: 'No direct DB calls from route handlers — use the service layer'. routes/dashboard.ts is the correct model.",
+      "recommendation": "Extract workItemService.ts. Route handlers delegate only to service functions.",
+      "route_to": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer covers only 13/102 requirements; FR-dependency-seed unimplemented",
+      "files": ["tools/traceability-enforcer.py"],
+      "detail": "Enforcer auto-selects most-recently-modified plan, checks only FR-WF-001–013. FR-dependency-* (15 IDs) never checked. FR-dependency-seed confirmed missing (no seed file anywhere in Source/). Enforcer reports false-positive PASSED.",
+      "recommendation": "Implement FR-dependency-seed. Run enforcer with --file Plans/dependency-linking/requirements.md. Update enforcer default target to Specifications/.",
+      "route_to": "TheFixer",
+      "priority": "This sprint",
+      "cross_refs": ["QO-001", "QO-004"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Dependency tracking feature live in Source/ with no Specifications/ entry",
+      "files": ["Specifications/workflow-engine.md", "Plans/dependency-linking/requirements.md"],
+      "detail": "Full dependency tracking (DependencyLink, blockedBy, DependencyPicker, BlockedBadge, etc.) exists in Source/ but is not in Specifications/workflow-engine.md. Plan references stale portal/ paths. FR-070–085 referenced in api-contracts.md but formally undefined.",
+      "recommendation": "Add Dependency Tracking section to Specifications/workflow-engine.md. Define FR-070–085. Update plan to reference Source/ paths.",
+      "route_to": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "cve",
+      "title": "UUID buffer bounds check missing (CVSS 7.5)",
+      "package": "uuid@9.0.0",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "fix": "cd Source/Backend && npm install uuid@^14.0.0 --save",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve",
+      "title": "Express qs DoS — malformed query strings crash server (CVSS 5.3)",
+      "package": "express@4.18.2 / qs@6.11.1",
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "cvss": 5.3,
+      "attack": "GET /api/work-items?q[]=null or similar crafted payload crashes Express",
+      "fix": "cd Source/Backend && npm update express",
+      "route_to": "TheFixer",
+      "priority": "Block deployment",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "category": "cve",
+      "title": "React Router open redirect via protocol-relative URL",
+      "package": "react-router-dom@6.26.0",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "fix": "cd Source/Frontend && npm update react-router-dom",
+      "route_to": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P2",
+      "category": "cve",
+      "title": "Vite path traversal in .map file handling",
+      "package": "vite@5.4.0",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "cwe": ["CWE-22", "CWE-200"],
+      "fix": "cd Source/Frontend && npm update vite",
+      "route_to": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P2",
+      "category": "cve",
+      "title": "PostCSS XSS via unescaped </style> in CSS stringify output (CVSS 6.1)",
+      "package": "postcss@<8.5.10",
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "cvss": 6.1,
+      "cwe": "CWE-79",
+      "fix": "cd Source/Frontend && npm update vite postcss",
+      "route_to": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-019",
+      "severity": "P2",
+      "category": "cve",
+      "title": "WS uninitialized memory disclosure (CVSS 4.4)",
+      "package": "ws@8.0.0–8.20.0",
+      "cve": "GHSA-58qx-3vcg-4xpx",
+      "cvss": 4.4,
+      "cwe": "CWE-908",
+      "fix": "cd Source/Frontend && npm update",
+      "route_to": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "test-hygiene",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Remove top-level stale variants; tests/pages/ versions are canonical",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "untested",
+      "title": "7 frontend files and errorHandler middleware have zero test coverage",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts",
+        "Source/Frontend/src/hooks/useDashboard.ts",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx",
+        "Source/Frontend/src/components/Layout.tsx",
+        "Source/Frontend/src/pages/DebugPortalPage.tsx",
+        "Source/Backend/src/middleware/errorHandler.ts"
+      ],
+      "recommendation": "Priority: hooks > errorHandler > badge components > DebugPortalPage",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "Two Backend logger files with overlapping Verifies: FR-WF-013 comments",
+      "files": [
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "recommendation": "Verify src/logger.ts is a pure re-export shim and document it. Consolidate if not.",
+      "route_to": "TheFixer",
+      "priority": "Backlog",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "abandoned",
+      "title": "glob deprecated — security vulnerabilities, unmaintained",
+      "package": "glob (Backend devDep, transitive)",
+      "fix": "cd Source/Backend && npm update glob",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "abandoned",
+      "title": "inflight deprecated — memory leak, unsupported",
+      "package": "inflight (Backend transitive)",
+      "fix": "cd Source/Backend && npm update && npm ci",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "abandoned",
+      "title": "supertest outdated — upgrade to >=7.1.3",
+      "package": "supertest@6.3.x (Backend direct devDep)",
+      "fix": "cd Source/Backend && npm update supertest",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "abandoned",
+      "title": "superagent outdated — upgrade to >=10.2.2",
+      "package": "superagent (Backend transitive via supertest)",
+      "fix": "cd Source/Backend && npm update supertest",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Express 1 major version behind (4.18 → 5.2)",
+      "package": "express@4.18.2",
+      "latest": "5.2.1",
+      "route_to": "TheFixer",
+      "priority": "Backlog (plan migration)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Pino 2 major versions behind (8.17 → 10.3)",
+      "package": "pino@8.17.0",
+      "latest": "10.3.1",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "UUID 5 major versions behind (9 → 14)",
+      "package": "uuid@9.0.0",
+      "latest": "14.0.0",
+      "route_to": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-020",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "React 1 major version behind (18.3 → 19.2)",
+      "package": "react@18.3.1",
+      "latest": "19.2.7",
+      "route_to": "TheFixer",
+      "priority": "Backlog (plan migration)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-021",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "react-dom 1 major version behind (18.3 → 19.2)",
+      "package": "react-dom@18.3.1",
+      "latest": "19.2.7",
+      "route_to": "TheFixer",
+      "priority": "Backlog (plan migration)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-022",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "react-router-dom 1 major version behind (6.26 → 7.17)",
+      "package": "react-router-dom@6.26.0",
+      "latest": "7.17.0",
+      "route_to": "TheFixer",
+      "priority": "Backlog (plan migration)",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "Unexplained eslint-disable-next-line suppressions in 2 files",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "recommendation": "Add inline comment explaining intent: // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omits X to avoid re-fetch loop",
+      "route_to": "TheFixer",
+      "priority": "Backlog",
+      "status": "NEW"
+    }
+  ],
+  "next_audit": {
+    "recommended_date": "2026-07-05",
+    "trigger_early_if": "P1 remediations are merged (vitest, handlebars, express qs)",
+    "target_grade": "C",
+    "target_criteria": {
+      "max_p1": 2,
+      "max_p2": 15,
+      "min_spec_coverage_pct": 40
+    }
+  }
+}

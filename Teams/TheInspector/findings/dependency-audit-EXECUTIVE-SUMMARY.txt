@@ -1,0 +1,148 @@
+═══════════════════════════════════════════════════════════════════════════════
+  DEPENDENCY AUDIT EXECUTIVE SUMMARY
+  Date: 2026-06-05
+  Auditor: dependency_auditor
+  Grade: D (2 critical CVEs)
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL FINDINGS (ACTION REQUIRED THIS WEEK)
+─────────────────────────────────────────────────────────────────────────────
+
+🔴 P1: Vitest Arbitrary File Read (GHSA-5xrq-8626-4rwp, CVSS 9.8)
+   Location: Source/Frontend/package.json (vitest@2.0.5)
+   Impact: Dev server exposes all project files to network if UI is running
+   Action: npm update vitest to >=4.1.0 (test thoroughly after upgrade)
+   Risk: Any website can read project files when dev is running
+
+🔴 P1: Handlebars JavaScript Injection (GHSA-2w6w-674q-4c4q, CVSS 9.8)
+   Location: Source/Backend (transitive via jest → babel → handlebars@4.7.8)
+   Impact: Multiple code injection vectors in build/test pipeline
+   Action: npm update express (will pull patched deps)
+   Risk: Arbitrary code execution if templates are user-controlled
+
+HIGH-PRIORITY VULNERABILITIES
+─────────────────────────────────────────────────────────────────────────────
+
+🟠 P2: UUID Buffer Bounds (GHSA-w5hq-g745-h8pq, CVSS 7.5)
+   Location: Source/Backend direct (uuid@9.0.0)
+   Fix: npm update uuid to 14.0.0
+
+🟠 P2: Express qs DoS (GHSA-q8mj-m7cp-5q26, CVSS 5.3)
+   Location: Source/Backend (express@4.18.2 → qs vulnerability)
+   Fix: npm update express to 4.22.2
+
+🟠 P2: Vite Path Traversal (GHSA-4w7w-66w2-5vf9)
+   Location: Source/Frontend dev server (vite@5.4.0)
+   Fix: npm update vite to 5.4.1+
+
+🟠 P2: esbuild CORS Bypass (GHSA-67mh-4wv8-2f99, CVSS 5.3)
+   Location: Source/Frontend dev tools (vite chain)
+   Fix: npm update vite
+
+🟠 P2: PostCSS XSS (GHSA-qx2v-qp2m-jg93, CVSS 6.1)
+   Location: Source/Frontend (postcss transitive)
+   Fix: npm update vite (pulls patched postcss)
+
+🟠 P2: React Router Open Redirect (GHSA-2j2x-hqr9-3h42)
+   Location: Source/Frontend (react-router-dom@6.26.0)
+   Fix: npm update react-router-dom to 6.30.4+
+
+🟠 P2: WS Memory Disclosure (GHSA-58qx-3vcg-4xpx, CVSS 4.4)
+   Location: Source/Frontend dev tools (ws@8.0.0-8.20.0)
+   Fix: npm update (auto-pulls >=8.20.1)
+
+DEPRECATED PACKAGES
+─────────────────────────────────────────────────────────────────────────────
+
+Backend has 4 deprecated packages in test suite:
+  ❌ glob        → "contains publicized security vulnerabilities"
+  ❌ inflight    → "leaks memory, not supported"
+  ❌ supertest   → "upgrade to >=7.1.3"
+  ❌ superagent  → "upgrade to >=10.2.2"
+
+Frontend: ✅ Clean (no deprecated packages)
+E2E:      ✅ Clean
+
+OUTDATED MAJOR VERSIONS (Planning Phase)
+─────────────────────────────────────────────────────────────────────────────
+
+Backend:
+  📦 express:  4.18.2 → 4.22.2 (patch fix needed) → 5.2.1 (major)
+  📦 pino:     8.17.0 → 10.3.1 (2 major versions behind)
+  📦 uuid:     9.0.0 → 14.0.0 (5 major versions + CVE fix)
+
+Frontend:
+  📦 react:             18.3.1 → 19.2.7
+  📦 react-dom:         18.3.1 → 19.2.7
+  📦 react-router-dom:  6.26.0 → 7.17.0
+
+DEPENDENCY TREE HEALTH
+─────────────────────────────────────────────────────────────────────────────
+
+Backend:  4 direct   × 102 transitive    = ⚠️  MODERATE risk (deprecated packages)
+Frontend: 8 direct   × 222 transitive    = 🔴 HIGH risk (critical CVEs)
+E2E:      1 direct   × 4 transitive      = ✅ CLEAN
+
+Total: 27 direct, 648 transitive dependencies
+Supply Chain Risk: 🔴 HIGH (large surface, dev toolchain vulnerabilities)
+
+LICENSE COMPLIANCE
+─────────────────────────────────────────────────────────────────────────────
+
+✅ COMPLIANT — All packages use permissive licenses (MIT, Apache, ISC)
+✅ No GPL/AGPL dependencies
+✅ No UNLICENSED packages
+
+IMMEDIATE ACTION ITEMS (Next Business Day)
+─────────────────────────────────────────────────────────────────────────────
+
+1. Backend/package.json:
+   cd Source/Backend && npm update express uuid --save
+
+2. Frontend/package.json:
+   cd Source/Frontend && npm update vitest --save
+   (⚠️  This is a major version bump — test thoroughly)
+
+3. Backend cleanup:
+   cd Source/Backend && npm ci && npm update
+   (Remove deprecated packages from lock file)
+
+MEDIUM-TERM ACTIONS (This Sprint)
+─────────────────────────────────────────────────────────────────────────────
+
+4. Frontend:
+   cd Source/Frontend && npm update vite react-router-dom ws --save
+
+5. Backend:
+   cd Source/Backend && npm update pino --save
+   (Check breaking changes in v10 release notes)
+
+6. Test after each upgrade:
+   npm test && npm run build
+
+LONG-TERM PLANNING (Next Quarter)
+─────────────────────────────────────────────────────────────────────────────
+
+• React 19 migration (Frontend)
+• Express v5 migration (Backend)
+• Pino v10 migration with API review (Backend)
+
+ESCALATIONS
+─────────────────────────────────────────────────────────────────────────────
+
+[ESCALATE → TheGuardians]
+  - Vitest UI server code execution risk (affects dev environment security)
+  - Handlebars injection risk (potential for supply chain attack)
+  - esbuild CORS bypass (source code exposure during dev)
+
+REFERENCES
+─────────────────────────────────────────────────────────────────────────────
+
+Full report:     Teams/TheInspector/findings/dependency-audit-2026-06-05.md
+Learnings:       Teams/TheInspector/learnings/dependency-auditor.md
+Config:          Teams/TheInspector/inspector.config.yml
+
+═══════════════════════════════════════════════════════════════════════════════
+Report generated: 2026-06-05 06:41 UTC
+Next audit recommended: 2026-07-05 (monthly) or on critical vulnerability disclosure
+═══════════════════════════════════════════════════════════════════════════════

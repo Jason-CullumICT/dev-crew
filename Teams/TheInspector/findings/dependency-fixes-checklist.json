@@ -1,0 +1,248 @@
+{
+  "audit_date": "2026-06-05",
+  "report_version": "1.0",
+  "summary": {
+    "total_issues": 22,
+    "critical": 2,
+    "high": 7,
+    "medium": 6,
+    "low_deprecated": 4,
+    "outdated": 6
+  },
+  "priority_tracks": {
+    "CRITICAL_THIS_WEEK": [
+      {
+        "id": "FIX-001",
+        "issue": "DEP-013: Vitest Arbitrary File Read (GHSA-5xrq-8626-4rwp)",
+        "severity": "P1",
+        "project": "Source/Frontend",
+        "package": "vitest",
+        "current": "2.0.5",
+        "target": ">=4.1.0",
+        "command": "cd Source/Frontend && npm update vitest --save",
+        "verify": "npm test && npm run build",
+        "notes": "Major version upgrade (2.0 -> 4.1), test thoroughly for breaking changes",
+        "effort_hours": 2,
+        "status": "pending"
+      },
+      {
+        "id": "FIX-002",
+        "issue": "DEP-002: UUID Buffer Bounds (GHSA-w5hq-g745-h8pq)",
+        "severity": "P2",
+        "project": "Source/Backend",
+        "package": "uuid",
+        "current": "9.0.0",
+        "target": ">=11.1.1 (or 14.0.0)",
+        "command": "cd Source/Backend && npm update uuid --save",
+        "verify": "npm test",
+        "notes": "Direct dependency, buffer overflow risk. Major version bump.",
+        "effort_hours": 1,
+        "status": "pending"
+      },
+      {
+        "id": "FIX-003",
+        "issue": "DEP-003: Express qs DoS (GHSA-q8mj-m7cp-5q26)",
+        "severity": "P2",
+        "project": "Source/Backend",
+        "package": "express",
+        "current": "4.18.2",
+        "target": ">=4.22.2",
+        "command": "cd Source/Backend && npm update express --save",
+        "verify": "npm test && npm run build",
+        "notes": "Query string DoS vulnerability, patch available within v4 series",
+        "effort_hours": 0.5,
+        "status": "pending"
+      },
+      {
+        "id": "FIX-004",
+        "issue": "DEP-006 through DEP-009: Remove Deprecated Packages",
+        "severity": "P3",
+        "project": "Source/Backend",
+        "packages": ["glob", "inflight", "supertest", "superagent"],
+        "current": "old",
+        "target": "latest or remove",
+        "command": "cd Source/Backend && npm ci && npm update",
+        "verify": "npm test",
+        "notes": "glob, inflight have security issues; supertest/superagent need v7+ and v10+",
+        "effort_hours": 1,
+        "status": "pending"
+      }
+    ],
+    "HIGH_THIS_SPRINT": [
+      {
+        "id": "FIX-005",
+        "issue": "DEP-015: Vite Path Traversal (GHSA-4w7w-66w2-5vf9)",
+        "severity": "P2",
+        "project": "Source/Frontend",
+        "package": "vite",
+        "current": "5.4.0",
+        "target": ">=5.4.1",
+        "command": "cd Source/Frontend && npm update vite --save",
+        "verify": "npm run dev && npm run build",
+        "notes": "Path traversal in .map file handling, also pulls esbuild fix",
+        "effort_hours": 0.5,
+        "status": "pending"
+      },
+      {
+        "id": "FIX-006",
+        "issue": "DEP-014: React Router Open Redirect (GHSA-2j2x-hqr9-3h42)",
+        "severity": "P2",
+        "project": "Source/Frontend",
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "target": ">=6.30.4",
+        "command": "cd Source/Frontend && npm update react-router-dom --save",
+        "verify": "npm test && npm run build",
+        "notes": "Protocol-relative URL open redirect, patch available",
+        "effort_hours": 0.5,
+        "status": "pending"
+      },
+      {
+        "id": "FIX-007",
+        "issue": "DEP-016: PostCSS XSS (GHSA-qx2v-qp2m-jg93)",
+        "severity": "P2",
+        "project": "Source/Frontend",
+        "package": "postcss",
+        "current": "<8.5.10",
+        "target": ">=8.5.10",
+        "command": "cd Source/Frontend && npm update postcss --save",
+        "verify": "npm run build && npm test",
+        "notes": "XSS via unescaped </style>, indirect via vite",
+        "effort_hours": 0.5,
+        "status": "pending"
+      },
+      {
+        "id": "FIX-008",
+        "issue": "DEP-019: WS Memory Disclosure (GHSA-58qx-3vcg-4xpx)",
+        "severity": "P2",
+        "project": "Source/Frontend",
+        "package": "ws",
+        "current": "8.0.0-8.20.0",
+        "target": ">=8.20.1",
+        "command": "cd Source/Frontend && npm update ws --save",
+        "verify": "npm test",
+        "notes": "Uninitialized memory disclosure in WebSocket handling",
+        "effort_hours": 0.5,
+        "status": "pending"
+      }
+    ],
+    "PLANNING_PHASE": [
+      {
+        "id": "FIX-009",
+        "issue": "DEP-010: Express Major Version (1 major behind)",
+        "severity": "P3",
+        "project": "Source/Backend",
+        "package": "express",
+        "current": "4.18.2",
+        "target": "5.2.1",
+        "effort_hours": 8,
+        "notes": "Major version migration, requires API review and testing",
+        "timeline": "next_quarter",
+        "status": "planning"
+      },
+      {
+        "id": "FIX-010",
+        "issue": "DEP-011: Pino Major Versions (2 major behind)",
+        "severity": "P3",
+        "project": "Source/Backend",
+        "package": "pino",
+        "current": "8.17.0",
+        "target": "10.3.1",
+        "effort_hours": 4,
+        "notes": "2 major version jump, check breaking changes",
+        "timeline": "next_quarter",
+        "status": "planning"
+      },
+      {
+        "id": "FIX-011",
+        "issue": "DEP-020, DEP-021: React & React-DOM (1 major behind)",
+        "severity": "P3",
+        "project": "Source/Frontend",
+        "packages": ["react", "react-dom"],
+        "current": "18.3.1",
+        "target": "19.2.7",
+        "effort_hours": 6,
+        "notes": "React 19 has API changes (use() hook, batching), coordinate with vitest upgrade",
+        "timeline": "next_quarter",
+        "status": "planning"
+      },
+      {
+        "id": "FIX-012",
+        "issue": "DEP-022: React Router (1 major behind)",
+        "severity": "P3",
+        "project": "Source/Frontend",
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "target": "7.17.0",
+        "effort_hours": 3,
+        "notes": "Route API optimizations in v7, check release notes",
+        "timeline": "next_quarter",
+        "status": "planning"
+      }
+    ],
+    "CLEAN": [
+      {
+        "id": "FIX-013",
+        "project": "Source/E2E",
+        "status": "clean",
+        "note": "No vulnerabilities detected. @playwright/test@1.58.2 is current."
+      }
+    ]
+  },
+  "testing_strategy": {
+    "all_fixes": {
+      "step_1": "Run npm test in respective project directory",
+      "step_2": "Run npm run build (if applicable)",
+      "step_3": "If vitest updated: npm test --ui and verify no test failures",
+      "step_4": "Commit changes with message: 'chore(deps): update [package] to [version] (security patch, closes [CVE])'"
+    },
+    "major_versions": {
+      "vitest": "After upgrade, run full test suite in watch mode and check for broken tests",
+      "express": "After upgrade, run backend tests + manual API endpoint verification",
+      "react": "After upgrade, run frontend tests + visual regression check"
+    }
+  },
+  "success_criteria": {
+    "critical_fixes": {
+      "vitest_4_1_0": "All tests pass, no TypeScript errors, dev server runs without crashes",
+      "uuid_11_plus": "Backend tests pass, no new warnings"
+    },
+    "high_fixes": {
+      "express_4_22_2": "All backend tests pass, query string handling works",
+      "vite_5_4_1": "Dev server starts without errors, build succeeds"
+    }
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "severity": "critical",
+      "issue": "Vitest UI server allows arbitrary file read (DEP-013)",
+      "description": "Development environment security risk when UI server is left running"
+    },
+    {
+      "team": "TheGuardians",
+      "severity": "critical",
+      "issue": "Handlebars JavaScript injection in build pipeline (DEP-001)",
+      "description": "Code execution risk in test/build pipeline if user-controlled templates processed"
+    },
+    {
+      "team": "TheGuardians",
+      "severity": "high",
+      "issue": "esbuild CORS bypass in dev server (DEP-018)",
+      "description": "Source code exposure risk during local development"
+    }
+  ],
+  "process_improvements": [
+    "Set up npm audit in CI/CD to fail on critical/high CVEs",
+    "Run npm audit monthly or on PR basis",
+    "Subscribe to GitHub security advisories for watched packages",
+    "Add pre-commit hook to prevent committing package-lock.json with known CVEs",
+    "Consider Snyk or Dependabot for continuous CVE monitoring"
+  ],
+  "tracked_metrics": {
+    "critical_cvss_9_8": 2,
+    "deprecated_packages": 4,
+    "transitive_deps_ratio": "648 transitive / 27 direct = 24x",
+    "license_compliance": "100% (all MIT/Apache/ISC)"
+  }
+}

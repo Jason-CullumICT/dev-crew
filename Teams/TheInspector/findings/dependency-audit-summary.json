@@ -1,0 +1,268 @@
+{
+  "audit_metadata": {
+    "run_date": "2026-06-06",
+    "agent": "dependency_auditor",
+    "model": "haiku",
+    "status": "completed",
+    "grade": "C"
+  },
+  "summary": {
+    "projects_scanned": 3,
+    "package_managers": ["npm"],
+    "total_direct_dependencies": 17,
+    "total_transitive_dependencies": 641,
+    "cves_total": 15,
+    "cves_critical": 1,
+    "cves_high": 0,
+    "cves_medium": 5,
+    "cves_low": 8,
+    "outdated_major_versions": 8,
+    "deprecated_packages": 4,
+    "license_violations_gpl": 0,
+    "unlicensed_packages": 2
+  },
+  "projects": {
+    "backend": {
+      "path": "Source/Backend",
+      "direct_dependencies": 14,
+      "transitive_dependencies": 411,
+      "cves_critical": 1,
+      "cves_moderate": 5,
+      "cves_total": 6,
+      "deprecated_packages": 4,
+      "outdated_major_versions": 3,
+      "health": "VULNERABLE"
+    },
+    "frontend": {
+      "path": "Source/Frontend",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 230,
+      "cves_critical": 1,
+      "cves_moderate": 8,
+      "cves_total": 9,
+      "deprecated_packages": 0,
+      "outdated_major_versions": 5,
+      "health": "VULNERABLE"
+    },
+    "e2e": {
+      "path": "Source/E2E",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 5,
+      "cves_critical": 0,
+      "cves_moderate": 0,
+      "cves_total": 0,
+      "deprecated_packages": 0,
+      "outdated_major_versions": 0,
+      "health": "HEALTHY"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Critical JavaScript Injection",
+      "severity": "P1-CRITICAL",
+      "package": "handlebars",
+      "vulnerable_range": ">=4.0.0 <=4.7.8",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "status": "PHANTOM_DEPENDENCY",
+      "action": "VERIFY_AFTER_INSTALL",
+      "escalation": ["red-teamer"]
+    }
+  ],
+  "high_impact_findings": [
+    {
+      "id": "DEP-002",
+      "title": "UUID Buffer Bounds Check Missing",
+      "severity": "P2-HIGH",
+      "package": "uuid",
+      "current_version": "9.0.1",
+      "latest_version": "14.0.0",
+      "vulnerable_range": "<11.1.1",
+      "cvss_score": 7.5,
+      "major_version_gap": 5,
+      "is_direct": true,
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "breaking_change": true
+    },
+    {
+      "id": "DEP-003",
+      "title": "Pino Logging Library Outdated",
+      "severity": "P2-HIGH",
+      "package": "pino",
+      "current_version": "8.21.0",
+      "latest_version": "10.3.1",
+      "major_version_gap": 2,
+      "is_direct": true,
+      "impact": "Missing security patches in critical logging path"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Deprecated glob Package",
+      "severity": "P2-HIGH",
+      "package": "glob",
+      "status": "DEPRECATED",
+      "impact": "Known security vulnerabilities, not maintained",
+      "is_transitive": true
+    },
+    {
+      "id": "DEP-005",
+      "title": "Deprecated supertest",
+      "severity": "P2-MEDIUM",
+      "package": "supertest",
+      "current_version": "6.3.3",
+      "recommended_version": "7.1.3",
+      "status": "DEPRECATED",
+      "is_devdependency": true
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-006",
+      "title": "Express.js Outdated",
+      "severity": "P3-MEDIUM",
+      "package": "express",
+      "current_version": "4.22.1",
+      "latest_version": "5.2.1",
+      "major_version_gap": 1
+    },
+    {
+      "id": "DEP-007",
+      "title": "React Stack Major Version Behind",
+      "severity": "P3-LOW-MEDIUM",
+      "packages": ["react", "react-dom", "react-router-dom"],
+      "major_version_gap": 1
+    },
+    {
+      "id": "DEP-008",
+      "title": "PostCSS XSS Vulnerability",
+      "severity": "P3-MEDIUM",
+      "package": "postcss",
+      "vulnerable_range": "<8.5.10",
+      "cvss_score": 6.1,
+      "cve": "GHSA-qx2v-qp2m-jg93"
+    },
+    {
+      "id": "DEP-009",
+      "title": "React Router Open Redirect",
+      "severity": "P3-MEDIUM",
+      "package": "react-router",
+      "vulnerable_range": "6.7.0 - 6.30.3",
+      "cvss_score": 5.4,
+      "cve": "GHSA-2j2x-hqr9-3h42"
+    },
+    {
+      "id": "DEP-010",
+      "title": "qs DoS Vulnerability",
+      "severity": "P3-MEDIUM",
+      "package": "qs",
+      "vulnerable_range": "6.11.1 - 6.15.1",
+      "cve": "GHSA-q8mj-m7cp-5q26"
+    },
+    {
+      "id": "DEP-011",
+      "title": "Deprecated inflight",
+      "severity": "P3-LOW",
+      "package": "inflight",
+      "status": "DEPRECATED",
+      "impact": "Memory leak in glob ecosystem"
+    },
+    {
+      "id": "DEP-012",
+      "title": "esbuild CORS Bypass",
+      "severity": "P3-LOW",
+      "package": "esbuild",
+      "vulnerable_range": "<=0.24.2",
+      "cvss_score": 5.3,
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "context": "dev-time-only"
+    },
+    {
+      "id": "DEP-013",
+      "title": "brace-expansion ReDoS",
+      "severity": "P3-LOW",
+      "package": "brace-expansion",
+      "vulnerable_range": "<1.1.13",
+      "cvss_score": 6.5,
+      "cve": "GHSA-f886-m6hf-6m8v"
+    },
+    {
+      "id": "DEP-014",
+      "title": "WebSocket Memory Disclosure",
+      "severity": "P3-LOW",
+      "package": "ws",
+      "vulnerable_range": "8.0.0 - 8.20.0",
+      "cvss_score": 5.3,
+      "cve": "GHSA-58qx-3vcg-4xpx",
+      "context": "dev-time-only"
+    },
+    {
+      "id": "DEP-015",
+      "title": "Deprecated superagent",
+      "severity": "P3-LOW",
+      "package": "superagent",
+      "status": "DEPRECATED",
+      "is_transitive": true
+    }
+  ],
+  "license_summary": {
+    "total_packages": 641,
+    "gpl_agpl_sspl": 0,
+    "licenses": {
+      "MIT": 348,
+      "ISC": 34,
+      "BSD-3-Clause": 15,
+      "Apache-2.0": 8,
+      "BSD-2-Clause": 2,
+      "CC-BY-4.0": 1,
+      "(MIT OR CC0-1.0)": 2,
+      "UNLICENSED": 2
+    },
+    "compliance": "PASSING",
+    "notes": "No GPL/AGPL risks. CC-BY-4.0 requires attribution. 2 unlicensed packages (exit@3.0.2, 1 other) have MIT intent but unmarked."
+  },
+  "remediation_steps": {
+    "immediate": [
+      "Verify handlebars installation after npm install",
+      "Update uuid to 14.0.0 (breaking change, test required)",
+      "Update pino to 10.3.1 (test for API changes)",
+      "Upgrade glob dependency chain"
+    ],
+    "short_term": [
+      "Update supertest to 7.1.3",
+      "Plan express v5.x migration",
+      "Update React ecosystem to latest majors",
+      "Run npm audit fix for moderate CVEs"
+    ],
+    "medium_term": [
+      "Quarterly dependency maintenance cycle",
+      "Monitor deprecated packages for removal",
+      "Plan major version upgrades in sprints"
+    ]
+  },
+  "npm_commands": {
+    "safe_fixes": [
+      "cd Source/Backend && npm audit fix",
+      "cd Source/Frontend && npm audit fix"
+    ],
+    "breaking_changes": [
+      "npm update uuid@14.0.0",
+      "npm update pino@10.3.1",
+      "npm update express@5.0.0",
+      "npm audit fix --force"
+    ]
+  },
+  "cross_references": {
+    "red_teamer": ["DEP-001", "DEP-002", "DEP-010"],
+    "thefixer": ["DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007"]
+  }
+}

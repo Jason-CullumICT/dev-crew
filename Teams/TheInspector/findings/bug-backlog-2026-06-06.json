@@ -1,0 +1,425 @@
+{
+  "audit_metadata": {
+    "run_id": "run-20260606-060820",
+    "audit_date": "2026-06-06",
+    "branch": "audit/inspector-2026-06-06-835d48",
+    "grade": "D",
+    "grade_explanation": "3 P1 findings exceed the C threshold (max_p1: 2). Grade improves to C if DEP-001 confirmed phantom. Improves to B once QO-001 + QO-002 resolved.",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_not_run": ["performance-profiler", "chaos-monkey"],
+    "prior_audit": null,
+    "report_html": "Teams/TheInspector/findings/audit-2026-06-06-D.html"
+  },
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 6,
+    "p3_total": 12,
+    "p4_total": 1,
+    "total_findings": 22,
+    "escalations": 1,
+    "fixed": 0,
+    "spec_coverage_pct": 97
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Handlebars.js Critical JavaScript Injection (CVSS 9.8)",
+      "category": "CVE — JavaScript Code Injection",
+      "specialist": "dependency-auditor",
+      "package": "handlebars",
+      "vulnerable_range": ">=4.0.0 <=4.7.8",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "status": "PHANTOM_DEPENDENCY — verify with: npm cache clean --force && cd Source/Backend && npm install && npm ls handlebars",
+      "immediate_action": "Verify installation before next release. If confirmed installed, update to handlebars@4.7.8+. If phantom, document as false positive.",
+      "exploit_scenario": "AST type confusion allows attacker-controlled template input to execute arbitrary JavaScript server-side. Zero authentication required if any public endpoint passes user input through Handlebars.",
+      "recommendation": "1) npm cache clean --force && npm install && npm ls handlebars  2) If installed: npm update handlebars  3) Trigger TheGuardians for full template injection surface assessment"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "title": "Traceability Enforcer Blind Spot — portal/ and platform/ Never Scanned",
+      "category": "architecture-violation / spec-drift",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "lines": "76-79",
+      "status": "NEW",
+      "impact": "7 of 8 plans produce false failures or are completely unchecked. CI reports TRACEABILITY PASSED based on one plan only.",
+      "recommendation": "Add 'portal' and 'platform' to source_dirs in traceability-enforcer.py or read from inspector.config.yml → source.dirs. Update default-run output to name which plan was checked.",
+      "route_to": "TheFixer",
+      "sprint": "this_sprint",
+      "cross_refs": ["QO-005"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "title": "Requirement ID Collision — FR-070 through FR-076 claimed by two plans",
+      "category": "spec-drift / architecture-violation",
+      "specialist": "quality-oracle",
+      "files": [
+        "Plans/image-upload/requirements.md",
+        "Plans/orchestrator-cycle-dashboard/requirements.md"
+      ],
+      "status": "NEW",
+      "impact": "~36 portal references to FR-070–FR-076 are ambiguous between image-upload and orchestrator-cycle-dashboard. Traceability is broken for both plans.",
+      "recommendation": "Renumber orchestrator-cycle-dashboard FRs to FR-OCD-001–007 (or FR-090–096). Update all // Verifies: comments in portal orchestrator components. Create a central FR ID registry.",
+      "route_to": "TheFixer",
+      "sprint": "this_sprint"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "title": "Direct DB Access in Route Handler — No Service Layer",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "file": "portal/Backend/src/routes/teamDispatches.ts",
+      "lines": "37-44, 72-75",
+      "status": "NEW",
+      "impact": "Violates architecture rule: no direct DB calls from route handlers. Also: inline TeamDispatch interface (belongs in portal/Shared/types.ts), missing traceability comment.",
+      "recommendation": "Create portal/Backend/src/services/teamDispatchService.ts. Move TeamDispatch to portal/Shared/types.ts. Add // Verifies: once FR assigned.",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "title": "3 Open dependency-linking Implementation Items",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "files": [
+        "portal/Shared/api.ts (lines 32-67) — missing blocked_by?: string[]",
+        "portal/Frontend/src/components/shared/DependencyPicker.tsx (lines 291,293) — as any casts",
+        "portal/Backend/src/database/ — seed.ts absent",
+        "portal/Frontend/tests/ — DependencySection.test.tsx and BlockedBadge.test.tsx absent"
+      ],
+      "status": "NEW",
+      "impact": "Type safety broken end-to-end for dependency PATCH operations. DependencyPicker uses unsafe as any casts in production. No seed data for testing dependency chains.",
+      "recommendation": "Dispatch backend-coder for blocked_by field + seed.ts; dispatch frontend-coder for missing test files.",
+      "route_to": "TheFixer",
+      "sprint": "this_sprint"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "title": "UUID Buffer Bounds Check Missing (CVSS 7.5)",
+      "category": "CVE — Buffer Overflow",
+      "specialist": "dependency-auditor",
+      "package": "uuid",
+      "current_version": "9.0.1",
+      "fix_version": "14.0.0",
+      "vulnerable_range": "<11.1.1",
+      "cvss_score": 7.5,
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "status": "NEW",
+      "breaking_change": true,
+      "impact": "Missing bounds check in v3/v5/v6 UUID generation when buf parameter provided. Can cause buffer overflow / memory corruption.",
+      "recommendation": "npm update uuid@14.0.0 in Source/Backend. Check if any caller uses buf parameter (API change). Run full test suite.",
+      "route_to": "TheFixer",
+      "sprint": "this_sprint"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "title": "Pino Logging Library 2 Major Versions Behind",
+      "category": "Outdated — High Impact",
+      "specialist": "dependency-auditor",
+      "package": "pino",
+      "current_version": "8.21.0",
+      "fix_version": "10.3.1",
+      "status": "NEW",
+      "impact": "Critical logging path missing security patches from v9 and v10.",
+      "recommendation": "npm update pino@10.3.1 in Source/Backend. Review v9/v10 migration guides for API changes.",
+      "route_to": "TheFixer",
+      "sprint": "this_sprint"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "title": "Deprecated glob Package with Known Security Vulnerabilities",
+      "category": "Deprecated — Supply Chain Risk",
+      "specialist": "dependency-auditor",
+      "package": "glob",
+      "is_transitive": true,
+      "status": "NEW",
+      "impact": "Deprecated with known security vulnerabilities. Inherited through test/build toolchain.",
+      "recommendation": "Upgrade dependencies that use glob to modern glob v10+ alternatives. Coordinate with toolchain upgrade sprint.",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "title": "Deprecated supertest (Backend Testing Framework)",
+      "category": "Deprecated — Maintenance Risk",
+      "specialist": "dependency-auditor",
+      "package": "supertest",
+      "current_version": "6.3.3",
+      "fix_version": "7.1.3",
+      "is_devdependency": true,
+      "status": "NEW",
+      "impact": "Dev dependency critical for CI pipeline. Deprecated with recommendation to upgrade.",
+      "recommendation": "npm update supertest@7.1.3 in Source/Backend. Should be backward compatible.",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "title": "tiered-merge-pipeline plan has no requirements.md — enforcer cannot gate it",
+      "category": "doc-stale",
+      "specialist": "quality-oracle",
+      "file": "Plans/tiered-merge-pipeline/",
+      "status": "NEW",
+      "recommendation": "Create Plans/tiered-merge-pipeline/requirements.md by extracting FR-TMP-001–010 from Specifications/tiered-merge-pipeline.md. Prerequisite: QO-001 fix.",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint",
+      "blocked_by": "QO-001"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "title": "5 Production Files Exceed 500-Line Threshold",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "files": [
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx (550 lines)",
+        "portal/Frontend/src/components/bugs/BugDetail.tsx (546 lines)",
+        "portal/Backend/src/services/cycleService.ts (526 lines)",
+        "portal/Frontend/src/api/client.ts (525 lines)",
+        "portal/Backend/src/services/featureRequestService.ts (506 lines)"
+      ],
+      "status": "NEW",
+      "recommendation": "Schedule for next refactor pass. Priority: detail components first.",
+      "route_to": "TheFixer",
+      "sprint": "backlog"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "title": "Express.js 1 Major Version Behind (4.22.1 → 5.2.1)",
+      "category": "Outdated",
+      "specialist": "dependency-auditor",
+      "package": "express",
+      "current_version": "4.22.1",
+      "fix_version": "5.2.1",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "sprint": "backlog"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "title": "React Stack 1 Major Version Behind",
+      "category": "Outdated",
+      "specialist": "dependency-auditor",
+      "packages": [
+        {"name": "react", "current": "18.3.1", "latest": "19.2.7"},
+        {"name": "react-dom", "current": "18.3.1", "latest": "19.2.7"},
+        {"name": "react-router-dom", "current": "6.26.0", "latest": "7.17.0"}
+      ],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "sprint": "backlog"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "title": "PostCSS XSS via Unescaped </style> Tag (CVSS 6.1)",
+      "category": "CVE — XSS",
+      "specialist": "dependency-auditor",
+      "package": "postcss",
+      "vulnerable_range": "<8.5.10",
+      "cvss_score": 6.1,
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "context": "build-tool",
+      "status": "NEW",
+      "fix_command": "npm audit fix",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "title": "React Router Open Redirect via Protocol-Relative URL (CVSS 5.4)",
+      "category": "CVE — Open Redirect",
+      "specialist": "dependency-auditor",
+      "package": "react-router-dom",
+      "vulnerable_range": "6.7.0 - 6.30.3",
+      "cvss_score": 5.4,
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "status": "NEW",
+      "fix_command": "npm audit fix",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "title": "qs DoS — Null Entry Crash (GHSA-q8mj-m7cp-5q26)",
+      "category": "CVE — DoS",
+      "specialist": "dependency-auditor",
+      "package": "qs",
+      "vulnerable_range": "6.11.1 - 6.15.1",
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "status": "NEW",
+      "fix_command": "npm audit fix",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "title": "Deprecated inflight — Memory Leak in glob Ecosystem",
+      "category": "Deprecated — Memory Risk",
+      "specialist": "dependency-auditor",
+      "package": "inflight",
+      "is_transitive": true,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "sprint": "backlog"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "title": "esbuild CORS Bypass in Dev Server (CVSS 5.3)",
+      "category": "CVE — CORS (dev-time only)",
+      "specialist": "dependency-auditor",
+      "package": "esbuild",
+      "vulnerable_range": "<=0.24.2",
+      "cvss_score": 5.3,
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "context": "dev-time-only",
+      "status": "NEW",
+      "note": "Requires npm audit fix --force (breaking Vite change). Assess trade-off carefully.",
+      "route_to": "TheFixer",
+      "sprint": "backlog"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "title": "brace-expansion Zero-Step Sequence ReDoS (CVSS 6.5)",
+      "category": "CVE — ReDoS",
+      "specialist": "dependency-auditor",
+      "package": "brace-expansion",
+      "vulnerable_range": "<1.1.13",
+      "cvss_score": 6.5,
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "status": "NEW",
+      "fix_command": "npm audit fix",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "title": "WebSocket Uninitialized Memory Disclosure (CVSS 5.3)",
+      "category": "CVE — Info Disclosure (dev-time only)",
+      "specialist": "dependency-auditor",
+      "package": "ws",
+      "vulnerable_range": "8.0.0 - 8.20.0",
+      "cvss_score": 5.3,
+      "cve": "GHSA-58qx-3vcg-4xpx",
+      "context": "dev-time-only",
+      "status": "NEW",
+      "fix_command": "npm audit fix",
+      "route_to": "TheFixer",
+      "sprint": "next_sprint"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "title": "Deprecated superagent (transitive via supertest)",
+      "category": "Deprecated",
+      "specialist": "dependency-auditor",
+      "package": "superagent",
+      "is_transitive": true,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "sprint": "backlog"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "title": "3 Undocumented eslint-disable react-hooks/exhaustive-deps Suppressions",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "portal/Frontend/src/hooks/useApi.ts:35"
+      ],
+      "status": "NEW",
+      "recommendation": "Add inline comments explaining why each suppression is safe (e.g., fetch-on-mount pattern). Review for stale closure risks.",
+      "route_to": "TheFixer",
+      "sprint": "backlog"
+    }
+  ],
+  "grading": {
+    "config": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": {"max_p1": 999}
+    },
+    "actual": {
+      "p1_count": 3,
+      "p2_count": 6,
+      "spec_coverage_pct": 97
+    },
+    "grade": "D",
+    "grade_note": "P1 count (3) exceeds C threshold (max 2). Grade improves to C if DEP-001 confirmed phantom (P1→2). Grade reaches B once QO-001 + QO-002 resolved (P1→0, P2=6≤8, coverage=97%≥60%)."
+  },
+  "cross_references": {
+    "traceability_tooling_blind_spot": {
+      "root_cause": "tools/traceability-enforcer.py hardcodes source_dirs=[Source,E2E]",
+      "findings": ["QO-001", "QO-005"],
+      "single_fix": "Extend enforcer to scan portal/ and platform/",
+      "fix_impact": "Closes 2 findings, immediately drops P1 count from 3 to 2"
+    },
+    "dependency_maintenance_gap": {
+      "root_cause": "No automated dependency update bot (Dependabot/Renovate) configured",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014", "DEP-015"],
+      "single_fix": "Enable Renovate or Dependabot with auto-merge for patch/minor",
+      "fix_impact": "Closes root cause for all 15 DEP-* findings over time"
+    },
+    "fr_id_namespace_collision": {
+      "root_cause": "No central FR ID registry; plans independently assign IDs",
+      "findings": ["QO-002"],
+      "single_fix": "Create Specifications/fr-registry.md; renumber OCD plan to FR-OCD-*",
+      "fix_impact": "Closes 1 P1 finding; prevents future collisions"
+    },
+    "dependency_linking_debt": {
+      "root_cause": "3 items in dependency-linking plan never closed in a sprint",
+      "findings": ["QO-004"],
+      "single_fix": "Sprint allocation: backend-coder (api.ts + seed.ts) + frontend-coder (2 test files)",
+      "fix_impact": "Removes as any casts from production code; closes QO-004 P2"
+    }
+  },
+  "routing_summary": {
+    "escalate_to_TheGuardians": ["DEP-001"],
+    "route_to_TheFixer_block_deploy": ["DEP-001"],
+    "route_to_TheFixer_this_sprint": ["QO-001", "QO-002", "DEP-002", "DEP-003", "QO-004"],
+    "route_to_TheFixer_next_sprint": ["QO-003", "DEP-004", "DEP-005", "QO-005", "DEP-008", "DEP-009", "DEP-010", "DEP-013", "DEP-014"],
+    "route_to_TheFixer_backlog": ["DEP-006", "DEP-007", "QO-006", "DEP-011", "DEP-012", "DEP-015", "QO-007"]
+  }
+}

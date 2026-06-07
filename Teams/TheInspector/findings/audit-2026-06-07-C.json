@@ -1,0 +1,430 @@
+{
+  "metadata": {
+    "audit_date": "2026-06-07T06:38:00Z",
+    "auditor": "dependency-auditor",
+    "grade": "C",
+    "report_file": "dependency-audit-2026-06-07.md"
+  },
+  "summary": {
+    "total_workspaces": 6,
+    "package_managers": ["npm"],
+    "has_vulnerabilities": true,
+    "total_vulnerabilities": 23,
+    "vulnerabilities_by_severity": {
+      "critical": 4,
+      "high": 4,
+      "moderate": 15,
+      "low": 0
+    },
+    "total_direct_dependencies": 69,
+    "total_transitive_dependencies": 1807,
+    "compliance": {
+      "gpl_agpl_packages": 0,
+      "unlicensed_packages": 13,
+      "post_install_scripts": 0
+    },
+    "supply_chain_risk_level": "moderate"
+  },
+  "vulnerabilities": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Multiple JavaScript Injection + Prototype Pollution",
+      "severity": "critical",
+      "priority": "P1",
+      "category": "code-injection",
+      "package_name": "handlebars",
+      "affected_range": "4.0.0 - 4.7.8",
+      "current_version": "4.7.8",
+      "fixed_version": "4.7.9",
+      "is_direct": false,
+      "affected_workspaces": ["Source/Backend"],
+      "cves": [
+        {
+          "id": "GHSA-2w6w-674q-4c4q",
+          "cvss_score": 9.8,
+          "title": "JavaScript Injection via AST Type Confusion"
+        },
+        {
+          "id": "GHSA-3mfm-83xf-c92r",
+          "cvss_score": 8.1,
+          "title": "JavaScript Injection via @partial-block tampering"
+        },
+        {
+          "id": "GHSA-2qvq-rjwj-gvw9",
+          "cvss_score": 4.7,
+          "title": "Prototype Pollution Leading to XSS"
+        },
+        {
+          "id": "GHSA-9cx6-37pm-9jff",
+          "cvss_score": 7.5,
+          "title": "DoS via Malformed Decorator Syntax"
+        },
+        {
+          "id": "GHSA-xjpj-3mr7-gcpf",
+          "cvss_score": 8.2,
+          "title": "CLI Precompiler JavaScript Injection"
+        }
+      ],
+      "fix_available": true,
+      "fix_command": "cd Source/Backend && npm update handlebars",
+      "cross_ref": ["TheGuardians:security-assessment"]
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest ≤4.1.0-beta.6 Critical Vulnerability",
+      "severity": "critical",
+      "priority": "P1",
+      "category": "test-framework",
+      "package_name": "vitest",
+      "affected_range": "<=4.1.0-beta.6",
+      "current_version": "<=4.1.0-beta.6",
+      "fixed_version": "4.1.0",
+      "is_direct": true,
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "cves": [],
+      "fix_available": true,
+      "fix_command": "cd {WORKSPACE} && npm update vitest"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs ≤7.5.7 Remote Code Execution",
+      "severity": "critical",
+      "priority": "P1",
+      "category": "protocol-buffer",
+      "package_name": "protobufjs",
+      "affected_range": "<=7.5.7",
+      "current_version": "<=7.5.7",
+      "fixed_version": "7.6.0",
+      "is_direct": false,
+      "affected_workspaces": ["platform/orchestrator"],
+      "cves": [],
+      "fix_available": true,
+      "fix_command": "cd platform/orchestrator && npm update protobufjs"
+    },
+    {
+      "id": "DEP-004",
+      "title": "OpenTelemetry Auto-Instrumentation DoS/Code Injection",
+      "severity": "high",
+      "priority": "P2",
+      "category": "instrumentation",
+      "package_name": "@opentelemetry/auto-instrumentations-node",
+      "affected_range": "<=0.74.0",
+      "current_version": "<=0.74.0",
+      "fixed_version": "0.75.0",
+      "is_direct": true,
+      "affected_workspaces": ["portal/Backend"],
+      "cves": [],
+      "fix_available": true,
+      "fix_command": "cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node"
+    },
+    {
+      "id": "DEP-005",
+      "title": "OpenTelemetry SDK Node <0.217.0",
+      "severity": "high",
+      "priority": "P2",
+      "category": "observability",
+      "package_name": "@opentelemetry/sdk-node",
+      "affected_range": "<0.217.0",
+      "current_version": "<0.217.0",
+      "fixed_version": "0.217.0",
+      "is_direct": true,
+      "affected_workspaces": ["portal/Backend"],
+      "cves": [],
+      "fix_available": true,
+      "fix_command": "cd portal/Backend && npm update @opentelemetry/sdk-node"
+    },
+    {
+      "id": "DEP-006",
+      "title": "path-to-regexp <0.1.13 - ReDoS",
+      "severity": "high",
+      "priority": "P2",
+      "category": "regex-dos",
+      "package_name": "path-to-regexp",
+      "affected_range": "<0.1.13",
+      "current_version": "<0.1.13",
+      "fixed_version": "0.1.13",
+      "is_direct": false,
+      "affected_workspaces": [
+        "platform/orchestrator",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "cves": [],
+      "fix_available": true,
+      "fix_command": "npm update path-to-regexp"
+    },
+    {
+      "id": "DEP-007",
+      "title": "picomatch ≤2.3.1 ReDoS Vulnerability",
+      "severity": "high",
+      "priority": "P2",
+      "category": "regex-dos",
+      "package_name": "picomatch",
+      "affected_range": "<=2.3.1 || 4.0.0-4.0.3",
+      "current_version": "<=2.3.1",
+      "fixed_version": "2.3.2",
+      "is_direct": false,
+      "affected_workspaces": ["portal/Frontend"],
+      "cves": [],
+      "fix_available": true,
+      "fix_command": "cd portal/Frontend && npm update picomatch"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Express & Body-Parser via qs DoS",
+      "severity": "moderate",
+      "priority": "P3",
+      "category": "query-string",
+      "package_name": "qs",
+      "affected_range": "6.11.1-6.15.1",
+      "current_version": "6.11.1-6.15.1",
+      "fixed_version": "6.15.2+",
+      "is_direct": false,
+      "affected_workspaces": ["Source/Backend"],
+      "cves": [
+        {
+          "id": "GHSA-q8mj-m7cp-5q26",
+          "cvss_score": 5.3,
+          "title": "qs.stringify crashes with TypeError"
+        }
+      ],
+      "fix_available": true,
+      "fix_command": "cd Source/Backend && npm update express qs"
+    },
+    {
+      "id": "DEP-009",
+      "title": "brace-expansion <1.1.13 - Process Hang",
+      "severity": "moderate",
+      "priority": "P3",
+      "category": "dos",
+      "package_name": "brace-expansion",
+      "affected_range": "<1.1.13",
+      "current_version": "<1.1.13",
+      "fixed_version": "1.1.13",
+      "is_direct": false,
+      "affected_workspaces": ["Source/Backend"],
+      "cves": [
+        {
+          "id": "GHSA-f886-m6hf-6m8v",
+          "cvss_score": 6.5,
+          "title": "Zero-step sequence causes process hang"
+        }
+      ],
+      "fix_available": true,
+      "fix_command": "cd Source/Backend && npm update brace-expansion"
+    },
+    {
+      "id": "DEP-010",
+      "title": "uuid <11.1.1 - Buffer Bounds Check Missing",
+      "severity": "moderate",
+      "priority": "P3",
+      "category": "buffer-overflow",
+      "package_name": "uuid",
+      "affected_range": "<11.1.1",
+      "current_version": "9.x",
+      "fixed_version": "11.1.1",
+      "is_direct": true,
+      "affected_workspaces": ["Source/Backend"],
+      "cves": [
+        {
+          "id": "GHSA-w5hq-g745-h8pq",
+          "cvss_score": 7.5,
+          "title": "Missing buffer bounds check in v3/v5/v6"
+        }
+      ],
+      "fix_available": true,
+      "fix_command": "cd Source/Backend && npm install uuid@latest",
+      "notes": "Requires major version bump"
+    }
+  ],
+  "workspaces": [
+    {
+      "name": "Source/Backend",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 412,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 5
+      },
+      "status": "healthy"
+    },
+    {
+      "name": "Source/Frontend",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 231,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 8
+      },
+      "status": "healthy"
+    },
+    {
+      "name": "Source/E2E",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 5,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0
+      },
+      "status": "clean"
+    },
+    {
+      "name": "platform/orchestrator",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 156,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 6
+      },
+      "status": "healthy"
+    },
+    {
+      "name": "portal/Backend",
+      "direct_dependencies": 22,
+      "transitive_dependencies": 578,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 3,
+        "moderate": 10
+      },
+      "status": "flag_high_complexity"
+    },
+    {
+      "name": "portal/Frontend",
+      "direct_dependencies": 17,
+      "transitive_dependencies": 425,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 7
+      },
+      "status": "healthy"
+    }
+  ],
+  "remediation_plan": {
+    "phase_1_immediate": {
+      "timeframe": "Now",
+      "target": "Eliminate P1 vulnerabilities",
+      "packages": [
+        {
+          "name": "handlebars",
+          "from": "4.7.8",
+          "to": "4.7.9+",
+          "workspace": "Source/Backend"
+        },
+        {
+          "name": "vitest",
+          "from": "<=4.1.0-beta.6",
+          "to": "4.1.0+",
+          "workspaces": ["Source/Frontend", "portal/Backend", "portal/Frontend"]
+        },
+        {
+          "name": "protobufjs",
+          "from": "<=7.5.7",
+          "to": "7.6.0+",
+          "workspace": "platform/orchestrator"
+        }
+      ]
+    },
+    "phase_2_urgent": {
+      "timeframe": "24 hours",
+      "target": "Eliminate P2 vulnerabilities",
+      "packages": [
+        {
+          "name": "@opentelemetry/auto-instrumentations-node",
+          "from": "<=0.74.0",
+          "to": "0.75.0+",
+          "workspace": "portal/Backend"
+        },
+        {
+          "name": "@opentelemetry/sdk-node",
+          "from": "<0.217.0",
+          "to": "0.217.0+",
+          "workspace": "portal/Backend"
+        },
+        {
+          "name": "path-to-regexp",
+          "from": "<0.1.13",
+          "to": "0.1.13+",
+          "workspaces": ["platform/orchestrator", "portal/Backend", "portal/Frontend"]
+        },
+        {
+          "name": "picomatch",
+          "from": "<=2.3.1",
+          "to": "2.3.2+",
+          "workspace": "portal/Frontend"
+        }
+      ]
+    },
+    "phase_3_high": {
+      "timeframe": "1 week",
+      "target": "Eliminate P3 vulnerabilities",
+      "packages": [
+        "uuid (major bump to 11.1.1+)",
+        "express (4.22.2+)",
+        "vite (6.4.2+)",
+        "postcss (8.5.10+)",
+        "react-router-dom (6.30.4+)"
+      ]
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "critical",
+      "area": "security",
+      "recommendation": "Update handlebars to 4.7.9+ immediately",
+      "rationale": "Recursive JavaScript injection vulnerabilities with CVSS 9.8"
+    },
+    {
+      "priority": "critical",
+      "area": "testing",
+      "recommendation": "Update vitest to stable 4.1.0+ in all workspaces",
+      "rationale": "Critical vulnerability in beta versions affecting CI/CD integrity"
+    },
+    {
+      "priority": "critical",
+      "area": "infrastructure",
+      "recommendation": "Update protobufjs to 7.6.0+ in platform/orchestrator",
+      "rationale": "RCE risk via malformed protobuf messages"
+    },
+    {
+      "priority": "high",
+      "area": "observability",
+      "recommendation": "Update @opentelemetry/* packages in portal/Backend",
+      "rationale": "DoS and code injection vulnerabilities in instrumentation layer"
+    },
+    {
+      "priority": "high",
+      "area": "supply-chain",
+      "recommendation": "Reduce transitive dependencies in portal/Backend from 578 to <500",
+      "rationale": "Exceeds safe threshold for supply chain risk management"
+    },
+    {
+      "priority": "medium",
+      "area": "maintenance",
+      "recommendation": "Consider migrating away from Handlebars to modern template engine",
+      "rationale": "Aged codebase with recurring injection vulnerabilities (8 separate CVEs)"
+    },
+    {
+      "priority": "low",
+      "area": "compliance",
+      "recommendation": "Audit 13 unlicensed packages if project will be redistributed",
+      "rationale": "No immediate risk for internal deployment, but license compliance required for OSS"
+    }
+  ],
+  "audit_metadata": {
+    "runner": "GitHub Actions",
+    "npm_version": "10.x",
+    "audit_method": "npm audit --json + package-lock.json analysis",
+    "confidence": "high",
+    "next_audit_recommended": "2026-06-14"
+  }
+}

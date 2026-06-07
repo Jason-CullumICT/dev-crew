@@ -1,0 +1,340 @@
+{
+  "meta": {
+    "audit_id": "run-20260607-064638",
+    "audit_date": "2026-06-07",
+    "branch": "audit/inspector-2026-06-07-686489",
+    "grade": "D",
+    "generated_by": "TheInspector team-leader (sonnet)",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline — static mode not completed for these specialists"
+  },
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 6,
+    "p3_total": 9,
+    "p4_total": 2,
+    "total_findings": 22,
+    "fixed_since_prior": 0,
+    "prior_audit": null,
+    "trend": "first_audit",
+    "spec_coverage_pct": {
+      "plans_self_judging_workflow": 100,
+      "fr_dependency": 87.5,
+      "specifications_dev_workflow_platform": 0
+    }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "severity": "P1",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion (CVSS 9.8)",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "workspace": "Source/Backend",
+      "description": "Handlebars 4.7.8 is vulnerable to JavaScript injection when untrusted input is passed to template rendering. Five separate GHSA advisories (CVSS 4.7–9.8). Fix: npm update handlebars to 4.7.9+. Security team must confirm whether handlebars is used with untrusted input before production deployment.",
+      "fix_command": "cd Source/Backend && npm update handlebars"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift/untested",
+      "title": "GET /api/search route not implemented — 5 tests intentionally fail",
+      "file": "Source/Backend/tests/routes/search.test.ts",
+      "status": "NEW",
+      "description": "No Source/Backend/src/routes/search.ts and no app.use('/api/search') in app.ts. Five test cases document the expected contract and explicitly note they will fail until the route is implemented. DependencyPicker.tsx calls searchItems() which hits this missing endpoint at runtime — live typeahead is broken.",
+      "exploit_scenario": "Any user of the DependencyPicker UI triggers a 404 on every keystroke in the search box. TypeAhead dependency linking is non-functional.",
+      "impact": "Core dependency-linking feature (FR-dependency-search) non-functional in UI. 5 failing tests blocking CI.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts implementing GET /api/search?q= that filters workItemStore.findAll() by title/description (case-insensitive), excludes soft-deleted items, returns {data: WorkItem[]}. Mount in app.ts. Unblocks 5 failing tests.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift/architecture-violation",
+      "title": "Traceability enforcer false green — 69 Specifications requirements completely unchecked",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW",
+      "description": "The enforcer auto-selects Plans/self-judging-workflow/requirements.md (13 FR-WF-* IDs), all of which pass. Specifications/dev-workflow-platform.md defines 69 formal FR-001–069 requirements. Source code has zero // Verifies: FR-001 through FR-069 comments. The mandatory CLAUDE.md verification gate passes with zero true signal on the main specification document.",
+      "exploit_scenario": "Any regression against the 69 Specifications requirements is invisible to CI. The gate says PASS while the entire Specifications spec is untested.",
+      "impact": "Architecture rule 'Every FR needs a test with Verifies: FR-XXX' is unverifiable. False compliance.",
+      "recommendation": "Extend enforcer to also scan Specifications/ for requirement IDs. Alternatively, declare dev-workflow-platform.md as historical and formally retire FR-001–069 from the enforcer scope. Either way: PASS must not occur when the authoritative spec is untested.",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-003", "QO-005"]
+    },
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "code-injection/CVE",
+      "title": "Handlebars.js 4.7.8 — JavaScript Injection CVSS 9.8 + 7 additional CVEs",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "escalated_to": "TheGuardians",
+      "description": "handlebars@4.7.8 (transitive dep in Source/Backend) carries 5 GHSA advisories: GHSA-2w6w-674q-4c4q (CVSS 9.8, JS injection via AST type confusion), GHSA-3mfm-83xf-c92r (CVSS 8.1, @partial-block tampering), GHSA-2qvq-rjwj-gvw9 (CVSS 4.7, prototype pollution XSS), GHSA-9cx6-37pm-9jff (CVSS 7.5, DoS), GHSA-xjpj-3mr7-gcpf (CVSS 8.2, CLI precompiler injection).",
+      "exploit_scenario": "If any code path in Source/Backend renders a Handlebars template with untrusted user input (e.g., email templates, report generation), an attacker can inject and execute arbitrary JavaScript server-side.",
+      "impact": "Remote code execution on server if untrusted input reaches Handlebars template engine.",
+      "recommendation": "1. IMMEDIATE: cd Source/Backend && npm update handlebars (→ 4.7.9+). 2. TheGuardians must confirm whether handlebars is used with untrusted input. 3. Consider migrating to a modern template engine (nunjucks, mustache) — Handlebars has recurring injection CVEs.",
+      "fix_command": "cd Source/Backend && npm update handlebars",
+      "route_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "CVE/test-framework",
+      "title": "Vitest ≤4.1.0-beta.6 — critical vulnerability in test framework (3 workspaces)",
+      "file": "Source/Frontend/package.json, portal/Backend/package.json, portal/Frontend/package.json",
+      "status": "NEW",
+      "description": "vitest@≤4.1.0-beta.6 has a critical vulnerability allowing arbitrary code execution during CI/CD or local test runs. Affects Source/Frontend, portal/Backend, and portal/Frontend as a direct dependency.",
+      "exploit_scenario": "Malicious code in test fixtures or CI environment can exploit the vitest vulnerability to execute arbitrary code during test runs.",
+      "impact": "CI/CD pipeline integrity compromised. Arbitrary code execution risk on developer machines and build servers.",
+      "recommendation": "Update vitest to stable 4.1.0+ in all three affected workspaces. Run full test suite after each update to verify compatibility.",
+      "fix_commands": [
+        "cd Source/Frontend && npm update vitest",
+        "cd portal/Backend && npm update vitest",
+        "cd portal/Frontend && npm update vitest"
+      ],
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "CVE/protocol-buffer",
+      "title": "protobufjs ≤7.5.7 — Remote Code Execution via malformed protobuf",
+      "file": "platform/orchestrator/package-lock.json",
+      "status": "NEW",
+      "description": "protobufjs@≤7.5.7 (transitive in platform/orchestrator) has a known RCE vulnerability. Parsing a malicious protobuf message can trigger arbitrary code execution.",
+      "exploit_scenario": "An attacker who can send malformed protobuf messages to the orchestrator can achieve remote code execution.",
+      "impact": "Remote code execution in platform/orchestrator — the pipeline infrastructure itself.",
+      "recommendation": "cd platform/orchestrator && npm update protobufjs (→ 7.6.0+). Test orchestrator functionality after update.",
+      "fix_command": "cd platform/orchestrator && npm update protobufjs",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Spec ID namespace disconnect — FR-001–069 unreachable by any code comment",
+      "file": "Specifications/dev-workflow-platform.md",
+      "status": "NEW",
+      "description": "Two parallel requirement namespaces exist: FR-001–069 (Specifications/dev-workflow-platform.md, never used in Source/) and FR-WF-001–013 / FR-dependency-* (Plans/, used extensively). Specs/dev-workflow-platform.md describes a different domain (SQLite, FeatureRequest/BugReport entities) from what's implemented (in-memory WorkItems). CLAUDE.md's architecture rule about Verifies: FR-XXX cannot be verified against Specifications/ at all.",
+      "recommendation": "Decision required: (a) Declare Specifications/dev-workflow-platform.md as historical; add FR-WF-* and FR-dependency-* IDs to Specifications/workflow-engine.md as the live spec. OR (b) Retrofit source with // Verifies: FR-XXX alias comments. FR-dependency-* must have a canonical spec home.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed not implemented — dependency data empty on every restart",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "status": "NEW",
+      "description": "FR-dependency-seed requires idempotent seeding of known dependency relationships on server startup. No seed function exists in Source/Backend/. In-memory store starts empty every restart; DependencySection has nothing to show in demo/dev scenarios. Integration testing of dependency features is harder with no seed data.",
+      "recommendation": "Either (a) implement an idempotent startup seed in workItemStore.ts (3–5 WI-XXX items with dependency links), or (b) formally scope FR-dependency-seed as portal-only and update the spec. If implemented, must be idempotent (no duplicates on restart).",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE/instrumentation",
+      "title": "@opentelemetry/auto-instrumentations-node ≤0.74.0 — DoS/code injection",
+      "file": "portal/Backend/package.json",
+      "status": "NEW",
+      "description": "@opentelemetry/auto-instrumentations-node@≤0.74.0 (direct in portal/Backend) has DoS and code injection vulnerabilities in the instrumentation layer.",
+      "recommendation": "cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node (→ 0.75.0+)",
+      "cross_ref": ["QO-006"],
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE/observability",
+      "title": "@opentelemetry/sdk-node <0.217.0 — vulnerability in portal/Backend",
+      "file": "portal/Backend/package.json",
+      "status": "NEW",
+      "description": "@opentelemetry/sdk-node@<0.217.0 (direct in portal/Backend) has a known vulnerability. Fix to 0.217.0+ is available.",
+      "recommendation": "cd portal/Backend && npm update @opentelemetry/sdk-node (→ 0.217.0+)",
+      "cross_ref": ["QO-006"],
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE/regex-dos",
+      "title": "path-to-regexp <0.1.13 — ReDoS vulnerability in routing (3 workspaces)",
+      "file": "platform/orchestrator, portal/Backend, portal/Frontend",
+      "status": "NEW",
+      "description": "path-to-regexp@<0.1.13 (transitive in platform/orchestrator, portal/Backend, portal/Frontend) enables ReDoS attacks via crafted route patterns, potentially crashing the routing layer.",
+      "recommendation": "npm update path-to-regexp in all three affected workspaces (→ 0.1.13+)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE/regex-dos",
+      "title": "picomatch ≤2.3.1 — ReDoS vulnerability in portal/Frontend build",
+      "file": "portal/Frontend/package-lock.json",
+      "status": "NEW",
+      "description": "picomatch@≤2.3.1 (transitive in portal/Frontend) has a ReDoS vulnerability affecting glob pattern matching during build.",
+      "recommendation": "cd portal/Frontend && npm update picomatch (→ 2.3.2+)",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Traceability enforcer regex extracts false-positive IDs from prose",
+      "file": "tools/traceability-enforcer.py:57",
+      "status": "NEW",
+      "recommendation": "Tighten regex to require FR ID at start of table cell (| FR-) or line. Exclude patterns with leading zeros (FR-0\\d+).",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry not installed or instrumented in Source/Backend",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "recommendation": "Add @opentelemetry/sdk-node, @opentelemetry/auto-instrumentations-node, @opentelemetry/exporter-trace-otlp-http. Initialize in tracing.ts. Add custom spans in assessWorkItem, routeWorkItem, dispatchWorkItem. Propagate W3C traceparent header.",
+      "cross_ref": ["DEP-004", "DEP-005"],
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable without justification comments (2 instances)",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "status": "NEW",
+      "recommendation": "Add inline comment explaining why react-hooks/exhaustive-deps is suppressed. If unjustified, fix the deps array.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/query-string",
+      "title": "Express 4.22.1 / qs 6.11.1–6.15.1 — DoS via malformed query string",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "recommendation": "cd Source/Backend && npm update express qs (→ express@4.22.2+)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/dos",
+      "title": "brace-expansion <1.1.13 — process hang/memory exhaustion",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "recommendation": "cd Source/Backend && npm update brace-expansion (→ 1.1.13+)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-010",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/buffer-overflow",
+      "title": "uuid 9.x — missing buffer bounds check (CVSS 7.5)",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "recommendation": "cd Source/Backend && npm install uuid@latest (major version bump required: 9.x → 11.1.1+)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-011",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/build-tool",
+      "title": "Vite ≤6.4.1 and PostCSS <8.5.10 — moderate vulnerabilities in frontend build",
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "status": "NEW",
+      "recommendation": "cd Source/Frontend && npm update vite postcss; cd portal/Frontend && npm update vite postcss",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-012",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/routing",
+      "title": "react-router-dom 6.6.3-pre.0–6.30.3 — moderate vulnerability",
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "status": "NEW",
+      "recommendation": "npm update react-router-dom (→ 6.30.4+) in Source/Frontend and portal/Frontend",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-013",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE/misc",
+      "title": "Additional moderate vulnerabilities (6 packages)",
+      "packages": ["dockerode 4.0.3–4.0.12", "esbuild ≤0.24.2", "gaxios 6.4.0–6.7.1", "ws 8.0.0–8.20.0", "vite-node ≤2.2.0-beta.2", "@protobufjs/utf8 ≤1.1.0"],
+      "status": "NEW",
+      "recommendation": "npm update in affected workspaces. All have fixes available.",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "source": "quality-oracle",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "Silent JSON parse error swallowed in API client",
+      "file": "Source/Frontend/src/api/client.ts:26",
+      "status": "NEW",
+      "recommendation": "Add a comment documenting why the parse failure is intentionally suppressed. Replace .catch(() => ({})) with .catch((e) => { /* intentional: non-JSON error body, fallback to status code */ return {}; })",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-009",
+      "source": "quality-oracle",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "DebugPortalPage uses non-standard traceability format",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "status": "NEW",
+      "recommendation": "Assign a formal FR-WF-014 ID in Specifications/workflow-engine.md, or mark as // Not spec-traced: utility debug iframe.",
+      "route_to": "TheFixer"
+    }
+  ],
+  "positive_observations": [
+    "No console.log in production source — logger abstraction correctly enforced",
+    "No hardcoded secrets or URLs — clean environment variable discipline",
+    "No skipped/todo tests — all test cases run",
+    "100% of Plans/self-judging-workflow requirements fully traced (13/13)",
+    "87.5% of FR-dependency-* requirements traced in source (14/16)",
+    "438 total Verifies: comments across source — dense traceability within Plans scope",
+    "No file exceeds 500 lines",
+    "Catch blocks in backend properly log errors with full context",
+    "No GPL/AGPL licenses — zero viral license risk",
+    "No post-install scripts — secure npm profile",
+    "No abandoned packages in critical path",
+    "Source/E2E workspace is completely clean (0 vulnerabilities)"
+  ]
+}

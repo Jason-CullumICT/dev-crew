@@ -1,25 +1,62 @@
-# TheInspector Findings Directory
+# TheInspector Findings — Dependency Audit
 
-This directory receives audit reports and bug-backlogs from TheInspector audit runs post-merge.
+This directory contains findings from TheInspector's dependency auditor agent.
 
-## File Patterns
+## Latest Audit: 2026-06-08
 
-- **Audit reports**: `audit-YYYY-MM-DD-{grade}.html`
-  - Example: `audit-2026-04-07-A.html`, `audit-2026-04-07-B-.html`
-  - Grade can be: A, B+, B, B-, C+, C, C-, D, F
-  - Contains detailed security, chaos, performance, and quality findings
+**Status:** 🔴 Grade D (FAILING) — 3 Critical CVEs require immediate remediation
 
-- **Bug backlogs**: `bug-backlog-YYYY-MM-DD.json`
-  - Example: `bug-backlog-2026-04-07.json`
-  - JSON structure with discovered bugs, severity levels, and remediation guidance
+### Quick Links
 
-## .gitignore
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| **[REMEDIATION_CHECKLIST.md](REMEDIATION_CHECKLIST.md)** | 👉 **START HERE** — Step-by-step fixes for all CVEs | 15 min |
+| [dependency-audit-2026-06-08.md](dependency-audit-2026-06-08.md) | Full detailed audit report with all findings | 20 min |
+| [dependency-audit-2026-06-08.json](dependency-audit-2026-06-08.json) | Machine-readable summary (for dashboards/tools) | N/A |
 
-HTML audit reports are large and not committed to git. The `.gitignore` in this directory excludes `*.html` files to keep the repository lean. Bug-backlog JSON files are tracked for record-keeping and trend analysis.
+### Executive Summary
 
-## Workflow
+**3 CRITICAL CVEs (P1) require fixing TODAY:**
 
-1. TheInspector team runs post-merge audits
-2. Reports are generated and written to this directory
-3. Bug backlog is updated with newly discovered issues
-4. Team lead aggregates findings into sprint planning
+1. **Handlebars.js RCE** in Source/Backend (CVSS 9.8)
+   - Fix: `cd Source/Backend && npm update handlebars`
+   - Time: 30 min
+
+2. **Vitest Security Issues** in Source/Frontend (CVSS 5.3)
+   - Fix: `cd Source/Frontend && npm update vitest vite esbuild`
+   - Time: 30 min
+
+3. **Protobufjs RCE** in platform/orchestrator (CVSS 9.8)
+   - Fix: `cd platform/orchestrator && npm update protobufjs dockerode`
+   - Time: 45 min
+
+**Additional Issues:** 1 High + 19 Moderate CVEs, 11 Outdated Majors
+
+**Good News:** 0 License Issues ✓ | 0 Abandoned Packages ✓
+
+---
+
+## Start Fixing Now
+
+Open: **[REMEDIATION_CHECKLIST.md](REMEDIATION_CHECKLIST.md)**
+
+Estimated time to fix all critical issues: **2-3 hours**
+
+---
+
+## Grade Assignment
+
+**Current:** 🔴 D (3 Critical CVEs)  
+**Target:** 🟢 B (after fixes)
+
+| Phase | Expected Grade | Timeline |
+|-------|---|---|
+| After Phase 1 (critical fixes) | 🟡 C | Today (2-3 hrs) |
+| After Phase 2 (moderate fixes) | 🟢 B | Tomorrow (1-2 hrs) |
+| After Phase 3 (major upgrades) | 🟢 A | Next Sprint (1-2 days) |
+
+---
+
+For full details, see the comprehensive audit report:
+[dependency-audit-2026-06-08.md](dependency-audit-2026-06-08.md)
+

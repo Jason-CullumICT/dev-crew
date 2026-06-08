@@ -1,0 +1,249 @@
+{
+  "audit_id": "run-20260608-070058",
+  "audit_date": "2026-06-08",
+  "grade": "D",
+  "grading_rationale": "4 P1 findings total (3 critical CVEs + 1 broken gate). Config thresholds: C allows max 2 P1s; D is anything worse. Grade D assigned.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline at localhost:3001 and localhost:5173",
+  "totals": {
+    "p1": 4,
+    "p2": 4,
+    "p3": 22,
+    "p4": 0,
+    "escalations_to_guardians": 2,
+    "fixed": 0,
+    "still_open": 0,
+    "regressed": 0,
+    "new": 30
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "title": "Handlebars.js RCE — multiple JavaScript injection vulnerabilities (CVSS 9.8)",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "summary": "Handlebars ≤4.7.8 in Source/Backend has CVSS 9.8 RCE via AST type confusion. User-supplied template input can execute arbitrary JavaScript server-side.",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "cvss": 9.8
+    },
+    {
+      "finding_id": "DEP-003",
+      "title": "Protobufjs RCE — arbitrary code execution via prototype pollution (CVSS 9.8)",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "summary": "Protobufjs ≤7.5.5 in platform/orchestrator has CVSS 9.8 RCE. Orchestrator controls Docker — compromise escalates to full container fleet access.",
+      "fix": "cd platform/orchestrator && npm update protobufjs dockerode",
+      "cvss": 9.8
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer cannot scan portal/ or platform/ — mandatory gate broken",
+      "file": "tools/traceability-enforcer.py:69-83",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_effort": "2h",
+      "cross_refs": ["QO-002", "QO-004"],
+      "recommendation": "Extend enforcer scan dirs to include portal/ from inspector.config.yml source.dirs. Add portal/ to source.dirs in inspector.config.yml."
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "Handlebars.js ≤4.7.8 — Multiple RCE via JavaScript/AST injection (CVSS 9.8)",
+      "file": "Source/Backend/package.json (transitive)",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "fix_effort": "30min",
+      "cvss": 9.8,
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf", "GHSA-2qvq-rjwj-gvw9", "GHSA-7rx3-28cr-v5wh", "GHSA-442j-39wm-28r2"],
+      "recommendation": "cd Source/Backend && npm update handlebars. Verify npm ls handlebars shows >=4.7.9."
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "Vitest ≤2.0.5 — Dev environment CORS bypass and path traversal (CVSS 5.3)",
+      "file": "Source/Frontend/package.json (direct dev-dep)",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_effort": "30min",
+      "cvss": 5.3,
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-67mh-4wv8-2f99"],
+      "production_impact": false,
+      "dev_impact": true,
+      "recommendation": "cd Source/Frontend && npm update vitest vite esbuild. Run npm test after."
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "Protobufjs ≤7.5.5 — Arbitrary code execution via prototype pollution (CVSS 9.8)",
+      "file": "platform/orchestrator/package.json (transitive via dockerode)",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "fix_effort": "45min",
+      "cvss": 9.8,
+      "cves": ["GHSA-xq3m-2v4x-88gg", "GHSA-75px-5xx7-5xc7", "GHSA-66ff-xgx4-vchm", "GHSA-jvwf-75h9-cwgg", "GHSA-2pr8-phx7-x9h3", "GHSA-fx83-v9x8-x52w", "GHSA-q6x5-8v7m-xcrf"],
+      "recommendation": "cd platform/orchestrator && npm update protobufjs dockerode. Verify npm ls protobufjs shows >=7.5.6."
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed: no seed.ts in portal/Backend/src/database/",
+      "file": "portal/Backend/src/database/ (missing: seed.ts)",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_effort": "1h",
+      "cross_refs": ["QO-001"],
+      "recommendation": "Create portal/Backend/src/database/seed.ts with idempotent seed function. Call from index.ts after schema init. Add // Verifies: FR-dependency-seed."
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "untested",
+      "title": "FR-TMP-008 missing Verifies comment in platform/Dockerfile.worker",
+      "file": "platform/Dockerfile.worker:31-40",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_effort": "5min",
+      "cross_refs": ["QO-006"],
+      "recommendation": "Add # Verifies: FR-TMP-008 comment adjacent to gh and playwright install steps in Dockerfile.worker."
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "FR-dependency-* ID namespace collision between Source/ and portal/ codebases",
+      "files": [
+        "Source/Backend/src/services/dependency.ts",
+        "portal/Backend/src/services/dependencyService.ts"
+      ],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_effort": "2h",
+      "recommendation": "Assign FR-WF-DEP-* IDs in Plans/self-judging-workflow/requirements.md for Source/ in-memory dependency feature. Update Verifies comments in Source/ dependency service, routes, and tests."
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "path-to-regexp <0.1.13 — ReDoS via multiple route parameters (CVSS 7.5)",
+      "file": "platform/orchestrator/package.json (transitive via express)",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix_effort": "30min",
+      "cvss": 7.5,
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "recommendation": "cd platform/orchestrator && npm update express. Also run in Source/Backend for co-located qs/body-parser moderate CVEs."
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "2 eslint-disable suppressions (react-hooks/exhaustive-deps) in production frontend hooks",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Add inline justification comments or refactor to useCallback/useRef to eliminate suppressions."
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "untested",
+      "title": "playwright.pipeline.config.ts recently modified — no Verifies: FR-TMP-* comment",
+      "file": "Source/E2E/playwright.pipeline.config.ts",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Add // Verifies: FR-TMP-003 — Pipeline Playwright config for cycle-scoped E2E runs to line 1."
+    },
+    {
+      "id": "DEP-005-023",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "CVE-moderate",
+      "title": "19 moderate CVEs across express, body-parser, qs, brace-expansion, vite, esbuild, postcss, react-router, @protobufjs/utf8",
+      "count": 19,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Bulk update: for d in Source/Backend Source/Frontend Source/E2E platform/orchestrator; do cd $d && npm update && cd -; done. Run all tests after."
+    },
+    {
+      "id": "DEP-OUT-01-03",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "outdated-major",
+      "title": "11 packages 1–5 major versions behind (express, pino, uuid, react, react-dom, react-router-dom, prom-client, dockerode, multer, vitest)",
+      "count": 11,
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Schedule major version upgrades next sprint. Each upgrade requires regression testing. react-router 6→7 also resolves the open-redirect CVE."
+    }
+  ],
+  "p4_findings": [],
+  "cross_reference_map": [
+    {
+      "root_cause": "Tooling blind spot: portal/ excluded from static analysis",
+      "findings": ["QO-001", "QO-002", "QO-004"],
+      "single_fix": "Extend tools/traceability-enforcer.py to read source dirs from inspector.config.yml; add portal/ to config source.dirs",
+      "fix_impact": "Restores gate integrity; makes QO-002 and QO-004 visible to automated checks"
+    },
+    {
+      "root_cause": "Unpatched RCE in dependency tree (prototype pollution / template injection)",
+      "findings": ["DEP-001", "DEP-003"],
+      "single_fix": "npm update handlebars (Source/Backend) + npm update protobufjs dockerode (platform/orchestrator)",
+      "fix_impact": "Eliminates both CVSS 9.8 RCE vectors; clears TheGuardians escalation triggers"
+    },
+    {
+      "root_cause": "Stale Express transitive dependency tree",
+      "findings": ["DEP-004", "DEP-005", "DEP-006", "DEP-007"],
+      "single_fix": "npm update express in Source/Backend and platform/orchestrator",
+      "fix_impact": "Resolves ReDoS + 3 moderate CVEs in one step per module"
+    },
+    {
+      "root_cause": "Missing traceability comments in recently modified infra files",
+      "findings": ["QO-003", "QO-006"],
+      "single_fix": "Add Verifies comments to Dockerfile.worker and playwright.pipeline.config.ts",
+      "fix_impact": "Closes 2 traceability gaps with 2-line edits (5 min total)"
+    }
+  ],
+  "architecture_rules_status": {
+    "no_console_log": "PASS",
+    "no_hardcoded_secrets": "PASS",
+    "no_swallowed_catches": "PASS",
+    "service_layer_enforced": "PASS",
+    "no_test_skip_todo": "PASS",
+    "no_files_over_500_lines": "PASS",
+    "shared_types_single_source": "PASS",
+    "list_endpoints_data_wrapper": "PASS",
+    "structured_logging": "PASS"
+  },
+  "spec_coverage": {
+    "workflow_engine": { "total": 13, "traced": 13, "pct": 100 },
+    "tiered_merge_pipeline": { "total": 10, "traced": 9, "pct": 90, "missing": ["FR-TMP-008 Verifies tag"] },
+    "dependency_linking": { "total": 16, "traced": 15, "pct": 94, "missing": ["FR-dependency-seed"] },
+    "dev_workflow_platform": { "total": 69, "traced": "unverifiable", "note": "Enforcer blind to portal/ — QO-001" }
+  },
+  "report_file": "Teams/TheInspector/findings/audit-2026-06-08-D.html",
+  "remediation_checklist": "Teams/TheInspector/findings/REMEDIATION_CHECKLIST.md",
+  "next_audit": "2026-07-08"
+}

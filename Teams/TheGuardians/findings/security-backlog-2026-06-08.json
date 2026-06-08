@@ -1,0 +1,298 @@
+{
+  "generated": "2026-06-08",
+  "run_id": "run-20260608-083535",
+  "grade": "F",
+  "summary": {
+    "critical": 2,
+    "high": 10,
+    "medium": 10,
+    "low": 5,
+    "informational": 1,
+    "total": 28,
+    "confirmed_live_exploits": 7,
+    "theoretical": 21,
+    "compliance_pass_rate_pct": 13,
+    "compliance_controls_pass": 2,
+    "compliance_controls_total": 15,
+    "red_team_objectives_attempted": 4,
+    "red_team_objectives_achieved": 4,
+    "grade_trigger": "Automatic F — red team confirmed all 4 critical objectives as live exploits"
+  },
+  "architecture_note": "Pen-tester analyzed Source/Backend/ (work-items API). Red-teamer tested portal/ (feature-request API) via docker-compose.test.yml. Both codebases independently exhibit the same vulnerability classes.",
+  "findings": [
+    {
+      "id": "SEC-001",
+      "title": "Complete Authentication & Authorization Bypass — All Endpoints",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-001", "PEN-001", "PEN-002", "COMP-001", "COMP-002", "RED-001"],
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor", "red-teamer"],
+      "objectives_breached": [
+        "Bypass work item state machine to reach an invalid status",
+        "Access or modify a soft-deleted work item via direct ID reference",
+        "Submit a malformed assessment verdict that bypasses routing logic",
+        "Enumerate all work items without pagination limit enforcement"
+      ],
+      "remediation": "Add authentication middleware (JWT/session) before all /api/* routes in both Source/Backend/src/app.ts and portal/Backend/src/index.ts. Add RBAC restricting approve/reject/dispatch/force-approve to elevated roles. This single fix unblocks 7 compliance controls simultaneously."
+    },
+    {
+      "id": "SEC-002",
+      "title": "Docker Socket Mounted Into Orchestrator Container — Host Escape Vector",
+      "severity": "Critical",
+      "status": "Theoretical (Platform Architecture)",
+      "sources": ["SAST-006"],
+      "specialists": ["static-analyzer"],
+      "files": ["platform/docker-compose.yml:24"],
+      "remediation": "Document as deliberate architectural trade-off. Mitigate: add non-root USER to Dockerfiles, restrict orchestrator network access, consider docker-socket-proxy to scope API access, run orchestrator on dedicated hardened host."
+    },
+    {
+      "id": "SEC-003",
+      "title": "Phantom Blocker — Permanent Dispatch Block via Hard Delete Without FK Cascade",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-005", "RED-002"],
+      "specialists": ["pen-tester", "red-teamer"],
+      "objective_breached": "Access or modify a soft-deleted work item via direct ID reference",
+      "remediation": "Add DELETE FROM dependencies WHERE blocker_item_id = :id OR blocked_item_id = :id inside the delete transaction. Add ON DELETE CASCADE to FK constraint."
+    },
+    {
+      "id": "SEC-004",
+      "title": "'denied' Missing from RESOLVED_STATUSES — Cascade Failure Permanently Blocks Dependents",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-008", "PEN-012", "RED-003"],
+      "specialists": ["pen-tester", "red-teamer"],
+      "objective_breached": "Submit a malformed assessment verdict that bypasses routing logic",
+      "remediation": "Add 'denied' and 'rejected' to RESOLVED_STATUSES, OR make denyFeatureRequest() call onItemCompleted(). In Source/Backend, fix NeedsClarification verdict mapping to enter a reviewing state instead of Rejected."
+    },
+    {
+      "id": "SEC-005",
+      "title": "Stored XSS — HTML/Script Payloads Stored Verbatim in Database",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["RED-006"],
+      "specialists": ["red-teamer"],
+      "note": "New finding not predicted by pen-tester static analysis of Source/Backend",
+      "remediation": "Sanitize all string inputs server-side on write using DOMPurify (server-side) or HTML entity encoding. Add Content-Security-Policy headers. Apply to both codebases."
+    },
+    {
+      "id": "SEC-006",
+      "title": "State Machine Bypass via overrideRoute 'fast-track' — Instant Approval Without Assessment",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["PEN-003"],
+      "specialists": ["pen-tester"],
+      "files": ["Source/Backend/src/routes/workflow.ts:57", "Source/Backend/src/services/router.ts:66-88"],
+      "remediation": "Remove overrideRoute entirely or restrict to admin role with full audit logging. If retained, validate against WorkItemRoute enum values."
+    },
+    {
+      "id": "SEC-007",
+      "title": "routing → approved Transition Skips Assessment Pod",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["PEN-009"],
+      "specialists": ["pen-tester"],
+      "files": ["Source/Backend/src/routes/workflow.ts:106-110", "Source/Shared/types/workflow.ts:218"],
+      "remediation": "Remove Approved from VALID_STATUS_TRANSITIONS[routing], or add guard requiring assessment completion before allowing the approve endpoint."
+    },
+    {
+      "id": "SEC-008",
+      "title": "Intake Webhooks — No HMAC Signature Verification",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["SAST-002", "PEN-004", "COMP-007"],
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor"],
+      "files": ["Source/Backend/src/routes/intake.ts:11-55"],
+      "remediation": "Implement HMAC-SHA256 verification against a shared secret from env vars. Reject requests with absent or invalid X-Zendesk-Webhook-Signature header."
+    },
+    {
+      "id": "SEC-009",
+      "title": "Dockerfiles — All Containers Run As Root (No USER Directive)",
+      "severity": "High",
+      "status": "Theoretical (Platform)",
+      "sources": ["SAST-005"],
+      "specialists": ["static-analyzer"],
+      "files": ["platform/Dockerfile.orchestrator", "platform/Dockerfile.worker", "portal/Dockerfile"],
+      "remediation": "Add non-root user before CMD: RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser; USER appuser"
+    },
+    {
+      "id": "SEC-010",
+      "title": "Host Claude Credentials Bind-Mounted Into Container",
+      "severity": "High",
+      "status": "Theoretical (Platform)",
+      "sources": ["SAST-007"],
+      "specialists": ["static-analyzer"],
+      "files": ["platform/docker-compose.yml:27"],
+      "remediation": "Use Docker secrets or CI secret manager. Do not bind-mount credential files from the host filesystem."
+    },
+    {
+      "id": "SEC-011",
+      "title": "No TLS/HTTPS Enforcement",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-004"],
+      "specialists": ["compliance-auditor"],
+      "remediation": "Terminate TLS at load balancer or reverse proxy. Add Strict-Transport-Security header and HTTP→HTTPS redirect."
+    },
+    {
+      "id": "SEC-012",
+      "title": "Required Audit Events Missing — 3 of 4 (login_attempt, permission_denied, data_export)",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-003"],
+      "specialists": ["compliance-auditor"],
+      "remediation": "Add event_type field to structured logger. Emit login_attempt and permission_denied once auth is added. Add data_export audit event for bulk-export operations."
+    },
+    {
+      "id": "SEC-013",
+      "title": "Unauthenticated Prometheus Metrics Endpoint",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-011", "PEN-006", "COMP-006", "RED-004"],
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor", "red-teamer"],
+      "files": ["Source/Backend/src/app.ts:34-37"],
+      "remediation": "Restrict /metrics to internal networks or require bearer token. Expose on separate internal port."
+    },
+    {
+      "id": "SEC-014",
+      "title": "No Pagination Enforcement — Full Dataset Exposed in Single Unauthenticated Call",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-008", "PEN-007", "COMP-008", "RED-005"],
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor", "red-teamer"],
+      "objective_breached": "Enumerate all work items without pagination limit enforcement",
+      "remediation": "Add LIMIT/OFFSET to SQL queries. Enforce max page size: const limit = Math.min(parseInt(req.query.limit) || 20, 100)"
+    },
+    {
+      "id": "SEC-015",
+      "title": "No CORS Policy — Cross-Origin Mutations Committed Before Browser Blocks Response",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-013", "RED-007"],
+      "specialists": ["pen-tester", "red-teamer"],
+      "remediation": "Add cors() middleware with explicit allowlist. Primary fix is SEC-001 (authentication). Add CSRF tokens once sessions are introduced."
+    },
+    {
+      "id": "SEC-016",
+      "title": "No Rate Limiting — Flood Attacks and CPU Exhaustion via O(n) Duplicate Detection",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-010", "PEN-014", "COMP-008", "RED-008"],
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor", "red-teamer"],
+      "remediation": "Apply express-rate-limit globally (60 req/min per IP). Stricter limits on write endpoints. Cap Jaccard scan or move to async background job."
+    },
+    {
+      "id": "SEC-017",
+      "title": "Intake Endpoints Skip Enum Validation for type/priority",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-003", "PEN-004"],
+      "specialists": ["static-analyzer", "pen-tester"],
+      "files": ["Source/Backend/src/routes/intake.ts:19-48"],
+      "remediation": "Add same enum validation as workItems.ts:29-41 to both intake routes. Return 400 for invalid enum values."
+    },
+    {
+      "id": "SEC-018",
+      "title": "Raw Exception Messages Exposed in 500 Responses",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-004", "COMP-009"],
+      "specialists": ["static-analyzer", "compliance-auditor"],
+      "files": ["Source/Backend/src/routes/workflow.ts"],
+      "remediation": "Log full message internally; return generic 'Internal server error' to clients in all catch blocks."
+    },
+    {
+      "id": "SEC-019",
+      "title": "No HTTP Security Headers (CSP, X-Frame-Options, HSTS, X-Content-Type-Options, XSS-Protection)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-009", "COMP-005"],
+      "specialists": ["static-analyzer", "compliance-auditor"],
+      "remediation": "import helmet from 'helmet'; app.use(helmet()); — one line fixes all 5 header controls."
+    },
+    {
+      "id": "SEC-020",
+      "title": "overrideRoute Not Validated Against Enum — Invalid Route Value Stored in Database",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-010"],
+      "specialists": ["pen-tester"],
+      "remediation": "Validate overrideRoute against Object.values(WorkItemRoute) before processing. Return 400 for invalid values."
+    },
+    {
+      "id": "SEC-021",
+      "title": "Dashboard Exposes Full Internal Item State Including Audit Trail and Dependency Graph",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-011"],
+      "specialists": ["pen-tester"],
+      "remediation": "Add DTO/view model for dashboard responses. Apply field projection at service layer to omit changeHistory, assessments, deleted flag."
+    },
+    {
+      "id": "SEC-022",
+      "title": "Unauthenticated Rejection Triggers Cascade Auto-Dispatch",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-012"],
+      "specialists": ["pen-tester"],
+      "remediation": "Primary fix is SEC-001. Additionally require explicit dispatcher confirmation for auto-dispatch rather than firing automatically on rejection."
+    },
+    {
+      "id": "SEC-023",
+      "title": "Non-Atomic Routing State — Forward-Looking Race Condition",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["PEN-015"],
+      "specialists": ["pen-tester"],
+      "remediation": "Low risk with in-memory store. Document as forward-looking concern for future DB migration."
+    },
+    {
+      "id": "SEC-024",
+      "title": "Debug Portal iframe Lacks sandbox Attribute",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["SAST-012"],
+      "specialists": ["static-analyzer"],
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx:9-13"],
+      "remediation": "Add sandbox=\"allow-scripts allow-same-origin\" to the iframe element."
+    },
+    {
+      "id": "SEC-025",
+      "title": "ANTHROPIC_API_KEY at Workflow-Level env in CI/CD — Overly Broad Secret Exposure",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["SAST-013"],
+      "specialists": ["static-analyzer"],
+      "files": [".github/workflows/run-ateam.yml:44-45", ".github/workflows/run-guardians.yml:41"],
+      "remediation": "Move ANTHROPIC_API_KEY to step-level env: blocks only where needed."
+    },
+    {
+      "id": "SEC-026",
+      "title": "No Hard Delete — GDPR Art. 17 Right to Erasure Gap",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["COMP-010"],
+      "specialists": ["compliance-auditor"],
+      "remediation": "Implement hard-delete endpoint with auth guard. Document data retention policy."
+    },
+    {
+      "id": "SEC-027",
+      "title": "In-Memory Store — No Backup/Recovery Mechanism (SOC2 CC7.1)",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["COMP-011"],
+      "specialists": ["compliance-auditor"],
+      "remediation": "Migrate to persistent database with scheduled backups. Implement point-in-time recovery."
+    },
+    {
+      "id": "SEC-028",
+      "title": "/api/search Called by Frontend but Route Not Implemented in Backend",
+      "severity": "Informational",
+      "status": "Theoretical",
+      "sources": ["SAST-014"],
+      "specialists": ["static-analyzer"],
+      "files": ["Source/Frontend/src/api/client.ts:101-104"],
+      "remediation": "Implement search endpoint in backend or remove dead code from frontend client."
+    }
+  ]
+}

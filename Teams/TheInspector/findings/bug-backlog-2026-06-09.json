@@ -1,0 +1,154 @@
+{
+  "audit_date": "2026-06-09",
+  "run_id": "run-20260609-062527",
+  "branch": "audit/inspector-2026-06-09-70c1c7",
+  "grade": "D",
+  "grade_reason": "3 P1 findings exceed C-tier max_p1 threshold of 2",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 4,
+    "p3_total": 17,
+    "p4_total": 5,
+    "escalations_total": 2,
+    "first_audit": true,
+    "prior_grade": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars RCE — code injection via express transitive dependency",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "injection",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "package": "handlebars",
+      "affected_versions": "4.0.0 - 4.7.8",
+      "module": "Source/Backend",
+      "root_cause": "express@4.18.2 pulls in a vulnerable handlebars version; 8 known CVEs covering code injection, XSS, prototype pollution, and DoS",
+      "exploit_scenario": "If any route processes user-supplied data through a Handlebars template, an attacker can inject arbitrary JavaScript via template expressions, enabling server-side code execution.",
+      "remediation": "cd Source/Backend && npm update express  # pins to 4.22.2 (or 5.2.1 for major upgrade)"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI arbitrary file read and remote code execution",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "arbitrary-file-read-execute",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.8,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "package": "vitest",
+      "affected_versions": "<3.2.6",
+      "module": "Source/Frontend",
+      "root_cause": "vitest@2.0.5 direct dev-dependency; when the Vitest UI server is enabled, unauthenticated attackers on the same network can read or execute arbitrary files on the developer's machine",
+      "exploit_scenario": "Any attacker reachable on the same network as the dev workstation (e.g., shared Wi-Fi, CI runner) can craft HTTP requests to the Vitest UI port to read source files, secrets, or execute arbitrary code.",
+      "remediation": "cd Source/Frontend && npm update vitest  # pins to 3.2.6+"
+    }
+  ],
+  "p1": [
+    {
+      "id": "QO-001",
+      "title": "Traceability enforcer excludes portal/ — verification gate is broken",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift / architecture-violation",
+      "escalate_to": "TheFixer",
+      "file": "tools/traceability-enforcer.py",
+      "lines": "24-26",
+      "detail": "source_dirs hardcoded to [\"Source\", \"E2E\"]; portal/ has 300 Verifies comments covering FR-033..069, FR-DUP-01..13, and FR-dependency-* IDs — all invisible to CI. Running the enforcer against any portal-targeting plan reports 100% failure even though code is fully traced.",
+      "remediation": "Add \"portal\" to source_dirs in tools/traceability-enforcer.py (one-line change), then re-run all four failing plans to confirm true coverage."
+    }
+  ],
+  "p2": [
+    {
+      "id": "QO-002",
+      "title": "Enforcer is single-plan by default — 7 of 8 active plans never checked",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "escalate_to": "TheFixer",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "Auto-selects most-recently-modified Plans/*/requirements.md. Seven plans (all portal-targeting) silently skipped on every CI run. CLAUDE.md verification gate gives false PASS.",
+      "remediation": "Add --all-plans flag, or update CLAUDE.md gate to loop all plans. Depends on QO-001 fix first."
+    },
+    {
+      "id": "QO-003",
+      "title": "FR-dependency ID mismatch — three inconsistent ID namespaces",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "escalate_to": "TheFixer",
+      "file": "Plans/dependency-linking/requirements.md",
+      "detail": "Plan uses FR-dependency-schema/types; Source/ uses FR-dependency-service/endpoints/dispatch-gating; portal/ uses FR-dependency-linking/ready-check/cycle-detection. Enforcer also picks up prose data IDs (FR-0002, FR-0003) as phantom failures.",
+      "remediation": "Reconcile FR IDs across plan, Source/, and portal/. Tighten enforcer regex to exclude short numeric IDs in prose."
+    },
+    {
+      "id": "QO-004",
+      "title": "Duplicate frontend test files — false coverage confidence",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "untested",
+      "escalate_to": "TheFixer",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "detail": "Root-level copies are stale; pages/ copies are canonical. One set may silently not run depending on Jest glob, creating false coverage assurance.",
+      "remediation": "Delete stale root-level copies (tests/WorkItemDetailPage.test.tsx, tests/WorkItemListPage.test.tsx). Confirm Jest glob. Run tests."
+    },
+    {
+      "id": "DEP-003",
+      "title": "UUID buffer overflow — missing bounds check in v3/v5/v6 generation",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "buffer-overflow",
+      "escalate_to": "TheFixer",
+      "cvss": 7.5,
+      "cves": ["GHSA-w5hq-g745-h8pq"],
+      "package": "uuid",
+      "affected_versions": "<11.1.1",
+      "module": "Source/Backend",
+      "root_cause": "uuid@9.0.0 direct production dependency; missing bounds check when external buf argument is provided",
+      "remediation": "cd Source/Backend && npm update uuid  # 9.0.1 (safe patch) or 11.1.1+ (full fix)"
+    }
+  ],
+  "p3": [
+    {"id": "QO-005", "title": "portal/Backend/src/routes/teamDispatches.ts — zero Verifies comments, no test", "severity": "P3", "specialist": "quality-oracle", "escalate_to": "TheFixer"},
+    {"id": "QO-006", "title": "portal/Frontend/src/pages/TeamsPage.tsx — zero Verifies comments, recently modified", "severity": "P3", "specialist": "quality-oracle", "escalate_to": "TheFixer"},
+    {"id": "QO-007", "title": "WorkItemDetailPage.tsx at 426 lines, approaching 500-line threshold", "severity": "P3", "specialist": "quality-oracle", "escalate_to": "TheFixer"},
+    {"id": "QO-008", "title": "Two eslint-disable-next-line react-hooks/exhaustive-deps without explanation", "severity": "P3", "specialist": "quality-oracle", "escalate_to": "TheFixer"},
+    {"id": "QO-009", "title": "Specifications/dev-workflow-platform.md FR-001..069 never directly enforced", "severity": "P3", "specialist": "quality-oracle", "escalate_to": "TheFixer"},
+    {"id": "DEP-004", "title": "qs — DoS via null/undefined in array encoding (moderate CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Backend + Source/Frontend transitive", "escalate_to": "TheFixer"},
+    {"id": "DEP-005", "title": "body-parser — transitive from qs (moderate CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Backend", "escalate_to": "TheFixer"},
+    {"id": "DEP-006", "title": "brace-expansion — process hang on zero-step sequence (moderate CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Backend", "escalate_to": "TheFixer"},
+    {"id": "DEP-007", "title": "react-router — open redirect via protocol-relative URL (moderate CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend", "escalate_to": "TheFixer"},
+    {"id": "DEP-008", "title": "react-router-dom — transitive from react-router (moderate CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend", "escalate_to": "TheFixer"},
+    {"id": "DEP-009", "title": "vite — path traversal in .map handling (moderate CVE, dev dep)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend (dev)", "escalate_to": "TheFixer"},
+    {"id": "DEP-010", "title": "esbuild — CORS bypass in dev server (moderate CVE, dev dep)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend (dev)", "escalate_to": "TheFixer"},
+    {"id": "DEP-011", "title": "postcss — XSS via unescaped </style> (moderate CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend (dev)", "escalate_to": "TheFixer"},
+    {"id": "DEP-012", "title": "ws — uninitialized memory disclosure (moderate CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend (dev)", "escalate_to": "TheFixer"},
+    {"id": "DEP-013", "title": "vitest @vitest/mocker vite-node — transitive moderate CVEs", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend (dev)", "escalate_to": "TheFixer"},
+    {"id": "DEP-014", "title": "pino — 2 major versions behind (v8 → v10, no CVE)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Backend", "escalate_to": "TheFixer"},
+    {"id": "DEP-015", "title": "react-router-dom — 1 major version behind (v6 → v7)", "severity": "P3", "specialist": "dependency-auditor", "module": "Source/Frontend", "escalate_to": "TheFixer"}
+  ],
+  "p4": [
+    {"id": "QO-010", "title": "DebugPortalPage.tsx uses free-text Verifies comment instead of FR ID", "severity": "P4", "specialist": "quality-oracle"},
+    {"id": "QO-011", "title": "vite-env.d.ts has no Verifies comment (generated file — acceptable)", "severity": "P4", "specialist": "quality-oracle"},
+    {"id": "QO-012", "title": "portal/Frontend/src/components/common/RepoSelector.tsx — no Verifies, no test", "severity": "P4", "specialist": "quality-oracle"},
+    {"id": "DEP-016", "title": "react/react-dom — 1 major version behind (v18 → v19, v18 still supported)", "severity": "P4", "specialist": "dependency-auditor"},
+    {"id": "DEP-017", "title": "express — current patch level behind (4.18.2, wanted 4.22.2)", "severity": "P4", "specialist": "dependency-auditor", "note": "P1 via DEP-001 transitive CVE — fix is the same npm update express"}
+  ]
+}

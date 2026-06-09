@@ -1,0 +1,189 @@
+{
+  "audit_date": "2026-06-09",
+  "agent": "dependency_auditor",
+  "grade": "C",
+  "summary": {
+    "total_direct_dependencies": 8,
+    "total_transitive_dependencies": 115,
+    "projects_audited": 3
+  },
+  "vulnerabilities": {
+    "critical": 2,
+    "high": 0,
+    "moderate": 13,
+    "low": 0,
+    "total": 15
+  },
+  "cve_breakdown": {
+    "backend": {
+      "critical": 1,
+      "high": 0,
+      "moderate": 5,
+      "total": 6
+    },
+    "frontend": {
+      "critical": 1,
+      "high": 0,
+      "moderate": 8,
+      "total": 9
+    },
+    "e2e": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "total": 0
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "P1",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "max_cvss": 9.8,
+      "affected_versions": "4.0.0 - 4.7.8",
+      "module": "Source/Backend",
+      "root_cause": "express@4.18.2 transitive dependency",
+      "fix": "npm update express to 4.22.2 or 5.2.1",
+      "type": "javascript-injection-rce"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "P1",
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "cvss": 9.8,
+      "affected_versions": "<3.2.6",
+      "module": "Source/Frontend",
+      "root_cause": "vitest@2.0.5 direct dependency",
+      "fix": "npm update vitest to 3.2.6+",
+      "type": "arbitrary-file-read-execute"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-003",
+      "package": "uuid",
+      "severity": "P2",
+      "cves": ["GHSA-w5hq-g745-h8pq"],
+      "cvss": 7.5,
+      "affected_versions": "<11.1.1",
+      "module": "Source/Backend",
+      "root_cause": "uuid@9.0.0 direct dependency",
+      "fix": "npm update uuid to 11.1.1+ or 9.0.1",
+      "type": "buffer-overflow"
+    }
+  ],
+  "moderate_findings_summary": {
+    "total": 13,
+    "by_package": {
+      "qs": "DoS via null/undefined in array encoding",
+      "body-parser": "Transitive from qs",
+      "express": "Transitive from qs",
+      "brace-expansion": "Process hang on zero-step sequence",
+      "react-router": "Open redirect via protocol-relative URL",
+      "react-router-dom": "Transitive from react-router",
+      "vite": "Path traversal in .map handling",
+      "esbuild": "CORS bypass in dev server",
+      "postcss": "XSS via unescaped </style>",
+      "ws": "Uninitialized memory disclosure",
+      "vitest": "Transitive from vite/esbuild/vite-node",
+      "@vitest/mocker": "Transitive from vitest",
+      "vite-node": "Transitive from vite"
+    }
+  },
+  "outdated_packages": {
+    "backend": [
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "wanted": "8.21.0",
+        "latest": "10.3.1",
+        "major_versions_behind": 2,
+        "risk_level": "P3"
+      },
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "wanted": "4.22.2",
+        "latest": "5.2.1",
+        "major_versions_behind": 1,
+        "risk_level": "P3"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "wanted": "9.0.1",
+        "latest": "14.0.0",
+        "major_versions_behind": 5,
+        "risk_level": "P2 (has CVE)"
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.2.7",
+        "major_versions_behind": 1,
+        "risk_level": "P4 (v18 still supported)"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.2.7",
+        "major_versions_behind": 1,
+        "risk_level": "P4 (v18 still supported)"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "wanted": "6.30.4",
+        "latest": "7.17.0",
+        "major_versions_behind": 1,
+        "risk_level": "P3 (has CVE)"
+      }
+    ]
+  },
+  "supply_chain_assessment": {
+    "total_transitive_dependencies": 115,
+    "threshold_alert": 500,
+    "status": "healthy",
+    "post_install_scripts": "none detected",
+    "abandoned_packages": 0,
+    "actively_maintained": "all"
+  },
+  "license_compliance": {
+    "status": "compliant",
+    "all_permissive": true,
+    "licenses_found": ["MIT", "Apache-2.0"],
+    "violations": 0
+  },
+  "remediation_steps": {
+    "p1_critical": [
+      "cd Source/Frontend && npm update vitest",
+      "cd Source/Backend && npm update uuid"
+    ],
+    "p2_high": [
+      "cd Source/Backend && npm update express"
+    ],
+    "p3_medium": [
+      "cd Source/Frontend && npm update react-router-dom postcss ws",
+      "cd Source/Backend && npm update pino"
+    ]
+  },
+  "cross_references": [
+    "red-teamer: Handlebars RCE (DEP-001) and Vitest file read (DEP-002) exploitable",
+    "security-review: Both P1 CVEs require exploitation risk assessment"
+  ]
+}

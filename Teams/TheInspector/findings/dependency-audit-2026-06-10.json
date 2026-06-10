@@ -1,0 +1,274 @@
+{
+  "audit_metadata": {
+    "date": "2026-06-10",
+    "agent": "dependency_auditor",
+    "scope": ["Source/Backend", "Source/Frontend", "Source/E2E"],
+    "package_managers": ["npm"]
+  },
+  "summary": {
+    "backend": {
+      "project": "workflow-engine-backend@1.0.0",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 411,
+      "total_packages": 411,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 5,
+        "low": 0,
+        "total": 6
+      },
+      "outdated_majors": 6,
+      "deprecated_packages": 4,
+      "health_grade": "C",
+      "verdict": "Action required — critical handlebars, uuid bounds check vulnerability"
+    },
+    "frontend": {
+      "project": "workflow-frontend@1.0.0",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 222,
+      "total_packages": 222,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 8,
+        "low": 0,
+        "total": 9
+      },
+      "outdated_majors": 5,
+      "deprecated_packages": 0,
+      "health_grade": "C",
+      "verdict": "Action required — critical vitest UI vulnerability, vite path traversal"
+    },
+    "e2e": {
+      "project": "e2e@1.0.0",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 4,
+      "total_packages": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "outdated_majors": 0,
+      "deprecated_packages": 0,
+      "health_grade": "A",
+      "verdict": "Healthy — no vulnerabilities, minimal dependency footprint"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "package": "handlebars",
+      "version_range": "4.0.0-4.7.8",
+      "cvss_score": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cwe": ["CWE-94", "CWE-843"],
+      "title": "JavaScript Injection via AST Type Confusion",
+      "github_advisory": "GHSA-2w6w-674q-4c4q",
+      "project": "backend",
+      "fix_available": true,
+      "fix_command": "npm audit fix --force",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "package": "vitest",
+      "version_range": "<3.2.6",
+      "cvss_score": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cwe": ["CWE-862"],
+      "title": "Arbitrary File Read and Execute via UI Server",
+      "github_advisory": "GHSA-5xrq-8626-4rwp",
+      "project": "frontend",
+      "fix_available": true,
+      "fix_command": "npm install vitest@^3.2.6",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "package": "uuid",
+      "version_range": "<11.1.1",
+      "cvss_score": 7.5,
+      "title": "Missing Buffer Bounds Check in v3/v5/v6",
+      "github_advisory": "GHSA-w5hq-g745-h8pq",
+      "project": "backend",
+      "current_version": "9.0.1",
+      "fix_available": true,
+      "fix_command": "npm install uuid@^11.1.1"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "package": "qs (via express)",
+      "version_range": "6.11.1-6.15.1",
+      "cvss_score": 5.3,
+      "title": "DoS in qs.stringify on malformed array input",
+      "github_advisory": "GHSA-q8mj-m7cp-5q26",
+      "project": "backend",
+      "fix_available": true,
+      "fix_command": "npm audit fix"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "package": "brace-expansion",
+      "version_range": "<1.1.13",
+      "cvss_score": 6.5,
+      "title": "Zero-step sequence causes process hang and memory exhaustion",
+      "github_advisory": "GHSA-f886-m6hf-6m8v",
+      "project": "backend",
+      "fix_available": true,
+      "fix_command": "npm audit fix"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "package": "vite",
+      "version_range": "<=6.4.1",
+      "cvss_score": 6.5,
+      "title": "Path Traversal in Optimized Deps .map Handling",
+      "github_advisory": "GHSA-4w7w-66w2-5vf9",
+      "project": "frontend",
+      "current_version": "5.4.21",
+      "fix_available": true,
+      "fix_command": "npm install vite@^8.0.16"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "package": "react-router-dom",
+      "version_range": "6.7.0-6.30.3",
+      "cvss_score": 5.3,
+      "title": "Open Redirect via protocol-relative URL",
+      "github_advisory": "GHSA-2j2x-hqr9-3h42",
+      "project": "frontend",
+      "current_version": "6.30.3",
+      "fix_available": true,
+      "fix_command": "npm install react-router-dom@^6.30.4"
+    }
+  ],
+  "outdated_major_versions": {
+    "backend": [
+      {"package": "@types/node", "current": "20.19.37", "latest": "25.9.2", "majors_behind": 5},
+      {"package": "uuid", "current": "9.0.1", "latest": "14.0.0", "majors_behind": 5},
+      {"package": "pino", "current": "8.21.0", "latest": "10.3.1", "majors_behind": 2}
+    ],
+    "frontend": [
+      {"package": "vite", "current": "5.4.21", "latest": "8.0.16", "majors_behind": 3},
+      {"package": "vitest", "current": "2.1.9", "latest": "4.1.8", "majors_behind": 2},
+      {"package": "@vitejs/plugin-react", "current": "4.7.0", "latest": "6.0.2", "majors_behind": 2},
+      {"package": "jsdom", "current": "24.1.3", "latest": "29.1.1", "majors_behind": 5},
+      {"package": "react", "current": "18.3.1", "latest": "19.2.7", "majors_behind": 1}
+    ]
+  },
+  "deprecated_packages": {
+    "backend": [
+      {"name": "supertest", "current_version": "6.3.4", "recommended": "7.1.3+"},
+      {"name": "glob", "current_version": "7.2.3", "recommended": "10.x (latest)"},
+      {"name": "inflight", "current_version": "1.0.6", "recommended": "use lru-cache instead"},
+      {"name": "superagent", "current_version": "8.1.2", "recommended": "10.2.2+"}
+    ]
+  },
+  "license_compliance": {
+    "backend": {
+      "status": "PASS",
+      "violations": 0,
+      "findings": ["All packages MIT/ISC/Apache 2.0 compatible", "No GPL/AGPL dependencies"]
+    },
+    "frontend": {
+      "status": "PASS",
+      "violations": 0,
+      "findings": ["All packages MIT compatible", "No viral license dependencies"]
+    },
+    "e2e": {
+      "status": "PASS",
+      "violations": 0,
+      "findings": ["@playwright/test is Apache 2.0"]
+    }
+  },
+  "supply_chain_risks": [
+    {
+      "package": "uuid",
+      "risk": "single-maintainer",
+      "severity": "medium",
+      "details": "Maintained by Christopher Teubert; critical for both backend and uuid-based IDs",
+      "mitigation": "Monitor for abandonement; maintain fallback plan"
+    },
+    {
+      "package": "pino",
+      "risk": "single-maintainer",
+      "severity": "medium",
+      "details": "Maintained by Matteo Collina; production logger dependency",
+      "mitigation": "Same as uuid; track release cadence"
+    }
+  ],
+  "remediation_priority": [
+    {
+      "priority": 1,
+      "action": "Identify and upgrade handlebars transitive dependency",
+      "timeline": "ASAP (this sprint)",
+      "target_projects": ["backend"],
+      "command": "npm ls handlebars && npm audit fix --force"
+    },
+    {
+      "priority": 2,
+      "action": "Upgrade vitest to 3.2.6+ (critical security fix)",
+      "timeline": "ASAP (this sprint)",
+      "target_projects": ["frontend"],
+      "command": "npm install vitest@^3.2.6"
+    },
+    {
+      "priority": 3,
+      "action": "Upgrade uuid and apply other pending fixes",
+      "timeline": "This sprint",
+      "target_projects": ["backend"],
+      "command": "npm install uuid@^11.1.1 && npm audit fix"
+    },
+    {
+      "priority": 4,
+      "action": "Upgrade react-router-dom to patch open redirect",
+      "timeline": "Next sprint",
+      "target_projects": ["frontend"],
+      "command": "npm install react-router-dom@^6.30.4"
+    },
+    {
+      "priority": 5,
+      "action": "Plan Vite 5→8 migration (breaking changes)",
+      "timeline": "Q3 2026",
+      "target_projects": ["frontend"],
+      "breaking_changes": true
+    },
+    {
+      "priority": 6,
+      "action": "Plan React 18→19 upgrade",
+      "timeline": "Q3 2026",
+      "target_projects": ["frontend"],
+      "breaking_changes": false
+    }
+  ],
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: Handlebars CVSS 9.8 RCE (determine if templates processed server-side)",
+      "DEP-005: Vitest CVSS 9.8 file read (dev environment security)",
+      "Monitor for post-install script abuse in dependencies"
+    ]
+  },
+  "metrics": {
+    "total_cves": 15,
+    "total_critical": 2,
+    "total_high": 0,
+    "total_moderate": 13,
+    "total_packages_scanned": 637,
+    "license_violations": 0,
+    "supply_chain_risks": 2,
+    "overall_health_grade": "C"
+  }
+}

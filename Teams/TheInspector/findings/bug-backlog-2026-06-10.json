@@ -1,0 +1,160 @@
+{
+  "audit_id": "run-20260610-064530",
+  "audit_date": "2026-06-10",
+  "grade": "C",
+  "branch": "audit/inspector-2026-06-10-17b370",
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 8,
+    "p3_total": 11,
+    "p4_total": 1,
+    "spec_coverage_pct": 100,
+    "escalation_count": 2,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"]
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Handlebars.js Critical Code Injection (CVSS 9.8)",
+      "package": "handlebars@4.0.0-4.7.8",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "project": "Source/Backend",
+      "description": "Remote code execution via AST type confusion in Handlebars template engine. Transitive dependency via ts-jest@29.4.6. Exploitable if templates are processed server-side from untrusted input.",
+      "fix": "npm audit fix --force (upgrades to >= 4.7.9)",
+      "route_to": "TheGuardians",
+      "rationale": "CVSS 9.8 RCE — must confirm whether handlebars templates are processed server-side before classifying as exploitable in production",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Vitest Arbitrary File Read / Execute via UI Server (CVSS 9.8)",
+      "package": "vitest@2.1.9",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "project": "Source/Frontend",
+      "description": "When Vitest UI server is listening, any file on the developer machine can be read and executed by any network peer. Exposes .env files, source code, secrets. Active during test:watch runs.",
+      "fix": "npm install vitest@^3.2.6 (major version bump required)",
+      "route_to": "TheGuardians",
+      "rationale": "CVSS 9.8 affecting developer environment — review launch scripts and CI environments; ensure --host 127.0.0.1 enforced",
+      "status": "NEW"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "cve",
+      "title": "UUID Missing Buffer Bounds Check",
+      "package": "uuid@9.0.1",
+      "cvss": 7.5,
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "project": "Source/Backend",
+      "description": "When buf parameter is provided to uuid v3/v5/v6 functions, no bounds check occurs. Out-of-bounds write possible with attacker-controlled parameters.",
+      "fix": "npm install uuid@^9.0.3 or uuid@^11.1.1 (no breaking changes)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve",
+      "title": "Express qs Denial of Service (Remotely Triggerable Crash)",
+      "package": "express@4.22.1 (via qs transitive)",
+      "cvss": 5.3,
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "project": "Source/Backend",
+      "description": "qs.stringify() crashes with TypeError when processing comma-format arrays with null/undefined entries. Attacker crafts malicious query string to crash the backend process.",
+      "fix": "npm audit fix (updates qs automatically)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve",
+      "title": "Vite Path Traversal in Optimized Deps",
+      "package": "vite@5.4.21",
+      "cvss": 6.5,
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "project": "Source/Frontend",
+      "description": "Path traversal in .map file handling during dependency optimization phase. During build/dev, malicious .map files or crafted paths could escape the deps directory.",
+      "fix": "npm install vite@^8.0.16 (major migration) or wait for v5 patch",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "package": "react-router-dom@6.30.3",
+      "cvss": 5.0,
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "project": "Source/Frontend",
+      "description": "Same-origin redirect with path starting '//' causes open redirect via protocol-relative URL reinterpretation. Example: /redirect?target=//evil.com/path redirects to evil.com.",
+      "fix": "npm install react-router-dom@^6.30.4 (no breaking changes)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability Enforcer Silently Checks Only One Requirements File",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Enforcer falls back to most-recently-modified requirements.md under Plans/. Multiple active plans exist (dependency-linking, dev-cycle-traceability) — none are checked unless --file is explicitly passed. Coverage for inactive plan silently drops off radar.",
+      "recommendation": "Add --all mode scanning every Plans/**/requirements.md, or maintain an explicit manifest in inspector.config.yml. Update CLAUDE.md gate to explicitly target active plan.",
+      "route_to": "TheFixer",
+      "cross_ref": "QO-002",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability Enforcer Regex Produces False Positives",
+      "file": "tools/traceability-enforcer.py:76",
+      "description": "Running enforcer against Plans/dependency-linking/requirements.md reports 7 MISSING requirements: FR-0002–FR-0005, FR-0007 (seed data IDs), FR-070, FR-085 (spec cross-reference range markers). All 15 actual FR-dependency-* IDs are correctly traced. Enforcer broken for this plan.",
+      "recommendation": "Tighten regex to \\bFR-[A-Z][A-Z0-9-]*\\b or anchor to table row lines: \\| FR-",
+      "route_to": "TheFixer",
+      "cross_ref": "QO-001",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "untested",
+      "title": "Duplicate Frontend Test Files With Stale Mocks",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx (368 lines — OLD)",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx (286 lines — OLD)",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx (393 lines — canonical)",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx (262 lines — canonical)"
+      ],
+      "description": "Both versions run via Vitest. Old files have different import paths and mock removed API methods. Could pass with stale mocks while canonical fails. Doubles test execution time and masks regressions.",
+      "recommendation": "Delete old root-level duplicates (tests/WorkItemDetailPage.test.tsx, tests/WorkItemListPage.test.tsx). Verify no test cases are absent from canonical versions before deleting.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "untested",
+      "title": "FR-WF-013 Workflow Prometheus Counters Have No Test Assertions",
+      "files": [
+        "Source/Backend/src/metrics.ts",
+        "Source/Backend/tests/routes/metrics.test.ts"
+      ],
+      "description": "metrics.ts defines 4 FR-WF-013 workflow counters. metrics.test.ts covers dependency counters extensively but has zero assertions for workflow counters. CLAUDE.md requires every FR to have a test. FR-WF-013 is in source Verifies comments but untested end-to-end.",
+      "recommendation": "Add describe('FR-WF-013 workflow counters') block asserting workflow_items_routed_total, workflow_items_assessed_total, workflow_items_dispatched_total appear in GET /metrics response.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

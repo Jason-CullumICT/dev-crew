@@ -1,0 +1,198 @@
+{
+  "audit_id": "inspector-2026-06-11",
+  "audit_date": "2026-06-11",
+  "branch": "audit/inspector-2026-06-11-c90486",
+  "overall_grade": "C",
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 9,
+    "p3_total": 10,
+    "p4_total": 1,
+    "spec_coverage_pct": 100,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline — static-only mode only; dynamic specialists not dispatched this run"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "category": "CVE-code-injection",
+      "title": "CRITICAL JavaScript Injection in Handlebars via ts-jest",
+      "description": "handlebars@4.7.8 pulled transitively by ts-jest@^29.1.2 (Backend dev dependency). CVSS 9.8 — arbitrary code execution via malformed template inputs / AST type confusion. CVE IDs: GHSA-2w6w-674q-4c4q, GHSA-3mfm-83xf-c92r, GHSA-xhpv-hc6g-r9c6, GHSA-9cx6-37pm-9jff, GHSA-xjpj-3mr7-gcpf.",
+      "file": "Source/Backend/package-lock.json",
+      "dependency_chain": "ts-jest@^29.1.2 → handlebars@^4.7.8",
+      "is_production": false,
+      "cvss": 9.8,
+      "fix": "cd Source/Backend && npm update ts-jest",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "category": "CVE-path-traversal",
+      "title": "CRITICAL Vitest Build Toolchain Path Traversal (esbuild + vite)",
+      "description": "vitest@2.0.5 (Frontend dev dependency) pulls esbuild (GHSA-67mh-4wv8-2f99) and vite (GHSA-4w7w-66w2-5vf9) with path traversal CVEs. Source code exposure risk during dev server operation. Affects any developer running `npm run dev` or `npm test`.",
+      "file": "Source/Frontend/package.json",
+      "dependency_chain": "vitest@2.0.5 → esbuild + vite + vite-node",
+      "is_production": false,
+      "cvss": 6.5,
+      "fix": "cd Source/Frontend && npm install vitest@4",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "spec-drift",
+      "title": "Shared types missing blocked_by field (FR-dependency-api-types)",
+      "description": "UpdateFeatureRequestInput and UpdateBugInput in portal/Shared/api.ts lack blocked_by?: string[] required by FR-dependency-api-types. DependencyPicker.tsx works around this with `as any` casts at lines 291 and 293.",
+      "files": ["portal/Shared/api.ts:32", "portal/Shared/api.ts:59", "portal/Frontend/src/components/shared/DependencyPicker.tsx:291"],
+      "recommendation": "Add blocked_by?: string[] to both interfaces in portal/Shared/api.ts. Remove the as any casts in DependencyPicker.tsx.",
+      "status": "NEW",
+      "cross_ref": "QO-003 (same root cause)",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "architecture-violation",
+      "title": "Direct DB calls from teamDispatches.ts route handler",
+      "description": "Route handler calls getDb() and runs SQL queries inline — no service layer. Violates 'No direct DB calls from route handlers'. File also has no // Verifies: traceability and no test file.",
+      "files": ["portal/Backend/src/routes/teamDispatches.ts:37", "portal/Backend/src/routes/teamDispatches.ts:41", "portal/Backend/src/routes/teamDispatches.ts:72"],
+      "recommendation": "Extract to portal/Backend/src/services/teamDispatchService.ts. Add spec, traceability, and tests.",
+      "status": "NEW",
+      "cross_ref": "QO-005 (same file, same gap)",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "architecture-violation",
+      "title": "Duplicate UpdateBugInput / UpdateFeatureRequestInput diverge from Shared layer",
+      "description": "Both types are defined in portal/Shared/api.ts (without blocked_by) AND redefined in featureRequestService.ts and bugService.ts (with blocked_by). Violates 'Shared types are single source of truth'. Root cause of QO-001.",
+      "files": ["portal/Shared/api.ts:32", "portal/Backend/src/services/featureRequestService.ts:244", "portal/Shared/api.ts:59", "portal/Backend/src/services/bugService.ts:184"],
+      "recommendation": "Add blocked_by to Shared types (fixes QO-001), then remove service-layer duplicate definitions.",
+      "status": "NEW",
+      "cross_ref": "QO-001 (shared root cause — fix together)",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "architecture-violation",
+      "title": "Silent error swallowing in BugDetail, FeatureRequestDetail, RepoSelector",
+      "description": "Three .catch(() => {}) calls silently discard errors. Failed repo-list fetches leave users with empty selectors and no feedback. Violates 'Never swallow errors silently'.",
+      "files": ["portal/Frontend/src/components/bugs/BugDetail.tsx:82", "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx:80", "portal/Frontend/src/components/common/RepoSelector.tsx:20"],
+      "recommendation": "Log and set error state for user-visible feedback. If genuinely optional, add inline suppression comment.",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "unlinked-implementation",
+      "title": "TeamsPage and team-dispatches route are untraced with no spec backing",
+      "description": "portal/Frontend/src/pages/TeamsPage.tsx and portal/Backend/src/routes/teamDispatches.ts implement a feature with no Functional Requirements in Specifications/, no // Verifies: comment, and no test coverage. Untraced scope creep.",
+      "files": ["portal/Frontend/src/pages/TeamsPage.tsx", "portal/Backend/src/routes/teamDispatches.ts"],
+      "recommendation": "Write a spec with FR IDs for team-dispatches. Add traceability comments and tests.",
+      "status": "NEW",
+      "cross_ref": "QO-002 (same file)",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "spec-drift",
+      "title": "FR-070..095 missing from authoritative spec + FR ID collision",
+      "description": "Specifications/dev-workflow-platform.md ends at FR-069. FR-070..095 implemented in portal/ are only in Plans/. Worse: Plans/orchestrator-cycle-dashboard and Plans/image-upload both define FR-070..076 for different features — ID collision.",
+      "files": ["Specifications/dev-workflow-platform.md", "Plans/orchestrator-cycle-dashboard/requirements.md", "Plans/image-upload/requirements.md"],
+      "recommendation": "Append FR-070..095 to canonical spec. Renumber colliding IDs with distinct prefixes (FR-IMG-*, FR-ORC-*).",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "CVE-injection",
+      "title": "QS / Prototype Pollution Injection in Express (production)",
+      "description": "express@4.18.2 → body-parser → qs (vulnerable). Prototype pollution via query string or POST body. CVE: qs proto/constructor pollution. Is production dependency.",
+      "files": ["Source/Backend/package.json"],
+      "dependency_chain": "express@4.18.2 → body-parser → qs",
+      "is_production": true,
+      "recommendation": "cd Source/Backend && npm update express (to 4.22.2+)",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "outdated-dependency",
+      "title": "Pino severely outdated — 2 major versions behind (8.17.0 vs 10.x)",
+      "description": "pino@8.17.0 in Backend. Latest: 10.3.1. Two major versions behind — missing security patches, performance fixes, and bug fixes from pino 9.x and 10.x.",
+      "files": ["Source/Backend/package.json"],
+      "recommendation": "npm install pino@10 (review release notes for breaking changes)",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "route_to": "TheFixer",
+      "category": "CVE-open-redirect",
+      "title": "React Router Open Redirect via protocol-relative URL (production)",
+      "description": "react-router-dom@6.26.0 vulnerable to open redirect via protocol-relative URLs (//evil.com). CVE: GHSA-2j2x-hqr9-3h42. Production frontend exposure.",
+      "files": ["Source/Frontend/package.json"],
+      "is_production": true,
+      "recommendation": "npm install react-router-dom@6.30.4",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p3_items": [
+    { "id": "QO-007", "severity": "P3", "title": "FR-dependency-seed: seed.ts does not exist", "file": "portal/Backend/src/database/seed.ts (missing)", "specialist": "quality-oracle" },
+    { "id": "QO-009", "severity": "P3", "title": "4 production source files exceed 500 lines", "files": ["portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx", "portal/Frontend/src/components/bugs/BugDetail.tsx", "portal/Backend/src/services/cycleService.ts", "portal/Frontend/src/api/client.ts"], "specialist": "quality-oracle" },
+    { "id": "QO-010", "severity": "P3", "title": "eslint-disable suppressions in 3 production hooks", "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82", "portal/Frontend/src/hooks/useApi.ts:35"], "specialist": "quality-oracle" },
+    { "id": "DEP-003", "severity": "P3", "title": "Brace expansion ReDoS in transitive Backend dep", "fix": "resolves with express update", "specialist": "dependency-auditor" },
+    { "id": "DEP-004", "severity": "P3", "title": "Express outdated (4.18.2 vs 4.22.2)", "fix": "npm install express@4.22.2 in Source/Backend", "specialist": "dependency-auditor" },
+    { "id": "DEP-006", "severity": "P3", "title": "UUID severely outdated (9.0.0 vs 14.0.0)", "fix": "npm install uuid@14", "specialist": "dependency-auditor" },
+    { "id": "DEP-009", "severity": "P3", "title": "PostCSS XSS via unescaped style tags", "fix": "resolves with vitest@4 upgrade", "specialist": "dependency-auditor" },
+    { "id": "DEP-010", "severity": "P3", "title": "React 1 major version behind (18.3.1 vs 19.2.7)", "fix": "plan React 19 migration next major sprint", "specialist": "dependency-auditor" },
+    { "id": "DEP-011", "severity": "P3", "title": "React Router outdated (6.26.0 vs 7.17.0)", "fix": "npm install react-router-dom@6.30.4 (immediate), plan v7 migration", "specialist": "dependency-auditor" },
+    { "id": "DEP-012", "severity": "P3", "title": "WebSocket DoS risk via vitest → ws transitive dep", "fix": "resolves with vitest@4 upgrade", "specialist": "dependency-auditor" }
+  ],
+  "p4_items": [
+    { "id": "QO-008", "severity": "P4", "title": "FR-TMP-008 implemented but missing // Verifies: comment", "file": "platform/Dockerfile.worker:28-32", "specialist": "quality-oracle" }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Missing blocked_by field in portal/Shared/api.ts",
+      "affected_findings": ["QO-001", "QO-003"],
+      "single_fix": "Add blocked_by?: string[] to UpdateFeatureRequestInput and UpdateBugInput in portal/Shared/api.ts; remove service-layer duplicate definitions",
+      "fix_impact": "Resolves 2 P2 findings in one change"
+    },
+    {
+      "root_cause": "teamDispatches.ts is unspecced, untested, and bypasses service layer",
+      "affected_findings": ["QO-002", "QO-005"],
+      "single_fix": "Write spec with FR IDs; create teamDispatchService.ts; add test file; add // Verifies comments",
+      "fix_impact": "Resolves 2 P2 findings in one change"
+    },
+    {
+      "root_cause": "Vitest v2 toolchain (outdated) pulls vulnerable esbuild, vite, vite-node, ws, postcss",
+      "affected_findings": ["DEP-007", "DEP-009", "DEP-012"],
+      "single_fix": "cd Source/Frontend && npm install vitest@4",
+      "fix_impact": "Resolves 1 P1 + 2 P3 findings in one command"
+    }
+  ]
+}

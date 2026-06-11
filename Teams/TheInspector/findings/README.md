@@ -1,25 +1,42 @@
-# TheInspector Findings Directory
+# TheInspector Findings
 
-This directory receives audit reports and bug-backlogs from TheInspector audit runs post-merge.
+This directory contains audit reports from the **TheInspector** specialist team.
 
-## File Patterns
+## Recent Audits
 
-- **Audit reports**: `audit-YYYY-MM-DD-{grade}.html`
-  - Example: `audit-2026-04-07-A.html`, `audit-2026-04-07-B-.html`
-  - Grade can be: A, B+, B, B-, C+, C, C-, D, F
-  - Contains detailed security, chaos, performance, and quality findings
+### Dependency Auditor – 2026-06-11
+- **Status:** ⚠️ **GRADE D** (Critical CVEs in production/build infrastructure)
+- **Report:** [dependency-audit-2026-06-11.md](dependency-audit-2026-06-11.md)
+- **JSON Summary:** [dependency-audit-2026-06-11.json](dependency-audit-2026-06-11.json)
 
-- **Bug backlogs**: `bug-backlog-YYYY-MM-DD.json`
-  - Example: `bug-backlog-2026-04-07.json`
-  - JSON structure with discovered bugs, severity levels, and remediation guidance
+**Quick Summary:**
+- 18 total CVEs (2 critical, 5 high, 9 moderate, 2 low)
+- **Critical:** JavaScript injection in handlebars (via ts-jest) + Vitest path traversal chain
+- **Action Items:** 3 immediate fixes, then medium-term upgrades
+- **Escalations:** TheGuardians (code injection + source exposure), red-teamer (query string + redirect attacks)
 
-## .gitignore
+---
 
-HTML audit reports are large and not committed to git. The `.gitignore` in this directory excludes `*.html` files to keep the repository lean. Bug-backlog JSON files are tracked for record-keeping and trend analysis.
+## File Organization
 
-## Workflow
+- `dependency-audit-YYYY-MM-DD.md` — Human-readable audit report
+- `dependency-audit-YYYY-MM-DD.json` — Machine-readable findings (for dashboard integration)
 
-1. TheInspector team runs post-merge audits
-2. Reports are generated and written to this directory
-3. Bug backlog is updated with newly discovered issues
-4. Team lead aggregates findings into sprint planning
+## Audit Cadence
+
+- **Dependency Auditor:** Monthly (or on-demand for new package additions)
+- **Quality Oracle:** Continuous (spec coverage, test coverage)
+- **Red Teamer:** On-demand or per-phase
+- **Chaos Monkey:** Per deployment or on-demand
+
+## Escalation Contacts
+
+| Finding Type | Escalate To | Reason |
+|---|---|---|
+| Code injection, hardcoded secrets, auth bypass | [TheGuardians](../../../Teams/TheGuardians) | Security team owns threat modeling |
+| Code quality, test coverage, perf regression | [TheFixer](../../../Teams/TheFixer) | Fix team owns code quality |
+| Spec drift, missing requirements | [Requirements Team](../../../Teams) | Requirements owns traceability |
+
+---
+
+For details on the audit process, see [Teams/TheInspector/README.md](../README.md).

@@ -1,0 +1,258 @@
+{
+  "audit_date": "2026-06-11",
+  "audit_version": "1.0",
+  "package_managers_detected": [
+    "npm"
+  ],
+  "manifests_scanned": 10,
+  "projects": {
+    "backend": {
+      "path": "Source/Backend",
+      "package_manager": "npm",
+      "direct_dependencies": 5,
+      "transitive_dependencies": 226,
+      "total_nodes": 411
+    },
+    "frontend": {
+      "path": "Source/Frontend",
+      "package_manager": "npm",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 228,
+      "total_nodes": 230
+    },
+    "e2e": {
+      "path": "Source/E2E",
+      "package_manager": "npm",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 4,
+      "total_nodes": 5
+    }
+  },
+  "vulnerability_summary": {
+    "total_cves": 18,
+    "by_severity": {
+      "critical": 2,
+      "high": 5,
+      "moderate": 9,
+      "low": 2
+    },
+    "by_project": {
+      "backend": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 5,
+        "low": 0,
+        "total": 6
+      },
+      "frontend": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 4,
+        "low": 0,
+        "total": 9
+      },
+      "e2e": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      }
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "CRITICAL JavaScript Injection in Handlebars",
+      "severity": "P1",
+      "package": "handlebars@4.7.8",
+      "project": "backend",
+      "cvss_score": 9.8,
+      "is_production": false,
+      "note": "dev dependency via ts-jest; affects Jest test infrastructure",
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q"
+      ],
+      "fix": "npm update ts-jest"
+    },
+    {
+      "id": "DEP-007",
+      "title": "CRITICAL Vitest Dependency Chain (Path Traversal)",
+      "severity": "P1",
+      "package": "vitest@2.0.5",
+      "project": "frontend",
+      "cvss_score": 6.5,
+      "is_production": false,
+      "note": "dev dependency; affects build toolchain (esbuild + vite)",
+      "cve_ids": [
+        "GHSA-4w7w-66w2-5vf9",
+        "GHSA-67mh-4wv8-2f99"
+      ],
+      "fix": "npm install vitest@4"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Moderate React Router Open Redirect",
+      "severity": "P2",
+      "package": "react-router-dom@6.26.0",
+      "project": "frontend",
+      "cvss_score": 0.0,
+      "is_production": true,
+      "note": "protocol-relative URL reinterpretation attack",
+      "cve_ids": [
+        "GHSA-2j2x-hqr9-3h42"
+      ],
+      "fix": "npm install react-router-dom@6.30.4"
+    }
+  ],
+  "outdated_packages": {
+    "backend": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "wanted": "4.22.2",
+        "latest": "5.2.1",
+        "major_versions_behind": 1,
+        "severity": "P3",
+        "note": "4.22.2 is safe patch; 5.x has breaking changes"
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "wanted": "8.21.0",
+        "latest": "10.3.1",
+        "major_versions_behind": 2,
+        "severity": "P2",
+        "note": "2 major versions behind; missing security patches"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "wanted": "9.0.1",
+        "latest": "14.0.0",
+        "major_versions_behind": 5,
+        "severity": "P3",
+        "note": "Stable library; 5 major versions is cosmetic; safe to upgrade"
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.2.7",
+        "major_versions_behind": 1,
+        "severity": "P3",
+        "note": "Latest is React 19; plan migration"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.2.7",
+        "major_versions_behind": 1,
+        "severity": "P3",
+        "note": "Same as React; paired upgrade required"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "wanted": "6.30.4",
+        "latest": "7.17.0",
+        "major_versions_behind": 1,
+        "severity": "P2",
+        "note": "Patch 6.30.4 fixes open redirect CVE"
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS_WITH_NOTES",
+    "findings": [
+      {
+        "package": "Source/Backend",
+        "license": "not_specified",
+        "recommendation": "Add MIT or ISC"
+      },
+      {
+        "package": "Source/Frontend",
+        "license": "not_specified",
+        "recommendation": "Add MIT or ISC"
+      },
+      {
+        "package": "Source/E2E",
+        "license": "ISC",
+        "recommendation": "OK"
+      }
+    ],
+    "viral_licenses_detected": 0,
+    "unknown_licenses": 0
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": 0,
+    "single_maintainer_packages": [
+      "uuid",
+      "pino"
+    ],
+    "low_download_count_packages": [],
+    "recently_transferred_packages": [],
+    "abandoned_packages": [],
+    "overall_risk": "LOW"
+  },
+  "duplicate_dependencies": {
+    "detected": false,
+    "details": []
+  },
+  "remediation_plan": {
+    "immediate_24_48_hours": [
+      "Update ts-jest to patch handlebars (Backend)",
+      "Upgrade vitest to v4 (Frontend)",
+      "Patch react-router-dom to 6.30.4 (Frontend)"
+    ],
+    "short_term_1_2_weeks": [
+      "Upgrade express to 4.22.2 (Backend)",
+      "Plan pino upgrade to v9 or v10 (Backend)"
+    ],
+    "medium_term_1_month": [
+      "Upgrade React to 18.3.x latest (Frontend)",
+      "Plan React 19 migration (Frontend)",
+      "Upgrade uuid to v14 (Backend)"
+    ]
+  },
+  "grade": "D",
+  "grade_rationale": "Critical JavaScript injection CVE in production test infrastructure (ts-jest handlebars); critical path traversal in dev build toolchain (vitest). While test infrastructure is not directly production code, Jest execution during CI could process malicious test data.",
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": [
+        "DEP-001: JavaScript injection in ts-jest",
+        "DEP-007: Path traversal in vitest build toolchain"
+      ],
+      "reason": "Code execution and source exposure risks"
+    },
+    {
+      "team": "red-teamer",
+      "findings": [
+        "DEP-002: QS injection in express",
+        "DEP-008: React Router open redirect",
+        "DEP-012: WebSocket library"
+      ],
+      "reason": "Exploitability assessment of query string and redirect attack surfaces"
+    }
+  ],
+  "testing_gates": [
+    "npm test --workspaces --if-present",
+    "npm audit --audit-level=moderate",
+    "npm outdated --json",
+    "python3 tools/traceability-enforcer.py"
+  ],
+  "next_audit": "2026-07-11",
+  "metrics": {
+    "cves_critical": 2,
+    "cves_high": 5,
+    "cves_moderate": 9,
+    "cves_low": 2,
+    "outdated_major": 5,
+    "post_install_scripts": 0,
+    "supply_chain_risk_level": "low"
+  }
+}

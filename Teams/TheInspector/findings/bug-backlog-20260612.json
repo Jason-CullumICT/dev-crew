@@ -1,0 +1,232 @@
+{
+  "audit_id": "run-20260612-065801",
+  "audit_date": "2026-06-12",
+  "branch": "audit/inspector-2026-06-12-be2da3",
+  "grade": "D",
+  "generated_by": "TheInspector — team_leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — static-only mode",
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE — CWE-94 Code Injection",
+      "title": "protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "affected_files": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "description": "Arbitrary code execution via malformed protobuf messages. Any network endpoint that processes protobuf data is exploitable with zero authentication required.",
+      "exploit_scenario": "Attacker sends a crafted protobuf message to any gRPC or protobuf-parsing endpoint, triggering code injection at service privilege level.",
+      "recommendation": "cd platform/orchestrator && npm update protobufjs; cd portal/Backend && npm update protobufjs",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection + RCE",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE — CWE-94 / CWE-843 Template Injection",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion (CVSS 9.8)",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "affected_files": ["Source/Backend/package-lock.json"],
+      "description": "Attacker-controlled template input achieves arbitrary code execution via type confusion in @partial-block parsing. Severity conditional on whether Handlebars is used with untrusted user input.",
+      "exploit_scenario": "If any backend route passes user-supplied data into a Handlebars template, an attacker can inject arbitrary JavaScript that executes server-side.",
+      "recommendation": "cd Source/Backend && npm update handlebars; audit all Handlebars call sites for untrusted input",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE — CWE-862 Missing Authorization",
+      "title": "Vitest UI Server Arbitrary File Read & Execution (CVSS 9.8)",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "affected_files": ["Source/Frontend/package-lock.json", "portal/Frontend/package-lock.json"],
+      "description": "When Vitest UI server is active, any network attacker can read arbitrary files and execute code via the debug port (51204). Affects test infrastructure rather than production runtime.",
+      "exploit_scenario": "Attacker on same network as a developer running `vitest --ui` can read secrets from disk (env files, SSH keys) and execute arbitrary commands.",
+      "recommendation": "cd Source/Frontend && npm update vitest; cd portal/Frontend && npm update vitest; enforce CI policy: never run vitest --ui in networked environments",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "missing access control",
+      "status": "NEW"
+    }
+  ],
+
+  "p1_findings": [],
+
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "GET /api/search missing from app.ts — DependencyPicker broken at runtime",
+      "specialist": "quality-oracle",
+      "affected_files": ["Source/Backend/src/app.ts", "Source/Backend/tests/routes/search.test.ts", "Source/Frontend/src/components/DependencyPicker.tsx"],
+      "spec_ref": "FR-dependency-search",
+      "description": "Route specified and tested but not registered. searchItems() API client calls a non-existent endpoint, making DependencyPicker non-functional.",
+      "recommendation": "Add Source/Backend/src/routes/search.ts and register as app.use('/api/search', searchRouter)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Histogram absent from metrics.ts",
+      "specialist": "quality-oracle",
+      "affected_files": ["Source/Backend/src/metrics.ts"],
+      "spec_ref": "FR-dependency-metrics",
+      "description": "3 of 4 required Prometheus metrics present. dependencyCheckDuration Histogram missing — /metrics will not emit it.",
+      "recommendation": "Add dependencyCheckDurationHistogram to metrics.ts and instrument isReady() and detectCycle()",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers call store directly — service layer bypassed",
+      "specialist": "quality-oracle",
+      "affected_files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "description": "All three route files import workItemStore directly, violating CLAUDE.md architecture rule. Creates untestable coupling.",
+      "recommendation": "Extract workItemService.ts, route all store calls through it",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Tiered Merge Pipeline spec 0% implemented (FR-TMP-001 — FR-TMP-010)",
+      "specialist": "quality-oracle",
+      "affected_files": ["Specifications/tiered-merge-pipeline.md", "Source/E2E/"],
+      "spec_ref": "FR-TMP-001 to FR-TMP-010",
+      "description": "10 requirements, 0 implementation references. E2E directory contains only config files. No traceability enforcer coverage.",
+      "recommendation": "Create Plans/tiered-merge-pipeline/requirements.md to bring under enforcer scope; assign to TheATeam if active",
+      "assign_to": "TheATeam",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE — CWE-248 Uncaught Exception",
+      "title": "@grpc/grpc-js Malformed Request Server Crash (CVSS 7.5)",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "cvss": 7.5,
+      "affected_files": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "description": "Malformed gRPC request crashes the server process — denial of service with no authentication required.",
+      "recommendation": "npm update @grpc/grpc-js in platform/orchestrator and portal/Backend",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE — ReDoS",
+      "title": "path-to-regexp Regular Expression Denial of Service (CVSS 7.5)",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "affected_files": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "description": "Crafted route path strings trigger catastrophic backtracking, hanging the event loop.",
+      "recommendation": "npm update path-to-regexp",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE — DoS",
+      "title": "@opentelemetry/sdk-node Prometheus Exporter Crash (CVSS 7.5)",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "affected_files": ["portal/Backend/package-lock.json"],
+      "description": "Malformed HTTP request to /metrics endpoint crashes the Prometheus exporter.",
+      "recommendation": "Update @opentelemetry packages in portal/Backend",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed not implemented — no demo state on fresh startup",
+      "specialist": "quality-oracle",
+      "spec_ref": "FR-dependency-seed",
+      "recommendation": "Create Source/Backend/src/seed.ts with idempotent seeding logic",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "Duplicate logger abstraction — src/logger.ts and src/utils/logger.ts coexist",
+      "specialist": "quality-oracle",
+      "affected_files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "recommendation": "Designate utils/logger.ts as canonical; migrate all importers; delete shim",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "playwright.pipeline.config.ts has hardcoded artifact path — breaks on fresh checkout",
+      "specialist": "quality-oracle",
+      "affected_files": ["Source/E2E/playwright.pipeline.config.ts"],
+      "recommendation": "Replace hardcoded testDir with process.env.E2E_TEST_DIR ?? './tests'",
+      "cross_ref": "QO-004",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "eslint-disable without justification comment in DependencyPicker.tsx and useWorkItems.ts",
+      "specialist": "quality-oracle",
+      "affected_files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "recommendation": "Add inline justification or fix exhaustive-deps warning properly",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "summary": {
+    "total_findings": 14,
+    "p1_count": 3,
+    "p2_count": 7,
+    "p3_count": 3,
+    "p4_count": 1,
+    "escalated_to_TheGuardians": 3,
+    "routed_to_TheFixer": 9,
+    "routed_to_TheATeam": 1,
+    "spec_coverage_pct": 69,
+    "enforcer_gate": "PASS",
+    "grade": "D",
+    "grade_rationale": "3 P1 CVEs exceeds C-grade threshold of max_p1=2 per inspector.config.yml grading"
+  }
+}

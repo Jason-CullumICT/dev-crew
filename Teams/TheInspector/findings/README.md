@@ -2,37 +2,43 @@
 
 This directory receives audit reports and bug-backlogs from TheInspector audit runs post-merge.
 
-## Latest Audit: 2026-06-12 — Dependency Audit
+## Latest Audit: 2026-06-12 — Full Health Audit
 
-**Overall Grade: C** — 4 critical, 7 high, 38 moderate vulnerabilities
+**Overall Grade: D** · Audit ID: `run-20260612-065801`  
+3 × P1 (CVSS 9.8) · 7 × P2 · 3 × P3 · 1 × P4 · 14 total findings  
+Specialists: quality-oracle ✅ · dependency-auditor ✅ · performance-profiler ⏭ · chaos-monkey ⏭
 
 ### Reports Available
 
 | Report | Format | Purpose |
 |--------|--------|---------|
-| [`dependency-audit-20260612.md`](dependency-audit-20260612.md) | Markdown | **Full audit report** — Detailed vulnerability analysis, workspace breakdown, remediation roadmap (2,000+ lines) |
-| [`dependency-audit-summary-20260612.json`](dependency-audit-summary-20260612.json) | JSON | Machine-readable dashboard data for metrics/tracking |
-| [`vulnerability-detail-20260612.json`](vulnerability-detail-20260612.json) | JSON | Detailed CVE information per package (CVSS, CWE, attack vectors) |
+| [`audit-20260612-D.html`](audit-20260612-D.html) | HTML | **Full 16-section health report** — grade, all findings, risk matrix, spec coverage, recommendations |
+| [`bug-backlog-20260612.json`](bug-backlog-20260612.json) | JSON | Machine-readable bug backlog — escalations array + P1–P4 findings |
+| [`dependency-audit-20260612.md`](dependency-audit-20260612.md) | Markdown | Dependency specialist detail report |
+| [`dependency-audit-summary-20260612.json`](dependency-audit-summary-20260612.json) | JSON | Dependency metrics dashboard data |
+| [`vulnerability-detail-20260612.json`](vulnerability-detail-20260612.json) | JSON | Per-package CVE details (CVSS, CWE, attack vectors) |
 
-### Critical Findings (Immediate Action Required)
+### ⚠ Security Escalations → TheGuardians (3 findings)
 
-1. **protobufjs RCE** (CVSS 9.8) — Arbitrary code execution
+1. **DEP-001 — protobufjs RCE** (CVSS 9.8) — Arbitrary code execution
    - Affects: `platform/orchestrator`, `portal/Backend`
-   - Fix: `npm update protobufjs` (TODAY)
+   - Fix: `npm update protobufjs` · **[ESCALATE → TheGuardians]**
 
-2. **Handlebars Template Injection** (CVSS 9.8) — Conditional RCE
+2. **DEP-002 — Handlebars Template Injection** (CVSS 9.8) — Conditional RCE
    - Affects: `Source/Backend`
-   - Action: Assess if Handlebars processes untrusted input
+   - Fix: `npm update handlebars`; audit call sites · **[ESCALATE → TheGuardians]**
 
-3. **Vitest UI Server RCE** (CVSS 9.8) — File read + execution
+3. **DEP-003 — Vitest UI Server RCE** (CVSS 9.8) — File read + code execution
    - Affects: `Source/Frontend`, `portal/Frontend`
-   - Mitigation: Never enable `--ui` in exposed environments
+   - Fix: `npm update vitest`; enforce no `--ui` in CI · **[ESCALATE → TheGuardians]**
 
-4. **gRPC DoS** (CVSS 7.5) — Service crash via malformed request
-   - Affects: `platform/orchestrator`, `portal/Backend`
-   - Fix: `npm update @grpc/grpc-js`
+### Top P2 Findings → TheFixer
 
-See full report for remediation roadmap and 35+ additional moderate CVEs.
+- **QO-001**: `GET /api/search` unregistered — DependencyPicker broken at runtime
+- **QO-003**: Route handlers bypass service layer (3 route files)
+- **DEP-004/005**: gRPC DoS + path-to-regexp ReDoS in platform infra
+
+See `audit-20260612-D.html` for full prioritised remediation plan.
 
 ---
 

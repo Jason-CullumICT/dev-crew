@@ -1,0 +1,225 @@
+{
+  "audit_date": "2026-06-12",
+  "auditor": "dependency-auditor",
+  "overall_grade": "C",
+  "summary": {
+    "package_managers": ["npm"],
+    "workspaces_scanned": 6,
+    "direct_dependencies": 25,
+    "transitive_dependencies": 1807
+  },
+  "vulnerabilities": {
+    "total": 56,
+    "critical": 4,
+    "high": 7,
+    "moderate": 38,
+    "low": 7
+  },
+  "by_severity": {
+    "critical": [
+      {
+        "id": "DEP-001",
+        "package": "protobufjs",
+        "cve": "GHSA-xq3m-2v4x-88gg",
+        "cvss": 9.8,
+        "description": "Arbitrary code execution in protobufjs",
+        "affected_workspaces": ["platform/orchestrator", "portal/Backend"],
+        "status": "REQUIRES_IMMEDIATE_REMEDIATION"
+      },
+      {
+        "id": "DEP-002",
+        "package": "handlebars",
+        "cve": "GHSA-2w6w-674q-4c4q",
+        "cvss": 9.8,
+        "description": "JavaScript Injection via AST Type Confusion",
+        "affected_workspaces": ["Source/Backend"],
+        "status": "REQUIRES_ASSESSMENT"
+      },
+      {
+        "id": "DEP-003",
+        "package": "vitest",
+        "cve": "GHSA-5xrq-8626-4rwp",
+        "cvss": 9.8,
+        "description": "Vitest UI server arbitrary file read and execution",
+        "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+        "status": "MEDIUM_TERM",
+        "mitigation": "Ensure Vitest UI is never enabled in production"
+      }
+    ],
+    "high": [
+      {
+        "id": "DEP-004",
+        "package": "@grpc/grpc-js",
+        "cve": "GHSA-5375-pq7m-f5r2",
+        "cvss": 7.5,
+        "description": "Malformed request causes server crash (DoS)",
+        "affected_workspaces": ["platform/orchestrator", "portal/Backend"]
+      },
+      {
+        "id": "DEP-005",
+        "package": "path-to-regexp",
+        "cve": "GHSA-37ch-88jc-xwx2",
+        "cvss": 7.5,
+        "description": "Regular Expression Denial of Service (ReDoS)",
+        "affected_workspaces": ["platform/orchestrator", "portal/Backend"]
+      },
+      {
+        "id": "DEP-006",
+        "package": "@opentelemetry/sdk-node",
+        "cve": "GHSA-q7rr-3cgh-j5r3",
+        "cvss": 7.5,
+        "description": "Prometheus exporter crash via malformed HTTP request",
+        "affected_workspaces": ["portal/Backend"]
+      }
+    ]
+  },
+  "outdated_packages": {
+    "major_version_gaps": [
+      {
+        "package": "pino",
+        "workspace": "Source/Backend",
+        "current": "8.17.0",
+        "latest": "10.3.1",
+        "gap_major": 2,
+        "risk": "Likely missing security patches"
+      },
+      {
+        "package": "uuid",
+        "workspace": "Source/Backend",
+        "current": "9.0.1",
+        "latest": "14.0.0",
+        "gap_major": 5,
+        "risk": "Likely missing security patches"
+      },
+      {
+        "package": "@opentelemetry packages",
+        "workspace": "portal/Backend",
+        "current": "0.40-0.47",
+        "latest": "0.77-0.219",
+        "gap_major": "1-20",
+        "risk": "Significant feature and security gap"
+      }
+    ]
+  },
+  "supply_chain_assessment": {
+    "risk_level": "MEDIUM",
+    "largest_dependency_trees": [
+      {
+        "workspace": "portal/Backend",
+        "transitive_count": 578,
+        "risk": "Largest supply chain surface; driven by OpenTelemetry"
+      },
+      {
+        "workspace": "portal/Frontend",
+        "transitive_count": 425,
+        "risk": "React ecosystem; typical for SPA"
+      },
+      {
+        "workspace": "Source/Backend",
+        "transitive_count": 412,
+        "risk": "Acceptable; minimal direct dependencies"
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "CLEAN",
+    "findings": "No GPL/AGPL licenses detected in direct dependencies",
+    "recommendation": "Periodic audit recommended for new versions"
+  },
+  "workspace_health": {
+    "Source/Backend": {
+      "direct_deps": 4,
+      "transitive_deps": 412,
+      "critical_vulns": 1,
+      "high_vulns": 0,
+      "moderate_vulns": 5,
+      "status": "⚠️ REQUIRES_ACTION"
+    },
+    "Source/Frontend": {
+      "direct_deps": 3,
+      "transitive_deps": 231,
+      "critical_vulns": 1,
+      "high_vulns": 0,
+      "moderate_vulns": 8,
+      "status": "⚠️ REQUIRES_ACTION"
+    },
+    "Source/E2E": {
+      "direct_deps": 1,
+      "transitive_deps": 5,
+      "critical_vulns": 0,
+      "high_vulns": 0,
+      "moderate_vulns": 0,
+      "status": "✅ CLEAN"
+    },
+    "platform/orchestrator": {
+      "direct_deps": 3,
+      "transitive_deps": 156,
+      "critical_vulns": 1,
+      "high_vulns": 2,
+      "moderate_vulns": 6,
+      "status": "🔴 CRITICAL_ACTION_REQUIRED"
+    },
+    "portal/Backend": {
+      "direct_deps": 11,
+      "transitive_deps": 578,
+      "critical_vulns": 1,
+      "high_vulns": 4,
+      "moderate_vulns": 13,
+      "status": "🔴 CRITICAL_ACTION_REQUIRED"
+    },
+    "portal/Frontend": {
+      "direct_deps": 3,
+      "transitive_deps": 425,
+      "critical_vulns": 1,
+      "high_vulns": 1,
+      "moderate_vulns": 7,
+      "status": "⚠️ REQUIRES_ACTION"
+    }
+  },
+  "escalations": {
+    "to_theGuardians": [
+      "DEP-001: protobufjs RCE (CVSS 9.8) — Production infrastructure at risk",
+      "DEP-002: Handlebars template injection (CVSS 9.8) — Assess user input paths",
+      "DEP-003: Vitest UI RCE (CVSS 9.8) — Test infrastructure exposure",
+      "DEP-004: gRPC DoS vulnerability",
+      "DEP-005: path-to-regexp ReDoS",
+      "DEP-006: OpenTelemetry Prometheus crash"
+    ],
+    "to_theFixer": [
+      "Major version upgrades (express, react, pino, uuid, opentelemetry)",
+      "License compliance ongoing monitoring",
+      "Handlebars usage assessment"
+    ]
+  },
+  "remediation_phases": {
+    "phase_1_critical_immediate": {
+      "timeline": "Days 1-2",
+      "actions": [
+        "npm update protobufjs (CVSS 9.8 RCE)",
+        "npm update @grpc/grpc-js (CVSS 7.5 DoS)",
+        "npm update path-to-regexp (CVSS 7.5 ReDoS)",
+        "npm update vitest (CVSS 9.8 test-time RCE)"
+      ]
+    },
+    "phase_2_high_priority": {
+      "timeline": "Week 1",
+      "actions": [
+        "npm update @opentelemetry packages (portal/Backend)",
+        "npm audit fix (all workspaces for moderate CVEs)"
+      ]
+    },
+    "phase_3_major_upgrades": {
+      "timeline": "Weeks 2-4",
+      "actions": [
+        "express@5.2.1 (breaking API changes)",
+        "react@19.2.7 (breaking API changes)",
+        "pino@10.3.1, uuid@14.0.0 (Backend)",
+        "dockerode@5.0.0, multer@2.1.1 (infrastructure)"
+      ]
+    }
+  },
+  "next_audit": {
+    "scheduled": "2026-06-26",
+    "trigger": "Any dependency update in critical packages"
+  }
+}

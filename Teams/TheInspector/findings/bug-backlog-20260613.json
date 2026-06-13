@@ -1,0 +1,302 @@
+{
+  "audit": {
+    "run_id": "run-20260613-063120",
+    "date": "2026-06-13",
+    "branch": "audit/inspector-2026-06-13-a4dba6",
+    "grade": "D",
+    "project": "dev-crew Source App",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline (backend port 3001, frontend port 5173)",
+    "totals": {
+      "p1": 5,
+      "p2": 6,
+      "p3": 5,
+      "p4": 2,
+      "escalations": 3,
+      "fixed": 0,
+      "total_dep_vulnerabilities": 51
+    }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "priority": "P1",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "category": "CVE / Code Injection",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "package": "handlebars",
+      "affected_version": ">=4.0.0 <=4.7.8",
+      "locations": ["Source/Backend/package-lock.json"],
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6", "GHSA-9cx6-37pm-9jff"],
+      "exploit_scenario": "Attacker injects @partial-block AST nodes via user-supplied template content to execute arbitrary JS in the backend process",
+      "impact": "Full server-side code execution; exfiltration of in-memory store; OS escalation",
+      "fix": "npm update handlebars@latest in Source/Backend",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "injection",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "cross_ref_group": null
+    },
+    {
+      "id": "DEP-002",
+      "priority": "P1",
+      "title": "Protobufjs Arbitrary Code Execution (gRPC Stack)",
+      "category": "CVE / Deserialization / RCE",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94"],
+      "package": "protobufjs",
+      "affected_version": "<=7.5.5",
+      "locations": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "cves": ["GHSA-xq3m-2v4x-88gg", "GHSA-75px-5xx7-5xc7"],
+      "exploit_scenario": "Attacker sends crafted .proto descriptor or malformed protobuf message to gRPC endpoint triggering RCE via descriptor loading, prototype pollution, or unbounded recursion",
+      "impact": "RCE on orchestrator and portal backend; compromise of all agents and pipelines",
+      "fix": "npm update protobufjs@7.5.8+ in platform/orchestrator and portal/Backend",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "injection",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "cross_ref_group": "Cross-Ref A"
+    },
+    {
+      "id": "DEP-003",
+      "priority": "P1",
+      "title": "Vitest Arbitrary File Read and Code Execution (Dev Tooling)",
+      "category": "CVE / Missing Access Control",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-862"],
+      "package": "vitest",
+      "affected_version": "<3.2.6",
+      "locations": ["Source/Frontend/package-lock.json", "portal/Frontend/package-lock.json"],
+      "cves": [],
+      "exploit_scenario": "Unauthenticated attacker on network reads arbitrary files and executes code when vitest UI server is enabled in CI/CD",
+      "impact": "Exfiltration of .env files and secrets; code execution in CI/CD runner environment",
+      "fix": "npm update vitest@3.2.6+ in Source/Frontend and portal/Frontend; disable --ui flag in all CI configs",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "missing access control",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "cross_ref_group": "Cross-Ref B"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "priority": "P1",
+      "title": "Primary Specification Describes Wrong Product (0% Coverage)",
+      "category": "Spec-Implementation Drift",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "dev-workflow-platform.md documents 70 FRs for a portal/ app, not the Source/ work-item engine. 0% implementation trace. Misleads agents and developers.",
+      "impact": "Silent spec divergence; 70 phantom debt FRs; traceability audits inflated by wrong-product FRs",
+      "recommendation": "Add portal/ header to spec; designate canonical Source/ spec; update enforcer target",
+      "route_to": "requirements-reviewer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref_group": "Cross-Ref C"
+    },
+    {
+      "id": "QO-002",
+      "priority": "P1",
+      "title": "GET /api/search Not Registered — Runtime 404 on All Typeahead Searches",
+      "category": "Missing Route Registration",
+      "file": "Source/Backend/src/app.ts",
+      "related_files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Backend/tests/routes/search.test.ts"
+      ],
+      "description": "GET /api/search route is consumed by DependencyPicker and documented in tests but never registered in app.ts. Returns 404 at runtime.",
+      "impact": "Dependency-linking feature (FR-DL-001–013) completely broken in production",
+      "recommendation": "Register search router in app.ts; run npm test --workspace=Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref_group": "Cross-Ref D"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "priority": "P2",
+      "title": "Approved Plan FR-DUP-01–13 Entirely Unimplemented",
+      "category": "Spec Drift",
+      "file": "Plans/duplicate-deprecated-status/",
+      "description": "13 FRs in the APPROVED duplicate-deprecated-status plan have zero Verifies: FR-DUP-* traces anywhere in Source/",
+      "impact": "Approved feature invisible to users; enforcer falsely reports compliance",
+      "recommendation": "Schedule FR-DUP-* implementation sprint via TheFixer",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref_group": "Cross-Ref C"
+    },
+    {
+      "id": "QO-004",
+      "priority": "P2",
+      "title": "Route Handlers Bypass Service Layer",
+      "category": "Architecture Violation",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "description": "Three route handlers call workItemStore.* directly instead of through the service layer, violating the 'no direct DB calls from route handlers' architecture rule",
+      "impact": "Business logic leaks into transport layer; untestable without live store; future service-layer refactors require duplicate effort",
+      "recommendation": "Refactor handlers to delegate to service layer; TheFixer task",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref_group": "Cross-Ref D"
+    },
+    {
+      "id": "QO-005",
+      "priority": "P2",
+      "title": "Traceability Enforcer Ignores Two Approved Plans",
+      "category": "Tooling Gap",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Default run targets only the most-recently-modified plan file; Plans/dependency-linking and Plans/duplicate-deprecated-status are silently skipped",
+      "impact": "FR-DUP-* and FR-DL-* gaps are invisible to CI gates; false impression of full traceability",
+      "recommendation": "Fix enforcer to iterate all plans with APPROVED status; add as a verification gate",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref_group": "Cross-Ref C"
+    },
+    {
+      "id": "DEP-004",
+      "priority": "P2",
+      "title": "esbuild Missing Binary Integrity Verification",
+      "category": "CVE / Supply Chain",
+      "cvss_score": 8.1,
+      "cwe": ["CWE-426", "CWE-494"],
+      "package": "esbuild",
+      "locations": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "description": "esbuild lacks binary integrity verification in Deno module — supply chain RCE vector",
+      "fix": "npm update vite@latest (bundles esbuild) in frontend workspaces",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "cross_ref_group": "Cross-Ref B"
+    },
+    {
+      "id": "DEP-005",
+      "priority": "P2",
+      "title": "@grpc/grpc-js Remote Crash via Malformed Messages",
+      "category": "CVE / DoS",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-248", "CWE-400"],
+      "package": "@grpc/grpc-js",
+      "locations": ["platform/orchestrator", "portal/Backend"],
+      "description": "Malformed gRPC messages crash server/client process",
+      "fix": "npm update @grpc/grpc-js@latest in platform/orchestrator and portal/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "cross_ref_group": "Cross-Ref A"
+    },
+    {
+      "id": "DEP-006",
+      "priority": "P2",
+      "title": "path-to-regexp ReDoS Vulnerability",
+      "category": "CVE / ReDoS",
+      "cvss_score": 7.5,
+      "package": "path-to-regexp",
+      "description": "Crafted URLs cause catastrophic backtracking in route matching",
+      "fix": "npm update path-to-regexp across all workspaces",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "cross_ref_group": null
+    }
+  ],
+  "p3_p4_findings": [
+    {
+      "id": "QO-006",
+      "priority": "P3",
+      "title": "Duplicate Test Files at Root Level",
+      "file": "Source/Frontend/tests/WorkItemDetailPage.test.tsx, Source/Frontend/tests/WorkItemListPage.test.tsx",
+      "description": "Stale copies of page tests exist at root tests/ level; authoritative versions are under tests/pages/",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "priority": "P3",
+      "title": "Missing OpenTelemetry Instrumentation in Backend",
+      "file": "Source/Backend/src/",
+      "description": "No OTel spans, trace propagation, or metrics instrumentation anywhere in Source/Backend despite architecture mandate",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "priority": "P4",
+      "title": "Undocumented eslint-disable Suppressions",
+      "file": "2 hook files in Source/Frontend/src/hooks/",
+      "description": "Two eslint-disable react-hooks/exhaustive-deps suppressions lack rationale comments",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "priority": "P4",
+      "title": "Non-Standard Verifies Comment in DebugPortalPage",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "description": "Free-form Verifies comment not in FR-XXX format — ignored by traceability enforcer",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "priority": "P3",
+      "title": "No Standalone Unit Test for useDashboard Hook",
+      "file": "Source/Frontend/src/hooks/useDashboard.ts",
+      "description": "useDashboard hook has no hook-level unit test; only covered indirectly through component tests",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "priority": "P3",
+      "title": "34 Moderate CVEs Across All Workspaces",
+      "packages": ["qs", "body-parser", "postcss", "uuid", "and others"],
+      "description": "34 moderate-severity CVEs across Source/Backend, Source/Frontend, portal/Backend, portal/Frontend, platform/orchestrator",
+      "fix": "Batch npm update across all workspaces; re-run npm audit to confirm 0 moderate+",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "id": "Cross-Ref A",
+      "title": "gRPC Infrastructure — Outdated Ecosystem",
+      "findings": ["DEP-002", "DEP-005"],
+      "root_cause": "platform/orchestrator and portal/Backend pin gRPC stack at vulnerable versions",
+      "single_fix": "npm update protobufjs@7.5.8+ @grpc/grpc-js@latest in both workspaces",
+      "fix_impact": "Resolves 1 P1 + 1 P2 with one update round"
+    },
+    {
+      "id": "Cross-Ref B",
+      "title": "Frontend Build Toolchain — Stale Dev Dependencies",
+      "findings": ["DEP-003", "DEP-004"],
+      "root_cause": "Source/Frontend and portal/Frontend have stale vitest and esbuild via vite bundle",
+      "single_fix": "npm update vitest@3.2.6+ vite@latest in both frontend workspaces; disable --ui in CI",
+      "fix_impact": "Resolves 1 P1 + 1 P2 with one update round per workspace"
+    },
+    {
+      "id": "Cross-Ref C",
+      "title": "Spec-Implementation Governance Gap",
+      "findings": ["QO-001", "QO-003", "QO-005"],
+      "root_cause": "Specifications not maintained as living documents; enforcer tooling has scope bug hiding gaps",
+      "single_fix": "Archive/redirect primary spec; fix enforcer to check all approved plans; schedule FR-DUP-* sprint",
+      "fix_impact": "Resolves 1 P1 + 2 P2; restores spec audit integrity for all future runs"
+    },
+    {
+      "id": "Cross-Ref D",
+      "title": "Architecture Bypass — Service Layer and Route Handlers",
+      "findings": ["QO-002", "QO-004"],
+      "root_cause": "Route handlers written without service layer routing; search route never added to app.ts",
+      "single_fix": "Register GET /api/search in app.ts; refactor 3 handlers to use service layer — single TheFixer task in Source/Backend/src/routes/",
+      "fix_impact": "Resolves 1 P1 + 1 P2; restores architecture compliance"
+    }
+  ]
+}

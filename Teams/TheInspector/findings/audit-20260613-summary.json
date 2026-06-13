@@ -1,0 +1,172 @@
+{
+  "audit_timestamp": "2026-06-13T00:00:00Z",
+  "audit_type": "npm_dependency_audit",
+  "projects_scanned": 6,
+  "total_vulnerabilities": {
+    "critical": 6,
+    "high": 11,
+    "moderate": 34,
+    "low": 0,
+    "total": 51
+  },
+  "overall_grade": "P1-CRITICAL",
+  "projects": [
+    {
+      "name": "Source/Backend",
+      "package_manager": "npm",
+      "direct_dependencies": 102,
+      "transitive_dependencies": 411,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 0,
+        "moderate": 5,
+        "low": 0,
+        "total": 6
+      },
+      "critical_packages": ["handlebars"],
+      "grade": "P1"
+    },
+    {
+      "name": "Source/Frontend",
+      "package_manager": "npm",
+      "direct_dependencies": 9,
+      "transitive_dependencies": 230,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 7,
+        "low": 0,
+        "total": 9
+      },
+      "critical_packages": ["vitest"],
+      "grade": "P1"
+    },
+    {
+      "name": "Source/E2E",
+      "package_manager": "npm",
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "grade": "PASS"
+    },
+    {
+      "name": "platform/orchestrator",
+      "package_manager": "npm",
+      "direct_dependencies": 153,
+      "transitive_dependencies": 155,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0,
+        "total": 9
+      },
+      "critical_packages": ["protobufjs"],
+      "grade": "P1"
+    },
+    {
+      "name": "portal/Frontend",
+      "package_manager": "npm",
+      "direct_dependencies": 9,
+      "transitive_dependencies": 424,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0,
+        "total": 9
+      },
+      "critical_packages": ["vitest"],
+      "grade": "P1"
+    },
+    {
+      "name": "portal/Backend",
+      "package_manager": "npm",
+      "direct_dependencies": 397,
+      "transitive_dependencies": 577,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 10,
+        "low": 0,
+        "total": 18
+      },
+      "critical_packages": ["protobufjs", "vitest"],
+      "grade": "P1"
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "description": "JavaScript Injection via AST Type Confusion",
+      "affected_projects": ["Source/Backend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94"],
+      "description": "Arbitrary Code Execution via descriptor loading",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "vitest",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-862"],
+      "description": "Arbitrary file read/execution when UI enabled",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "package": "esbuild",
+      "severity": "P2",
+      "cvss_score": 8.1,
+      "cwe": ["CWE-426", "CWE-494"],
+      "description": "Missing binary integrity verification in Deno module",
+      "affected_projects": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "escalation": null
+    },
+    {
+      "id": "DEP-005",
+      "package": "@grpc/grpc-js",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-248", "CWE-400"],
+      "description": "Malformed message causes server/client crash",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "escalation": "red-teamer"
+    }
+  ],
+  "remediation_summary": {
+    "immediate_actions": 3,
+    "packages_to_update": [
+      "handlebars >= 4.7.9",
+      "vitest >= 3.2.6",
+      "protobufjs >= 7.5.8",
+      "@grpc/grpc-js >= 1.14.4",
+      "esbuild >= 0.28.1",
+      "uuid >= 11.1.1"
+    ],
+    "estimated_effort": "medium (several breaking changes expected, especially vitest)"
+  },
+  "risk_assessment": {
+    "immediate_threat": true,
+    "exploitability": "high (template injection, code execution, file read)",
+    "network_exposure": "high (grpc endpoints in platform)",
+    "dev_tooling_risk": "high (vitest UI exposure in CI/CD)"
+  }
+}

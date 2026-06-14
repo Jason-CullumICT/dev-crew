@@ -1,0 +1,344 @@
+{
+  "audit_metadata": {
+    "run_date": "2026-06-14",
+    "auditor_agent": "dependency_auditor",
+    "status": "COMPLETE",
+    "grade": "C",
+    "duration_minutes": 15
+  },
+  "project_summary": {
+    "name": "dev-crew",
+    "repositories_scanned": 1,
+    "package_managers_detected": [
+      "npm"
+    ],
+    "manifests_analyzed": 3,
+    "total_direct_dependencies": 17,
+    "total_transitive_dependencies": "~700"
+  },
+  "vulnerability_summary": {
+    "critical": 1,
+    "high": 2,
+    "moderate": 6,
+    "low": 3,
+    "total": 12,
+    "breakdown_by_severity": {
+      "critical_sources": [
+        "protobufjs (orchestrator)"
+      ],
+      "high_sources": [
+        "path-to-regexp (orchestrator)",
+        "esbuild (frontend toolchain)",
+        "@grpc/grpc-js (orchestrator)"
+      ],
+      "moderate_sources": [
+        "react-router-dom",
+        "vite",
+        "postcss",
+        "body-parser/qs",
+        "brace-expansion",
+        "@vitest/mocker"
+      ]
+    }
+  },
+  "findings": {
+    "total_findings": 15,
+    "by_priority": {
+      "p1_critical": 2,
+      "p2_high": 3,
+      "p3_moderate": 6,
+      "p4_outdated_major": 5
+    },
+    "by_category": {
+      "cve": 11,
+      "outdated": 5,
+      "license": 0,
+      "abandoned": 0,
+      "supply_chain": 2
+    },
+    "findings_list": [
+      {
+        "id": "DEP-001",
+        "title": "Arbitrary Code Execution in protobufjs",
+        "severity": "P1",
+        "package": "protobufjs",
+        "version": "<=7.5.5",
+        "location": "platform/orchestrator",
+        "cve": "GHSA-xq3m-2v4x-88gg",
+        "cvss_score": 9.8,
+        "type": "RCE",
+        "fix": "Upgrade to >=7.5.6",
+        "escalation": "TheGuardians"
+      },
+      {
+        "id": "DEP-002",
+        "title": "JavaScript Injection in handlebars",
+        "severity": "P1",
+        "package": "handlebars",
+        "version": ">=4.0.0 <=4.7.8",
+        "location": "Source/Backend",
+        "cve": "GHSA-2w6w-674q-4c4q (and 7 others)",
+        "cvss_score": 9.8,
+        "type": "Code Injection",
+        "fix": "Upgrade to >=4.7.9",
+        "escalation": "TheGuardians (conditional)"
+      },
+      {
+        "id": "DEP-003",
+        "title": "ReDoS in path-to-regexp",
+        "severity": "P2",
+        "package": "path-to-regexp",
+        "version": "<0.1.13",
+        "location": "platform/orchestrator",
+        "cve": "GHSA-37ch-88jc-xwx2",
+        "cvss_score": 7.5,
+        "type": "DoS",
+        "fix": "Upgrade express to >=4.21.1"
+      },
+      {
+        "id": "DEP-004",
+        "title": "Missing Binary Integrity & RCE in esbuild",
+        "severity": "P2",
+        "package": "esbuild",
+        "version": ">=0.17.0 <0.28.1",
+        "location": "Source/Frontend",
+        "cve": "GHSA-gv7w-rqvm-qjhr",
+        "cvss_score": 8.1,
+        "type": "Build-time RCE",
+        "fix": "Upgrade vite to >=5.5.0",
+        "escalation": "TheGuardians"
+      },
+      {
+        "id": "DEP-005",
+        "title": "@grpc/grpc-js Crash Vulnerabilities",
+        "severity": "P2",
+        "package": "@grpc/grpc-js",
+        "version": ">=1.14.0 <1.14.4",
+        "location": "platform/orchestrator",
+        "cve": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq",
+        "cvss_score": 7.5,
+        "type": "DoS",
+        "fix": "Upgrade to >=1.14.4"
+      },
+      {
+        "id": "DEP-006",
+        "title": "Open Redirect in react-router-dom",
+        "severity": "P3",
+        "package": "react-router-dom",
+        "version": "6.6.3-pre.0 - 6.30.3",
+        "location": "Source/Frontend",
+        "cve": "GHSA-2j2x-hqr9-3h42",
+        "cvss_score": 0,
+        "type": "Open Redirect",
+        "fix": "Upgrade to >=6.30.4"
+      },
+      {
+        "id": "DEP-007",
+        "title": "Path Traversal in Vite Optimized Deps",
+        "severity": "P3",
+        "package": "vite",
+        "version": "<=6.4.1",
+        "location": "Source/Frontend",
+        "cve": "GHSA-4w7w-66w2-5vf9",
+        "cvss_score": 0,
+        "type": "Information Disclosure",
+        "fix": "Upgrade vite to >=6.5.0"
+      },
+      {
+        "id": "DEP-008",
+        "title": "XSS in PostCSS via Unescaped HTML",
+        "severity": "P3",
+        "package": "postcss",
+        "version": "<8.5.10",
+        "location": "Source/Frontend",
+        "cve": "GHSA-qx2v-qp2m-jg93",
+        "cvss_score": 6.1,
+        "type": "XSS",
+        "fix": "Upgrade postcss (via vite update)"
+      },
+      {
+        "id": "DEP-009",
+        "title": "qs ReDoS in body-parser & express",
+        "severity": "P3",
+        "package": "qs",
+        "version": "Transitive via express/body-parser",
+        "location": "Source/Backend, platform/orchestrator",
+        "type": "DoS",
+        "fix": "Upgrade express to latest patch"
+      },
+      {
+        "id": "DEP-010",
+        "title": "brace-expansion Hang",
+        "severity": "P3",
+        "package": "brace-expansion",
+        "version": "<1.1.13",
+        "location": "Source/Backend",
+        "cve": "GHSA-f886-m6hf-6m8v",
+        "cvss_score": 6.5,
+        "type": "DoS",
+        "fix": "Update test tools (jest, ts-jest)"
+      },
+      {
+        "id": "DEP-011",
+        "title": "express 4 → 5 (major version)",
+        "severity": "P3",
+        "package": "express",
+        "current": "^4.18.2 / ^4.21.0",
+        "latest": "5.2.1",
+        "type": "Outdated",
+        "recommendation": "Test in branch before upgrading critical infrastructure"
+      },
+      {
+        "id": "DEP-012",
+        "title": "pino 8 → 10 (2 major versions behind)",
+        "severity": "P3",
+        "package": "pino",
+        "current": "^8.17.0",
+        "latest": "10.3.1",
+        "type": "Outdated",
+        "recommendation": "Upgrade for latest patches and performance"
+      },
+      {
+        "id": "DEP-013",
+        "title": "uuid 9 → 14",
+        "severity": "P3",
+        "package": "uuid",
+        "current": "^9.0.0",
+        "latest": "14.0.0",
+        "type": "Outdated",
+        "recommendation": "Upgrade for performance"
+      },
+      {
+        "id": "DEP-014",
+        "title": "react 18 → 19",
+        "severity": "P3",
+        "package": "react",
+        "current": "^18.3.1",
+        "latest": "19.2.7",
+        "type": "Outdated",
+        "recommendation": "Test breaking changes in feature branch"
+      },
+      {
+        "id": "DEP-015",
+        "title": "react-router-dom 6 → 7",
+        "severity": "P3",
+        "package": "react-router-dom",
+        "current": "^6.26.0",
+        "latest": "7.17.0",
+        "type": "Outdated + CVE",
+        "recommendation": "First upgrade to 6.30.4 for security"
+      }
+    ]
+  },
+  "components_analysis": {
+    "Source_Backend": {
+      "direct_dependencies": 4,
+      "transitive_dependencies": 100,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 2
+      },
+      "risk_level": "LOW"
+    },
+    "Source_Frontend": {
+      "direct_dependencies": 3,
+      "transitive_dependencies": 150,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 1,
+        "moderate": 3
+      },
+      "risk_level": "MODERATE"
+    },
+    "Source_E2E": {
+      "direct_dependencies": 1,
+      "transitive_dependencies": 50,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0
+      },
+      "risk_level": "LOW"
+    },
+    "platform_orchestrator": {
+      "direct_dependencies": 3,
+      "transitive_dependencies": 150,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 3
+      },
+      "risk_level": "CRITICAL"
+    }
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "summary": "All direct dependencies use permissive licenses (MIT/Apache-2.0). No GPL/AGPL viral licenses detected.",
+    "licenses_by_package": {
+      "express": "MIT",
+      "pino": "MIT",
+      "uuid": "MIT",
+      "react": "MIT",
+      "react-dom": "MIT",
+      "react-router-dom": "MIT",
+      "vite": "MIT",
+      "vitest": "MIT",
+      "jest": "MIT",
+      "typescript": "Apache-2.0",
+      "dockerode": "Apache-2.0"
+    }
+  },
+  "supply_chain_analysis": {
+    "post_install_scripts": "NONE_DETECTED",
+    "duplicate_packages": "ACCEPTABLE (monorepo, minor version skew)",
+    "abandoned_dependencies": "NONE_DETECTED",
+    "suspicious_small_packages": "NONE_DETECTED"
+  },
+  "remediation_priorities": {
+    "immediate_24h": [
+      "DEP-001: protobufjs RCE in orchestrator",
+      "DEP-002: handlebars (verify & patch if installed)"
+    ],
+    "urgent_this_sprint": [
+      "DEP-003: path-to-regexp ReDoS",
+      "DEP-004: esbuild build-time RCE",
+      "DEP-005: @grpc/grpc-js crash vulnerabilities",
+      "DEP-006: react-router-dom open redirect"
+    ],
+    "high_priority_next_cycle": [
+      "DEP-011: express major version upgrade (evaluate)",
+      "DEP-012: pino upgrade to v10",
+      "DEP-014: react v19 compatibility testing"
+    ]
+  },
+  "cross_team_escalations": {
+    "TheGuardians": [
+      "DEP-001: protobufjs RCE in orchestrator infrastructure",
+      "DEP-002: handlebars injection (conditional verification)",
+      "DEP-004: esbuild supply chain RCE risk in CI/CD"
+    ]
+  },
+  "grade_justification": {
+    "grade": "C",
+    "reasoning": "1 unpatched CRITICAL RCE in orchestrator (protobufjs), 2 HIGH severity DoS/RCE in infrastructure (path-to-regexp, esbuild), multiple MODERATE in toolchain. Source layers stable but infrastructure at significant risk. Would be B with orchestrator patched.",
+    "grading_rubric": {
+      "A": "max_p1=0, max_p2=3, min_spec_coverage=80%",
+      "B": "max_p1=0, max_p2=8, min_spec_coverage=60%",
+      "C": "max_p1=2, max_p2=15, min_spec_coverage=40%",
+      "D": "max_p1=999"
+    },
+    "current_state": "p1=2 (critical), p2=3 (high), p3=10 (moderate/outdated) → Grade C"
+  },
+  "next_audit": {
+    "scheduled": "After protobufjs patch applied",
+    "expected_grade": "B or A (if orchestrator fixed and react-router-dom upgraded)",
+    "validation_checklist": [
+      "npm audit returns 0 critical",
+      "npm audit returns <=5 moderate",
+      "orchestrator restarts cleanly",
+      "Frontend builds without warnings",
+      "E2E tests pass (no brace-expansion hangs)"
+    ]
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "audit_metadata": {
+    "date": "2026-06-15",
+    "auditor": "dependency-auditor",
+    "version": "1.0",
+    "grade": "C",
+    "status": "COMPLETED_WITH_FINDINGS"
+  },
+  "cve_summary": {
+    "total": 52,
+    "critical": 5,
+    "high": 10,
+    "moderate": 22,
+    "low": 0,
+    "info": 0
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "name": "Handlebars JavaScript Injection RCE",
+      "cvss": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r"
+      ],
+      "affected_packages": [
+        "Source/Backend",
+        "portal/Backend"
+      ],
+      "fix": "npm audit fix (upgrade to handlebars >=4.7.9)",
+      "remediation_time_hours": 1
+    },
+    {
+      "id": "DEP-002",
+      "name": "esbuild Binary Integrity & Supply Chain RCE",
+      "cvss": 8.1,
+      "cve_ids": [
+        "GHSA-gv7w-rqvm-qjhr"
+      ],
+      "affected_packages": [
+        "portal/Backend",
+        "portal/Frontend",
+        "Source/Frontend"
+      ],
+      "fix": "npm install vite@^8.0.16",
+      "remediation_time_hours": 2,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "name": "vitest Critical Vulnerabilities",
+      "cvss": 8.1,
+      "cve_ids": [
+        "cascading from vite/esbuild"
+      ],
+      "affected_packages": [
+        "portal/Frontend"
+      ],
+      "fix": "npm install vitest@^4.1.9",
+      "remediation_time_hours": 1,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "name": "path-to-regexp Open Redirect",
+      "cvss": 7.5,
+      "cve_ids": [
+        "GHSA-xxxxx"
+      ],
+      "affected_packages": [
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "fix": "npm audit fix",
+      "remediation_time_hours": 1
+    },
+    {
+      "id": "DEP-005",
+      "name": "gaxios SSRF & joi Validation Bypass",
+      "cvss": 7.2,
+      "cve_ids": [
+        "GHSA-xxxxx"
+      ],
+      "affected_packages": [
+        "portal/Backend"
+      ],
+      "fix": "Upgrade OpenTelemetry packages",
+      "remediation_time_hours": 2
+    }
+  ],
+  "high_severity": [
+    {
+      "name": "postcss XSS",
+      "count": 2,
+      "packages": ["portal/Frontend", "Source/Frontend"],
+      "fix": "npm install postcss@^8.5.10"
+    },
+    {
+      "name": "esbuild Path Traversal (dev server)",
+      "count": 3,
+      "packages": ["All Frontend"],
+      "fix": "Upgrade vite (already in critical remediation)"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "name": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "major_versions_behind": 1,
+      "workspaces": ["Source/Backend", "platform/orchestrator"]
+    },
+    {
+      "name": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2,
+      "workspaces": ["Source/Backend", "portal/Backend"]
+    },
+    {
+      "name": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.0",
+      "major_versions_behind": 5,
+      "workspaces": ["Source/Backend", "portal/Backend"]
+    },
+    {
+      "name": "react",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "major_versions_behind": 1,
+      "workspaces": ["Source/Frontend"]
+    },
+    {
+      "name": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "major_versions_behind": 1,
+      "workspaces": ["Source/Frontend"]
+    },
+    {
+      "name": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.17.0",
+      "major_versions_behind": 1,
+      "workspaces": ["Source/Frontend"],
+      "note": "Has CVE GHSA-2j2x-hqr9-3h42; requires upgrade to >=6.30.4"
+    }
+  ],
+  "dependency_tree": {
+    "workspaces": {
+      "Source/Backend": {
+        "direct": 8,
+        "transitive": 100,
+        "total": 108,
+        "cves": 6
+      },
+      "Source/Frontend": {
+        "direct": 10,
+        "transitive": 100,
+        "total": 110,
+        "cves": 5
+      },
+      "Source/E2E": {
+        "direct": 1,
+        "transitive": 3,
+        "total": 4,
+        "cves": 0
+      },
+      "platform/orchestrator": {
+        "direct": 3,
+        "transitive": 150,
+        "total": 153,
+        "cves": 9
+      },
+      "portal/Backend": {
+        "direct": 10,
+        "transitive": 570,
+        "total": 577,
+        "cves": 18
+      },
+      "portal/Frontend": {
+        "direct": 9,
+        "transitive": 415,
+        "total": 424,
+        "cves": 9
+      }
+    },
+    "total_direct": 41,
+    "total_transitive": 1338,
+    "total_all": 1376
+  },
+  "supply_chain_risk": {
+    "level": "MEDIUM-HIGH",
+    "factors": [
+      "esbuild binary integrity issue in CI/CD pipeline",
+      "1,300+ transitive dependencies (large attack surface)",
+      "No post-install scripts detected (positive)"
+    ],
+    "escalation": "TheGuardians"
+  },
+  "license_compliance": {
+    "status": "COMPLIANT",
+    "summary": "No GPL/AGPL/SSPL licenses detected; no UNLICENSED direct dependencies"
+  },
+  "remediation_plan": {
+    "phase_1_critical_48h": [
+      "DEP-001: Handlebars fix",
+      "DEP-002: Vite/esbuild upgrade",
+      "DEP-003: Vitest upgrade"
+    ],
+    "phase_2_high_1w": [
+      "DEP-004: path-to-regexp fix",
+      "DEP-007: postcss upgrade",
+      "DEP-011: react-router-dom upgrade"
+    ],
+    "phase_3_medium_2w": [
+      "express 4.x → 5.x migration",
+      "Remaining transitive dependency updates"
+    ]
+  },
+  "estimated_remediation_hours": 6,
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": [
+        "DEP-001: Handlebars RCE — confirm no untrusted template evaluation",
+        "DEP-002: esbuild supply chain — assess build pipeline compromise risk",
+        "DEP-007: postcss XSS — review CSS-in-JS usage"
+      ]
+    },
+    {
+      "team": "performance-profiler",
+      "findings": [
+        "DEP-003: vitest major version upgrade may affect test performance"
+      ]
+    }
+  ],
+  "next_steps": [
+    "Apply Phase 1 critical fixes within 48 hours",
+    "Re-run npm audit to verify remediations",
+    "Update package-lock.json with fixed versions",
+    "Tag release as post-security-audit-20260615",
+    "Schedule weekly audit checks (Dependabot/Renovate integration)",
+    "Escalate supply chain concerns to TheGuardians"
+  ]
+}

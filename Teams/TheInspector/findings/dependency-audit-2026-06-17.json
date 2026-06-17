@@ -1,0 +1,243 @@
+{
+  "audit_date": "2026-06-17",
+  "audit_type": "dependency_auditor",
+  "project": "dev-crew",
+  "overall_grade": "F",
+  "grade_reason": "2 critical CVEs in direct/high-impact dependencies (handlebars, vitest)",
+  "status": "CRITICAL_ISSUES_FOUND",
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-06-17.md",
+  "metrics": {
+    "cves_critical": 2,
+    "cves_high": 5,
+    "cves_moderate": 26,
+    "cves_low": 6,
+    "cves_total": 39,
+    "outdated_major_versions": 3,
+    "gpl_agpl_detected": false,
+    "abandoned_dependencies": 0,
+    "direct_dependencies": 115,
+    "transitive_dependencies_estimated": 641,
+    "workspaces_audited": 6,
+    "supply_chain_risk": "MODERATE"
+  },
+  "package_managers": {
+    "npm": {
+      "detected": true,
+      "workspaces": [
+        "Source/Backend",
+        "Source/Frontend",
+        "Source/E2E",
+        "platform/orchestrator",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "total_dependencies": 641
+    },
+    "go": { "detected": false },
+    "python": { "detected": false },
+    "rust": { "detected": false },
+    "java": { "detected": false }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Multiple Critical Code Injection Vulnerabilities",
+      "package": "handlebars",
+      "current_version": "4.0.0-4.7.8",
+      "severity": "P1",
+      "cvss_max": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "impact": "Code execution via template injection",
+      "fix": "npm audit fix → handlebars >= 4.7.9",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read & Code Execution",
+      "package": "vitest",
+      "current_version": "1.0.0-3.2.5",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "impact": "Unauthenticated RCE when vitest --ui is running",
+      "fix": "npm audit fix → vitest >= 3.2.6",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "Vite Multiple Path Traversal & Access Control Bypass",
+      "package": "vite",
+      "current_version": "1.0.0-6.4.2",
+      "severity": "P2",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-fx2h-pf6j-xcff", "GHSA-v6wh-96g9-6wx3"],
+      "impact": "Path traversal, source map leakage, file read",
+      "fix": "npm install vite@latest"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Esbuild Missing Binary Integrity Verification",
+      "package": "esbuild",
+      "current_version": "0.17.0-0.28.0",
+      "severity": "P2",
+      "cvss": 8.1,
+      "cves": ["GHSA-gv7w-rqvm-qjhr"],
+      "impact": "Supply chain: RCE if npm registry is compromised",
+      "fix": "Update via vite → esbuild >= 0.28.1"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data CRLF Injection in Multipart Fields",
+      "package": "form-data",
+      "current_version": "4.0.0-4.0.5",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "impact": "HTTP response splitting, header injection",
+      "fix": "npm audit fix → form-data >= 4.0.6"
+    },
+    {
+      "id": "DEP-006",
+      "title": "ws (WebSocket) Memory Exhaustion DoS & Information Disclosure",
+      "package": "ws",
+      "current_version": "8.0.0-8.20.1",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cves": ["GHSA-96hv-2xvq-fx4p", "GHSA-58qx-3vcg-4xpx"],
+      "impact": "DoS via tiny WebSocket fragments, memory disclosure",
+      "fix": "npm audit fix → ws >= 8.21.0"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "name": "express",
+      "current": "4.22.2",
+      "latest": "5.2.1",
+      "gap_major": 1,
+      "severity": "P3",
+      "priority": "Q3 2026 migration"
+    },
+    {
+      "name": "pino",
+      "current": "8.21.0",
+      "latest": "10.3.1",
+      "gap_major": 2,
+      "severity": "P3",
+      "priority": "Next release"
+    },
+    {
+      "name": "uuid",
+      "current": "9.0.1",
+      "latest": "14.0.0",
+      "gap_major": 5,
+      "severity": "P3",
+      "priority": "Next release"
+    }
+  ],
+  "license_compliance": {
+    "status": "PASS",
+    "gpl_detected": false,
+    "agpl_detected": false,
+    "proprietary_safe": true
+  },
+  "supply_chain_analysis": {
+    "risk_level": "MODERATE",
+    "transitive_count": 641,
+    "risk_factors": [
+      "Large dependency tree (641 packages)",
+      "Single transitive package can impact entire system",
+      "No monorepo lock file (each workspace independent)",
+      "Native binary dependencies (esbuild) without verification"
+    ],
+    "mitigations": [
+      "npm audit runs regularly",
+      "CI can enforce audit checks",
+      "Automated dependency updates via Dependabot/Renovate"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": {
+      "findings": ["DEP-001", "DEP-002", "DEP-004", "DEP-005", "DEP-006"],
+      "reason": "Security-critical vulnerabilities requiring threat modeling and mitigation"
+    },
+    "PerformanceProfiler": {
+      "findings": ["DEP-014"],
+      "reason": "Pino major version upgrade may impact logging latency"
+    }
+  },
+  "remediation_plan": {
+    "phase_1_immediate": {
+      "deadline": "within 48 hours",
+      "effort_hours": 4,
+      "tasks": [
+        "Run npm audit fix --force on all workspaces",
+        "Run full test suite for regression testing",
+        "Commit changes and deploy",
+        "Route security findings to TheGuardians"
+      ]
+    },
+    "phase_2_this_sprint": {
+      "deadline": "within 2 weeks",
+      "effort_hours": 8,
+      "tasks": [
+        "Test express 4→5 migration",
+        "Enable npm audit in CI pipeline (fail on critical/high)",
+        "Set up Dependabot or Renovate",
+        "Document template input validation for handlebars"
+      ]
+    },
+    "phase_3_ongoing": {
+      "deadline": "monthly",
+      "effort_hours": 2,
+      "tasks": [
+        "Review npm audit reports",
+        "Update dependencies via Dependabot",
+        "Consolidate monorepo lock file strategy",
+        "Audit supply chain risks (binary verification, etc.)"
+      ]
+    }
+  },
+  "next_audit": {
+    "scheduled": "2026-07-17",
+    "interval_days": 30,
+    "trigger_events": [
+      "After major version upgrades",
+      "After npm advisory publication",
+      "On demand for critical patches"
+    ]
+  },
+  "audit_tools_used": {
+    "npm_audit": {
+      "available": true,
+      "version": "10.x",
+      "output": "JSON"
+    },
+    "npm_outdated": {
+      "available": true,
+      "output": "JSON"
+    },
+    "license_checker": {
+      "available": true,
+      "method": "npx"
+    },
+    "govulncheck": { "available": false, "reason": "No Go modules" },
+    "pip_audit": { "available": false, "reason": "No Python dependencies" },
+    "cargo_audit": { "available": false, "reason": "No Rust dependencies" }
+  },
+  "recommendations": [
+    "Run npm audit fix immediately on all workspaces",
+    "Enable npm audit in CI pipeline with fail-on-critical threshold",
+    "Set up Dependabot or Renovate for automated security updates",
+    "Conduct security review of handlebars template sources",
+    "Verify vitest --ui is not exposed to network in CI",
+    "Consolidate workspace dependency management (consider monorepo lock file)",
+    "Plan express 5.x migration for next quarter",
+    "Implement supply chain security: verify binary signatures, use package lock files"
+  ]
+}

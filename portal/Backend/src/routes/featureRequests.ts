@@ -326,10 +326,11 @@ router.get('/:id/images', async (req: Request, res: Response, next: NextFunction
 
 // DELETE /api/feature-requests/:id/images/:imageId
 // Verifies: FR-077
+// Fixes: FIX-001 — pass entity id and type to enforce ownership check
 router.delete('/:id/images/:imageId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { imageId } = req.params;
-    deleteImage(getDb(), imageId);
+    const { id, imageId } = req.params;
+    deleteImage(getDb(), imageId, id, 'feature_request');
     res.status(204).send();
   } catch (err) {
     next(err);

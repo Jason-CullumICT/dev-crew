@@ -388,4 +388,98 @@ describe('FR-077: DELETE /api/bugs/:id/images/:imageId', () => {
 
     expect(res.status).toBe(404);
   });
+
+  it('should return 403 when deleting a feature request image via the bug endpoint', async () => {
+    // Fixes: FIX-001 — cross-entity deletion prevention: bug route must not delete FR images
+    const fr = createFeatureRequest(db, { title: 'Test FR', description: 'desc' });
+    const bug = createBug(db, { title: 'Test Bug', description: 'desc', severity: 'high' });
+    const app = createApp();
+
+    // Upload image to feature request
+    const uploadRes = await supertest(app)
+      .post(`/api/feature-requests/${fr.id}/images`)
+      .attach('images', createSmallPng(), 'fr-image.png');
+    expect(uploadRes.status).toBe(201);
+    const imageId = uploadRes.body.data[0].id;
+    const filename = uploadRes.body.data[0].filename;
+
+    // Attempt to delete via bug endpoint — should be rejected
+    const deleteRes = await supertest(app)
+      .delete(`/api/bugs/${bug.id}/images/${imageId}`);
+
+    expect(deleteRes.status).toBe(403);
+    expect(deleteRes.body.error).toContain('does not belong');
+
+    // Cleanup
+    const filePath = path.join(UPLOAD_DIR, filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  });
+});
+
+describe('FIX-001: Cross-entity image deletion prevention', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDb();
+    setDb(db);
+    if (!fs.existsSync(UPLOAD_DIR)) {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('should return 403 when deleting a bug image via the feature-request endpoint', async () => {
+    // Fixes: FIX-001 — cross-entity deletion prevention: FR route must not delete bug images
+    const fr = createFeatureRequest(db, { title: 'Test FR', description: 'desc' });
+    const bug = createBug(db, { title: 'Test Bug', description: 'desc', severity: 'medium' });
+    const app = createApp();
+
+    // Upload image to bug
+    const uploadRes = await supertest(app)
+      .post(`/api/bugs/${bug.id}/images`)
+      .attach('images', createSmallPng(), 'bug-image.png');
+    expect(uploadRes.status).toBe(201);
+    const imageId = uploadRes.body.data[0].id;
+    const filename = uploadRes.body.data[0].filename;
+
+    // Attempt to delete via feature-request endpoint — should be rejected
+    const deleteRes = await supertest(app)
+      .delete(`/api/feature-requests/${fr.id}/images/${imageId}`);
+
+    expect(deleteRes.status).toBe(403);
+    expect(deleteRes.body.error).toContain('does not belong');
+
+    // Cleanup
+    const filePath = path.join(UPLOAD_DIR, filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  });
+
+  it('should return 403 when deleting an image belonging to a different FR via another FR endpoint', async () => {
+    // Fixes: FIX-001 — cross-entity deletion prevention: same entity type, different id
+    const fr1 = createFeatureRequest(db, { title: 'FR 1', description: 'desc' });
+    const fr2 = createFeatureRequest(db, { title: 'FR 2', description: 'desc' });
+    const app = createApp();
+
+    // Upload image to fr1
+    const uploadRes = await supertest(app)
+      .post(`/api/feature-requests/${fr1.id}/images`)
+      .attach('images', createSmallPng(), 'fr1-image.png');
+    expect(uploadRes.status).toBe(201);
+    const imageId = uploadRes.body.data[0].id;
+    const filename = uploadRes.body.data[0].filename;
+
+    // Attempt to delete fr1's image via fr2's endpoint
+    const deleteRes = await supertest(app)
+      .delete(`/api/feature-requests/${fr2.id}/images/${imageId}`);
+
+    expect(deleteRes.status).toBe(403);
+    expect(deleteRes.body.error).toContain('does not belong');
+
+    // Cleanup
+    const filePath = path.join(UPLOAD_DIR, filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  });
 });

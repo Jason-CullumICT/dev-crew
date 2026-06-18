@@ -1,0 +1,193 @@
+================================================================================
+                    DEPENDENCY AUDIT — QUICK REFERENCE
+                              2026-06-18
+================================================================================
+
+OVERALL HEALTH: GRADE D (FAILING) — 3 CRITICAL CVEs BLOCK DEPLOYMENT
+
+================================================================================
+CRITICAL ISSUES (DO TODAY)
+================================================================================
+
+1. PROTOBUFJS RCE (platform/orchestrator)
+   CVE: GHSA-xq3m-2v4x-88gg | CVSS: 9.8
+   Fix: npm update protobufjs@>=7.5.5
+   Impact: Arbitrary code execution in orchestrator gRPC infrastructure
+
+2. VITEST RCE (Source/Frontend, portal/Frontend)
+   CVE: GHSA-5xrq-8626-4rwp | CVSS: 9.8
+   Fix: npm update vitest@>=3.2.6
+   Impact: File read + execution when --ui server exposed (dev/test only)
+   Control: DISABLE --ui flag in all CI/prod builds
+
+3. OPENTELEMETRY PROMETHEUS DoS (platform/orchestrator)
+   CVE: GHSA-q7rr-3cgh-j5r3 | CVSS: 7.5
+   Fix: npm update @opentelemetry/auto-instrumentations-node@>=0.77.0
+   Impact: Service crash via malformed HTTP request to metrics endpoint
+
+================================================================================
+HIGH-PRIORITY ISSUES (THIS WEEK)
+================================================================================
+
+4. VITE PATH TRAVERSAL (Source/Frontend, portal/Frontend)
+   CVE: GHSA-fx2h-pf6j-xcff | CVSS: HighN/A
+   Fix: npm update vite@>=8.0.16
+   Impact: 3+ major versions behind (5.4.0 → 8.0.16), fixes 4+ CVEs
+
+5. FORM-DATA CRLF INJECTION (Source/Frontend, portal/Frontend)
+   CVE: GHSA-hmw2-7cc7-3qxx | CVSS: 7.5
+   Fix: npm update form-data@>=4.0.6
+   Impact: HTTP header injection via multipart field names
+
+6. @GRPC/GRPC-JS SERVER CRASH (platform/orchestrator)
+   CVE: GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq | CVSS: 7.5
+   Fix: npm update @grpc/grpc-js@>=1.14.4
+   Impact: Network-exposed gRPC crashes on malformed requests
+
+7. WS MEMORY EXHAUSTION DoS (Source/Frontend, portal/Frontend)
+   CVE: GHSA-96hv-2xvq-fx4p | CVSS: 7.5
+   Fix: npm update ws@>=8.21.0
+   Impact: WebSocket memory DoS via tiny fragments
+
+8. REACT-ROUTER OPEN REDIRECT (Source/Frontend, portal/Frontend)
+   CVE: GHSA-2j2x-hqr9-3h42 | CVSS: 0 (moderate)
+   Fix: npm update react-router-dom@>=6.30.4
+   Impact: Protocol-relative URL (//...) open redirect
+
+================================================================================
+MODERATE ISSUES (1-2 WEEKS)
+================================================================================
+
+9. UUID BUFFER OVERFLOW (Source/Backend)
+   CVE: GHSA-w5hq-g745-h8pq | CVSS: 7.5
+   Fix: npm update uuid@>=9.0.1 (patch) OR >=11.1.1 (major)
+   Impact: Buffer overflow when custom buffer provided to uuid v3/v5/v6
+   Status: Direct dependency in Source/Backend; currently 9.0.0
+
+10. JEST/BABEL ECOSYSTEM (Source/Backend)
+    ~12 CVEs: js-yaml DoS, babel-plugin-istanbul, babel-jest, etc.
+    Fix: npm update jest@latest (major version jump)
+    Impact: Test infrastructure only; no production exposure
+    Note: Requires careful testing due to major version changes
+
+11. POSTCSS XSS (Source/Frontend, portal/Frontend)
+    CVE: GHSA-qx2v-qp2m-jg93 | CVSS: 6.1
+    Fix: npm update postcss@>=8.5.10
+    Impact: XSS if user-controlled CSS processed
+
+12. PICOMATCH ReDoS (portal/Frontend)
+    CVE: GHSA-c2c7-rcm5-vvqj, GHSA-3v7f-55p6-f55p | CVSS: 7.5
+    Fix: npm update picomatch@>=2.3.2 AND >=4.0.4
+    Impact: Glob pattern regex DoS; build-time only
+
+================================================================================
+MODULE RISK BREAKDOWN
+================================================================================
+
+Source/Backend (412 transitive deps):
+  CVEs: 27 (1C, 1H, 24M, 1L) | Risk: MODERATE
+  Primary: uuid, jest ecosystem, express
+
+Source/Frontend (231 transitive deps):
+  CVEs: 11 (1C, 3H, 6M, 1L) | Risk: HIGH
+  Primary: vitest, vite, form-data, ws, react-router
+
+Source/E2E (4 transitive deps):
+  CVEs: 0 | Risk: CLEAN ✓
+
+portal/Backend (4 transitive deps):
+  CVEs: 0 | Risk: CLEAN ✓
+
+portal/Frontend (425 transitive deps):
+  CVEs: 11 (1C, 4H, 5M, 1L) | Risk: HIGH
+  Primary: vitest, vite, form-data, ws, picomatch
+
+platform/orchestrator (230+ transitive deps):
+  CVEs: 15+ (multiple critical) | Risk: CRITICAL
+  Primary: protobufjs RCE, @grpc crashes, @opentelemetry cascade
+
+================================================================================
+POSITIVE FINDINGS
+================================================================================
+
+✓ No GPL/AGPL licenses detected (license compliance OK)
+✓ No abandoned packages detected
+✓ No hardcoded malicious post-install scripts
+✓ Source/E2E: 0 CVEs
+✓ portal/Backend: 0 CVEs
+
+================================================================================
+SUPPLY CHAIN OBSERVATIONS
+================================================================================
+
+⚠️ DUPLICATION RISK: @opentelemetry packages duplicated 12+ times in platform/orchestrator
+   → Recommendation: Deduplicate via monorepo lock strategy
+
+⚠️ VERSION DRIFT: Multiple old major versions of vite (5.4.0, 6.4.2) — upgrade to 8.x
+   → Recommendation: Unified vite 8.x across all frontend modules
+
+⚠️ DEVELOPMENT-ONLY RCES:
+   - vitest --ui exposes file read/exec
+   - esbuild dev server allows CORS bypass
+   → Recommendation: Add pre-commit hook to prevent --ui in commits
+
+================================================================================
+TESTING AFTER PATCHES
+================================================================================
+
+After applying updates, verify with:
+
+  npm audit --workspaces       # Confirm CVEs reduced
+  cd Source/Backend && npm test
+  cd Source/Frontend && npm test && npm run build
+  cd Source/E2E && npm test
+  cd portal/Backend && npm test
+  cd portal/Frontend && npm test && npm run build
+  cd platform/orchestrator && npm run build
+  curl http://localhost:3001/metrics | head -20  # Verify metrics still work
+
+================================================================================
+ESCALATION ASSIGNMENTS
+================================================================================
+
+TheGuardians (Security):
+  → Protobufjs RCE (CWE-94)
+  → Vitest RCE (CWE-862)
+  → OpenTelemetry DoS (CWE-755)
+  → @grpc/grpc-js DoS (CWE-248, CWE-400)
+  → Form-data CRLF injection (CWE-93)
+  → PostCSS XSS (CWE-79)
+  → react-router open redirect (CWE-601)
+  → path-to-regexp ReDoS (CWE-1333)
+
+TheATeam (Engineering):
+  → Major version upgrades (vite 8.x, vitest 4.x, jest latest, express 5.x, pino 10.x)
+  → Break-point testing and compatibility review
+  → Jest infrastructure modernization
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. TODAY (24 hours):
+   - Update protobufjs, vitest, @opentelemetry cascade
+   - Disable vitest --ui in CI/prod
+
+2. THIS WEEK:
+   - Update vite, form-data, @grpc, ws, react-router
+
+3. NEXT 1-2 WEEKS:
+   - Update uuid, plan jest upgrade, React 19
+
+4. LONGER TERM:
+   - Deduplicate @opentelemetry
+   - Modernize build toolchain
+   - Upgrade express 4→5
+
+Next audit: 2026-07-18 (one month)
+Emergency re-audit: After P1 patches (24-48 hours)
+
+================================================================================
+Full detailed report: Teams/TheInspector/findings/dependency-audit-2026-06-18.md
+Learnings document: Teams/TheInspector/learnings/dependency-auditor.md
+================================================================================

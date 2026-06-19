@@ -1,0 +1,393 @@
+{
+  "audit_id": "run-20260619-072732",
+  "audit_date": "2026-06-19",
+  "grade": "D",
+  "overall_spec_coverage_pct": 15,
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "totals": {
+    "p1": 5,
+    "p2": 8,
+    "p3": 9,
+    "p4": 1,
+    "total": 23
+  },
+  "grading_rationale": "5 P1 findings exceed the C-grade threshold (max_p1: 2). Spec coverage of 15% is far below C-grade minimum of 40%. F-grade condition (exploitable auth bypass + critical domain failure) does not strictly apply — no auth system exists to bypass. Grade D applies per config: 'Anything worse = D'.",
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "team": "TheGuardians",
+      "summary": "protobufjs ≤7.6.2 — Arbitrary Code Execution via malformed gRPC messages in production orchestrator",
+      "package": "protobufjs",
+      "current_version": "7.5.5–7.6.2",
+      "fixed_version": ">=7.7.x",
+      "file": "platform/orchestrator/package-lock.json",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "reason": "CVSS 9.8 RCE in production infrastructure — zero-precondition network exploit",
+      "fix_command": "cd platform/orchestrator && npm install protobufjs@latest"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "cvss": 9.8,
+      "team": "TheGuardians",
+      "summary": "vitest <3.2.6 — Arbitrary File Read / RCE via Vitest UI server",
+      "package": "vitest",
+      "current_version": "2.0.5",
+      "fixed_version": ">=3.2.6",
+      "file": "Source/Frontend/package-lock.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "reason": "CVSS 9.8 RCE in CI pipeline — dev environment and CI runner compromise",
+      "fix_command": "cd Source/Frontend && npm install vitest@^3.2.6"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "cvss": 7.5,
+      "team": "TheGuardians",
+      "summary": "vite 5.4.0 — 3× Path Traversal CVEs enabling source code disclosure and Windows FS bypass",
+      "package": "vite",
+      "current_version": "5.4.0",
+      "fixed_version": ">=8.0.16",
+      "file": "Source/Frontend/package-lock.json",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3", "GHSA-fx2h-pf6j-xcff"],
+      "reason": "Source code disclosure risk — path traversal in build tool",
+      "fix_command": "cd Source/Frontend && npm install vite@^8.0.16"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Traceability Enforcer Targets Plans/ Not Specifications/ — False PASS",
+      "file": "tools/traceability-enforcer.py:48-57",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Update enforcer to scan Specifications/ from inspector.config.yml specs.dir; fix regex to FR-[A-Za-z0-9-]+",
+      "cross_refs": ["QO-003", "QO-007"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md — 76 Functional Requirements Entirely Unimplemented",
+      "file": "Specifications/dev-workflow-platform.md",
+      "status": "NEW",
+      "route": "ProjectOwnerDecision",
+      "fix": "Decision required: archive stale spec OR dispatch TheATeam to implement. Cannot be resolved without owner direction.",
+      "cross_refs": ["QO-007", "QO-008"]
+    },
+    {
+      "id": "QO-003",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Traceability Enforcer Regex Silently Skips FR-dependency-* IDs (lowercase)",
+      "file": "tools/traceability-enforcer.py:64",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Change r\"FR-[A-Z0-9-]+\" to r\"FR-[A-Za-z0-9-]+\" in extract_fr_ids(). One-line change.",
+      "cross_refs": ["QO-001"]
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "protobufjs ≤7.6.2 — Arbitrary Code Execution in production orchestrator",
+      "file": "platform/orchestrator/package-lock.json",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "fix": "cd platform/orchestrator && npm install protobufjs@latest",
+      "cross_refs": ["DEP-006"]
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "vitest <3.2.6 — Arbitrary File Read / RCE via UI server",
+      "file": "Source/Frontend/package-lock.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "fix": "cd Source/Frontend && npm install vitest@^3.2.6",
+      "cross_refs": ["DEP-003", "DEP-004"]
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "GET /api/search Not Implemented — 5 Tests Will Fail",
+      "file": "Source/Backend/src/app.ts",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Add search.ts route file, wire into app.ts, remove 'NOT wired' note from search.test.ts",
+      "cross_refs": []
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Histogram Missing — FR-dependency-metrics Partial",
+      "file": "Source/Backend/src/metrics.ts",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Add dependencyCheckDurationHistogram to metrics.ts and instrument DependencyService",
+      "cross_refs": []
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Route Handlers Bypass Service Layer — Direct Store Imports",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Introduce workItemService.ts wrapping all store operations. Route handlers import only services.",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "cvss": 7.5,
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "Vite 5.4.0 — 3× Path Traversal CVEs (source code disclosure + Windows FS bypass)",
+      "file": "Source/Frontend/package-lock.json",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3", "GHSA-fx2h-pf6j-xcff"],
+      "status": "NEW",
+      "route": "TheGuardians",
+      "fix": "cd Source/Frontend && npm install vite@^8.0.16 (major version bump)",
+      "cross_refs": ["DEP-002"]
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "cvss": 7.5,
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "WS 8.20.1 — Memory Exhaustion DoS via tiny WebSocket fragments",
+      "file": "Source/Frontend/package-lock.json",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Resolved by upgrading vitest/vite (ws is transitive dep). Verify ws >=8.21.0 after upgrade.",
+      "cross_refs": ["DEP-002", "DEP-003"]
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "form-data — CRLF Injection (HTTP header injection risk)",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Upgrade transitive form-data dependency to ^4.0.6",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "@grpc/grpc-js 1.14.0–1.14.3 — Server Crash on Malformed Headers (DoS)",
+      "file": "platform/orchestrator/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "cd platform/orchestrator && npm install @grpc/grpc-js@^1.14.4",
+      "cross_refs": ["DEP-001"]
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE",
+      "title": "path-to-regexp — ReDoS on Route Matching (CPU exhaustion)",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Upgrade path-to-regexp to ^0.1.13, or upgrade express to 5.x",
+      "cross_refs": []
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "FR Requirement IDs Defined in Plans/ Not Specifications/",
+      "file": "Plans/self-judging-workflow/requirements.md",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Move FR-WF-001 through FR-WF-013 into Specifications/workflow-engine.md"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Specifications/tiered-merge-pipeline.md — 10 FRs Unimplemented",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "status": "NEW",
+      "route": "ProjectOwnerDecision",
+      "fix": "Dispatch TheATeam to implement, OR move to Specifications/Archive/ with # Status: Deferred"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "test-quality",
+      "title": "Duplicate Frontend Test Files (tests/ root vs tests/pages/)",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx"
+      ],
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Delete older root-level test files; keep Source/Frontend/tests/pages/ versions as authoritative"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "untested",
+      "title": "7 Frontend Source Files With Zero Test Coverage",
+      "files": [
+        "Source/Frontend/src/components/Layout.tsx",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx",
+        "Source/Frontend/src/pages/DebugPortalPage.tsx",
+        "Source/Frontend/src/hooks/useDashboard.ts",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Add render tests for badge components, hook tests for useDashboard/useWorkItems, smoke test for Layout"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "outdated",
+      "title": "uuid 9.0.1 — 5 Major Versions Behind (latest 14.0.0)",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "cd Source/Backend && npm install uuid@^14.0.0 — review API changes"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "outdated",
+      "title": "pino 8.17.0 — 2 Major Versions Behind (latest 10.3.1)",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "cd Source/Backend && npm install pino@^10.3.1"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "outdated",
+      "title": "express 4.18.2 — 1 Major Behind (latest 5.2.1)",
+      "file": "Source/Backend/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Plan express 5 migration — review breaking changes for middleware and routing"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "outdated",
+      "title": "react 18.3.1 — 1 Major Behind (latest 19.2.7)",
+      "file": "Source/Frontend/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Plan React 19 migration — review concurrent features and breaking changes"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "outdated",
+      "title": "react-router-dom 6.30.4 — 1 Major Behind (latest 7.18.0)",
+      "file": "Source/Frontend/package-lock.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Plan react-router-dom v7 migration alongside React 19 upgrade"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-011",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable-next-line Without Justification Comment",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "status": "NEW",
+      "route": "TheFixer",
+      "fix": "Add explanation comment for each eslint-disable-next-line stating why the dep is intentionally excluded"
+    }
+  ],
+  "cross_reference_groups": [
+    {
+      "group": "A",
+      "root_cause": "Traceability enforcer scans wrong directory and uses broken regex",
+      "findings": ["QO-001", "QO-003", "QO-007"],
+      "single_fix": "Update tools/traceability-enforcer.py: (1) scan Specifications/, (2) fix regex, (3) move FR-WF-* to Specifications/"
+    },
+    {
+      "group": "B",
+      "root_cause": "Specification-source alignment gap — canonical specs describe unbuilt system",
+      "findings": ["QO-002", "QO-008"],
+      "single_fix": "Project owner decision: archive stale specs OR dispatch TheATeam for implementation"
+    },
+    {
+      "group": "C",
+      "root_cause": "Frontend build toolchain (vitest + vite) multiple major versions behind",
+      "findings": ["DEP-002", "DEP-003", "DEP-004"],
+      "single_fix": "npm install vitest@^3.2.6 vite@^8.0.16 in Source/Frontend — resolves all three CVEs"
+    }
+  ],
+  "next_audit_targets": {
+    "grade_target": "C",
+    "p1_max": 2,
+    "p2_max": 15,
+    "spec_coverage_min_pct": 40,
+    "required_actions": [
+      "Patch DEP-001 and DEP-002 (CVEs)",
+      "Resolve spec alignment question (QO-002)",
+      "Fix traceability enforcer (QO-001, QO-003)",
+      "Run performance-profiler with backend online",
+      "Run chaos-monkey with all services online"
+    ]
+  }
+}

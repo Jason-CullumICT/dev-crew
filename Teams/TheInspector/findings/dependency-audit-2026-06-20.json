@@ -1,0 +1,297 @@
+{
+  "audit_metadata": {
+    "date": "2026-06-20",
+    "auditor": "dependency-auditor",
+    "project": "dev-crew",
+    "version": "1.0.0"
+  },
+  "summary": {
+    "overall_risk": "CRITICAL",
+    "total_cves": 26,
+    "critical": 2,
+    "high": 8,
+    "moderate": 13,
+    "low": 4,
+    "packages_scanned": 4,
+    "direct_dependencies": 30,
+    "transitive_dependencies": 800,
+    "grade": "D"
+  },
+  "packages": {
+    "Source/Backend": {
+      "direct_deps": 13,
+      "transitive_deps": 411,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 6,
+        "low": 1
+      },
+      "key_findings": [
+        "Jest test infrastructure has transitive CVEs via babel + istanbul",
+        "Multiple major versions behind (express, pino, uuid)"
+      ],
+      "cves": [
+        "GHSA-4x5r-pxfx-6jf8 (@babel/core, low)",
+        "Moderate jest/babel chain CVEs"
+      ]
+    },
+    "Source/Frontend": {
+      "direct_deps": 13,
+      "transitive_deps": 230,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 6,
+        "low": 0
+      },
+      "key_findings": [
+        "CRITICAL: vitest UI arbitrary file read/execution",
+        "HIGH: vite path traversal (multiple)",
+        "HIGH: react-router open redirect",
+        "HIGH: form-data CRLF injection, ws memory DoS"
+      ],
+      "cves": [
+        "GHSA-5xrq-8626-4rwp (vitest, CRITICAL, CVSS 9.8)",
+        "GHSA-4w7w-66w2-5vf9 (vite, HIGH)",
+        "GHSA-fx2h-pf6j-xcff (vite, HIGH)",
+        "GHSA-2j2x-hqr9-3h42 (react-router, MODERATE)",
+        "GHSA-hmw2-7cc7-3qxx (form-data, HIGH)",
+        "GHSA-96hv-2xvq-fx4p (ws, HIGH)"
+      ]
+    },
+    "Source/E2E": {
+      "direct_deps": 1,
+      "transitive_deps": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "key_findings": [
+        "Only @playwright/test dependency, no known CVEs"
+      ],
+      "cves": []
+    },
+    "platform/orchestrator": {
+      "direct_deps": 3,
+      "transitive_deps": 155,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 3,
+        "low": 0
+      },
+      "key_findings": [
+        "CRITICAL: protobufjs arbitrary code execution (CVSS 9.8)",
+        "HIGH: @grpc/grpc-js malformed request crashes",
+        "HIGH: path-to-regexp ReDoS in express routes",
+        "Multiple express + gRPC infrastructure issues"
+      ],
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg (protobufjs, CRITICAL, CVSS 9.8)",
+        "GHSA-66ff-xgx4-vchm (protobufjs, HIGH)",
+        "GHSA-75px-5xx7-5xc7 (protobufjs, HIGH, CVSS 8.1)",
+        "GHSA-37ch-88jc-xwx2 (path-to-regexp, HIGH)",
+        "GHSA-5375-pq7m-f5r2 (@grpc/grpc-js, HIGH)",
+        "GHSA-99f4-grh7-6pcq (@grpc/grpc-js, HIGH)"
+      ]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "version_range": "<=7.5.5",
+      "affected_packages": ["platform/orchestrator"],
+      "affected_module": "orchestrator gRPC communication layer",
+      "exploitability": "Network-accessible, no auth required, complete system compromise",
+      "fix": "Upgrade dockerode to 5.0.0+, requires integration testing",
+      "timeline": "URGENT (48-72 hours)",
+      "blocking": true
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Arbitrary File Access",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest",
+      "version_range": "<3.2.6",
+      "affected_packages": ["Source/Frontend"],
+      "affected_module": "frontend testing UI server",
+      "exploitability": "Network-accessible, affects all developers running vitest UI",
+      "fix": "Update vitest to 3.2.6+ or 4.1.9+, requires major version upgrade",
+      "timeline": "Before next dev session",
+      "blocking": true
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "express",
+      "location": "platform/orchestrator, Source/Backend",
+      "current": ["4.21.0", "4.18.2"],
+      "latest": "5.2.1",
+      "behind": "1-6 major",
+      "severity": "HIGH",
+      "reason": "path-to-regexp ReDoS fix (CVSS 7.5), security patches"
+    },
+    {
+      "package": "react",
+      "location": "Source/Frontend",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "behind": "1 major",
+      "severity": "MEDIUM",
+      "reason": "New features, coordinate with product team"
+    },
+    {
+      "package": "react-router-dom",
+      "location": "Source/Frontend",
+      "current": "6.26.0",
+      "latest": "7.18.0",
+      "behind": "1 major",
+      "severity": "HIGH",
+      "reason": "Open redirect CVE (GHSA-2j2x-hqr9-3h42), recommend 7.x jump"
+    },
+    {
+      "package": "vite",
+      "location": "Source/Frontend",
+      "current": "5.4.0",
+      "latest": "8.0.16",
+      "behind": "3 major",
+      "severity": "CRITICAL",
+      "reason": "Multiple path traversal CVEs, dev server security"
+    },
+    {
+      "package": "vitest",
+      "location": "Source/Frontend",
+      "current": "2.0.5",
+      "latest": "4.1.9+",
+      "behind": "2+ major",
+      "severity": "CRITICAL",
+      "reason": "UI server RCE (GHSA-5xrq-8626-4rwp)"
+    },
+    {
+      "package": "pino",
+      "location": "Source/Backend",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "behind": "2 major",
+      "severity": "LOW",
+      "reason": "Feature additions, logging framework improvements"
+    },
+    {
+      "package": "uuid",
+      "location": "Source/Backend",
+      "current": "9.0.0",
+      "latest": "14.0.0",
+      "behind": "5+ major",
+      "severity": "LOW",
+      "reason": "Utility library, breaking changes unlikely"
+    },
+    {
+      "package": "dockerode",
+      "location": "platform/orchestrator",
+      "current": "4.0.4",
+      "latest": "5.0.0+",
+      "behind": "1 major",
+      "severity": "CRITICAL",
+      "reason": "Protobufjs RCE mitigation (GHSA-xq3m-2v4x-88gg)"
+    }
+  ],
+  "license_audit": {
+    "total_licenses_checked": 30,
+    "gpl_count": 0,
+    "agpl_count": 0,
+    "unlicensed_count": 0,
+    "risk_level": "LOW",
+    "licenses": {
+      "MIT": 22,
+      "Apache-2.0": 6,
+      "ISC": 2
+    }
+  },
+  "remediation_phases": {
+    "phase_1_critical": {
+      "timeline": "48-72 hours",
+      "items": [
+        "dockerode 5.0.0+ (platform/orchestrator)",
+        "vitest 3.2.6+ or 4.1.9+ (Source/Frontend)"
+      ],
+      "validation": "npm audit, npm test --workspaces"
+    },
+    "phase_2_high": {
+      "timeline": "1-2 weeks",
+      "items": [
+        "react-router-dom 6.30.4+ (Source/Frontend)",
+        "vite 8.0.16+ (Source/Frontend)",
+        "form-data 4.0.6+ (Source/Frontend)",
+        "ws 8.21.0+ (Source/Frontend)",
+        "express 5.x (Source/Backend, platform/orchestrator)"
+      ],
+      "validation": "Full test suite, integration tests"
+    },
+    "phase_3_moderate": {
+      "timeline": "2-4 weeks",
+      "items": [
+        "React 19.x (Source/Frontend, requires coordination)",
+        "Jest upgrade (Source/Backend, dev-only)",
+        "Minor dependency updates across all modules"
+      ],
+      "validation": "Feature testing, regression testing"
+    },
+    "phase_4_routine": {
+      "timeline": "Monthly",
+      "items": [
+        "Run npm audit in all packages",
+        "Check npm outdated",
+        "Monitor security advisories"
+      ],
+      "validation": "Zero-CVE policy enforcement"
+    }
+  },
+  "cross_team_escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": [
+        "DEP-001: protobufjs RCE in gRPC orchestration layer",
+        "DEP-002: vitest UI RCE affecting all frontend developers",
+        "DEP-003: react-router open redirect (potential auth bypass vector)"
+      ],
+      "priority": "CRITICAL",
+      "action": "Security review of infrastructure attack surface"
+    },
+    {
+      "team": "TheFixer",
+      "findings": [
+        "Multiple moderate CVEs in test infrastructure",
+        "Outdated major versions requiring coordinated updates"
+      ],
+      "priority": "HIGH",
+      "action": "Coordinate major version upgrades"
+    }
+  ],
+  "metrics": {
+    "cves_critical": 2,
+    "cves_high": 8,
+    "cves_moderate": 13,
+    "cves_low": 4,
+    "cves_total": 26,
+    "packages_major_behind": 8,
+    "transitive_bloat_ratio": 26.7,
+    "health_grade": "D"
+  },
+  "next_steps": [
+    "Create GitHub issues for Phase 1 (critical) items",
+    "Notify platform/orchestrator owners of protobufjs RCE",
+    "Notify frontend team of vitest UI RCE",
+    "Schedule Phase 2 (HIGH) items for 1-2 week sprint",
+    "Re-audit 2026-07-20 to track remediation progress"
+  ]
+}

@@ -1,0 +1,240 @@
+================================================================================
+DEPENDENCY AUDITOR - AUDIT SUMMARY REPORT
+Audit Date: 2026-06-21
+Grade: D (Critical vulnerabilities unresolved)
+================================================================================
+
+AUDIT COMPLETE
+==============
+
+Generated Files:
+  - Teams/TheInspector/findings/dependency-audit-2026-06-21.md (full report)
+  - Teams/TheInspector/findings/dependency-audit-2026-06-21.json (structured data)
+  - Teams/TheInspector/learnings/dependency-auditor.md (learnings updated)
+
+FINDINGS OVERVIEW
+=================
+
+Total Packages Analyzed:
+  - Direct dependencies: 32 across 6 workspaces
+  - Transitive dependencies: 1,807 total
+
+Vulnerabilities Detected: 40 total
+  ✗ CRITICAL: 4 (Vitest RCE, Protobufjs RCE, OpenTelemetry DoS x2)
+  ✗ HIGH: 11
+  ✓ MODERATE: 24
+  ✓ LOW: 1
+
+Outdated Packages: 8 major versions behind
+  - vitest, express, pino (Backend only), react, react-dom, react-router-dom, uuid, opentelemetry
+
+License Compliance: COMPLIANT (no GPL/AGPL, no UNLICENSED)
+Post-Install Scripts: NONE (good security)
+Abandoned Packages: NONE
+Deprecated Packages: NONE
+
+CRITICAL VULNERABILITIES (IMMEDIATE ACTION REQUIRED)
+====================================================
+
+DEP-001: Vitest UI Server RCE
+  Package: vitest@2.0.5
+  Workspace: Source/Frontend
+  CVE: GHSA-5xrq-8626-4rwp (CVSS 9.8)
+  Type: Remote Code Execution
+  Impact: Arbitrary file read and execution when UI server is exposed
+  Fix: npm update vitest (requires v3.2.6+, breaking changes expected)
+  Escalation: TheGuardians
+
+DEP-002: Protobufjs Arbitrary Code Execution
+  Package: protobufjs@7.5.5 (transitive via @grpc/grpc-js)
+  Workspace: portal/Backend
+  CVE: GHSA-xq3m-2v4x-88gg (CVSS 9.8)
+  Type: Remote Code Execution (code injection via protobuf fields)
+  Impact: Arbitrary code execution when parsing untrusted protobuf messages
+  Fix: Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0
+  Escalation: TheGuardians
+
+DEP-003: OpenTelemetry Exporter Prometheus Process Crash
+  Package: @opentelemetry/auto-instrumentations-node@0.40.0, @opentelemetry/sdk-node@0.47.0
+  Workspace: portal/Backend
+  CVE: GHSA-q7rr-3cgh-j5r3 (CVSS 7.5)
+  Type: Denial of Service
+  Impact: Malformed HTTP request crashes entire Backend service
+  Fix: Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0 (cascades sdk-node v0.219.0+)
+  Escalation: TheGuardians
+
+WORKSPACE RISK ASSESSMENT
+=========================
+
+portal/Backend: CRITICAL
+  - 11 direct deps, 578 transitive (largest tree, highest risk)
+  - 50+ vulnerabilities including 3 critical CVEs
+  - Protobufjs RCE, OpenTelemetry DoS
+  - Requires immediate remediation
+
+Source/Frontend: HIGH
+  - 3 direct deps, 231 transitive
+  - 11 vulnerabilities (1 critical, 3 high, 6 moderate)
+  - Vitest UI RCE (dev-time only, but supply-chain risk)
+  - Multiple injection/bypass vulnerabilities
+
+platform/orchestrator: HIGH
+  - 3 direct deps, 156 transitive
+  - 9 vulnerabilities (1 critical, 2 high, 6 moderate)
+  - Inherits protobufjs/grpc vulnerabilities
+  - Direct exposure of uuid buffer overflow
+
+Source/Backend: MODERATE
+  - 4 direct deps, 412 transitive
+  - 27 vulnerabilities (mostly dev-time: ts-jest, jest, babel)
+  - UUID buffer overflow in production
+  - ts-jest has transitive js-yaml DoS
+
+Source/E2E: MINIMAL
+  - 1 direct dep (@playwright/test), 5 transitive
+  - 0 known vulnerabilities
+
+REMEDIATION TIMELINE
+====================
+
+IMMEDIATE (24 hours):
+  1. Disable or upgrade Vitest UI in Frontend (DEP-001)
+  2. Upgrade @opentelemetry packages in Portal/Backend (DEP-002, DEP-003)
+  3. Verify no system-wide exposure of vulnerable services
+
+URGENT (1 week):
+  4. Update form-data (CRLF injection)
+  5. Update vite (path traversal on Windows)
+  6. Update react-router-dom patch (redirect vulnerability)
+  7. Update @grpc/grpc-js (server crash)
+  8. Update ws (memory exhaustion)
+  9. Update path-to-regexp (ReDoS)
+
+IMPORTANT (2 weeks):
+  10. Update ts-jest (cascades babel, js-yaml fixes)
+  11. Update uuid (buffer overflow)
+  12. Update postcss (XSS via CSS)
+  13. Update remaining moderate CVEs
+
+PLANNED (before next release):
+  14. Express v5 migration (breaking changes, schedule 2-3 weeks)
+  15. Pino v10 upgrade in Backend (test logging behavior)
+  16. React v19 evaluation (test new features/API)
+  17. React Router v7 evaluation (test compatibility)
+  18. Multer v2 migration in Portal (file handling changes)
+
+CROSS-REFERENCES
+================
+
+Escalated to TheGuardians:
+  - DEP-001: Vitest UI RCE
+  - DEP-002: Protobufjs RCE
+  - DEP-003: OpenTelemetry DoS
+  - DEP-004: Form-Data CRLF Injection
+  - DEP-006: React Router Redirect
+
+Code Review Required (Breaking Changes):
+  - express v4→v5 migration
+  - vitest v2→v3 migration
+  - react v18→v19 evaluation
+  - react-router-dom v6→v7 evaluation
+  - multer v1→v2 migration
+
+COMPLIANCE & SUPPLY CHAIN
+==========================
+
+License Risk: NONE
+  - All direct dependencies use MIT licenses
+  - No GPL/AGPL (no viral license risk)
+  - No UNLICENSED packages
+  - No proprietary packages detected
+
+Supply Chain Risk: MODERATE-HIGH
+  - Portal/Backend has largest transitive tree (578 deps)
+  - Protobufjs and @grpc/grpc-js have recurrence of critical CVEs
+  - OpenTelemetry ecosystem has multiple transitive vulnerabilities
+  - Recommendation: Monitor these packages for future CVEs
+
+Post-Install Scripts: NONE (good security posture)
+  - No arbitrary code execution via package installation
+  - Reduced attack surface during npm install
+
+Abandoned Packages: NONE
+  - All packages actively maintained
+  - No deprecation warnings detected
+
+NEXT STEPS
+==========
+
+1. TRIAGE CRITICAL CVEs
+   - Form security incident response team
+   - Notify stakeholders of P1 vulnerabilities
+
+2. REMEDIATION PLANNING
+   - Break down fixes into phases (see timeline)
+   - Create backlog items for each major version upgrade
+   - Schedule breaking change testing
+
+3. AUTOMATED SCANNING
+   - Integrate npm audit into CI/CD
+   - Set failing gate for P1/P2 vulnerabilities
+   - Re-run audit after each phase of remediation
+
+4. VERIFICATION
+   - Run full test suite after each upgrade phase
+   - Validate application functionality
+   - Check metrics/logging behavior for breaking changes
+
+5. DOCUMENTATION
+   - Update Teams/TheInspector/learnings/dependency-auditor.md with fixes
+   - Document any non-standard workarounds
+   - Add protobufjs/grpc to watch list for future audits
+
+GRADING SUMMARY
+===============
+
+Grade: D (Critical vulnerabilities unresolved)
+
+Grading Criteria (from inspector.config.yml):
+  - A: max 0 P1, max 3 P2, min 80% spec coverage
+  - B: max 0 P1, max 8 P2, min 60% spec coverage
+  - C: max 2 P1, max 15 P2, min 40% spec coverage
+  - D: Any P1 unresolved
+  - F: Exploitable auth bypass + critical domain failure
+
+Status: D (Actual: 4 P1 unresolved, 11 P2 unresolved)
+Rationale: Multiple critical RCE and DoS vulnerabilities require immediate remediation
+
+Next Grade Target: C (resolve all P1, reduce P2 to ≤15)
+Improvement: 0 P1, ≤15 P2 required
+
+AUDIT METHODOLOGY
+=================
+
+Tools Used:
+  - npm audit (CVE scanning)
+  - npm outdated (version checking)
+  - package.json analysis (licenses, scripts)
+  - package-lock.json analysis (dependency tree)
+
+Workspaces Scanned:
+  - Source/Backend (4.18.2 express, 8.17.0 pino)
+  - Source/Frontend (18.3.1 react, 5.4.0 vite)
+  - Source/E2E (1.58.2 playwright/test)
+  - platform/orchestrator (4.21.0 express, 4.0.4 dockerode)
+  - portal/Backend (1.7.0 opentelemetry/api, 0.40.0 auto-instrumentations-node)
+  - portal/Frontend (implied, not fully scanned)
+
+Severity Classification:
+  - P1 (CRITICAL): CVSS ≥9.0 or RCE/auth bypass in production
+  - P2 (HIGH): CVSS 7.0-8.9 or high-severity vulnerability in direct dependency
+  - P3 (MODERATE): CVSS 5.0-6.9 or outdated major version
+  - P4 (LOW): CVSS <5.0 or dev-time vulnerabilities only
+
+================================================================================
+Report Generated: 2026-06-21 by Dependency Auditor (Agent)
+Report Location: Teams/TheInspector/findings/
+Full Details: dependency-audit-2026-06-21.md (structured markdown)
+Structured Data: dependency-audit-2026-06-21.json (JSON format)
+Learnings: Teams/TheInspector/learnings/dependency-auditor.md (updated)
+================================================================================

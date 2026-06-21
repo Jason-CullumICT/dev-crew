@@ -1,0 +1,248 @@
+{
+  "audit_metadata": {
+    "date": "2026-06-21",
+    "auditor": "Dependency Auditor",
+    "run_type": "full_vulnerability_scan",
+    "workspaces_scanned": 6,
+    "grade": "D"
+  },
+  "summary": {
+    "total_packages": {
+      "direct": 32,
+      "transitive": 1807
+    },
+    "vulnerabilities": {
+      "critical": 4,
+      "high": 11,
+      "moderate": 24,
+      "low": 1,
+      "total": 40
+    },
+    "outdated": {
+      "major_versions_behind": 8,
+      "packages": [
+        "vitest@2.0.5 (latest 3.2.6+)",
+        "express@4.18.2 (latest 5.2.1)",
+        "pino@8.17.0 (latest 10.3.1) [Backend only]",
+        "react@18.3.1 (latest 19.2.7)",
+        "react-dom@18.3.1 (latest 19.2.7)",
+        "react-router-dom@6.30.4 (latest 7.18.0)",
+        "uuid@9.0.0 (latest 14.0.1)",
+        "opentelemetry/auto-instrumentations-node@0.40.0 (latest 0.77.0)"
+      ]
+    },
+    "abandoned": 0,
+    "deprecated": 0,
+    "license_risks": 0,
+    "post_install_scripts": 0
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read and Execution",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest",
+      "version_affected": "<3.2.6",
+      "workspace": "Source/Frontend",
+      "type": "rce",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "version_affected": "<7.5.5",
+      "workspace": "portal/Backend (transitive)",
+      "type": "rce",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "OpenTelemetry Exporter Prometheus Process Crash",
+      "severity": "P1",
+      "cvss_score": 7.5,
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "package": "@opentelemetry/auto-instrumentations-node, @opentelemetry/sdk-node",
+      "version_affected": "<0.75.0 / <0.217.0",
+      "workspace": "portal/Backend",
+      "type": "dos",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "Form-Data CRLF Injection",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "package": "form-data",
+      "version_affected": "4.0.0-4.0.5",
+      "workspace": "Source/Frontend"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Vite fs.deny Bypass and Path Traversal",
+      "severity": "P2",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "package": "vite",
+      "version_affected": "<=6.4.2",
+      "workspace": "Source/Frontend"
+    },
+    {
+      "id": "DEP-006",
+      "title": "React Router Open Redirect",
+      "severity": "P2",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "package": "react-router-dom",
+      "version_affected": ">=6.6.3 <6.30.4",
+      "workspace": "Source/Frontend",
+      "note": "Already on correct version (6.30.4)"
+    },
+    {
+      "id": "DEP-007",
+      "title": "gRPC Server Crash from Malformed Requests",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "package": "@grpc/grpc-js",
+      "version_affected": ">=1.14.0 <1.14.4",
+      "workspace": "portal/Backend"
+    },
+    {
+      "id": "DEP-008",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "package": "ws",
+      "version_affected": ">=8.0.0 <8.21.0",
+      "workspace": "Source/Frontend"
+    },
+    {
+      "id": "DEP-009",
+      "title": "path-to-regexp Regular Expression DoS",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "package": "path-to-regexp",
+      "version_affected": "<0.1.13",
+      "workspace": "portal/Backend"
+    }
+  ],
+  "workspace_risk": [
+    {
+      "workspace": "portal/Backend",
+      "direct_deps": 11,
+      "transitive_deps": 578,
+      "vulnerabilities": 50,
+      "risk_level": "CRITICAL",
+      "notes": "Largest dependency tree; 3 critical CVEs (protobufjs, opentelemetry x2)"
+    },
+    {
+      "workspace": "Source/Frontend",
+      "direct_deps": 3,
+      "transitive_deps": 231,
+      "vulnerabilities": 11,
+      "risk_level": "HIGH",
+      "notes": "Vitest UI RCE (critical dev-time), multiple high vulnerabilities (form-data, vite, ws)"
+    },
+    {
+      "workspace": "platform/orchestrator",
+      "direct_deps": 3,
+      "transitive_deps": 156,
+      "vulnerabilities": 9,
+      "risk_level": "HIGH",
+      "notes": "gRPC integration pulls in protobufjs/grpc CVEs; direct exposure of uuid buffer overflow"
+    },
+    {
+      "workspace": "Source/Backend",
+      "direct_deps": 4,
+      "transitive_deps": 412,
+      "vulnerabilities": 27,
+      "risk_level": "MODERATE",
+      "notes": "Mostly dev-time vulns (ts-jest, jest, babel); uuid buffer overflow in production"
+    },
+    {
+      "workspace": "Source/E2E",
+      "direct_deps": 1,
+      "transitive_deps": 5,
+      "vulnerabilities": 0,
+      "risk_level": "MINIMAL",
+      "notes": "Only @playwright/test, no known CVEs"
+    },
+    {
+      "workspace": "portal/Frontend",
+      "direct_deps": 10,
+      "transitive_deps": 425,
+      "vulnerabilities": null,
+      "risk_level": "MODERATE",
+      "notes": "Not fully scanned in this run; similar profile to Source/Frontend expected"
+    }
+  ],
+  "remediation_timeline": {
+    "immediate_24h": [
+      "DEP-001: Vitest UI RCE",
+      "DEP-002: Protobufjs RCE",
+      "DEP-003: OpenTelemetry DoS"
+    ],
+    "urgent_1week": [
+      "DEP-004: Form-Data CRLF",
+      "DEP-005: Vite Path Traversal",
+      "DEP-006: React Router Redirect",
+      "DEP-007: gRPC Crash",
+      "DEP-008: ws DoS",
+      "DEP-009: path-to-regexp ReDoS"
+    ],
+    "important_2weeks": [
+      "DEP-010: ts-jest/js-yaml/babel issues",
+      "DEP-011: UUID buffer overflow",
+      "DEP-012: PostCSS XSS",
+      "DEP-013: OpenTelemetry W3C Baggage",
+      "DEP-014: QS DoS",
+      "DEP-015: Esbuild CORS"
+    ],
+    "planned": [
+      "Express v5 migration (breaking changes)",
+      "Pino v10 upgrade (Backend)",
+      "React v19 evaluation",
+      "React Router v7 evaluation",
+      "Multer v2 migration (Portal)"
+    ]
+  },
+  "compliance_status": {
+    "licenses": "COMPLIANT",
+    "notes": "No GPL/AGPL detected; all MIT. No UNLICENSED or proprietary packages.",
+    "post_install_scripts": "NONE (good security posture)",
+    "abandoned_packages": "NONE",
+    "deprecated_packages": "NONE"
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-006"],
+      "reason": "RCE, code injection, DoS vulnerabilities require security team review"
+    },
+    {
+      "team": "code-reviewer",
+      "findings": ["express-v5", "vitest-v3", "react-v19", "multer-v2"],
+      "reason": "Major version migrations have breaking changes; design review needed"
+    }
+  ],
+  "grading": {
+    "grade": "D",
+    "criteria_met": {
+      "max_p1": 0,
+      "actual_p1": 4,
+      "max_p2": 3,
+      "actual_p2": 11,
+      "unresolved_critical": true
+    },
+    "rationale": "Multiple P1 critical CVEs unresolved; immediate action required. Grade D until all P1 vulnerabilities fixed."
+  }
+}

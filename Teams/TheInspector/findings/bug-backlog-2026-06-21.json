@@ -1,0 +1,429 @@
+{
+  "audit_id": "inspector-2026-06-21-D",
+  "run_id": "run-20260621-070741",
+  "date": "2026-06-21",
+  "grade": "D",
+  "branch": "audit/inspector-2026-06-21-c82703",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 11,
+    "p3_total": 17,
+    "p4_total": 1,
+    "escalations": 4,
+    "spec_coverage_source_pct": 87.5,
+    "spec_coverage_tmp_pct": 0,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read/RCE",
+      "severity": "P1",
+      "category": "CVE - Remote Code Execution",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest@2.0.5",
+      "workspace": "Source/Frontend",
+      "file": "Source/Frontend/package.json",
+      "detail": "When Vitest UI server is listening, any attacker on the network can read and execute arbitrary files. Zero-precondition exploit.",
+      "fix": "npm update vitest to v3.2.6+ in Source/Frontend",
+      "escalation_reason": "RCE — supply chain risk; zero-precondition exploit on dev network",
+      "route": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "category": "CVE - Remote Code Execution",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs@7.5.5 (transitive via @grpc/grpc-js)",
+      "workspace": "portal/Backend",
+      "file": "portal/Backend/package.json",
+      "detail": "Code injection via protobuf object property pollution and bytes field defaults. Production dependency via OpenTelemetry instrumentation. Malformed protobuf messages trigger RCE.",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0 (cascades to sdk-node v0.219.0+)",
+      "escalation_reason": "RCE in production dependency — malformed protobuf message triggers code execution",
+      "route": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "OpenTelemetry Exporter Process Crash (DoS)",
+      "severity": "P1",
+      "category": "CVE - Denial of Service",
+      "cvss": 7.5,
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "package": "@opentelemetry/auto-instrumentations-node@0.40.0, @opentelemetry/sdk-node@0.47.0",
+      "workspace": "portal/Backend",
+      "file": "portal/Backend/package.json",
+      "detail": "Malformed HTTP request to /metrics endpoint crashes the entire Portal Backend process. Any unauthenticated attacker can trigger complete service unavailability.",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0 (cascades to sdk-node ≥0.219.0)",
+      "escalation_reason": "Zero-precondition DoS — crashes entire backend service; /metrics is publicly accessible",
+      "route": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Form-Data CRLF Injection",
+      "severity": "P2",
+      "category": "CVE - Injection",
+      "cvss": 7.5,
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "package": "form-data@4.0.5",
+      "workspace": "Source/Frontend",
+      "file": "Source/Frontend/package.json",
+      "detail": "CRLF injection in multipart form field names and filenames allows HTTP header injection attacks, response splitting, and cache poisoning.",
+      "fix": "npm update form-data to ≥4.0.6",
+      "escalation_reason": "Injection vulnerability — matches config.escalation security_trigger 'injection'",
+      "route": "TheGuardians"
+    }
+  ],
+  "findings": {
+    "p1": [
+      {
+        "id": "QO-001",
+        "title": "Missing /api/search Route",
+        "severity": "P1",
+        "category": "spec-drift",
+        "source": "quality-oracle",
+        "file": "Source/Backend/src/app.ts",
+        "status": "NEW",
+        "detail": "GET /api/search is never registered in Express. search.test.ts self-documents this. DependencyPicker typeahead is silently broken in production — users cannot search dependencies.",
+        "fix": "Implement search handler (filter store by title/description; exclude soft-deleted; return {data:T[]}) and register app.use('/api/search', searchRouter) in app.ts.",
+        "route": "TheFixer",
+        "exploit_scenario": "Users cannot add dependencies via DependencyPicker — feature is non-functional. 5 tests permanently fail.",
+        "impact": "Core feature broken; 5 failing tests hidden by narrow enforcer scope"
+      },
+      {
+        "id": "DEP-001",
+        "title": "Vitest UI Server Arbitrary File Read/RCE",
+        "severity": "P1",
+        "category": "CVE-RCE",
+        "source": "dependency-auditor",
+        "file": "Source/Frontend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-5xrq-8626-4rwp — CVSS 9.8. Vitest UI server exposes arbitrary file read/execution to any network attacker.",
+        "fix": "npm update vitest to v3.2.6+ in Source/Frontend",
+        "route": "TheGuardians",
+        "exploit_scenario": "Attacker on dev network sends crafted request to Vitest UI server; reads .env files, executes arbitrary code.",
+        "impact": "Complete developer machine compromise if Vitest UI server is exposed"
+      },
+      {
+        "id": "DEP-002",
+        "title": "Protobufjs Arbitrary Code Execution",
+        "severity": "P1",
+        "category": "CVE-RCE",
+        "source": "dependency-auditor",
+        "file": "portal/Backend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-xq3m-2v4x-88gg — CVSS 9.8. Protobufjs code injection via property pollution. Production dependency via OpenTelemetry gRPC instrumentation.",
+        "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0",
+        "route": "TheGuardians",
+        "exploit_scenario": "Attacker sends malformed protobuf message; server executes attacker-controlled code.",
+        "impact": "Full server compromise in portal/Backend production"
+      },
+      {
+        "id": "DEP-003",
+        "title": "OpenTelemetry Exporter Process Crash (DoS)",
+        "severity": "P1",
+        "category": "CVE-DoS",
+        "source": "dependency-auditor",
+        "file": "portal/Backend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-q7rr-3cgh-j5r3 — CVSS 7.5. Malformed HTTP to /metrics crashes entire backend process. Zero-precondition.",
+        "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0",
+        "route": "TheGuardians",
+        "exploit_scenario": "Attacker sends one malformed GET /metrics request; portal/Backend crashes immediately; service unavailable.",
+        "impact": "Portal Backend complete outage; no crash loop protection noted"
+      }
+    ],
+    "p2": [
+      {
+        "id": "QO-002",
+        "title": "Route Handlers Bypass Service Layer",
+        "severity": "P2",
+        "category": "architecture-violation",
+        "source": "quality-oracle",
+        "files": ["Source/Backend/src/routes/workItems.ts", "Source/Backend/src/routes/intake.ts", "Source/Backend/src/routes/workflow.ts"],
+        "status": "NEW",
+        "detail": "All work-item CRUD and intake handlers call store.* directly. CLAUDE.md mandates service layer. Unit testing business logic requires HTTP plumbing.",
+        "fix": "Extract Source/Backend/src/services/workItemService.ts; route handlers call only service functions.",
+        "route": "TheFixer"
+      },
+      {
+        "id": "QO-003",
+        "title": "dependencyCheckDuration Histogram Missing",
+        "severity": "P2",
+        "category": "spec-drift",
+        "source": "quality-oracle",
+        "file": "Source/Backend/src/metrics.ts",
+        "status": "NEW",
+        "detail": "FR-dependency-metrics requires 4 Prometheus instruments; only 3 exist. dependency_check_duration_seconds histogram absent — no latency observability for BFS cycle detection.",
+        "fix": "Add Histogram for dependency_check_duration_seconds in metrics.ts; instrument detectCycle, isReady, computeHasUnresolvedBlockers in dependency.ts.",
+        "route": "TheFixer"
+      },
+      {
+        "id": "QO-004",
+        "title": "Traceability Enforcer Critically Narrow Scope",
+        "severity": "P2",
+        "category": "spec-drift",
+        "source": "quality-oracle",
+        "file": "tools/traceability-enforcer.py",
+        "status": "NEW",
+        "detail": "Enforcer scans only the single most-recently-modified requirements.md and only Source/ + E2E/. portal/ (112 FR IDs) and Specifications/tiered-merge-pipeline.md are permanently excluded.",
+        "fix": "Add portal/Backend and portal/Frontend to source_dirs; add --all-plans flag; register tiered-merge-pipeline.md as directly enforceable spec.",
+        "route": "TheFixer"
+      },
+      {
+        "id": "QO-005",
+        "title": "FR-TMP-001–010 (Tiered Merge Pipeline): 0% Implementation",
+        "severity": "P2",
+        "category": "spec-drift",
+        "source": "quality-oracle",
+        "file": "Specifications/tiered-merge-pipeline.md",
+        "status": "NEW",
+        "detail": "10 active FRs for risk classification, E2E test generation, Playwright runner, auto-PR, AI PR review have zero traced implementation in Source/, portal/, or E2E/.",
+        "fix": "Open plan to implement spec OR add '## Status: Deferred' section to formally exclude from coverage.",
+        "route": "TheFixer"
+      },
+      {
+        "id": "QO-006",
+        "title": "Duplicate Frontend Test Files",
+        "severity": "P2",
+        "category": "test-quality",
+        "source": "quality-oracle",
+        "files": ["Source/Frontend/tests/WorkItemListPage.test.tsx", "Source/Frontend/tests/WorkItemDetailPage.test.tsx"],
+        "status": "NEW",
+        "detail": "Two test pairs for same components: top-level tests/WorkItem*.test.tsx vs newer tests/pages/ variants. Doubles test time; creates maintenance divergence.",
+        "fix": "Delete top-level duplicates; keep tests/pages/ variants (more thorough).",
+        "route": "TheFixer"
+      },
+      {
+        "id": "DEP-004",
+        "title": "Form-Data CRLF Injection",
+        "severity": "P2",
+        "category": "CVE-Injection",
+        "source": "dependency-auditor",
+        "file": "Source/Frontend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-hmw2-7cc7-3qxx — CVSS 7.5. CRLF injection in multipart form field names allows HTTP header injection and response splitting.",
+        "fix": "npm update form-data to ≥4.0.6",
+        "route": "TheGuardians"
+      },
+      {
+        "id": "DEP-005",
+        "title": "Vite fs.deny Bypass (Path Traversal)",
+        "severity": "P2",
+        "category": "CVE-PathTraversal",
+        "source": "dependency-auditor",
+        "file": "Source/Frontend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-fx2h-pf6j-xcff — Multiple path traversal vulnerabilities in Vite. fs.deny bypass on Windows, .map file exposure, UNC path NTLMv2 hash disclosure.",
+        "fix": "npm update vite to ≥5.4.3 in Source/Frontend",
+        "route": "TheFixer"
+      },
+      {
+        "id": "DEP-006",
+        "title": "React Router Open Redirect",
+        "severity": "P2",
+        "category": "CVE-Redirect",
+        "source": "dependency-auditor",
+        "file": "Source/Frontend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-2j2x-hqr9-3h42 — Protocol-relative URL redirect enables phishing. Fix is in v6.30.4; currently on v6.30.3.",
+        "fix": "npm update react-router-dom to ≥6.30.4 (patch version bump)",
+        "route": "TheFixer"
+      },
+      {
+        "id": "DEP-007",
+        "title": "gRPC Server Crash from Malformed Requests (DoS)",
+        "severity": "P2",
+        "category": "CVE-DoS",
+        "source": "dependency-auditor",
+        "file": "portal/Backend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq — CVSS 7.5. Malformed compressed gRPC messages crash server. Cascades from OpenTelemetry upgrade.",
+        "fix": "Upgrade @opentelemetry/auto-instrumentations-node (cascades @grpc/grpc-js update)",
+        "route": "TheFixer",
+        "cross_ref": "DEP-002, DEP-003 — same root cause (OpenTelemetry upgrade)"
+      },
+      {
+        "id": "DEP-008",
+        "title": "ws WebSocket Memory Exhaustion (DoS)",
+        "severity": "P2",
+        "category": "CVE-DoS",
+        "source": "dependency-auditor",
+        "file": "Source/Frontend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-96hv-2xvq-fx4p — CVSS 7.5. Memory exhaustion via fragmented WebSocket streams. Cascades from Vite upgrade.",
+        "fix": "npm update vite (cascades ws dependency to ≥8.21.0)",
+        "route": "TheFixer",
+        "cross_ref": "DEP-005 — same root cause (Vite upgrade)"
+      },
+      {
+        "id": "DEP-009",
+        "title": "Path-to-Regexp ReDoS",
+        "severity": "P2",
+        "category": "CVE-ReDoS",
+        "source": "dependency-auditor",
+        "file": "portal/Backend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-37ch-88jc-xwx2 — CVSS 7.5. Catastrophic backtracking in route matching via crafted URL patterns. Cascades from gRPC upgrade.",
+        "fix": "Upgrade @opentelemetry/auto-instrumentations-node (cascades grpc-js → path-to-regexp update)",
+        "route": "TheFixer",
+        "cross_ref": "DEP-002, DEP-003, DEP-007 — same root cause (OpenTelemetry upgrade)"
+      }
+    ],
+    "p3": [
+      {
+        "id": "QO-007", "title": "OTel Tracing Absent", "severity": "P3", "category": "architecture-violation",
+        "source": "quality-oracle", "file": "Source/Backend/src/app.ts", "status": "NEW",
+        "fix": "Add @opentelemetry/* SDK init, HTTP auto-instrumentation, custom spans for BFS/assessment, traceparent header extraction in app.ts.",
+        "route": "TheFixer"
+      },
+      {
+        "id": "QO-008", "title": "eslint-disable Without Explanation", "severity": "P3", "category": "pattern-violation",
+        "source": "quality-oracle",
+        "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+        "status": "NEW",
+        "fix": "Add explanatory comment to each eslint-disable-next-line react-hooks/exhaustive-deps.",
+        "route": "TheFixer"
+      },
+      {
+        "id": "QO-009", "title": "portal/ Traceability Never Enforced", "severity": "P3", "category": "spec-drift",
+        "source": "quality-oracle", "file": "tools/traceability-enforcer.py", "status": "NEW",
+        "fix": "Add portal/ to enforcer source_dirs (see QO-004).",
+        "route": "TheFixer",
+        "cross_ref": "QO-004 — same root cause"
+      },
+      {
+        "id": "DEP-010", "title": "ts-jest/js-yaml Ecosystem Vulnerabilities", "severity": "P3", "category": "CVE-moderate",
+        "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW",
+        "fix": "npm update ts-jest to ≥30.0.0", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-011", "title": "UUID Buffer Bounds Check Missing", "severity": "P3", "category": "CVE-moderate",
+        "source": "dependency-auditor",
+        "files": ["Source/Backend/package.json", "platform/orchestrator/package.json"],
+        "status": "NEW",
+        "fix": "npm update uuid to ≥11.1.1; update dockerode to ≥5.0.0 in orchestrator.",
+        "route": "TheFixer"
+      },
+      {
+        "id": "DEP-012", "title": "PostCSS XSS via CSS Stringify", "severity": "P3", "category": "CVE-XSS",
+        "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW",
+        "fix": "npm update vite (cascades postcss to ≥8.5.10)", "route": "TheFixer",
+        "cross_ref": "DEP-005 — same root cause (Vite upgrade)"
+      },
+      {
+        "id": "DEP-013", "title": "OTel W3C Baggage Unbounded Memory", "severity": "P3", "category": "CVE-DoS",
+        "source": "dependency-auditor", "file": "portal/Backend/package.json", "status": "NEW",
+        "fix": "Upgrade @opentelemetry/auto-instrumentations-node (cascades @opentelemetry/core to ≥2.8.0)",
+        "route": "TheFixer",
+        "cross_ref": "DEP-002, DEP-003 — same root cause (OpenTelemetry upgrade)"
+      },
+      {
+        "id": "DEP-014", "title": "QS Query String DoS", "severity": "P3", "category": "CVE-DoS",
+        "source": "dependency-auditor",
+        "files": ["Source/Backend/package.json", "portal/Backend/package.json"],
+        "status": "NEW",
+        "fix": "npm update express to latest patch version (cascades qs update)", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-015", "title": "esbuild Cross-Origin Request Vulnerability", "severity": "P3", "category": "CVE-InfoDisclosure",
+        "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW",
+        "fix": "npm update vite (cascades esbuild to ≥0.25.0)", "route": "TheFixer",
+        "cross_ref": "DEP-005 — same root cause (Vite upgrade)"
+      },
+      {
+        "id": "DEP-016", "title": "Express v4 → v5 Migration Needed", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor",
+        "files": ["Source/Backend/package.json", "platform/orchestrator/package.json"],
+        "status": "NEW",
+        "fix": "Plan Express v5 migration (2-3 weeks; breaking changes in callback signatures, middleware order)", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-017", "title": "React/React-DOM v18 → v19 Evaluation", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW",
+        "fix": "Evaluate React 19 migration (generally backward compatible)", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-018", "title": "React Router v6 → v7 Migration", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW",
+        "fix": "Test with React Router v7 (minor breaking changes)", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-019", "title": "Pino Logger v8 → v10 Lag (Backend)", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW",
+        "fix": "npm update pino to v10 (test for API changes)", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-020", "title": "UUID v9 → v14 (5 Major Versions Behind)", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW",
+        "fix": "npm update uuid to latest (test API compatibility)", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-021", "title": "Multer v1 LTS → v2 (Portal)", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor", "file": "portal/Backend/package.json", "status": "NEW",
+        "fix": "Evaluate Multer v2 migration (file handling API changes)", "route": "TheFixer"
+      },
+      {
+        "id": "DEP-022", "title": "OpenTelemetry SDK 9+ Minor Versions Behind", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor", "file": "portal/Backend/package.json", "status": "NEW",
+        "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0 (also fixes DEP-002, DEP-003)",
+        "route": "TheFixer",
+        "cross_ref": "DEP-002, DEP-003 — same fix"
+      },
+      {
+        "id": "DEP-023", "title": "Vitest v2 → v3 (Contains Critical CVE)", "severity": "P3", "category": "outdated",
+        "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW",
+        "fix": "npm update vitest to ≥3.2.6 (also fixes DEP-001)", "route": "TheFixer",
+        "cross_ref": "DEP-001 — same fix"
+      }
+    ],
+    "p4": [
+      {
+        "id": "DEP-P4-001", "title": "@babel/core Arbitrary File Read (dev-only)", "severity": "P4", "category": "CVE-InfoDisclosure",
+        "source": "dependency-auditor",
+        "file": "Source/Backend/package.json",
+        "status": "NEW",
+        "detail": "GHSA-4x5r-pxfx-6jf8 — dev-time only, test infrastructure. Low CVSS.",
+        "fix": "npm update ts-jest (cascades babel update)", "route": "TheFixer"
+      }
+    ]
+  },
+  "cross_reference_map": [
+    {
+      "root_cause": "OpenTelemetry ecosystem outdated (0.40→0.77)",
+      "findings": ["DEP-002", "DEP-003", "DEP-007", "DEP-009", "DEP-013", "DEP-022"],
+      "single_fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.77.0 in portal/Backend",
+      "severity_resolved": "1 P1 + 2 P2 + 2 P3 = 5 findings closed by one upgrade"
+    },
+    {
+      "root_cause": "Vite/build toolchain outdated (5.4.0→5.4.3+)",
+      "findings": ["DEP-005", "DEP-008", "DEP-012", "DEP-015"],
+      "single_fix": "npm update vite in Source/Frontend",
+      "severity_resolved": "2 P2 + 2 P3 = 4 findings closed by one update"
+    },
+    {
+      "root_cause": "Traceability enforcer scope too narrow (Source/ only, skips portal/ and all plans)",
+      "findings": ["QO-004", "QO-009"],
+      "single_fix": "Add portal/Backend, portal/Frontend to source_dirs; add --all-plans flag to traceability-enforcer.py",
+      "severity_resolved": "2 P2/P3 = 2 findings closed by one enforcer fix"
+    },
+    {
+      "root_cause": "Missing observability implementation (no OTel SDK, no histogram)",
+      "findings": ["QO-003", "QO-007"],
+      "single_fix": "Add @opentelemetry SDK initialization to Source/Backend/src/app.ts; add dependency_check_duration_seconds histogram to metrics.ts",
+      "severity_resolved": "1 P2 + 1 P3 = 2 findings closed by one observability task"
+    }
+  ],
+  "performance_profiler": {
+    "status": "not_run",
+    "mode": "N/A",
+    "note": "No performance-profiler-report.md found. Backend service at http://localhost:3001/ was not available at audit time."
+  },
+  "chaos_monkey": {
+    "status": "not_run",
+    "mode": "N/A",
+    "note": "No chaos-monkey-report.md found. Service unavailability prevented dynamic chaos testing."
+  }
+}

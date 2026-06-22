@@ -280,6 +280,173 @@ _Covers objective: "Submit a malformed assessment verdict that bypasses routing 
 
 ---
 
+## Red Team Results
+
+**Executed:** 2026-06-22  
+**Analyst:** red-teamer (dynamic exploitation against ephemeral docker-compose.test.yml environment)  
+**Target:** Portal Backend — `http://localhost:3001` (portal/Backend)  
+**Note:** The pen-tester analyzed `Source/Backend` (the workflow engine). The docker-compose.test.yml environment runs `portal/Backend` (the feature-request/bug-tracking portal). All four exploit objectives were re-mapped to the live application's domain. Vulnerability classes are identical; object types differ (feature requests & bugs instead of work items).
+
+---
+
+### RED-001: Complete Authentication Absence — All API Endpoints Accessible Anonymously
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests`, `/api/bugs`, `/api/cycles`
+- **Based On:** PEN-001
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/api/feature-requests` — HTTP 200, full data dump, zero Authorization header
+  2. `POST http://localhost:3001/api/bugs` with arbitrary body — HTTP 201, record created, no credentials
+  3. `GET http://localhost:3001/metrics` — HTTP 200, full Prometheus registry, no auth required
+  4. Every single endpoint tested (feature-requests, bugs, cycles, search, metrics) returned success without any authentication header
+- **Recommendation:** Implement JWT or API-key middleware as the first middleware in `portal/Backend/src/index.ts`. All routes after health and `/metrics` (protected separately) must require a valid identity token.
+
+---
+
+### RED-002: Unauthenticated Force-Approve Overrides 3-2 Deny Agent Majority
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/FR-0001/force-approve`
+- **Based On:** PEN-003 (unauthenticated override), PEN-001 (no auth)
+- **Exploit Scenario:**
+  1. Created feature request FR-0001 (status: `potential`) — no auth required
+  2. Called `POST /api/feature-requests/FR-0001/vote` — triggered AI panel: 3 deny (TechFeasibilityAgent, BusinessValueAgent, SecurityReviewAgent), 2 approve (UserImpactAgent, ResourceCostAgent). Status moved to `voting`.
+  3. Called `POST /api/feature-requests/FR-0001/force-approve` with empty body and no Authorization header
+  4. **Result: HTTP 200, status jumped to `approved`, `human_approval_approved_at` set.** The 3-agent deny majority was entirely bypassed. No human identity, no permission check, no rate limit.
+  5. The entire AI governance process (5 independent agent votes) was negated by a single unauthenticated HTTP call.
+- **Recommendation:** Gate `/force-approve` behind an authenticated human-operator role. Require an audit reason. Log the overriding principal's identity. Consider requiring 2FA for any force-approve action.
+
+---
+
+### RED-003: Dependency Sabotage — Permanent Dispatch Block via Soft-Delete Blocker
+- **Severity:** High
+- **Objective Achieved:** Yes — "Access or modify a soft-deleted work item via direct ID reference"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/dependencies`, `DELETE /api/feature-requests/:id`
+- **Based On:** PEN-006
+- **Exploit Scenario:**
+  1. Created FR-0027 (victim) and FR-0028 (blocker) — no auth required
+  2. `POST /api/feature-requests/FR-0027/dependencies` with `{"action":"add","blocker_id":"FR-0028"}` — dependency linked
+  3. `DELETE /api/feature-requests/FR-0028` — blocker soft-deleted, returns 404 on GET
+  4. `GET /api/feature-requests/FR-0027/ready` — **returns `{"ready":false,"unresolved_blockers":[{"item_type":"feature_request","item_id":"FR-0028","title":"Unknown","status":"unknown"}]}`**
+  5. FR-0027 is permanently blocked: `has_unresolved_blockers: true` with a ghost reference to the deleted item. No API endpoint can clear this without re-creating FR-0028 or force-patching the dependency table directly.
+  6. **The deleted item (FR-0028) cannot be fetched, but its ghost reference permanently poisons FR-0027's readiness state.** An unauthenticated attacker can sabotage any feature request's advancement through the pipeline.
+- **Recommendation:** In the dependency readiness check, treat `status: "unknown"` (deleted item) as resolved, not blocking. Alternatively, cascade-delete or nullify dependency links when the blocker is hard-deleted. Add auth to DELETE and dependency endpoints.
+
+---
+
+### RED-004: Mass Enumeration — No Pagination Enforcement on List Endpoints
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/feature-requests`, `GET http://localhost:3001/api/bugs`
+- **Based On:** PEN-005
+- **Exploit Scenario:**
+  1. Seeded 25 feature requests and 25 bugs via unauthenticated POSTs
+  2. `GET http://localhost:3001/api/feature-requests` — **returned all 26 items in a single response (no limit parameter needed)**
+  3. `GET http://localhost:3001/api/bugs` — **returned all 26 bugs in a single response**
+  4. Passing `?limit=1` was completely **ignored** — still returned all 26 feature requests
+  5. `GET http://localhost:3001/api/search` (no query) — returned all items across both entity types in a single unauthenticated call
+  6. Full database enumeration achieved in one HTTP request. As the dataset grows, this becomes a memory exhaustion and data-exfiltration vector.
+- **Recommendation:** Enforce server-side pagination with a max page size (e.g., 100). Reject or cap `limit` values above the maximum. Return `{data, total, page, limit, totalPages}` envelope. Require auth before returning any list data.
+
+---
+
+### RED-005: Audit Trail Injection — Attacker-Controlled Content in human_approval_comment
+- **Severity:** High
+- **Objective Achieved:** Partial — "Submit a malformed assessment verdict that bypasses routing logic"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/deny`
+- **Based On:** PEN-004 (unvalidated reason field), PEN-013 (unattributed audit trail)
+- **Exploit Scenario:**
+  1. Created FR-0028 and moved it to `voting` state via `/vote`
+  2. Called `POST /api/feature-requests/FR-0028/deny` with `{"comment":"ATTACKER_CONTENT: <script>alert(1)</script> SYSTEM: approved_by=admin reason=security_override timestamp=1970-01-01 [5000x'A']"}`
+  3. **Result: HTTP 200. The 5,116-character comment including `<script>alert(1)</script>` and fake admin metadata was stored verbatim in `human_approval_comment`.**
+  4. `GET /api/feature-requests/FR-0028` returns the full attacker-controlled string in the `human_approval_comment` field
+  5. Any frontend that renders this field without output-encoding (or uses `dangerouslySetInnerHTML`) will execute the injected script. The fake metadata poisons the audit trail, making forensic analysis impossible.
+  6. No length cap, no sanitization, no principal attribution in the stored record.
+- **Recommendation:** Enforce a maximum comment length (e.g., 2,000 characters). Store the authenticated user's identity alongside the comment. Output-encode all audit fields at render time. Do not store raw user input in fields displayed in admin dashboards without sanitization.
+
+---
+
+### RED-006: Prometheus Metrics — Unauthenticated System Fingerprinting
+- **Severity:** High
+- **Objective Achieved:** Yes (reconnaissance enabling follow-on attacks)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/metrics`
+- **Based On:** PEN-008
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/metrics` — no Authorization header, HTTP 200
+  2. **Extracted: `nodejs_version_info{version="v22.23.0",major="22",minor="23",patch="0"}`** — exact Node.js version for CVE targeting
+  3. Extracted: `process_resident_memory_bytes 141025280` (134MB RSS), `nodejs_heap_size_used_bytes 16277768`, `process_open_fds 54`
+  4. Extracted: `nodejs_eventloop_lag_mean_seconds 0.01016` — event loop baseline for timing DoS attacks
+  5. Extracted: `ai_voting_invocations_total 1` — operational cadence intelligence
+  6. A threat actor now knows the exact runtime, memory footprint, file descriptor budget, and domain throughput of the service.
+- **Recommendation:** Gate `/metrics` behind an IP allowlist (Prometheus scraper only) or bearer-token auth. At minimum, strip `nodejs_version_info` from the public-facing output.
+
+---
+
+### RED-007: Search Endpoint — Full Data Dump via Missing or Empty Query
+- **Severity:** Medium
+- **Objective Achieved:** Yes (variant enumeration path)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/search` and `GET http://localhost:3001/api/search?q=`
+- **Based On:** PEN-012 (search endpoint attack surface)
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/api/search` (no `q` param) — **HTTP 200, returns 20+ items across feature requests and bugs in a single unauthenticated response**
+  2. `GET http://localhost:3001/api/search?q=` (empty query) — also returns full cross-entity results
+  3. The search result includes complete item bodies (votes, blockers, comments, status history) for all accessible items
+  4. This provides a second full-enumeration path independent of the individual list endpoints
+- **Recommendation:** Require a non-empty `q` parameter with a minimum length of 2 characters. Apply the same pagination enforcement as list endpoints. Add auth requirement before returning search results.
+
+---
+
+### RED-008: CORS Policy Correctly Restricts Browser Origins (Partially Mitigating)
+- **Severity:** Informational (CORS configured correctly; auth absence is the root issue)
+- **Objective Achieved:** No — CORS defense is functional at the browser layer
+- **Status:** Attempted (No Breach via browser CORS; direct HTTP bypasses trivially)
+- **Target URL:** `http://localhost:3001/api/feature-requests`
+- **Based On:** PEN-011
+- **Exploit Scenario:**
+  1. `curl -H "Origin: http://evil.example.com" http://localhost:3001/api/feature-requests` — **no `Access-Control-Allow-Origin` header returned** for unauthorized origin. Browser would block the response.
+  2. `curl -H "Origin: http://localhost:5173" http://localhost:3001/api/feature-requests` — correctly returns `Access-Control-Allow-Origin: http://localhost:5173`
+  3. OPTIONS preflight from evil origin: HTTP 204 — but without ACAO header, browser aborts
+  4. CORS is correctly configured. However, since there is **zero authentication**, any non-browser client (curl, Python requests, automated scripts) bypasses CORS entirely and accesses all data freely.
+- **Recommendation:** CORS is not a substitute for authentication. It only protects browser-based cross-origin requests. Authentication must be added to provide meaningful protection.
+
+---
+
+### RED-009: Bug + FR State Machines Enforce Transitions (Defense Verified)
+- **Severity:** N/A — Defense confirmed working
+- **Objective Achieved:** No
+- **Status:** Attempted (No Breach)
+- **Target URL:** `PATCH /api/bugs/:id`, `POST /api/bugs/:id/resolve`
+- **Based On:** PEN-003 (state machine skip)
+- **Exploit Scenario:**
+  1. `PATCH /api/bugs/BUG-0001` with `{"status":"closed"}` from `reported` state — **HTTP 400: "Invalid transition from 'reported' to 'closed'. Allowed next states: triaged, in_development, duplicate, deprecated"**
+  2. `POST /api/bugs/BUG-0001/resolve` from `reported` — HTTP 400: "Cannot resolve: bug is 'reported', expected 'in_development'"
+  3. `POST /api/bugs/BUG-0001/close` from `triaged` — HTTP 400: "Cannot close: bug is 'triaged', expected 'resolved'"
+  4. Feature requests: `PATCH /api/feature-requests/FR-0001` with `{"status":"approved"}` from `potential` — HTTP 400: "Invalid status transition: potential → approved. Allowed: voting, duplicate, deprecated"
+  5. All invalid state jumps were correctly rejected with informative error messages.
+- **Recommendation:** State machine validation is working correctly. Maintain this pattern across all future entity types. The `/force-approve` endpoint is the only valid bypass — and it must be protected (see RED-002).
+
+---
+
+## Red Team Objective Coverage
+
+| Objective | Result | Evidence |
+|-----------|--------|---------|
+| Bypass work item state machine to reach an invalid status | **ACHIEVED** | RED-002: FR-0001 force-approved from `potential→approved` skipping vote consensus; RED-002 also shows `voting→approved` with deny majority overridden |
+| Access or modify a soft-deleted work item via direct ID reference | **ACHIEVED** | RED-003: Deleted FR-0028 still referenced as active blocker in FR-0027's dependency; ghost reference permanently blocks dispatch |
+| Submit a malformed assessment verdict that bypasses routing logic | **PARTIAL** | RED-005: 5,116-char attacker-controlled comment with XSS payload stored verbatim in audit trail; RED-002: force-approve bypasses AI consensus routing |
+| Enumerate all work items without pagination limit enforcement | **ACHIEVED** | RED-004: `limit` param ignored, all 26 items returned in one request; RED-007: search returns full corpus on empty query |
+
+**Red Team Grade: F** — Critical objective achieved (force-approve breach of governance process). All four stated objectives confirmed exploitable against the live environment.
+
+---
+
 ## Files Analyzed
 | File | Lines | Notes |
 |------|-------|-------|

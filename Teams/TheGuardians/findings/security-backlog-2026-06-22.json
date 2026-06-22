@@ -1,0 +1,345 @@
+{
+  "generated": "2026-06-22",
+  "run_id": "run-20260622-092803",
+  "grade": "F",
+  "note": "Grade F is automatic: red-teamer confirmed breach of a critical business objective (RED-002: unauthenticated force-approve overrides 3-deny AI governance consensus). Operator decision required before any merge.",
+  "summary": {
+    "critical": 3,
+    "high": 12,
+    "medium": 11,
+    "low": 2,
+    "total": 28,
+    "confirmed_live": 7,
+    "theoretical": 21,
+    "compliance_pass_rate_pct": 7,
+    "compliance_controls_evaluated": 28,
+    "compliance_controls_passing": 2,
+    "compliance_controls_partial": 4,
+    "compliance_controls_failing": 22,
+    "red_team_objectives_total": 4,
+    "red_team_objectives_achieved_full": 3,
+    "red_team_objectives_achieved_partial": 1,
+    "red_team_confirmed_critical_breaches": 2,
+    "red_team_defenses_confirmed": 2
+  },
+  "findings": [
+    {
+      "id": "RED-001/PEN-001/SAST-001/COMP-001",
+      "title": "Complete Authentication Absence — All API Endpoints Publicly Accessible",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, red-teamer, compliance-auditor",
+      "cwe": ["CWE-306", "CWE-284"],
+      "frameworks": ["OWASP-ASVS V4.1.1", "OWASP-ASVS V4.1.2", "SOC2 CC6.1"],
+      "remediation": "Add JWT Bearer or API-key middleware as the first middleware in Source/Backend/src/app.ts and portal/Backend/src/index.ts before all route handlers. Install jsonwebtoken, bcrypt. Separate public health endpoints from protected API routes.",
+      "evidence": "GET /api/feature-requests → HTTP 200, no auth. POST /api/bugs → HTTP 201, no auth. GET /metrics → full Prometheus data, Node.js v22.23.0 fingerprinted."
+    },
+    {
+      "id": "RED-002/PEN-003/COMP-002",
+      "title": "Force-Approve Overrides AI Governance Consensus (3–2 Deny Majority Bypassed) [F-TRIGGER]",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit) — Automatic Grade F",
+      "source": "pen-tester, red-teamer, compliance-auditor",
+      "cwe": ["CWE-306", "CWE-269", "CWE-284"],
+      "frameworks": ["OWASP-ASVS V4.1.3", "SOC2 CC6.3"],
+      "remediation": "Gate force-approve and overrideRoute:fast-track behind an authenticated privileged human-operator role. Require audit reason. Log the overriding principal's identity. Consider 2FA for force-override actions.",
+      "evidence": "FR-0001 created → AI voted 3 deny / 2 approve → POST /force-approve with empty body, no auth → HTTP 200, status approved. Entire AI governance layer negated in one unauthenticated HTTP call."
+    },
+    {
+      "id": "PEN-002/SAST-002/COMP-013",
+      "title": "Webhook Intake Lacks HMAC Signature Verification — Arbitrary Pipeline Injection",
+      "severity": "Critical",
+      "status": "Theoretical",
+      "source": "static-analyzer, pen-tester, compliance-auditor",
+      "cwe": ["CWE-346", "CWE-306"],
+      "frameworks": ["OWASP-ASVS V13.2.5", "SOC2 CC6.1"],
+      "remediation": "Verify X-Zendesk-Webhook-Signature (HMAC-SHA256) against a shared secret from env before processing. Apply shared secret token for automated endpoint. Add strict enum validation on type and priority fields.",
+      "evidence": "POST /api/intake/zendesk accepts any body with title+description, no HMAC check. type field stored without enum validation."
+    },
+    {
+      "id": "RED-003/PEN-006",
+      "title": "Permanent Dispatch Sabotage via Soft-Deleted Blocker (Dependency DoS)",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "cwe": ["CWE-754"],
+      "frameworks": [],
+      "remediation": "In computeHasUnresolvedBlockers(), treat status:'unknown' (soft-deleted) as resolved, not blocking. Cascade-delete or nullify dependency links when a blocker is deleted. Add auth to DELETE and dependency endpoints.",
+      "evidence": "FR-0027 permanently blocked with has_unresolved_blockers:true after blocker FR-0028 soft-deleted. Ghost reference {title:'Unknown',status:'unknown'} persists. No API path to recover."
+    },
+    {
+      "id": "RED-004/PEN-005/SAST-006",
+      "title": "Mass Data Enumeration — Pagination Completely Unenforced",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, red-teamer",
+      "cwe": ["CWE-400"],
+      "frameworks": [],
+      "remediation": "Enforce server-side pagination: const limit = Math.min(parseInt(req.query.limit,10)||20, 100). Apply to all list endpoints including /dashboard/queue. Return {data,total,page,limit,totalPages} envelope.",
+      "evidence": "?limit=1 silently ignored, all 26 items returned. GET /api/dashboard/queue returns all items grouped, no pagination param accepted."
+    },
+    {
+      "id": "RED-005/PEN-004/PEN-013",
+      "title": "Audit Trail XSS Injection — 5,116-char Script Payload Stored Verbatim",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "cwe": ["CWE-79", "CWE-116", "CWE-345"],
+      "frameworks": [],
+      "remediation": "Enforce max comment length (2,000 chars). Output-encode all audit fields at render time. Store authenticated user identity alongside comment. Do not use dangerouslySetInnerHTML on any audit field.",
+      "evidence": "5,116-char payload including <script>alert(1)</script> and fake admin metadata stored verbatim in human_approval_comment via unauthenticated /deny."
+    },
+    {
+      "id": "RED-006/PEN-008/SAST-009/COMP-012",
+      "title": "Prometheus /metrics Endpoint Unauthenticated — System Fingerprinting",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, red-teamer, compliance-auditor",
+      "cwe": ["CWE-306", "CWE-200"],
+      "frameworks": ["OWASP-ASVS V4.1.2", "SOC2 CC6.1"],
+      "remediation": "Restrict /metrics to internal observability stack via firewall/ingress rules, or add bearer-token middleware. At minimum strip nodejs_version_info from public output.",
+      "evidence": "GET /metrics → nodejs_version_info{version='v22.23.0'}, 134MB RSS, event-loop lag, FD count, operational counters. Zero auth required."
+    },
+    {
+      "id": "PEN-007",
+      "title": "Cascade Auto-Dispatch Triggered by Unauthenticated Rejection",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "cwe": ["CWE-284", "CWE-362"],
+      "frameworks": [],
+      "remediation": "Require authentication before any rejection. Remove REJECTED from DISPATCH_TRIGGER_STATUSES or add explicit human-confirmation step before cascade dispatch fires."
+    },
+    {
+      "id": "SAST-003",
+      "title": "File Upload Trusts Client-Supplied MIME Type — Stored XSS (Portal Backend)",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "cwe": ["CWE-434", "CWE-79"],
+      "frameworks": [],
+      "remediation": "Use file-type or magic-bytes library to verify actual file content. Normalize extension to verified type. Serve uploads from separate origin or with Content-Disposition: attachment and X-Content-Type-Options: nosniff."
+    },
+    {
+      "id": "SAST-004",
+      "title": "Docker Socket Mounted Inside Orchestrator Container — Host Escape Risk",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "cwe": ["CWE-269", "CWE-284"],
+      "frameworks": [],
+      "remediation": "Use Docker-in-Docker with rootless daemon, or restrict socket access via authorization plugins. Move credentials to secrets manager. Scope: platform/ (solo-session only per CLAUDE.md)."
+    },
+    {
+      "id": "COMP-002",
+      "title": "No Authorization / RBAC — All Privileged Operations Unauthenticated",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-284"],
+      "frameworks": ["OWASP-ASVS V4.1.3", "SOC2 CC6.3"],
+      "remediation": "Define roles (viewer, operator, admin). Attach role middleware to each route group. Gate all state-transition and override endpoints behind operator or admin role."
+    },
+    {
+      "id": "COMP-005",
+      "title": "No Rate Limiting — DoS and Brute-Force Attacks Unmitigated",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-400"],
+      "frameworks": ["OWASP-ASVS V2.2.1", "OWASP-ASVS V13.1.1", "SOC2 CC6.1"],
+      "remediation": "Add express-rate-limit with tiered limits: 100 req/min general, 10 req/min for state-transition endpoints, stricter for intake webhooks."
+    },
+    {
+      "id": "COMP-006",
+      "title": "No TLS / HTTPS Enforcement",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-319"],
+      "frameworks": ["OWASP-ASVS V9.1.1", "SOC2 CC6.1"],
+      "remediation": "Terminate TLS at ingress/reverse-proxy (nginx, Caddy, AWS ALB). Enforce HSTS. Add helmet.hsts() to both apps."
+    },
+    {
+      "id": "COMP-008/COMP-009",
+      "title": "Missing Required Audit Events: login_attempt and permission_denied",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-223"],
+      "frameworks": ["SOC2 CC7.1", "OWASP-ASVS V7.2.1"],
+      "remediation": "After adding auth middleware, emit structured log events for every authentication attempt and every authorization denial. Include principal identity, timestamp, IP, and resource path."
+    },
+    {
+      "id": "RED-007/PEN-012",
+      "title": "Search Endpoint Returns Full Corpus on Empty or Missing Query",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "cwe": ["CWE-400", "CWE-200"],
+      "frameworks": [],
+      "remediation": "Require non-empty q parameter (min 2 chars). Apply pagination enforcement. Add auth before returning search results."
+    },
+    {
+      "id": "SAST-005/COMP-004",
+      "title": "No HTTP Security Headers (Helmet Missing) on Either Service",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer, compliance-auditor",
+      "cwe": ["CWE-693", "CWE-1021"],
+      "frameworks": ["OWASP-ASVS V14.4.1", "SOC2 CC6.1"],
+      "remediation": "Add helmet() as first middleware in both apps. Minimum: helmet({ contentSecurityPolicy: true, xFrameOptions: { action: 'deny' }, xContentTypeOptions: true, hsts: { maxAge: 31536000 } })."
+    },
+    {
+      "id": "SAST-007",
+      "title": "Internal Orchestrator URL Leaked in HTTP 502 Response Body",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "cwe": ["CWE-209"],
+      "frameworks": [],
+      "remediation": "Return generic 'Service temporarily unavailable' in 502 response. Log URL internally only."
+    },
+    {
+      "id": "SAST-008/COMP-003/PEN-011",
+      "title": "Source/Backend Has No CORS Policy — Cross-Origin Requests Permitted",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer, pen-tester, compliance-auditor",
+      "cwe": ["CWE-942"],
+      "frameworks": ["OWASP-ASVS V14.5.3", "SOC2 CC6.1"],
+      "remediation": "Add cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:5173'], credentials: true }) before all route handlers. Mirror the pattern already in portal/Backend."
+    },
+    {
+      "id": "SAST-010",
+      "title": "Orchestrator Proxy Forwards Unvalidated Client-Controlled URL (SSRF Risk)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "cwe": ["CWE-918"],
+      "frameworks": [],
+      "remediation": "Define allowlist of permitted forwarded path prefixes. Reject any req.url that does not match the allowlist with 403."
+    },
+    {
+      "id": "COMP-007",
+      "title": "No Encryption at Rest — Sensitive Data in Plaintext In-Memory Store",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-312"],
+      "frameworks": ["OWASP-ASVS V6.2.1", "SOC2 CC6.1", "GDPR Art. 32"],
+      "remediation": "Migrate to persistent encrypted store. Encrypt sensitive fields at rest."
+    },
+    {
+      "id": "COMP-010",
+      "title": "Incomplete Audit Event: state_transition (Partial Logging Only)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-223"],
+      "frameworks": ["SOC2 CC7.1", "OWASP-ASVS V7.2.2"],
+      "remediation": "Emit structured events for every status transition with principal, timestamp, and from/to states."
+    },
+    {
+      "id": "COMP-011",
+      "title": "Missing Audit Event: data_export",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-223"],
+      "frameworks": ["SOC2 CC7.1", "OWASP-ASVS V7.2.2"],
+      "remediation": "Emit data_export event on any bulk-list or search response. Include requester identity and record count."
+    },
+    {
+      "id": "COMP-014",
+      "title": "No Permanent Data Deletion (GDPR Article 17 — Right to Erasure)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "cwe": ["CWE-212"],
+      "frameworks": ["GDPR Art. 17", "OWASP-ASVS V8.3.4"],
+      "remediation": "Add hard-delete endpoint gated behind admin role. Purge all associated records including change history and dependency links."
+    },
+    {
+      "id": "PEN-009/COMP-016",
+      "title": "NaN/Infinity Injection via Pagination Parameters",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester, compliance-auditor",
+      "cwe": ["CWE-20"],
+      "frameworks": ["OWASP-ASVS V5.1.3"],
+      "remediation": "Validate page and limit with Number.isFinite() before use. Return 400 on invalid values. Handle limit=0 case (totalPages → Infinity) explicitly."
+    },
+    {
+      "id": "PEN-010",
+      "title": "overrideRoute Field Accepts Invalid Enum Values — Data Corruption",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "cwe": ["CWE-20"],
+      "frameworks": [],
+      "remediation": "Add runtime enum validation: reject any overrideRoute value not in Object.values(WorkItemRoute) with 400."
+    },
+    {
+      "id": "SAST-011/COMP-015/COMP-017",
+      "title": "No Input Length Limits or Body Size Caps on Free-Text Fields",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "static-analyzer, compliance-auditor",
+      "cwe": ["CWE-400"],
+      "frameworks": ["OWASP-ASVS V12.1.1", "OWASP-ASVS V5.2.1"],
+      "remediation": "Enforce title <= 200 and description <= 10000 chars. Add express.json({ limit: '100kb' }) to both apps."
+    },
+    {
+      "id": "SAST-012",
+      "title": "Math.random() Used in Business-Logic Simulation (Non-Cryptographic RNG)",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "cwe": ["CWE-338"],
+      "frameworks": [],
+      "remediation": "Substitute crypto.randomFloat() (Node 20+) or crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF. Injectable RNG pattern already makes this easy to swap."
+    }
+  ],
+  "compliance_matrix": {
+    "frameworks": [
+      {
+        "id": "OWASP-ASVS",
+        "level": 2,
+        "controls_evaluated": 23,
+        "pass": 2,
+        "partial": 4,
+        "fail": 17,
+        "pass_rate_pct": 9
+      },
+      {
+        "id": "SOC2-Type2",
+        "controls": ["CC6.1", "CC6.2", "CC6.3", "CC7.1", "CC8.1"],
+        "controls_evaluated": 5,
+        "pass": 0,
+        "partial": 2,
+        "fail": 3,
+        "pass_rate_pct": 0
+      }
+    ],
+    "overall_pass_rate_pct": 7,
+    "passing_controls": [
+      "OWASP-ASVS V13.3 — State machine enforcement (confirmed by RED-009)",
+      "OWASP-ASVS V14.5.2 — CORS on portal/Backend (confirmed by RED-008)"
+    ]
+  },
+  "red_team_summary": {
+    "environment": "Ephemeral docker-compose.test.yml (SQLite tmpfs, destroyed post-run)",
+    "target": "portal/Backend at http://localhost:3001",
+    "objectives": [
+      { "objective": "Bypass work item state machine to reach an invalid status", "result": "ACHIEVED", "finding": "RED-002" },
+      { "objective": "Access or modify a soft-deleted work item via direct ID reference", "result": "ACHIEVED", "finding": "RED-003" },
+      { "objective": "Submit a malformed assessment verdict that bypasses routing logic", "result": "PARTIAL", "finding": "RED-005, RED-002" },
+      { "objective": "Enumerate all work items without pagination limit enforcement", "result": "ACHIEVED", "finding": "RED-004, RED-007" }
+    ],
+    "defenses_confirmed": [
+      { "finding": "RED-008", "detail": "CORS correctly configured on portal/Backend — evil.example.com blocked" },
+      { "finding": "RED-009", "detail": "State machine direct-transition enforcement working — all illegal jumps rejected with 400" }
+    ]
+  }
+}

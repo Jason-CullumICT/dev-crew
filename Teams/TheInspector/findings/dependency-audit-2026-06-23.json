@@ -1,0 +1,252 @@
+{
+  "auditMetadata": {
+    "date": "2026-06-23",
+    "auditor": "dependency_auditor",
+    "tool": "npm audit",
+    "toolVersion": "10+",
+    "reportFile": "dependency-audit-2026-06-23.md"
+  },
+  "summary": {
+    "grade": "D",
+    "status": "FAILED",
+    "reasoning": "2 critical CVEs with known RCE exploits (protobufjs, handlebars), affecting core infrastructure and backend. 20+ high-severity CVEs across all primary workspaces. Immediate remediation required."
+  },
+  "vulnerabilityTotals": {
+    "critical": 4,
+    "high": 20,
+    "moderate": 90,
+    "low": 3,
+    "total": 112
+  },
+  "byWorkspace": {
+    "Source/Backend": {
+      "vulnerable": true,
+      "critical": 1,
+      "high": 1,
+      "moderate": 24,
+      "low": 1,
+      "total": 27,
+      "directDependencies": 8,
+      "criticalIssues": [
+        "handlebars >= 4.0.0 <= 4.7.8 (JavaScript injection via AST type confusion)"
+      ]
+    },
+    "Source/Frontend": {
+      "vulnerable": true,
+      "critical": 1,
+      "high": 3,
+      "moderate": 5,
+      "low": 1,
+      "total": 11,
+      "directDependencies": 13,
+      "criticalIssues": [
+        "vitest < 3.2.6 (arbitrary file read/execution in UI server, GHSA-5xrq-8626-4rwp)"
+      ]
+    },
+    "Source/E2E": {
+      "vulnerable": false,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "directDependencies": 1,
+      "notes": "Only @playwright/test — clean scan"
+    },
+    "platform/orchestrator": {
+      "vulnerable": true,
+      "critical": 1,
+      "high": 2,
+      "moderate": 6,
+      "low": 0,
+      "total": 9,
+      "directDependencies": 3,
+      "criticalIssues": [
+        "protobufjs < 7.5.5 (arbitrary code execution, GHSA-xq3m-2v4x-88gg)"
+      ],
+      "notes": "Affects core orchestration infrastructure — HIGHEST PRIORITY"
+    },
+    "portal/Backend": {
+      "vulnerable": true,
+      "critical": 2,
+      "high": 6,
+      "moderate": 46,
+      "low": 0,
+      "total": 54,
+      "directDependencies": "30+",
+      "criticalIssues": [
+        "handlebars >= 4.0.0 <= 4.7.8",
+        "vitest < 3.2.6"
+      ]
+    },
+    "portal/Frontend": {
+      "vulnerable": true,
+      "critical": 1,
+      "high": 4,
+      "moderate": 5,
+      "low": 1,
+      "total": 11,
+      "directDependencies": "10+",
+      "criticalIssues": [
+        "vitest < 3.2.6"
+      ]
+    }
+  },
+  "criticalFindings": [
+    {
+      "id": "DEP-015",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "affectedVersions": "< 7.5.5",
+      "severity": "critical",
+      "cvssScore": 9.8,
+      "title": "Arbitrary code execution in protobufjs",
+      "description": "Remote code execution via protobuf parsing. Code injection through bytes field defaults in generated toObject code.",
+      "workspaces": ["platform/orchestrator"],
+      "fixVersion": "7.5.5+",
+      "priority": "IMMEDIATE",
+      "notes": "Affects orchestrator infrastructure — fix before next production deploy"
+    },
+    {
+      "id": "DEP-001",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "package": "handlebars",
+      "affectedVersions": ">= 4.0.0 <= 4.7.8",
+      "severity": "critical",
+      "cvssScore": 9.8,
+      "title": "Handlebars.js has JavaScript Injection via AST Type Confusion",
+      "description": "Multiple critical injection vulnerabilities allowing arbitrary JavaScript execution via AST type confusion, @partial-block tampering, and dynamic partial injection.",
+      "workspaces": ["Source/Backend", "portal/Backend"],
+      "fixVersion": "4.7.9+",
+      "priority": "IMMEDIATE",
+      "notes": "8 distinct CVEs in handlebars 4.x line — thorough upgrade required"
+    },
+    {
+      "id": "DEP-007",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest",
+      "affectedVersions": "< 3.2.6",
+      "severity": "critical",
+      "cvssScore": 9.8,
+      "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+      "description": "Vitest UI server lacks authentication, allowing unauthenticated remote code execution and file disclosure when dev server is accessible.",
+      "workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fixVersion": "3.2.6+",
+      "priority": "IMMEDIATE",
+      "notes": "High risk in CI/CD if dev server is exposed; moderate in local development"
+    }
+  ],
+  "highSeverityFindings": [
+    {
+      "id": "DEP-016",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "package": "@grpc/grpc-js",
+      "affectedVersions": "1.14.0 - 1.14.3",
+      "severity": "high",
+      "cvssScore": 7.5,
+      "title": "A malformed request can cause a server crash",
+      "workspaces": ["platform/orchestrator"],
+      "fixVersion": "1.14.4+"
+    },
+    {
+      "id": "DEP-008",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "package": "vite",
+      "affectedVersions": "<= 6.4.2",
+      "severity": "high",
+      "title": "vite: server.fs.deny bypass on Windows alternate paths",
+      "workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fixVersion": "8.0.16+"
+    },
+    {
+      "id": "DEP-009",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "package": "react-router",
+      "affectedVersions": "6.7.0 - 6.30.3",
+      "severity": "high",
+      "title": "Open redirect via protocol-relative URL reinterpretation",
+      "workspaces": ["Source/Frontend"],
+      "fixVersion": "latest"
+    },
+    {
+      "id": "DEP-002",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "package": "form-data",
+      "affectedVersions": ">= 4.0.0 < 4.0.6",
+      "severity": "high",
+      "cvssScore": 7.5,
+      "title": "CRLF injection in form-data via unescaped multipart field names and filenames",
+      "workspaces": ["Source/Frontend"],
+      "fixVersion": "4.0.6+"
+    }
+  ],
+  "remediationPlan": {
+    "phase1_critical_today": [
+      {
+        "step": 1,
+        "workspace": "platform/orchestrator",
+        "action": "npm install protobufjs@7.5.5+",
+        "expectedOutcome": "Eliminate RCE vulnerability in orchestrator"
+      },
+      {
+        "step": 2,
+        "workspace": "Source/Backend, portal/Backend",
+        "action": "npm update handlebars",
+        "expectedOutcome": "Eliminate JavaScript injection vulnerabilities"
+      },
+      {
+        "step": 3,
+        "workspace": "Source/Frontend, portal/Frontend",
+        "action": "npm install vitest@3.2.6+",
+        "expectedOutcome": "Eliminate arbitrary file read/RCE in test UI"
+      }
+    ],
+    "phase2_high_this_week": [
+      "Update vite to >= 8.0.16 (path traversal, CORS bypass)",
+      "Update react-router-dom (open redirect)",
+      "Update ws package (memory exhaustion DoS)",
+      "Update @grpc/grpc-js to >= 1.14.4"
+    ],
+    "phase3_moderate_this_sprint": [
+      "Upgrade jest ecosystem packages",
+      "Update babel packages",
+      "Update postcss",
+      "Update OpenTelemetry packages"
+    ],
+    "phase4_ongoing_hardening": [
+      "Enable npm audit fix in CI/CD",
+      "Add pre-commit hook: npm audit --audit-level=moderate",
+      "Monitor for transitive dependency updates",
+      "Schedule monthly audits"
+    ]
+  },
+  "licenses": {
+    "status": "CLEAN",
+    "notes": "No GPL/AGPL (viral) licenses detected. All primary dependencies use MIT or Apache-2.0."
+  },
+  "supplyChainRisks": {
+    "postInstallScripts": "None detected in primary dependencies",
+    "singleMaintainerPackages": "Some utility packages (uuid, etc.) may have single maintainer but are widely used and well-monitored",
+    "dormantPackages": "No deprecated or archived packages detected",
+    "duplicateVersions": "Some version conflicts in transitive deps (e.g., multiple babel versions) — standard for js ecosystem"
+  },
+  "crossReferences": [
+    {
+      "finding": "DEP-015 (protobufjs RCE)",
+      "escalate_to": "TheGuardians",
+      "reason": "Security-critical vulnerability in orchestration infrastructure — impacts entire agent pipeline integrity"
+    },
+    {
+      "finding": "DEP-001, DEP-007 (handlebars, vitest critical CVEs)",
+      "escalate_to": "TheGuardians",
+      "reason": "Code injection vulnerabilities — require security review of how/where handlebars templates are processed"
+    }
+  ],
+  "nextSteps": [
+    "1. Apply Phase 1 critical fixes immediately",
+    "2. Test each workspace after updates (npm test)",
+    "3. Re-run npm audit to verify reductions",
+    "4. Implement CI/CD enforcement (npm audit in pre-commit/CI)",
+    "5. Schedule monthly audits with trend tracking"
+  ]
+}

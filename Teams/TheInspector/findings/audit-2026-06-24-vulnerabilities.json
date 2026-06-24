@@ -1,0 +1,192 @@
+{
+  "metadata": {
+    "audit_date": "2026-06-24",
+    "auditor": "dependency-auditor",
+    "project": "dev-crew Source App",
+    "grade": "RED",
+    "status": "NEEDS_REMEDIATION"
+  },
+  "summary": {
+    "total_vulnerabilities": 101,
+    "by_severity": {
+      "critical": 3,
+      "high": 8,
+      "moderate": 46,
+      "low": 44
+    },
+    "package_manifests_scanned": 5,
+    "direct_dependencies": 49,
+    "transitive_dependencies_approx": 700
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Arbitrary File Read & Execution",
+      "severity": "CRITICAL",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "cwe": ["CWE-862"],
+      "package": "vitest",
+      "current_version": "2.0.5",
+      "fixed_version": ">=3.2.6",
+      "location": "Source/Frontend/package.json",
+      "impact": "Remote Code Execution (RCE) if Vitest UI is exposed",
+      "fix_command": "cd Source/Frontend && npm install vitest@^4.1.9",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "UUID Buffer Bounds Check Missing",
+      "severity": "CRITICAL",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "package": "uuid",
+      "current_version": "9.0.0",
+      "fixed_version": ">=11.1.1",
+      "location": "Source/Backend/package.json",
+      "impact": "Information disclosure, potential code execution through buffer overflow",
+      "fix_command": "cd Source/Backend && npm install uuid@^11.1.1",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vite/Vitest Security Issues",
+      "severity": "CRITICAL",
+      "package": "vitest",
+      "current_version": "<1.5.0",
+      "fixed_version": ">=1.5.0",
+      "location": "portal/Backend/package.json",
+      "impact": "Path traversal, auth bypass, resource leaks affecting pipeline infrastructure",
+      "fix_command": "cd portal/Backend && npm audit fix",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "title": "Vite: server.fs.deny Bypass (Windows)",
+      "severity": "HIGH",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "cvss": 7.5,
+      "cwe": ["CWE-22", "CWE-200"],
+      "package": "vite",
+      "current_version": "5.4.0",
+      "fixed_version": ">=5.3.0",
+      "location": "Source/Frontend/package.json"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data: CRLF Injection",
+      "severity": "HIGH",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "cwe": ["CWE-93"],
+      "package": "form-data",
+      "current_version": "4.0.0-4.0.5",
+      "fixed_version": ">=4.0.6",
+      "location": "Source/Frontend/node_modules"
+    },
+    {
+      "id": "DEP-006",
+      "title": "ws: Memory Exhaustion DoS",
+      "severity": "HIGH",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "cvss": 7.5,
+      "cwe": ["CWE-400", "CWE-770"],
+      "package": "ws",
+      "current_version": "8.0.0-8.20.1",
+      "fixed_version": ">=8.21.0",
+      "location": "Source/Frontend/node_modules"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "id": "DEP-015",
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "majors_behind": 2,
+      "severity": "P4",
+      "files": ["Source/Backend", "portal/Backend", "platform/orchestrator"]
+    },
+    {
+      "id": "DEP-016",
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "majors_behind": 2,
+      "severity": "P4",
+      "files": ["Source/Backend"]
+    },
+    {
+      "id": "DEP-017",
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "majors_behind": 5,
+      "severity": "P3",
+      "note": "Also fixes CVE",
+      "files": ["Source/Backend", "portal/Backend"]
+    },
+    {
+      "id": "DEP-018",
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "majors_behind": 1,
+      "severity": "P4",
+      "files": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-019",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.0",
+      "majors_behind": 1,
+      "severity": "P4",
+      "files": ["Source/Frontend"]
+    }
+  ],
+  "supply_chain_analysis": {
+    "post_install_scripts_detected": false,
+    "abandoned_packages_detected": false,
+    "single_maintainer_high_risk": false,
+    "recent_ownership_changes": false,
+    "minimal_downloads_packages": [],
+    "risk_level": "LOW"
+  },
+  "recommendations": {
+    "immediate": [
+      "Update vitest@Source/Frontend to ≥3.2.6 (RCE fix)",
+      "Update uuid@Source/Backend to ≥11.1.1 (buffer overflow fix)",
+      "Update vitest@portal/Backend (pipeline security)"
+    ],
+    "short_term": [
+      "Update react-router-dom@Source/Frontend to ≥6.30.4 (open redirect fix)",
+      "Update vite@Source/Frontend to ≥5.3.0 (path traversal fix)",
+      "Update express across packages to ≥4.19.0 (QS DoS fix)"
+    ],
+    "medium_term": [
+      "Upgrade express from v4 → v5 (test thoroughly)",
+      "Upgrade pino from v8 → v10 (performance improvements)",
+      "Upgrade uuid from v9 → v14 (resolves CVE + major version gaps)",
+      "Upgrade react from v18 → v19",
+      "Upgrade react-router-dom from v6 → v7"
+    ],
+    "monitoring": [
+      "ts-jest cascading vulns: lock to stable 27.x series",
+      "OpenTelemetry deps (portal): keep current, low risk",
+      "Vite ecosystem: watch for v7 release (breaking changes expected)"
+    ]
+  },
+  "escalations": {
+    "to_team": "TheGuardians",
+    "reason": "3 critical CVEs (RCE, memory safety, auth bypass)",
+    "findings": [
+      "DEP-001 (Vitest RCE)",
+      "DEP-002 (UUID buffer overflow)",
+      "DEP-003 (Vite/Vitest pipeline auth bypass)"
+    ]
+  }
+}

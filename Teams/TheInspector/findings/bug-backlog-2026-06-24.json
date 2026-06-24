@@ -1,0 +1,275 @@
+{
+  "metadata": {
+    "audit_date": "2026-06-24",
+    "run_id": "run-20260624-062214",
+    "branch": "audit/inspector-2026-06-24-453e58",
+    "grade": "D",
+    "grade_rationale": "4 P1 findings exceeds C threshold of max_p1:2. P2 count (7) and spec coverage (~92%) are within acceptable ranges. Grade improves to C once 3 critical CVEs are resolved (drops P1 to 1); improves to B once QO-001 enforcer fix is also done.",
+    "project": "dev-crew Source App",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline at time of audit (localhost:3001 and localhost:5173 unreachable)"
+  },
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 7,
+    "p3_total": 12,
+    "p4_total": 6,
+    "total_findings": 29,
+    "escalations_to_guardians": 3,
+    "spec_coverage_avg_pct": 92,
+    "spec_coverage_by_codebase": {
+      "workflow_engine": { "covered": 13, "total": 13, "pct": 100 },
+      "dev_workflow_platform": { "covered": 73, "total": 85, "pct": 86 },
+      "tiered_merge_pipeline": { "covered": 9, "total": 10, "pct": 90 }
+    }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Arbitrary File Read & Remote Code Execution",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass (CWE-862: Missing Authorization) + RCE",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "package": "vitest@2.0.5",
+      "location": "Source/Frontend/package.json",
+      "fix": "cd Source/Frontend && npm install vitest@^4.1.9",
+      "urgency": "block-deployment"
+    },
+    {
+      "id": "DEP-002",
+      "title": "UUID Buffer Bounds Check Missing — Buffer Overflow & Memory Safety",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "trigger": "memory safety vulnerability in production dependency",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "package": "uuid@9.0.0",
+      "location": "Source/Backend/package.json",
+      "fix": "cd Source/Backend && npm install uuid@^14.0.0",
+      "urgency": "block-deployment"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vite/Vitest Auth Bypass, Path Traversal & Resource Leaks (portal/Backend)",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass in pipeline infrastructure",
+      "package": "vitest<1.5.0",
+      "location": "portal/Backend/package.json",
+      "fix": "cd portal/Backend && npm audit fix",
+      "urgency": "block-deployment"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Traceability Enforcer Blind to portal/ and platform/",
+      "severity": "P1",
+      "category": "tool-failure",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py:72-83",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Extend source_dirs to ['Source', 'E2E', 'portal', 'platform'] in check_traceability(). Also fix regex at line 64 (QO-010) in same PR.",
+      "cross_refs": ["QO-010"],
+      "urgency": "this-sprint"
+    },
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Arbitrary File Read & RCE",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "cwe": ["CWE-862"],
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "urgency": "block-deployment"
+    },
+    {
+      "id": "DEP-002",
+      "title": "UUID Buffer Bounds Check Missing",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "file": "Source/Backend/package.json",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "urgency": "block-deployment"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vite/Vitest Auth Bypass in portal/Backend",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "file": "portal/Backend/package.json",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "urgency": "block-deployment"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "Direct SQL Queries in Portal Route Handler",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "file": "portal/Backend/src/routes/teamDispatches.ts:37-43,72-75",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Extract teamDispatchService.ts. Route handlers call service functions only.",
+      "cross_refs": ["QO-009"],
+      "urgency": "this-sprint"
+    },
+    {
+      "id": "QO-003",
+      "title": "26 Requirement IDs Not in Specifications/",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "fr_ids_affected": "FR-070 to FR-095, FR-DUP-01 to FR-DUP-13",
+      "status": "NEW",
+      "route_to": "requirements-reviewer",
+      "fix": "Add image-upload and duplicate/deprecated sections to Specifications/dev-workflow-platform.md",
+      "urgency": "next-sprint"
+    },
+    {
+      "id": "QO-004",
+      "title": "portal/ FR-dependency-* Traceability at 25% (4 of 16)",
+      "severity": "P2",
+      "category": "traceability",
+      "specialist": "quality-oracle",
+      "file": "portal/Backend/src/services/dependencyService.ts",
+      "untraced_ids": [
+        "FR-dependency-types", "FR-dependency-api-types", "FR-dependency-schema",
+        "FR-dependency-service", "FR-dependency-endpoints", "FR-dependency-search",
+        "FR-dependency-metrics", "FR-dependency-seed", "FR-dependency-backend-tests",
+        "FR-dependency-api-client", "FR-dependency-blocked-badge", "FR-dependency-section",
+        "FR-dependency-picker", "FR-dependency-integration", "FR-dependency-frontend-tests"
+      ],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Add // Verifies: FR-dependency-{id} comments to corresponding portal/ files",
+      "urgency": "next-sprint"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vite server.fs.deny Bypass (Windows Path Traversal)",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "cvss": 7.5,
+      "cwe": ["CWE-22", "CWE-200"],
+      "status": "NEW",
+      "fix": "cd Source/Frontend && npm install vite@^5.3.0",
+      "urgency": "this-sprint"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data CRLF Injection in Multipart Uploads",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "file": "Source/Frontend — form-data transitive",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "cwe": ["CWE-93"],
+      "status": "NEW",
+      "fix": "Update vite/parent deps (resolves transitively)",
+      "urgency": "this-sprint"
+    },
+    {
+      "id": "DEP-006",
+      "title": "ws Memory Exhaustion DoS via WebSocket Frames",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "file": "Source/Frontend — ws transitive via vite",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "cvss": 7.5,
+      "cwe": ["CWE-400", "CWE-770"],
+      "status": "NEW",
+      "fix": "Update vitest/vite deps (resolves transitively)",
+      "urgency": "this-sprint"
+    },
+    {
+      "id": "DEP-007",
+      "title": "portal/Backend Multiple Critical+High CVEs Bundle",
+      "severity": "P2",
+      "category": "CVE-bundle",
+      "specialist": "dependency-auditor",
+      "file": "portal/Backend/package.json",
+      "details": "2 critical + 6 high severity vulnerabilities in portal/Backend dependency tree",
+      "status": "NEW",
+      "fix": "cd portal/Backend && npm audit fix",
+      "urgency": "this-sprint"
+    }
+  ],
+  "p3_findings": [
+    { "id": "QO-005", "title": "eslint-disable Without Justification (react-hooks)", "severity": "P3", "category": "pattern-violation", "specialist": "quality-oracle", "file": "Source/Frontend/src/components/DependencyPicker.tsx:82, hooks/useWorkItems.ts:63", "status": "NEW", "route_to": "TheFixer", "urgency": "backlog" },
+    { "id": "QO-006", "title": "portal/ Routes Acquire DB Connection Directly (getDb)", "severity": "P3", "category": "architecture-violation", "specialist": "quality-oracle", "file": "portal/Backend/src/routes/*.ts (8 files)", "status": "NEW", "route_to": "TheFixer", "urgency": "next-sprint" },
+    { "id": "QO-007", "title": "5 portal/ Files Exceed 500-Line Threshold", "severity": "P3", "category": "pattern-violation", "specialist": "quality-oracle", "files": ["portal/Backend/src/services/cycleService.ts (526)", "portal/Backend/src/services/featureRequestService.ts (506)", "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx (550)", "portal/Frontend/src/components/bugs/BugDetail.tsx (546)", "portal/Frontend/src/api/client.ts (525)"], "status": "NEW", "urgency": "backlog" },
+    { "id": "QO-008", "title": "FR-TMP-008 No In-Code Traceability Anchor", "severity": "P3", "category": "spec-drift", "specialist": "quality-oracle", "file": "platform/Dockerfile.worker:39-40", "status": "NEW", "route_to": "TheFixer", "urgency": "backlog" },
+    { "id": "DEP-008", "title": "react-router-dom Open Redirect via Protocol-Relative URL", "severity": "P3", "category": "CVE", "specialist": "dependency-auditor", "file": "Source/Frontend/package.json", "cve": "GHSA-2j2x-hqr9-3h42", "status": "NEW", "fix": "npm install react-router-dom@^6.30.4", "urgency": "this-sprint" },
+    { "id": "DEP-009", "title": "postcss XSS via Unescaped </style>", "severity": "P3", "category": "CVE", "specialist": "dependency-auditor", "file": "Source/Frontend — postcss transitive", "cve": "GHSA-qx2v-qp2m-jg93", "cvss": 6.1, "status": "NEW", "fix": "Update vite/build chain", "urgency": "this-sprint" },
+    { "id": "DEP-010", "title": "qs DoS via null/undefined in Arrays", "severity": "P3", "category": "CVE", "specialist": "dependency-auditor", "file": "Source/Backend — qs transitive via express", "cve": "GHSA-q8mj-m7cp-5q26", "cvss": 5.3, "status": "NEW", "fix": "Update express to >=4.19.0", "urgency": "next-sprint" },
+    { "id": "DEP-011", "title": "js-yaml Quadratic-Complexity DoS", "severity": "P3", "category": "CVE", "specialist": "dependency-auditor", "file": "Source/Backend — js-yaml transitive via ts-jest", "cve": "GHSA-h67p-54hq-rp68", "cvss": 5.3, "status": "NEW", "urgency": "backlog" },
+    { "id": "DEP-012", "title": "@babel/core Arbitrary File Read via sourceMappingURL", "severity": "P3", "category": "CVE", "specialist": "dependency-auditor", "file": "Source/Backend, portal/Backend — @babel/core transitive", "cve": "GHSA-4x5r-pxfx-6jf8", "cvss": 3.2, "status": "NEW", "urgency": "backlog" },
+    { "id": "DEP-013", "title": "esbuild CORS Bypass — Dev Server Cross-Origin Requests", "severity": "P3", "category": "CVE", "specialist": "dependency-auditor", "file": "Source/Frontend — esbuild transitive via vite", "cve": "GHSA-67mh-4wv8-2f99", "cvss": 5.3, "status": "NEW", "fix": "Update vite (resolves transitively)", "urgency": "this-sprint" },
+    { "id": "DEP-014", "title": "ts-jest Cascading Jest Vulnerabilities", "severity": "P3", "category": "CVE-cascade", "specialist": "dependency-auditor", "file": "Source/Backend — ts-jest dev dependency", "status": "NEW", "urgency": "backlog" },
+    { "id": "DEP-017", "title": "uuid 5 Major Versions Behind + CVE", "severity": "P3", "category": "outdated+CVE", "specialist": "dependency-auditor", "file": "Source/Backend, portal/Backend — uuid@9.0.0", "status": "NEW", "fix": "npm install uuid@^14.0.0 (resolves CVE DEP-002 and outdated)", "urgency": "block-deployment" }
+  ],
+  "p4_findings": [
+    { "id": "QO-009", "title": "Inline TeamDispatch Type in Route Handler", "severity": "P4", "category": "architecture-violation", "specialist": "quality-oracle", "file": "portal/Backend/src/routes/teamDispatches.ts:14-22", "status": "NEW", "route_to": "TheFixer", "urgency": "this-sprint" },
+    { "id": "QO-010", "title": "Enforcer Regex Matches FR-XXX Placeholder IDs", "severity": "P4", "category": "tool-failure", "specialist": "quality-oracle", "file": "tools/traceability-enforcer.py:64", "status": "NEW", "route_to": "TheFixer", "fix": "Tighten regex to require at least one digit. Fix with QO-001 in same PR.", "urgency": "this-sprint" },
+    { "id": "DEP-015", "title": "express 2 Major Versions Behind (v4 → v5)", "severity": "P4", "category": "outdated", "specialist": "dependency-auditor", "files": ["Source/Backend", "portal/Backend", "platform/orchestrator"], "status": "NEW", "urgency": "backlog" },
+    { "id": "DEP-016", "title": "pino 2 Major Versions Behind (v8 → v10)", "severity": "P4", "category": "outdated", "specialist": "dependency-auditor", "file": "Source/Backend", "status": "NEW", "urgency": "backlog" },
+    { "id": "DEP-018", "title": "react 1 Major Version Behind (v18 → v19)", "severity": "P4", "category": "outdated", "specialist": "dependency-auditor", "files": ["Source/Frontend", "portal/Frontend"], "status": "NEW", "urgency": "backlog" },
+    { "id": "DEP-019", "title": "react-router-dom 1 Major Version Behind (v6 → v7)", "severity": "P4", "category": "outdated", "specialist": "dependency-auditor", "file": "Source/Frontend", "status": "NEW", "urgency": "backlog" }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Vitest/Vite ecosystem out-of-date across packages",
+      "affected_findings": ["DEP-001", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-009", "DEP-013"],
+      "single_fix": "Upgrade vitest ≥3.2.6 (Source/Frontend), vitest (portal/Backend), vite ≥5.3.0 (Source/Frontend)",
+      "fix_impact": "7 findings resolved across P1–P3"
+    },
+    {
+      "root_cause": "Traceability enforcer hardcoded scan paths and loose regex",
+      "affected_findings": ["QO-001", "QO-010"],
+      "single_fix": "tools/traceability-enforcer.py — extend source_dirs + tighten FR-ID regex",
+      "fix_impact": "2 findings resolved; CI gate reliable for all 3 codebases"
+    },
+    {
+      "root_cause": "teamDispatches.ts architecture debt",
+      "affected_findings": ["QO-002", "QO-009"],
+      "single_fix": "Extract teamDispatchService.ts + move TeamDispatch type to Shared/types/",
+      "fix_impact": "2 findings resolved; route handler becomes testable"
+    },
+    {
+      "root_cause": "portal/ specification and traceability gaps",
+      "affected_findings": ["QO-003", "QO-004"],
+      "single_fix": "Extend Specifications/dev-workflow-platform.md + add traceability comments to 12 portal/ dependency files",
+      "fix_impact": "2 P2 findings resolved; spec authority restored"
+    }
+  ],
+  "sprint_plan": {
+    "block_deployment": ["DEP-001", "DEP-002", "DEP-003"],
+    "this_sprint": ["QO-001", "QO-010", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-013", "QO-002", "QO-009"],
+    "next_sprint": ["QO-003", "QO-004", "QO-006", "DEP-010"],
+    "backlog": ["QO-005", "QO-007", "QO-008", "DEP-011", "DEP-012", "DEP-014", "DEP-015", "DEP-016", "DEP-017", "DEP-018", "DEP-019"]
+  }
+}

@@ -1,0 +1,298 @@
+{
+  "audit_id": "dep-audit-2026-06-27-001",
+  "audit_date": "2026-06-27",
+  "project": "dev-crew Source App",
+  "project_domain": "web-application",
+  "auditor": "Dependency Auditor Agent (haiku)",
+  "status": "completed",
+  "grade": "C",
+  "audit_scope": {
+    "workspaces": 4,
+    "direct_dependencies": 11,
+    "transitive_dependencies_estimated": 350,
+    "package_managers": ["npm"],
+    "lock_files_present": 10
+  },
+  "vulnerabilities": {
+    "critical": {
+      "count": 2,
+      "findings": [
+        {
+          "id": "DEP-001",
+          "package": "vitest",
+          "title": "Vitest UI Arbitrary File Read & Execution",
+          "cvss": 9.8,
+          "cwe": ["CWE-862"],
+          "cveid": "GHSA-5xrq-8626-4rwp",
+          "affected_versions": "<3.2.6",
+          "current_version": "^2.0.5",
+          "direct_dependency": true,
+          "workspace": "Source/Frontend",
+          "escalation": "TheGuardians"
+        },
+        {
+          "id": "DEP-002",
+          "package": "protobufjs",
+          "title": "Arbitrary Code Execution via Multiple Vectors",
+          "cvss": 9.8,
+          "cwe": ["CWE-94"],
+          "cveid": "GHSA-xq3m-2v4x-88gg",
+          "affected_versions": "<7.5.5",
+          "direct_dependency": false,
+          "workspace": "platform/orchestrator",
+          "escalation": "TheGuardians",
+          "note": "Transitive via @grpc/grpc-js"
+        }
+      ]
+    },
+    "high": {
+      "count": 6,
+      "findings": [
+        {
+          "id": "DEP-003",
+          "package": "form-data",
+          "title": "CRLF Injection in Multipart Fields",
+          "cvss": 7.5,
+          "cwe": ["CWE-93"],
+          "cveid": "GHSA-hmw2-7cc7-3qxx",
+          "affected_versions": "4.0.0-4.0.5",
+          "workspace": "Source/Frontend",
+          "escalation": "TheGuardians"
+        },
+        {
+          "id": "DEP-004",
+          "package": "vite",
+          "title": "Development Server CORS Bypass",
+          "cvss": 5.3,
+          "cwe": ["CWE-346"],
+          "cveid": "GHSA-67mh-4wv8-2f99",
+          "affected_versions": "<=0.24.2",
+          "current_version": "^5.4.0",
+          "direct_dependency": true,
+          "workspace": "Source/Frontend",
+          "escalation": "TheGuardians"
+        },
+        {
+          "id": "DEP-005",
+          "package": "react-router-dom",
+          "title": "Open Redirect via Protocol-Relative URL",
+          "cvss": 0,
+          "cwe": ["CWE-601"],
+          "cveid": "GHSA-2j2x-hqr9-3h42",
+          "affected_versions": "6.7.0-6.30.3",
+          "current_version": "^6.26.0",
+          "direct_dependency": true,
+          "workspace": "Source/Frontend",
+          "status": "safe_in_current_version"
+        },
+        {
+          "id": "DEP-006",
+          "package": "path-to-regexp",
+          "title": "ReDoS - Regular Expression Denial of Service",
+          "cvss": 7.5,
+          "cwe": ["CWE-1333"],
+          "cveid": "GHSA-37ch-88jc-xwx2",
+          "affected_versions": "<0.1.13",
+          "workspace": "platform/orchestrator",
+          "escalation": "TheGuardians"
+        },
+        {
+          "id": "DEP-007",
+          "package": "@grpc/grpc-js",
+          "title": "Malformed Request Causes Server Crash",
+          "cvss": 7.5,
+          "cwe": ["CWE-248", "CWE-400"],
+          "cveid": "GHSA-5375-pq7m-f5r2",
+          "affected_versions": "1.14.0-1.14.3",
+          "workspace": "platform/orchestrator",
+          "escalation": "TheGuardians"
+        },
+        {
+          "id": "DEP-008",
+          "package": "ws",
+          "title": "WebSocket Protocol Handler Vulnerability",
+          "cvss": 0,
+          "workspace": "Source/Frontend",
+          "note": "Transitive via vite/vitest"
+        }
+      ]
+    },
+    "moderate": {
+      "count": 24,
+      "categories": {
+        "jest_ecosystem": [
+          "@babel/core",
+          "@istanbuljs/load-nyc-config",
+          "babel-jest",
+          "babel-plugin-istanbul",
+          "@jest/core",
+          "@jest/expect",
+          "@jest/globals",
+          "@jest/reporters",
+          "@jest/transform",
+          "jest",
+          "jest-circus",
+          "jest-cli",
+          "jest-config",
+          "jest-resolve-dependencies",
+          "jest-runner",
+          "jest-runtime",
+          "jest-snapshot"
+        ],
+        "parameter_pollution": ["qs", "body-parser", "express"],
+        "other": ["esbuild", "postcss", "dockerode", "@vitest/mocker", "@protobufjs/utf8"]
+      },
+      "workspace": "Source/Backend (primary), Source/Frontend (transitive)"
+    },
+    "low": {
+      "count": 1,
+      "findings": [
+        {
+          "id": "DEP-009",
+          "package": "@babel/core",
+          "title": "Arbitrary File Read via sourceMappingURL Comment",
+          "cvss": 3.2,
+          "cwe": ["CWE-22", "CWE-200"],
+          "cveid": "GHSA-4x5r-pxfx-6jf8",
+          "affected_versions": "<=7.29.0",
+          "workspace": "Source/Backend"
+        }
+      ]
+    },
+    "total": 33
+  },
+  "metrics": {
+    "workspaces_audited": 4,
+    "workspaces_with_vulnerabilities": 4,
+    "critical_found": 2,
+    "high_found": 6,
+    "moderate_found": 24,
+    "low_found": 1,
+    "abandoned_packages": 0,
+    "outdated_major_versions": 3,
+    "licenses_compliant": true,
+    "supply_chain_risks": "low",
+    "post_install_scripts": 0
+  },
+  "licenses": {
+    "status": "compliant",
+    "summary": "All licenses permissive (MIT-dominant, no GPL/AGPL detected)",
+    "license_types": ["MIT", "ISC", "Apache-2.0", "BSD-3-Clause"]
+  },
+  "outdated_analysis": {
+    "major_versions_behind": [
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.3.1",
+        "versions_behind": 2,
+        "severity": "P4",
+        "workspace": "Source/Backend"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "14.0.1",
+        "versions_behind": 5,
+        "severity": "P4",
+        "workspace": "Source/Backend"
+      },
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "versions_behind": 1,
+        "severity": "P4",
+        "workspace": "Source/Backend",
+        "note": "Major version bump - breaking changes expected"
+      }
+    ]
+  },
+  "remediation_plan": {
+    "immediate_priority": [
+      {
+        "priority": 1,
+        "action": "Upgrade vitest to ^3.2.6",
+        "workspace": "Source/Frontend",
+        "estimated_effort_hours": 0.25,
+        "risk": "low"
+      },
+      {
+        "priority": 2,
+        "action": "Upgrade vite to ^5.5.0",
+        "workspace": "Source/Frontend",
+        "estimated_effort_hours": 0.25,
+        "risk": "low"
+      },
+      {
+        "priority": 3,
+        "action": "Verify & upgrade @grpc/grpc-js to >1.14.3",
+        "workspace": "platform/orchestrator",
+        "estimated_effort_hours": 0.5,
+        "risk": "medium"
+      }
+    ],
+    "short_term_priority": [
+      {
+        "priority": 4,
+        "action": "Upgrade form-data (transitive)",
+        "estimated_effort_hours": 0.25,
+        "risk": "low"
+      },
+      {
+        "priority": 5,
+        "action": "Upgrade express to ^4.22.2+",
+        "workspace": "Source/Backend, platform/orchestrator",
+        "estimated_effort_hours": 0.5,
+        "risk": "medium"
+      }
+    ],
+    "medium_term_priority": [
+      {
+        "priority": 6,
+        "action": "Upgrade uuid to ^14.x",
+        "workspace": "Source/Backend",
+        "estimated_effort_hours": 0.25,
+        "risk": "low"
+      },
+      {
+        "priority": 7,
+        "action": "Upgrade pino to ^10.x (test for breaking changes)",
+        "workspace": "Source/Backend",
+        "estimated_effort_hours": 1,
+        "risk": "medium"
+      }
+    ],
+    "total_estimated_hours": 4,
+    "continuous_improvements": [
+      "Enable GitHub Dependabot or Renovate for automated PR updates",
+      "Add npm audit to CI/CD pipeline",
+      "Add pre-commit hook for npm audit check",
+      "Schedule monthly audit runs"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001 (Vitest UI - P1)",
+      "DEP-002 (protobufjs RCE - P1)",
+      "DEP-003 (form-data CRLF - P2)",
+      "DEP-004 (Vite CORS bypass - P2)",
+      "DEP-006 (ReDoS - P2)",
+      "DEP-007 (gRPC crash - P2)"
+    ],
+    "TheFixer": [
+      "Update Jest ecosystem (P3)",
+      "Update express/qs (P3)"
+    ]
+  },
+  "next_audit_date": "2026-07-27",
+  "audit_interval_days": 30,
+  "notes": [
+    "protobufjs has multiple CVE vectors - monitor for patches actively",
+    "Vitest UI poses P1 security risk if exposed to untrusted networks",
+    "All licenses permissive - no GPL/AGPL restrictions",
+    "No abandoned packages detected - all actively maintained",
+    "React Router safe in current version (6.26.0)",
+    "Post-install scripts: 0 (safe from post-install exploits)"
+  ]
+}

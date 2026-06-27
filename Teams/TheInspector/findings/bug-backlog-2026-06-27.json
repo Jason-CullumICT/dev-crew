@@ -1,0 +1,363 @@
+{
+  "audit_id": "inspector-2026-06-27",
+  "audit_date": "2026-06-27",
+  "branch": "audit/inspector-2026-06-27-6f7a69",
+  "grade": "D",
+  "generated_by": "team_leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services not running (static-only mode)",
+
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 9,
+    "p3_total": 7,
+    "p4_total": 2,
+    "total": 21,
+    "fixed_total": 0,
+    "new_total": 21,
+    "still_open_total": 0,
+    "regressed_total": 0,
+    "escalations_to_guardians": 6,
+    "fixer_backlog_items": 15
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Arbitrary File Read & Execution",
+      "severity": "P1",
+      "category": "cve/missing-authorization",
+      "cvss": 9.8,
+      "cwe": ["CWE-862"],
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "source_specialist": "dependency-auditor",
+      "file": "Source/Frontend/package.json",
+      "package": "vitest@^2.0.5",
+      "fix": "npm install vitest@^3.2.6 in Source/Frontend",
+      "escalate_to": "TheGuardians",
+      "trigger": "missing access control + sensitive data exposed",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs Arbitrary Code Execution (Multiple Vectors)",
+      "severity": "P1",
+      "category": "cve/injection",
+      "cvss": 9.8,
+      "cwe": ["CWE-94"],
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "source_specialist": "dependency-auditor",
+      "file": "platform/orchestrator/package.json",
+      "package": "protobufjs (transitive via @grpc/grpc-js)",
+      "fix": "Upgrade @grpc/grpc-js to >1.14.3 in platform/orchestrator",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "title": "form-data CRLF Injection",
+      "severity": "P2",
+      "category": "cve/injection",
+      "cvss": 7.5,
+      "cwe": ["CWE-93"],
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "source_specialist": "dependency-auditor",
+      "file": "Source/Frontend (transitive)",
+      "package": "form-data@4.0.0-4.0.5",
+      "fix": "npm install form-data@^4.0.6",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vite Dev Server CORS Bypass",
+      "severity": "P2",
+      "category": "cve/security-bypass",
+      "cvss": 5.3,
+      "cwe": ["CWE-346"],
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "source_specialist": "dependency-auditor",
+      "file": "Source/Frontend/package.json",
+      "package": "vite@^5.4.0",
+      "fix": "npm install vite@^5.5.0 in Source/Frontend",
+      "escalate_to": "TheGuardians",
+      "trigger": "missing access control",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "path-to-regexp ReDoS",
+      "severity": "P2",
+      "category": "cve/denial-of-service",
+      "cvss": 7.5,
+      "cwe": ["CWE-1333"],
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "source_specialist": "dependency-auditor",
+      "file": "platform/orchestrator (transitive via express)",
+      "package": "path-to-regexp@<0.1.13",
+      "fix": "Upgrade express in platform/orchestrator to pull fixed path-to-regexp",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection (regex input not sanitized)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "@grpc/grpc-js Malformed Request Server Crash",
+      "severity": "P2",
+      "category": "cve/denial-of-service",
+      "cvss": 7.5,
+      "cwe": ["CWE-248", "CWE-400"],
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "source_specialist": "dependency-auditor",
+      "file": "platform/orchestrator/package.json",
+      "package": "@grpc/grpc-js@1.14.0-1.14.3",
+      "fix": "Upgrade @grpc/grpc-js to >1.14.3 in platform/orchestrator",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection (malformed gRPC message)",
+      "status": "NEW",
+      "cross_ref": "DEP-002 — same upgrade resolves both"
+    }
+  ],
+
+  "backlog": [
+    {
+      "id": "QO-001",
+      "title": "Inspector scope mismatch — traceability enforcer reports false green",
+      "severity": "P1",
+      "category": "spec-drift/architecture-violation",
+      "source_specialist": "quality-oracle",
+      "files": ["Teams/TheInspector/inspector.config.yml", "tools/traceability-enforcer.py"],
+      "detail": "inspector.config.yml declares source.dirs: [\"Source/\"] but 74 FRs live in portal/ and 10 FR-TMP-* are never scanned anywhere. CI gate reports PASSED while two specs are entirely untraced.",
+      "fix": "1) Add portal/Backend and portal/Frontend to source.dirs in inspector.config.yml. 2) Add --source-dir flag to traceability-enforcer.py. 3) Add second enforcer invocation in CLAUDE.md for portal/. 4) Document FR-TMP-* ownership.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Block deployment"
+    },
+    {
+      "id": "QO-002",
+      "title": "Route handlers directly access store, bypassing service layer",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source_specialist": "quality-oracle",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "detail": "All three route files call store.* methods directly from Express handlers. CLAUDE.md mandates service layer. Makes routes untestable without touching the store.",
+      "fix": "Introduce workItemService.ts wrapping workItemStore. Route handlers call service only.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "This sprint"
+    },
+    {
+      "id": "QO-003",
+      "title": "OpenTelemetry tracing absent from Source/ backend",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source_specialist": "quality-oracle",
+      "files": ["Source/Backend/"],
+      "detail": "No @opentelemetry packages, no spans, no traceparent propagation. portal/ implements this correctly. FR-WF-013 (distributed tracing) unmet.",
+      "fix": "Add @opentelemetry/sdk-node and initialize in app.ts following portal/Backend/src/lib/tracing.ts pattern. Add // Verifies: FR-WF-013.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "This sprint"
+    },
+    {
+      "id": "QO-004",
+      "title": "Tiered-merge-pipeline spec: 10/10 FRs untraced",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source_specialist": "quality-oracle",
+      "files": ["Specifications/tiered-merge-pipeline.md"],
+      "detail": "FR-TMP-001 through FR-TMP-010 have zero traceability references in Source/ or E2E/. Likely in platform/ (solo-session territory) but ownership undocumented.",
+      "fix": "Document FR-TMP-* ownership in inspector.config.yml. Either point enforcer at platform/ or explicitly note out-of-scope.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "This sprint"
+    },
+    {
+      "id": "QO-005",
+      "title": "dependency_check_duration histogram missing from metrics.ts",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source_specialist": "quality-oracle",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "detail": "FR-dependency-metrics specifies 4 Prometheus metrics; dependencyCheckDuration histogram is absent. BFS cycle-detection latency unobservable.",
+      "fix": "Add dependencyCheckDuration Histogram to metrics.ts. Instrument DependencyService.isReady() and detectCycle().",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "This sprint"
+    },
+    {
+      "id": "DEP-008",
+      "title": "ws WebSocket protocol handler vulnerability",
+      "severity": "P2",
+      "category": "cve",
+      "source_specialist": "dependency-auditor",
+      "files": ["Source/Frontend (transitive via vite/vitest)"],
+      "detail": "Older ws version via dev toolchain. Resolved by upgrading vite and vitest (covered by DEP-001 and DEP-004 fixes).",
+      "fix": "Upgrade vite@^5.5.0 and vitest@^3.2.6 (resolves transitively).",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "This sprint",
+      "cross_ref": "DEP-001, DEP-004 — same upgrade resolves this"
+    },
+    {
+      "id": "QO-006",
+      "title": "portal/teamDispatches route has direct DB access",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "source_specialist": "quality-oracle",
+      "files": ["portal/Backend/src/routes/teamDispatches.ts"],
+      "detail": "db.prepare().all() and db.prepare().run() called directly in route handler. All other portal routes correctly use service layer.",
+      "fix": "Extract teamDispatchService.ts with listDispatches() and createDispatch() methods.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Next sprint"
+    },
+    {
+      "id": "QO-007",
+      "title": "Duplicate logger abstraction in Source/Backend",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source_specialist": "quality-oracle",
+      "files": [
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "detail": "Two logger modules: utils/logger.ts (canonical) and logger.ts (shim). Confuses import paths; shim is a coordination workaround, not a design decision.",
+      "fix": "Pick utils/logger.ts as the only logger. Update all callers. Delete the shim.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Next sprint"
+    },
+    {
+      "id": "QO-008",
+      "title": "eslint-disable suppressing hook exhaustive-deps without rationale",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source_specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "detail": "Two eslint-disable comments suppress react-hooks/exhaustive-deps without inline justification. Hidden lint debt.",
+      "fix": "Add rationale comment to each suppression. Consider useCallback/useMemo to eliminate need.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Next sprint"
+    },
+    {
+      "id": "DEP-009-JEST",
+      "title": "Jest ecosystem moderate CVEs (multiple packages)",
+      "severity": "P3",
+      "category": "cve/dev-dependency",
+      "source_specialist": "dependency-auditor",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "detail": "24+ moderate CVEs in Jest ecosystem via @babel/core, @istanbuljs, babel-plugin-istanbul, jest-snapshot, jest-runner, etc. Dev/test environment only.",
+      "fix": "Upgrade jest to ^30.x. Run full test suite after upgrade.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Next sprint"
+    },
+    {
+      "id": "DEP-010",
+      "title": "express & qs parameter pollution (moderate)",
+      "severity": "P3",
+      "category": "cve/query-string",
+      "source_specialist": "dependency-auditor",
+      "files": [
+        "Source/Backend/package.json",
+        "platform/orchestrator/package.json"
+      ],
+      "detail": "qs parsing allows query parameter pollution attacks via older express versions. Medium impact depending on query param handling.",
+      "fix": "Upgrade express to ^4.22.2 in Backend and Orchestrator.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Next sprint"
+    },
+    {
+      "id": "DEP-011",
+      "title": "uuid outdated 5 major versions behind",
+      "severity": "P3",
+      "category": "outdated",
+      "source_specialist": "dependency-auditor",
+      "files": ["Source/Backend/package.json"],
+      "detail": "uuid@9.0.0 installed; latest is 14.0.1. Functional but indicates dependency drift.",
+      "fix": "npm install uuid@^14.0.0 in Source/Backend. Update @types/uuid.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Backlog"
+    },
+    {
+      "id": "DEP-012",
+      "title": "esbuild & postcss moderate CVEs via dev toolchain",
+      "severity": "P3",
+      "category": "cve/dev-dependency",
+      "source_specialist": "dependency-auditor",
+      "files": ["Source/Frontend (transitive)"],
+      "detail": "esbuild CORS bypass (resolved by vite upgrade). postcss XSS via unescaped </style> in CSS output. Dev toolchain only.",
+      "fix": "Upgrade vite@^5.5.0 resolves esbuild. postcss: upgrade separately if XSS is a CI risk.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Next sprint"
+    },
+    {
+      "id": "QO-009",
+      "title": "Spec regex false-positive on data entity IDs FR-0004, FR-0007",
+      "severity": "P4",
+      "category": "doc-stale",
+      "source_specialist": "quality-oracle",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "detail": "Seed data description uses FR-0004 and FR-0007 as database record IDs. Enforcer regex matches them as missing spec requirements (2 false positives).",
+      "fix": "Wrap seed data IDs in backticks or add a note distinguishing them from requirement IDs.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Backlog"
+    },
+    {
+      "id": "DEP-013",
+      "title": "pino & uuid minor outdated versions",
+      "severity": "P4",
+      "category": "outdated",
+      "source_specialist": "dependency-auditor",
+      "files": ["Source/Backend/package.json"],
+      "detail": "pino@8.x (latest 10.x, 2 major behind). prom-client at latest patch. Minor drift, no known security impact.",
+      "fix": "Upgrade pino@^10.x with breaking-change testing. prom-client: no action needed.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "priority_action": "Backlog"
+    }
+  ],
+
+  "cross_reference_map": [
+    {
+      "root_cause": "platform/orchestrator gRPC dependency chain",
+      "affected_findings": ["DEP-002", "DEP-007"],
+      "single_fix": "Upgrade @grpc/grpc-js to >1.14.3 in platform/orchestrator",
+      "fix_impact": "Resolves protobufjs RCE (P1) and gRPC crash (P2) in one operation"
+    },
+    {
+      "root_cause": "Source/Frontend dev toolchain versions (vitest + vite)",
+      "affected_findings": ["DEP-001", "DEP-004", "DEP-008", "DEP-012"],
+      "single_fix": "npm install vitest@^3.2.6 vite@^5.5.0 in Source/Frontend",
+      "fix_impact": "Resolves Vitest RCE (P1), Vite CORS bypass (P2), ws vuln (P2), esbuild CORS (P3) in one PR"
+    },
+    {
+      "root_cause": "Service layer pattern not enforced in route handlers",
+      "affected_findings": ["QO-002", "QO-006"],
+      "single_fix": "Add lint rule enforcing no db.* or store.* calls in routes/; introduce service objects for workItems and teamDispatches",
+      "fix_impact": "Resolves architecture violations in Source/Backend (P2) and portal/Backend (P3)"
+    },
+    {
+      "root_cause": "Traceability enforcer scope incomplete",
+      "affected_findings": ["QO-001", "QO-004"],
+      "single_fix": "Extend inspector.config.yml source.dirs and add portal/ + FR-TMP-* enforcement",
+      "fix_impact": "Resolves false-green P1 enforcement gate and untraced TMP spec (P2) together"
+    }
+  ]
+}

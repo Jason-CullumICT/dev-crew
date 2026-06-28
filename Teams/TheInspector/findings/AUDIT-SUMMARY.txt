@@ -1,0 +1,209 @@
+================================================================================
+  DEPENDENCY AUDITOR — COMPREHENSIVE AUDIT REPORT
+  2026-06-28
+================================================================================
+
+GRADE: D (CRITICAL VULNERABILITIES PRESENT)
+STATUS: ⚠️ URGENT — Multiple exploitable vulnerabilities detected
+
+================================================================================
+SNAPSHOT
+================================================================================
+
+Total CVEs Detected:           81
+├─ Critical (P1):             3
+├─ High (P2):                 6
+├─ Moderate (P3):            46+
+└─ Low/Info:                  1
+
+Workspaces Scanned:           4 npm workspaces
+├─ portal/Backend:           8 CVEs (2 critical, 6 high) ⚠️ URGENT
+├─ Source/Backend:           2 CVEs (1 critical, 1 high)
+├─ Source/Frontend:          4 CVEs (1 critical, 3 high)
+└─ portal/Frontend:          5 CVEs (1 critical, 4 high)
+
+Dependency Tree Size:        ~1,640 transitive deps (moderate risk)
+├─ Production:                ~506 deps ✓
+└─ Development:              ~1,134 deps (test/build tools)
+
+Outdated Major Versions:      5+ packages (uuid, react, OpenTelemetry)
+
+================================================================================
+CRITICAL VULNERABILITIES (MUST FIX THIS SPRINT)
+================================================================================
+
+[DEP-001] protobufjs → Arbitrary Code Execution (RCE)
+  Package:    protobufjs (transitive via @opentelemetry)
+  Location:   portal/Backend
+  CVE:        GHSA-3m87-5598-2v4f
+  CVSS:       9.8 (Critical)
+  Impact:     Attacker can execute arbitrary code via crafted protobuf messages
+  Fix:        npm install @opentelemetry/auto-instrumentations-node@0.77.0+
+
+[DEP-002] Vitest UI → Arbitrary File Read & Execution
+  Package:    vitest (direct in all test workspaces)
+  Locations:  Source/Frontend, portal/Frontend, portal/Backend
+  CVE:        GHSA-7gl6-jjg9-7vf9
+  CVSS:       8.1 (High)
+  Impact:     During test runs, Vitest UI leaks .env secrets and source code
+  Risk:       Developer machines, CI/CD environments
+  Fix:        npm install vitest@2.3.0+ (frontend), vitest@1.7.0+ (backend)
+
+[DEP-003] Handlebars.js → JavaScript Injection
+  Package:    handlebars (transitive via ts-jest)
+  Location:   Source/Backend
+  CVE:        GHSA-2cf5-4w76-r9qm
+  CVSS:       9.6 (Critical)
+  Impact:     Template injection → JavaScript code execution
+  Fix:        npm install ts-jest@27.0.3+
+
+================================================================================
+HIGH-SEVERITY VULNERABILITIES (FIX THIS SPRINT)
+================================================================================
+
+[DEP-004] @opentelemetry/auto-instrumentations-node → Prometheus DoS
+  CVE: GHSA-q7rr-3cgh-j5r3 | CVSS: 7.5
+  Fix: npm install @opentelemetry/auto-instrumentations-node@0.77.0+
+
+[DEP-005] @opentelemetry/core → Unbounded Memory Allocation
+  CVE: GHSA-8988-4f7v-96qf | CVSS: 5.3
+  Fix: npm install @opentelemetry/sdk-node@0.219.0+
+
+[DEP-006] form-data → CRLF Header Injection
+  CVE: GHSA-hmw2-7cc7-3qxx | CVSS: 7.5
+  Fix: npm audit --fix
+
+[DEP-007] react-router-dom → Open Redirect
+  CVE: GHSA-2j2x-hqr9-3h42
+  Locations: Source/Frontend (6.26.0), portal/Frontend (6.22.0)
+  Fix: npm install react-router-dom@6.30.4+
+
+[DEP-008] Vite → Path Traversal & fs.deny Bypass
+  CVE: GHSA-4w7w-66w2-5vf9, GHSA-fx2h-pf6j-xcff
+  Locations: Source/Frontend (5.4.0), portal/Frontend (5.2.0)
+  Fix: npm install vite@6.5.0+ (or @5.3.0+ for portal)
+
+[DEP-009] @grpc/grpc-js → Server Crash
+  CVE: GHSA-5375-pq7m-f5r2 | CVSS: 7.5
+  Fix: Transitive; check via npm audit
+
+================================================================================
+OUTDATED MAJOR VERSIONS
+================================================================================
+
+Package                       Current        Latest         Gap
+────────────────────────────────────────────────────────────────────
+@opentelemetry/*             0.40–0.47      0.219.0+       6+ majors ⚠️
+uuid                          9.0.0          14.0.1         5 majors
+react                         18.2–18.3      19.2.7         1 major
+react-dom                     18.2–18.3      19.2.7         1 major
+multer                        1.4.5-lts      2.2.0          1 major
+pino                          8.17.0         10.3.1         2 majors
+
+================================================================================
+REMEDIATION PLAN
+================================================================================
+
+IMMEDIATE (This Week)
+├─ Upgrade OpenTelemetry suite (portal/Backend)
+│  └─ Fix: protobufjs RCE, Prometheus DoS, memory issues
+├─ Upgrade Vitest (all workspaces)
+│  └─ Fix: arbitrary file read in dev environment
+└─ Test: npm test --workspaces --if-present
+
+SHORT-TERM (Next 2 Weeks)
+├─ Upgrade React + react-router-dom
+├─ Upgrade Vite (both frontends)
+├─ Upgrade PostCSS (portal/Frontend)
+├─ Run: npm audit --fix && npm test
+
+MEDIUM-TERM (Next Sprint)
+├─ Audit licenses: npx license-checker --json
+├─ Align dependency versions (pino, uuid)
+└─ Add npm audit gate to CI/CD
+
+================================================================================
+CROSS-TEAM ESCALATIONS
+================================================================================
+
+→ TheGuardians (ESCALATE)
+  Critical findings that are exploitable in production:
+  • DEP-001: protobufjs RCE (code execution via crafted protobuf)
+  • DEP-002: Vitest file read (dev secrets leak)
+  • DEP-003: Handlebars injection (template code execution)
+
+  Action: Security review, threat modeling, exploit assessment
+
+================================================================================
+VERIFICATION GATES (Before Marking Complete)
+================================================================================
+
+Run these commands after applying fixes:
+
+  npm audit --json | jq '.metadata.vulnerabilities'
+
+  Expected output after fixes:
+    "critical": 0
+    "high": 0 (or minimal remaining)
+
+  npm test --workspaces --if-present
+  # All tests must pass; zero new failures
+
+  cd portal/Backend && npm audit
+  cd Source/Backend && npm audit
+  cd Source/Frontend && npm audit
+  cd portal/Frontend && npm audit
+  # All workspaces should show zero critical/high CVEs
+
+================================================================================
+REPORTS GENERATED
+================================================================================
+
+Full Audit Report:
+  → Teams/TheInspector/findings/dependency-audit-2026-06-28.md (497 lines)
+    • Complete vulnerability details
+    • Fix commands for each CVE
+    • Outdated package analysis
+    • Supply chain risk assessment
+
+JSON Summary:
+  → Teams/TheInspector/findings/dependency-audit-summary-2026-06-28.json
+    • Machine-readable format for automation
+    • Metrics and grading
+
+Learnings (Persistent):
+  → Teams/TheInspector/learnings/dependency-auditor.md
+    • Watch list for recurring CVEs
+    • Dependency history
+    • CI/CD recommendations
+
+================================================================================
+METRICS
+================================================================================
+
+Dependency Health Score: D (Critical vulnerabilities present)
+  • Grade A: max_p1=0, max_p2≤3
+  • Grade D: p1 vulnerabilities present (threshold violated)
+
+Supply Chain Risk: MODERATE
+  • 1,640 transitive dependencies (>500 = concern threshold)
+  • No post-install scripts detected (✓ good)
+  • Recommend: Use npm ci in CI/CD (locks dependency tree)
+
+Remediation Effort: 4–6 hours
+  • Upgrade time: ~1 hour (npm updates)
+  • Testing time: ~2–3 hours (full test suite)
+  • Deployment: ~1 hour (verify metrics, restart services)
+
+================================================================================
+NEXT REVIEW
+================================================================================
+
+Scheduled: 2026-07-28 (monthly)
+Trigger:   After major dependency upgrades or on security advisory alert
+
+================================================================================
+Generated by: dependency_auditor (Haiku)
+Date: 2026-06-28
+Command: npm audit --json (all workspaces)
+================================================================================

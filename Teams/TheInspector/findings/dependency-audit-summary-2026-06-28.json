@@ -1,0 +1,210 @@
+{
+  "audit_date": "2026-06-28",
+  "agent": "dependency_auditor",
+  "grade": "D",
+  "status": "CRITICAL",
+  "summary": {
+    "total_cves": 81,
+    "critical": 3,
+    "high": 6,
+    "moderate": 46,
+    "low": 1,
+    "outdated_major_versions": 5
+  },
+  "workspaces": {
+    "portal/Backend": {
+      "direct_deps": 11,
+      "transitive_deps": 578,
+      "prod_deps": 397,
+      "dev_deps": 181,
+      "cves_critical": 2,
+      "cves_high": 6,
+      "cves_moderate": 24,
+      "status": "URGENT"
+    },
+    "Source/Backend": {
+      "direct_deps": 8,
+      "transitive_deps": 412,
+      "prod_deps": 102,
+      "dev_deps": 310,
+      "cves_critical": 1,
+      "cves_high": 1,
+      "cves_moderate": 24,
+      "status": "HIGH"
+    },
+    "Source/Frontend": {
+      "direct_deps": 3,
+      "transitive_deps": 300,
+      "prod_deps": 3,
+      "dev_deps": 297,
+      "cves_critical": 1,
+      "cves_high": 3,
+      "cves_moderate": 20,
+      "status": "HIGH"
+    },
+    "portal/Frontend": {
+      "direct_deps": 3,
+      "transitive_deps": 300,
+      "prod_deps": 3,
+      "dev_deps": 297,
+      "cves_critical": 1,
+      "cves_high": 4,
+      "cves_moderate": 25,
+      "status": "HIGH"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "protobufjs – Arbitrary Code Execution",
+      "severity": "P1",
+      "cve": "GHSA-3m87-5598-2v4f",
+      "package": "protobufjs",
+      "location": "portal/Backend (transitive)",
+      "cvss": 9.8,
+      "exploitable": true,
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node → 0.77.0+"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI – Arbitrary File Read & Execution",
+      "severity": "P1",
+      "cve": "GHSA-7gl6-jjg9-7vf9",
+      "package": "vitest",
+      "locations": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "cvss": 8.1,
+      "exploitable": true,
+      "fix": "Upgrade vitest → 2.3.0+ (frontend), 1.7.0+ (backend)"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Handlebars.js – JavaScript Injection",
+      "severity": "P1",
+      "cve": "GHSA-2cf5-4w76-r9qm",
+      "package": "handlebars",
+      "location": "Source/Backend (transitive)",
+      "cvss": 9.6,
+      "exploitable": true,
+      "fix": "Upgrade ts-jest → 27.0.3+"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "OpenTelemetry Auto-Instrumentation – Prometheus DoS",
+      "severity": "P2",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "location": "portal/Backend",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-005",
+      "title": "OpenTelemetry Core – Unbounded Memory Allocation",
+      "severity": "P2",
+      "cve": "GHSA-8988-4f7v-96qf",
+      "package": "@opentelemetry/core",
+      "location": "portal/Backend (transitive)",
+      "cvss": 5.3
+    },
+    {
+      "id": "DEP-006",
+      "title": "form-data – CRLF Injection",
+      "severity": "P2",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "package": "form-data",
+      "locations": ["Source/Backend", "portal/Backend"],
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-007",
+      "title": "React Router – Open Redirect",
+      "severity": "P2",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "package": "react-router-dom",
+      "locations": ["Source/Frontend", "portal/Frontend"],
+      "cvss": 0,
+      "note": "CVSS metadata missing, but impact is high"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vite – Path Traversal & fs.deny Bypass",
+      "severity": "P2",
+      "cve": "GHSA-4w7w-66w2-5vf9, GHSA-fx2h-pf6j-xcff",
+      "package": "vite",
+      "locations": ["Source/Frontend", "portal/Frontend"],
+      "cvss": "5.3-7.5"
+    },
+    {
+      "id": "DEP-009",
+      "title": "@grpc/grpc-js – Server Crash",
+      "severity": "P2",
+      "cve": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq",
+      "package": "@grpc/grpc-js",
+      "location": "portal/Backend (transitive)",
+      "cvss": 7.5
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "majors_behind": 5,
+      "severity": "P3"
+    },
+    {
+      "package": "react",
+      "current": "18.2-18.3",
+      "latest": "19.2.7",
+      "majors_behind": 1,
+      "severity": "P3"
+    },
+    {
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "current": "0.40.0",
+      "latest": "0.77.0",
+      "majors_behind": 6,
+      "severity": "P2"
+    },
+    {
+      "package": "@opentelemetry/sdk-node",
+      "current": "0.47.0",
+      "latest": "0.219.0",
+      "majors_behind": 6,
+      "severity": "P2"
+    }
+  ],
+  "metrics": {
+    "total_direct_dependencies": 26,
+    "total_transitive_dependencies": 1640,
+    "total_production_dependencies": 506,
+    "total_development_dependencies": 1134,
+    "supply_chain_risk": "MODERATE"
+  },
+  "recommendations": {
+    "immediate": [
+      "Upgrade OpenTelemetry suite (protobufjs RCE fix)",
+      "Upgrade vitest (arbitrary file read fix)",
+      "Fix Handlebars/ts-jest (JavaScript injection fix)"
+    ],
+    "short_term": [
+      "Upgrade React/React-Router (open redirect fix)",
+      "Upgrade Vite (path traversal fix)",
+      "Upgrade PostCSS (XSS fix)",
+      "Align dependency versions across workspaces"
+    ],
+    "medium_term": [
+      "Add npm audit gate to CI/CD",
+      "Audit licenses with license-checker",
+      "Consider migration to pnpm workspaces"
+    ]
+  },
+  "escalation": {
+    "team": "TheGuardians",
+    "trigger": "Multiple critical vulnerabilities (RCE, arbitrary file read, injection)",
+    "findings": ["DEP-001", "DEP-002", "DEP-003"]
+  },
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-06-28.md",
+  "next_review": "2026-07-28"
+}

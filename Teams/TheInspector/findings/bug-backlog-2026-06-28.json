@@ -1,0 +1,333 @@
+{
+  "audit_date": "2026-06-28",
+  "run_id": "run-20260628-063513",
+  "branch": "audit/inspector-2026-06-28-d0e657",
+  "grade": "D",
+  "grade_rationale": "4 P1 findings exceeds Grade C threshold (max_p1=2). Grade D applies.",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 11,
+    "p3_total": 5,
+    "p4_total": 1,
+    "escalations_total": 3,
+    "spec_coverage_pct": 79
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "protobufjs — Arbitrary Code Execution (RCE)",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "cve": "GHSA-3m87-5598-2v4f",
+      "cvss": 9.8,
+      "package": "protobufjs",
+      "location": "portal/Backend (transitive via @opentelemetry/auto-instrumentations-node@0.40.0)",
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "RCE — full server compromise, zero-precondition",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node → 0.77.0+ in portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI — Arbitrary File Read & Execution",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "cve": "GHSA-7gl6-jjg9-7vf9",
+      "cvss": 8.1,
+      "package": "vitest",
+      "locations": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "sensitive data exposed — .env secrets readable by any network user",
+      "fix": "Upgrade vitest → 2.3.0+ (Source/Frontend, portal/Frontend), → 1.7.0+ (portal/Backend)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Handlebars.js — JavaScript Injection",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "cve": "GHSA-2cf5-4w76-r9qm",
+      "cvss": 9.6,
+      "package": "handlebars",
+      "location": "Source/Backend (transitive via ts-jest)",
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "injection — JavaScript execution via template input",
+      "fix": "Upgrade ts-jest → 27.0.3+ in Source/Backend",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search NOT registered in app.ts",
+      "severity": "P1",
+      "source": "quality-oracle",
+      "category": "unimplemented-requirement",
+      "spec_ref": "FR-dependency-search",
+      "file": "Source/Backend/src/app.ts",
+      "impact": "DependencyPicker typeahead returns 404 in production — dependency linking UI is broken",
+      "fix": "Create Source/Backend/src/routes/search.ts, register in app.ts. Test suite already written.",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "dependencyCheckDuration Histogram missing from metrics",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "spec_ref": "FR-dependency-metrics",
+      "file": "Source/Backend/src/metrics.ts",
+      "fix": "Add dependencyCheckDuration Histogram, wrap computeHasUnresolvedBlockers with .startTimer()/.observe()",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "title": "BlockedBadge missing amber pending_dependencies state",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "spec_ref": "FR-dependency-blocked-badge",
+      "file": "Source/Frontend/src/components/BlockedBadge.tsx",
+      "cross_ref": "QO-004 — same root cause (pending_dependencies status absent from codebase)",
+      "fix": "Add status prop to BlockedBadge, render amber badge when status==='pending_dependencies'",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "title": "FR-dependency-dispatch-gating: 400 error instead of pending_dependencies transition",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "spec_ref": "FR-dependency-dispatch-gating",
+      "file": "Source/Backend/src/routes/workflow.ts:230-245",
+      "cross_ref": "QO-003 — same root cause (pending_dependencies status absent)",
+      "fix": "Option A: Add pending_dependencies to WorkItemStatus enum and implement status transition. Option B: Update spec to document 400-error approach.",
+      "route": "TheFixer (if option A) / requirements-reviewer (if option B)",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "title": "Traceability enforcer targets most-recently-modified plan only",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "file": "tools/traceability-enforcer.py:49-57",
+      "cross_ref": "QO-001 — missing search route went undetected due to enforcer blind spot",
+      "fix": "Update CLAUDE.md verification gates to run enforcer for each plan explicitly",
+      "route": "solo-session (tools/ owned by solo-session)",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "title": "portal/ missing FR-dependency-api-types and FR-dependency-seed",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "unimplemented-requirement",
+      "spec_ref": "FR-dependency-api-types, FR-dependency-seed",
+      "files": ["portal/Shared/api.ts", "portal/Backend/src/database/"],
+      "fix": "Add blocked_by?: string[] to UpdateBugInput and UpdateFeatureRequestInput in portal/Shared/api.ts; create portal/Backend/src/database/seed.ts",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "OpenTelemetry Auto-Instrumentation — Prometheus DoS",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "vulnerability",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "location": "portal/Backend",
+      "cross_ref": "DEP-001 — same root cause (outdated @opentelemetry suite)",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node → 0.77.0+ (same fix as DEP-001)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "OpenTelemetry Core — Unbounded Memory Allocation",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "vulnerability",
+      "cve": "GHSA-8988-4f7v-96qf",
+      "cvss": 5.3,
+      "package": "@opentelemetry/core",
+      "location": "portal/Backend (transitive)",
+      "cross_ref": "DEP-001 — same root cause (outdated @opentelemetry suite)",
+      "fix": "Upgrade @opentelemetry/sdk-node → 0.219.0+ (resolves transitive @opentelemetry/core)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "form-data — CRLF Injection in multipart uploads",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "vulnerability",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "package": "form-data",
+      "locations": ["Source/Backend", "portal/Backend"],
+      "fix": "Upgrade form-data → 4.0.6+ in all workspaces",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "React Router — Open Redirect",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "vulnerability",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "package": "react-router-dom",
+      "locations": ["Source/Frontend", "portal/Frontend"],
+      "fix": "Upgrade react-router-dom → 6.30.4+ in Source/Frontend and portal/Frontend",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vite — Path Traversal & fs.deny Bypass",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "vulnerability",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-fx2h-pf6j-xcff"],
+      "package": "vite",
+      "locations": ["Source/Frontend", "portal/Frontend"],
+      "fix": "Upgrade vite → 6.5.0+ (Source/Frontend), vite → 5.3.0+ (portal/Frontend)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "title": "@grpc/grpc-js — Server Crash on malformed requests",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "vulnerability",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "cvss": 7.5,
+      "package": "@grpc/grpc-js",
+      "location": "portal/Backend (transitive)",
+      "cross_ref": "DEP-001 — same root cause (outdated @opentelemetry suite drives gRPC version)",
+      "fix": "Upgrade @opentelemetry suite (same fix as DEP-001). Ensure @grpc/grpc-js → 1.14.4+ transitively.",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "title": "eslint-disable without justification (DependencyPicker.tsx, useWorkItems.ts)",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Add justification comment or fix hook dependency array",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-outdated-1",
+      "title": "uuid: 9.0.0 → 14.0.1 (5 major versions behind)",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-dependency",
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "fix": "Upgrade uuid in all workspaces that use it",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-outdated-2",
+      "title": "react: 18.x → 19.2.7 (1 major version behind)",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-dependency",
+      "package": "react / react-dom",
+      "current": "18.2-18.3",
+      "latest": "19.2.7",
+      "fix": "Upgrade react + react-dom in Source/Frontend and portal/Frontend",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-outdated-3",
+      "title": "pino version inconsistency (8.x vs 10.x across workspaces)",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-dependency",
+      "package": "pino",
+      "fix": "Align pino to 10.x across all workspaces",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-outdated-4",
+      "title": "multer: 1.4.5-lts → 2.2.0 (1 major, API changes required)",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "outdated-dependency",
+      "package": "multer",
+      "current": "1.4.5-lts",
+      "latest": "2.2.0",
+      "fix": "Upgrade multer in Source/Backend (requires API migration review)",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "title": "DebugPortalPage uses description string instead of FR ID in traceability comment",
+      "severity": "P4",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "fix": "Assign a proper FR ID or mark as // Internal: no FR — debug tooling only",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "pending_dependencies status absent from WorkItemStatus enum",
+      "findings": ["QO-003", "QO-004"],
+      "single_fix": "Add PendingDependencies to WorkItemStatus, update VALID_STATUS_TRANSITIONS, update dispatch route and BlockedBadge component",
+      "p1_resolved": 0,
+      "p2_resolved": 2
+    },
+    {
+      "root_cause": "@opentelemetry suite outdated (0.40-0.47 vs 0.219+)",
+      "findings": ["DEP-001", "DEP-004", "DEP-005", "DEP-009"],
+      "single_fix": "Upgrade @opentelemetry/auto-instrumentations-node → 0.77.0+ and @opentelemetry/sdk-node → 0.219.0+ in portal/Backend",
+      "p1_resolved": 1,
+      "p2_resolved": 3
+    },
+    {
+      "root_cause": "Traceability enforcer scopes to one plan only",
+      "findings": ["QO-001", "QO-005"],
+      "single_fix": "Update CLAUDE.md verification gates to run enforcer per plan",
+      "p1_resolved": 1,
+      "p2_resolved": 1
+    },
+    {
+      "root_cause": "Vitest vulnerable across all workspaces",
+      "findings": ["DEP-002"],
+      "single_fix": "Upgrade vitest in all 3 affected workspaces",
+      "p1_resolved": 1,
+      "p2_resolved": 0
+    }
+  ],
+  "next_review": "2026-07-28"
+}

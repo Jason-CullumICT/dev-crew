@@ -1,0 +1,383 @@
+{
+  "backlog_metadata": {
+    "generated": "2026-06-29",
+    "audit_id": "run-20260629-070620",
+    "branch": "audit/inspector-2026-06-29-d8aa57",
+    "overall_grade": "D",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_not_run": ["performance-profiler", "chaos-monkey"],
+    "note": "Performance profiler and chaos monkey not run — services offline (static-only mode audit)"
+  },
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 13,
+    "p3_total": 86,
+    "p4_total": 2,
+    "escalations_to_guardians": 3,
+    "fixed_since_prior": 0,
+    "still_open": 2,
+    "new": 16,
+    "spec_coverage_pct": 91
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "severity": "P1",
+      "category": "CVE / Code Injection",
+      "specialist": "dependency-auditor",
+      "package": "handlebars ≤4.7.8",
+      "cvss": 9.8,
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"],
+      "affected_files": ["Source/Backend/package-lock.json"],
+      "attack_vector": "Malformed template syntax via jest → babel-jest → handlebars transitive chain",
+      "impact": "Arbitrary code execution in test framework; can be triggered during CI test runs",
+      "fix": "Upgrade jest to v30.0.0+ (removes babel-jest dependency on handlebars)",
+      "escalation_team": "TheGuardians",
+      "route": "ESCALATE → TheGuardians",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs Arbitrary Code Execution via Prototype Pollution",
+      "severity": "P1",
+      "category": "CVE / Code Injection",
+      "specialist": "dependency-auditor",
+      "package": "protobufjs ≤7.6.2",
+      "cvss": 9.8,
+      "cves": ["GHSA-xq3m-2v4x-88gg", "GHSA-75px-5xx7-5xc7", "GHSA-wcpc-wj8m-hjx6", "GHSA-685m-2w69-288q"],
+      "affected_files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "attack_vector": "Craft protobuf schema with field names like __proto__ or constructor.prototype",
+      "impact": "Remote code execution via observability/gRPC stack (OpenTelemetry, grpc-js) in portal/Backend and orchestrator",
+      "fix": "Upgrade to protobufjs ≥7.7.0 via @opentelemetry/* major version upgrade",
+      "escalation_team": "TheGuardians",
+      "route": "ESCALATE → TheGuardians — URGENT BLOCKING",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest UI Server Arbitrary File Read/Execute",
+      "severity": "P1",
+      "category": "CVE / Unauthorized File Access",
+      "specialist": "dependency-auditor",
+      "package": "vitest <3.2.6",
+      "cvss": 9.8,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "affected_files": ["Source/Frontend/package-lock.json"],
+      "attack_vector": "POST /api/execute?code=<payload> to Vitest UI server on port 51204 (default) — any network attacker",
+      "impact": "Remote code execution on any developer machine running tests; CI runner compromise",
+      "fix": "Upgrade vitest ≥3.2.6; disable UI server flag in CI/CD",
+      "escalation_team": "TheGuardians",
+      "route": "ESCALATE → TheGuardians",
+      "status": "OPEN_NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Traceability Enforcer Blind to portal/ Codebase",
+      "severity": "P1",
+      "category": "architecture-violation / spec-drift",
+      "specialist": "quality-oracle",
+      "affected_files": ["tools/traceability-enforcer.py"],
+      "detail": "Enforcer scans only Source/ and E2E/. The portal/ directory (113 TypeScript files) implements FR-001–FR-069, FR-dependency-*, FR-DUP-*, FR-070–FR-089. None are checked. Enforcer reports 100% PASSED while only 13 of 141 FRs are verified.",
+      "fix": "Add portal to source_dirs in tools/traceability-enforcer.py; run enforcer per-plan or aggregate all plans",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "QO-002",
+      "title": "Duplicate FR IDs: FR-070–FR-076 Claimed by Two Plans",
+      "severity": "P1",
+      "category": "spec-drift / architecture-violation",
+      "specialist": "quality-oracle",
+      "affected_files": [
+        "Plans/orchestrator-cycle-dashboard/requirements.md",
+        "Plans/image-upload/requirements.md"
+      ],
+      "detail": "FR-070 through FR-076 are assigned to completely different features in two plans. Every // Verifies: FR-070 comment in source is now ambiguous.",
+      "fix": "Renumber orchestrator-cycle-dashboard FRs to FR-OCD-001 through FR-OCD-007; update all // Verifies: comments",
+      "route": "TheFixer backlog + requirements-reviewer",
+      "status": "OPEN_NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "title": "Ghost FR-090 — No Spec or Plan Definition",
+      "severity": "P2",
+      "category": "spec-drift / unlinked-implementation",
+      "specialist": "quality-oracle",
+      "affected_files": [
+        "portal/Frontend/src/components/orchestrator/types.ts:26-65",
+        "portal/Frontend/src/api/client.ts:457,465"
+      ],
+      "fix": "Either add FR-090 to the appropriate plan's requirements.md, or replace with correct ID (FR-TMP-009)",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "QO-004",
+      "title": "FR-dependency-api-types STILL OPEN: Missing blocked_by Field + as any Casts",
+      "severity": "P2",
+      "category": "spec-drift / untested",
+      "specialist": "quality-oracle",
+      "affected_files": [
+        "portal/Shared/api.ts",
+        "portal/Frontend/src/components/shared/DependencyPicker.tsx:291,293"
+      ],
+      "fix": "Add blocked_by?: string[] to UpdateBugInput and UpdateFeatureRequestInput; remove as any casts",
+      "route": "TheFixer backlog",
+      "status": "STILL_OPEN"
+    },
+    {
+      "id": "QO-005",
+      "title": "FR-dependency-seed STILL OPEN: seed.ts Does Not Exist",
+      "severity": "P2",
+      "category": "spec-drift / untested",
+      "specialist": "quality-oracle",
+      "affected_files": ["portal/Backend/src/database/ (seed.ts missing)"],
+      "fix": "Implement portal/Backend/src/database/seed.ts per Plans/dependency-linking/requirements.md (FR-dependency-seed)",
+      "route": "TheFixer backlog",
+      "status": "STILL_OPEN"
+    },
+    {
+      "id": "QO-006",
+      "title": "FR-TMP-001..010 Entirely Untraced (0% Coverage for Tiered-Merge-Pipeline)",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "affected_files": ["Specifications/tiered-merge-pipeline.md"],
+      "fix": "If implemented in platform/, add traceability comments and expand enforcer or document exclusion. If not implemented, add to active backlog.",
+      "route": "TheFixer backlog + platform-owner",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "QO-007",
+      "title": "Malformed FR-0001 ID in portal/Frontend/src/api/client.ts",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "affected_files": ["portal/Frontend/src/api/client.ts:227"],
+      "fix": "Correct FR-0001 to FR-001 at line 227",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vite server.fs.deny Bypass on Windows (Path Traversal)",
+      "severity": "P2",
+      "category": "CVE / Path Traversal",
+      "specialist": "dependency-auditor",
+      "package": "vite ≤6.4.2",
+      "cvss": 7.5,
+      "cves": ["GHSA-fx2h-pf6j-xcff", "GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3"],
+      "affected_files": ["Source/Frontend/package-lock.json", "portal/Frontend/package-lock.json"],
+      "fix": "Upgrade vite ≥6.5.0",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data CRLF Injection (All Packages)",
+      "severity": "P2",
+      "category": "CVE / Injection",
+      "specialist": "dependency-auditor",
+      "package": "form-data 4.0.0–4.0.5",
+      "cvss": 7.5,
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "affected_files": ["Source/Backend", "Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "fix": "Upgrade form-data ≥4.0.6 (auto-resolves via transitive update)",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "@grpc/grpc-js Malformed Request DoS",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "specialist": "dependency-auditor",
+      "package": "@grpc/grpc-js 1.14.0–1.14.3",
+      "cvss": 7.5,
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "affected_files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "fix": "Upgrade @grpc/grpc-js ≥1.14.4",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "OpenTelemetry Prometheus Exporter DoS",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "specialist": "dependency-auditor",
+      "package": "@opentelemetry/auto-instrumentations-node ≤0.76.0",
+      "cvss": 7.5,
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "affected_files": ["portal/Backend/package-lock.json"],
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node ≥0.77.0 and @opentelemetry/sdk-node ≥0.219.0",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-008",
+      "title": "React Router Open Redirect via Protocol-Relative URLs",
+      "severity": "P2",
+      "category": "CVE / Open Redirect",
+      "specialist": "dependency-auditor",
+      "package": "react-router-dom 6.7.0–6.30.3",
+      "cves": ["GHSA-2j2x-hqr9-3h42"],
+      "affected_files": ["Source/Frontend/package-lock.json"],
+      "fix": "Upgrade react-router-dom ≥6.30.4",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-009",
+      "title": "esbuild Dev Server Cross-Origin Request Leakage",
+      "severity": "P2",
+      "category": "CVE / Information Disclosure",
+      "specialist": "dependency-auditor",
+      "package": "esbuild ≤0.24.2",
+      "cvss": 5.3,
+      "cves": ["GHSA-67mh-4wv8-2f99"],
+      "affected_files": ["Source/Frontend/package-lock.json"],
+      "fix": "Upgrade vite ≥6.5.0 (pulls esbuild ≥0.25.0)",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-010",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "specialist": "dependency-auditor",
+      "package": "ws 8.0.0–8.20.1",
+      "cvss": 7.5,
+      "cves": ["GHSA-96hv-2xvq-fx4p"],
+      "affected_files": ["Source/Frontend/package-lock.json"],
+      "fix": "Upgrade ws ≥8.21.0",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-011",
+      "title": "path-to-regexp ReDoS",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "specialist": "dependency-auditor",
+      "package": "path-to-regexp <0.1.13",
+      "cvss": 7.5,
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "affected_files": ["portal/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "fix": "Upgrade express ≥4.20.0",
+      "route": "TheFixer backlog",
+      "status": "OPEN_NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-008",
+      "title": "teamDispatches.ts — Unlinked Implementation, No Spec Backing",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "affected_files": ["portal/Backend/src/routes/teamDispatches.ts"],
+      "fix": "Add FR-TEAMS-001 to appropriate plan; add // Verifies: comments",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "QO-009",
+      "title": "RepoSelector.tsx + TeamsPage.tsx — No Traceability or Tests",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "affected_files": [
+        "portal/Frontend/src/components/common/RepoSelector.tsx",
+        "portal/Frontend/src/pages/TeamsPage.tsx"
+      ],
+      "fix": "Add FR entries; add // Verifies: comments; add tests for TeamsPage.tsx",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "QO-010",
+      "title": "eslint-disable Suppressing React Hooks Warnings Without Justification",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "affected_files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Fix dependency arrays or document suppression reason inline",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "DEP-P3-MODERATE",
+      "title": "83+ Moderate CVEs Across All Packages (jest/babel, protobufjs, @opentelemetry, postcss)",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "detail": "Bulk moderate CVEs in test/dev tooling (jest, babel) and observability (opentelemetry). See DEP-AUDIT-20260629.md for full breakdown.",
+      "fix": "npm audit fix --force after Phase 1-3 critical upgrades",
+      "status": "OPEN_NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-011",
+      "title": "api-contracts.md Status Field Is Stale (Says WIP, Dependency Tracking Is Done)",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "affected_files": ["Source/Shared/api-contracts.md:5"],
+      "fix": "Update Status line to Active — dependency tracking fully implemented",
+      "status": "OPEN_NEW"
+    },
+    {
+      "id": "QO-012",
+      "title": "Silent JSON Parse Failure Swallows Error Context",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "affected_files": ["Source/Frontend/src/api/client.ts:26"],
+      "fix": "Log the parse failure before returning {} fallback",
+      "status": "OPEN_NEW"
+    }
+  ],
+  "remediation_plan": {
+    "block_deployment": [
+      "DEP-002 (protobufjs RCE in portal/Backend observability stack)",
+      "DEP-001 (Handlebars RCE via jest — block CI until resolved)"
+    ],
+    "this_sprint_24h": [
+      "DEP-003 (Vitest RCE — upgrade to ≥3.2.6)",
+      "DEP-004 (Vite path traversal — upgrade ≥6.5.0)",
+      "DEP-008 (React Router open redirect — upgrade ≥6.30.4)",
+      "DEP-010 (ws DoS — upgrade ≥8.21.0)"
+    ],
+    "this_sprint_48h": [
+      "DEP-006 (@grpc/grpc-js DoS — upgrade ≥1.14.4)",
+      "DEP-007 (OpenTelemetry Prometheus DoS — upgrade @opentelemetry/*)",
+      "DEP-011 (path-to-regexp ReDoS — upgrade express ≥4.20.0)"
+    ],
+    "this_sprint": [
+      "DEP-005 (form-data CRLF — upgrade ≥4.0.6)",
+      "DEP-009 (esbuild leakage — resolved by vite upgrade)",
+      "QO-001 (Expand traceability enforcer to scan portal/)",
+      "QO-002 (Renumber orchestrator-cycle-dashboard FRs to FR-OCD-*)",
+      "QO-004 (Add blocked_by field to UpdateBugInput/UpdateFeatureRequestInput)",
+      "QO-005 (Implement portal/Backend/src/database/seed.ts)",
+      "QO-007 (Fix FR-0001 typo in client.ts:227)"
+    ],
+    "next_sprint": [
+      "QO-003 (Add FR-090 to spec or correct to FR-TMP-009)",
+      "QO-006 (Add FR-TMP-* traceability or document platform/ exclusion)",
+      "QO-008 (Add spec backing for teamDispatches.ts)",
+      "QO-009 (Add spec + tests for TeamsPage.tsx)",
+      "QO-010 (Fix eslint-disable hooks suppression)",
+      "DEP-P3-MODERATE (npm audit fix --force after critical upgrades)"
+    ],
+    "backlog": [
+      "QO-011 (Update api-contracts.md status)",
+      "QO-012 (Log JSON parse failures)",
+      "Consolidate TypeScript versions across packages",
+      "Add npm audit gate to CI/CD",
+      "Plan vitest migration for Source/Backend (reduce jest transitive bloat)"
+    ]
+  }
+}

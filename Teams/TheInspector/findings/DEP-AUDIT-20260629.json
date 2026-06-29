@@ -1,0 +1,353 @@
+{
+  "scan_metadata": {
+    "scan_date": "2026-06-29",
+    "scan_tool": "npm audit v10.x",
+    "agent": "dependency_auditor",
+    "scope": "All npm packages (Source/, portal/, platform/)",
+    "total_packages_scanned": 5,
+    "report_version": "1.0"
+  },
+  "summary": {
+    "overall_risk_level": "CRITICAL",
+    "grade": "F",
+    "direct_dependencies": 45,
+    "transitive_dependencies": 1200,
+    "packages_with_vulnerabilities": 40,
+    "vulnerability_counts": {
+      "critical": 5,
+      "high": 18,
+      "moderate": 83,
+      "low": 2,
+      "total": 108
+    }
+  },
+  "packages_scanned": [
+    {
+      "name": "Source/Backend",
+      "manifest": "package.json",
+      "direct_deps": 13,
+      "transitive_deps": 411,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 24,
+        "low": 1
+      }
+    },
+    {
+      "name": "Source/Frontend",
+      "manifest": "package.json",
+      "direct_deps": 13,
+      "transitive_deps": 230,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 6,
+        "low": 1
+      }
+    },
+    {
+      "name": "Source/E2E",
+      "manifest": "package.json",
+      "direct_deps": 1,
+      "transitive_deps": 150,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      }
+    },
+    {
+      "name": "portal/Frontend",
+      "manifest": "package.json",
+      "direct_deps": 15,
+      "transitive_deps": 300,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 5,
+        "low": 1
+      }
+    },
+    {
+      "name": "portal/Backend",
+      "manifest": "package.json",
+      "direct_deps": 10,
+      "transitive_deps": 500,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 46,
+        "low": 0
+      }
+    },
+    {
+      "name": "platform/orchestrator",
+      "manifest": "package.json",
+      "direct_deps": 3,
+      "transitive_deps": 200,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0
+      }
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "package": "handlebars",
+      "version_range": "<=4.7.8",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cves": [
+        {
+          "id": "GHSA-2w6w-674q-4c4q",
+          "title": "JavaScript Injection - RCE",
+          "cvss": 9.8
+        },
+        {
+          "id": "GHSA-3mfm-83xf-c92r",
+          "title": "AST Type Confusion",
+          "cvss": 8.1
+        },
+        {
+          "id": "GHSA-xhpv-hc6g-r9c6",
+          "title": "Dynamic Partial Injection",
+          "cvss": 8.1
+        },
+        {
+          "id": "GHSA-9cx6-37pm-9jff",
+          "title": "Denial of Service",
+          "cvss": 7.5
+        },
+        {
+          "id": "GHSA-xjpj-3mr7-gcpf",
+          "title": "CLI Precompiler Injection",
+          "cvss": 8.2
+        }
+      ],
+      "affected_packages": ["Source/Backend"],
+      "affected_file": "package-lock.json",
+      "attack_vector": "Malformed template syntax in jest → babel-jest → handlebars",
+      "impact": "Arbitrary code execution in test framework",
+      "fix": "Upgrade jest to v30.0.0+ or remove babel-jest",
+      "status": "PENDING",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "version_range": "<=7.6.2",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cves": [
+        {
+          "id": "GHSA-xq3m-2v4x-88gg",
+          "title": "Arbitrary Code Execution",
+          "cvss": 9.8
+        },
+        {
+          "id": "GHSA-75px-5xx7-5xc7",
+          "title": "Prototype Pollution → Code Generation",
+          "cvss": 8.1
+        },
+        {
+          "id": "GHSA-wcpc-wj8m-hjx6",
+          "title": "Unbounded Any Expansion DoS",
+          "cvss": 7.5
+        },
+        {
+          "id": "GHSA-685m-2w69-288q",
+          "title": "Unbounded Recursion DoS",
+          "cvss": 7.5
+        }
+      ],
+      "affected_packages": [
+        "portal/Backend",
+        "platform/orchestrator"
+      ],
+      "affected_file": "package-lock.json",
+      "attack_vector": "Protobuf schema with malicious field names (e.g., __proto__)",
+      "impact": "Arbitrary code execution via observability stack (OpenTelemetry, gRPC)",
+      "fix": "Upgrade to protobufjs >=7.7.0",
+      "status": "PENDING - CRITICAL BLOCKING",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest UI Server Arbitrary File Read/Execute",
+      "package": "vitest",
+      "version_range": "<3.2.6",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cves": [
+        {
+          "id": "GHSA-5xrq-8626-4rwp",
+          "title": "UI Server Arbitrary File Execution",
+          "cvss": 9.8
+        }
+      ],
+      "affected_packages": ["Source/Frontend"],
+      "affected_file": "package-lock.json",
+      "attack_vector": "Network access to vitest UI server (port 51204 default)",
+      "impact": "Remote code execution on developer machine",
+      "fix": "Upgrade to vitest >=3.2.6 or disable UI server in production",
+      "status": "PENDING",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "Vite Path Traversal via server.fs.deny Bypass",
+      "package": "vite",
+      "version_range": "<=6.4.2",
+      "severity": "P2",
+      "cvss": 7.5,
+      "affected_packages": ["Source/Frontend", "portal/Frontend"],
+      "fix": "Upgrade vite >=6.5.0"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data CRLF Injection",
+      "package": "form-data",
+      "version_range": "4.0.0 - 4.0.5",
+      "severity": "P2",
+      "cvss": 7.5,
+      "affected_packages": ["ALL packages"],
+      "fix": "Upgrade form-data >=4.0.6"
+    },
+    {
+      "id": "DEP-006",
+      "title": "@grpc/grpc-js Malformed Request DoS",
+      "package": "@grpc/grpc-js",
+      "version_range": "1.14.0 - 1.14.3",
+      "severity": "P2",
+      "cvss": 7.5,
+      "affected_packages": ["portal/Backend"],
+      "fix": "Upgrade to >=1.14.4"
+    },
+    {
+      "id": "DEP-007",
+      "title": "OpenTelemetry Prometheus Exporter DoS",
+      "package": "@opentelemetry/auto-instrumentations-node, @opentelemetry/sdk-node",
+      "version_range": "<=0.76.0, <=0.218.0",
+      "severity": "P2",
+      "cvss": 7.5,
+      "affected_packages": ["portal/Backend"],
+      "fix": "Upgrade to >=0.77.0, >=0.219.0 (major version)"
+    },
+    {
+      "id": "DEP-008",
+      "title": "React Router Open Redirect",
+      "package": "react-router-dom",
+      "version_range": "6.7.0 - 6.30.3",
+      "severity": "P2",
+      "affected_packages": ["Source/Frontend"],
+      "fix": "Upgrade to >=6.30.4"
+    },
+    {
+      "id": "DEP-009",
+      "title": "esbuild Dev Server Cross-Origin Request Leakage",
+      "package": "esbuild",
+      "version_range": "<=0.24.2",
+      "severity": "P2",
+      "cvss": 5.3,
+      "affected_packages": ["Source/Frontend"],
+      "fix": "Upgrade vite >=6.5.0"
+    },
+    {
+      "id": "DEP-010",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "package": "ws",
+      "version_range": "8.0.0 - 8.20.1",
+      "severity": "P2",
+      "cvss": 7.5,
+      "affected_packages": ["Source/Frontend"],
+      "fix": "Upgrade ws >=8.21.0"
+    },
+    {
+      "id": "DEP-011",
+      "title": "path-to-regexp ReDoS",
+      "package": "path-to-regexp",
+      "version_range": "<0.1.13",
+      "severity": "P2",
+      "cvss": 7.5,
+      "affected_packages": ["portal/Backend", "platform/orchestrator"],
+      "fix": "Upgrade express >=4.20.0"
+    }
+  ],
+  "supply_chain_analysis": {
+    "post_install_scripts": {
+      "status": "CLEAR",
+      "detail": "No post-install hooks detected"
+    },
+    "license_compliance": {
+      "status": "COMPLIANT",
+      "detail": "All permissive licenses (MIT, Apache-2.0, BSD), no GPL/AGPL"
+    },
+    "dependency_growth": {
+      "status": "WARNING",
+      "detail": "1,200+ transitive dependencies, high supply chain surface area"
+    },
+    "outdated_versions": {
+      "status": "WARNING",
+      "packages_behind": ["jest", "vite", "vitest"],
+      "detail": "Major version gaps driven by security fixes"
+    }
+  },
+  "remediation_phases": {
+    "phase_1": {
+      "timeline": "NEXT 24 HOURS",
+      "tasks": [
+        "Source/Frontend: react-router-dom ^6.30.4+",
+        "Source/Frontend: vite ^6.5.0+",
+        "Source/Frontend: ws ^8.21.0+",
+        "Run: npm ci --force"
+      ]
+    },
+    "phase_2": {
+      "timeline": "NEXT 48 HOURS",
+      "tasks": [
+        "portal/Backend: @opentelemetry/* upgrades",
+        "platform/orchestrator: Same upgrades",
+        "Test observability pipeline"
+      ]
+    },
+    "phase_3": {
+      "timeline": "THIS WEEK",
+      "tasks": [
+        "Source/Backend: jest >=v30.0.0",
+        "Source/Frontend: vitest >=3.2.6",
+        "All: npm audit fix --force"
+      ]
+    },
+    "phase_4": {
+      "timeline": "THIS SPRINT",
+      "tasks": [
+        "Consolidate TypeScript versions",
+        "Reduce jest/babel transitive bloat",
+        "Add npm audit to CI/CD"
+      ]
+    }
+  },
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: Handlebars RCE (test pipeline compromise)",
+      "DEP-002: protobufjs RCE (observability stack compromise)",
+      "DEP-003: Vitest UI RCE (developer machine access)"
+    ],
+    "TheFixer": [
+      "All package.json / package-lock.json upgrades",
+      "Test suite validation after major version bumps",
+      "CI/CD integration for npm audit"
+    ]
+  },
+  "next_review": "2026-07-13",
+  "urgent_rescan_trigger": "Immediate after all Phase 1-2 fixes are applied"
+}

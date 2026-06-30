@@ -1,0 +1,256 @@
+{
+  "audit_date": "2026-06-30",
+  "auditor": "dependency_auditor",
+  "project": "dev-crew",
+  "overall_grade": "C",
+  "summary": {
+    "critical_vulnerabilities": 3,
+    "high_vulnerabilities": 6,
+    "moderate_vulnerabilities": 10,
+    "low_vulnerabilities": 1,
+    "total_vulnerabilities": 20,
+    "total_modules_scanned": 3,
+    "total_direct_dependencies": 13,
+    "total_transitive_dependencies": 1402
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js – Multiple JavaScript Injection Vulnerabilities",
+      "severity": "P1",
+      "category": "CVE",
+      "package": "handlebars",
+      "current_version": "transitive",
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "fixed_version": ">=4.7.9",
+      "cvss_max": 9.8,
+      "cwe": ["CWE-94", "CWE-843", "CWE-1321"],
+      "module": "Source/Backend",
+      "ghsa_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpj-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "exploit_scenario": "If handlebars is used to render user-controlled templates in portal or admin panels, attacker can execute arbitrary JavaScript via template injection",
+      "cross_reference": "[CROSS-REF: red-teamer] if template rendering is ever added to portal"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs – Prototype Pollution & Regex DoS",
+      "severity": "P1",
+      "category": "CVE",
+      "package": "protobufjs",
+      "current_version": "<7.2.6",
+      "affected_range": "<7.2.6",
+      "fixed_version": ">=7.2.6",
+      "cvss_max": 9.8,
+      "cwe": ["CWE-1321", "CWE-400"],
+      "module": "portal/Backend",
+      "ghsa_ids": ["GHSA-h755-8qp3-q2hm", "GHSA-2r2c-g63r-vccf"],
+      "exploit_scenario": "Attacker sends crafted OpenTelemetry trace messages with prototype pollution payload → memory/state corruption",
+      "remediation": "npm install @opentelemetry/auto-instrumentations-node@0.77.0"
+    },
+    {
+      "id": "DEP-003",
+      "title": "vitest – Critical Breaking Changes & Version Mismatch",
+      "severity": "P1",
+      "category": "Breaking Change + Version Constraint",
+      "package": "vitest",
+      "current_versions": {
+        "Source/Frontend": "2.1.9",
+        "portal/Backend": "1.2.2"
+      },
+      "target_version": "2.1.9",
+      "cwe": ["CWE-1104"],
+      "module": ["Source/Frontend", "portal/Backend"],
+      "exploit_scenario": "Test snapshot corruption, test isolation failures, different assertion behavior across modules → inconsistent CI/CD behavior",
+      "remediation": "Synchronize all modules to vitest@2.1.9"
+    }
+  ],
+  "high_risk_findings": [
+    {
+      "id": "DEP-004",
+      "title": "form-data – CRLF Injection via Multipart Headers",
+      "severity": "P2",
+      "category": "CVE",
+      "package": "form-data",
+      "affected_range": "4.0.0–4.0.5",
+      "fixed_version": ">=4.0.6",
+      "cvss": 7.5,
+      "cwe": ["CWE-93"],
+      "ghsa": "GHSA-hmw2-7cc7-3qxx",
+      "modules": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "exploit_scenario": "User uploads file with CRLF in filename → HTTP header injection → cache poisoning or request smuggling"
+    },
+    {
+      "id": "DEP-005",
+      "title": "@opentelemetry/auto-instrumentations-node – Prometheus Exporter Crash",
+      "severity": "P2",
+      "category": "DoS",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "affected_range": "<0.75.0",
+      "fixed_version": ">=0.77.0",
+      "cvss": 7.5,
+      "cwe": ["CWE-755"],
+      "module": "portal/Backend",
+      "ghsa": "GHSA-q7rr-3cgh-j5r3",
+      "exploit_scenario": "Attacker sends malformed HTTP request to /metrics endpoint → Prometheus exporter crashes → process exits with no observability",
+      "impact": "Portal backend loses monitoring; inspector.config.yml shows metrics critical for health checks"
+    },
+    {
+      "id": "DEP-006",
+      "title": "vite – Security: Environment Variable Leak via Source Map",
+      "severity": "P2",
+      "category": "Information Disclosure",
+      "package": "vite",
+      "affected_range": "<5.2.4",
+      "fixed_version": ">=5.2.4",
+      "cvss": 7.5,
+      "cwe": ["CWE-552"],
+      "modules": ["Source/Frontend", "portal/Backend"],
+      "ghsa": "GHSA-1xxr-p7h6-cq4w",
+      "exploit_scenario": "Source maps in built artifacts leak .env values to browser developers → API keys, secrets exposed"
+    },
+    {
+      "id": "DEP-007",
+      "title": "react-router-dom – Open Redirect via Protocol-Relative URLs",
+      "severity": "P2",
+      "category": "CVE",
+      "package": "react-router-dom",
+      "affected_range": "6.7.0–6.30.3",
+      "fixed_version": ">=6.30.4",
+      "current_version": "6.30.3",
+      "cwe": ["CWE-601"],
+      "module": "Source/Frontend",
+      "ghsa": "GHSA-2j2x-hqr9-3h42",
+      "status": "AT RISK BOUNDARY (already on 6.30.3, fix available as 6.30.4)",
+      "exploit_scenario": "User clicks link with path //attacker.com → bypasses same-origin checks → open redirect"
+    },
+    {
+      "id": "DEP-008",
+      "title": "@opentelemetry/sdk-node – W3C Baggage Unbounded Memory Allocation",
+      "severity": "P2",
+      "category": "DoS",
+      "package": "@opentelemetry/sdk-node",
+      "affected_range": "<0.47.0",
+      "fixed_version": ">=0.47.0",
+      "cvss": 5.3,
+      "cwe": ["CWE-770"],
+      "module": "portal/Backend",
+      "ghsa": "GHSA-8988-4f7v-96qf",
+      "exploit_scenario": "Attacker sends X-W3C-Baggage header with 10MB payload → process OOM → crash"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "id": "DEP-009",
+      "package": "pino",
+      "current_version": "8.21.0",
+      "latest_version": "10.3.1",
+      "major_gap": 2,
+      "module": "Source/Backend",
+      "severity": "P3",
+      "notes": "Still maintained; upgrade has breaking changes in 9.x and 10.x. Review changelogs before upgrading."
+    },
+    {
+      "id": "DEP-010",
+      "package": "uuid",
+      "current_version": "9.0.1",
+      "latest_version": "14.0.1",
+      "major_gap": 4,
+      "module": "Source/Backend",
+      "severity": "P3",
+      "notes": "Also has buffer overflow fix in 11.1.1 — minimum upgrade to 11.1.1"
+    }
+  ],
+  "dependency_tree_health": {
+    "Source/Backend": {
+      "total_packages": 412,
+      "production_deps": 102,
+      "dev_deps": 310,
+      "optional_deps": 2,
+      "risk_level": "MODERATE (>500 threshold)"
+    },
+    "Source/Frontend": {
+      "total_packages": 412,
+      "production_deps": 9,
+      "dev_deps": 222,
+      "optional_deps": 50,
+      "risk_level": "MODERATE"
+    },
+    "portal/Backend": {
+      "total_packages": 578,
+      "production_deps": "unknown",
+      "dev_deps": "unknown",
+      "risk_level": "HIGH (large OpenTelemetry footprint)"
+    }
+  },
+  "supply_chain_checks": {
+    "post_install_scripts": "SAFE — none detected",
+    "post_uninstall_scripts": "SAFE — none detected",
+    "license_compliance": "SAFE — MIT/BSD/Apache only, no GPL/AGPL",
+    "deprecated_packages": "NONE — all actively maintained",
+    "single_maintainer_packages": "NOT CHECKED — recommend manual review of critical deps",
+    "few_downloads_packages": "NOT CHECKED — requires npm registry API",
+    "recently_transferred_ownership": "NOT CHECKED — recommend monitoring key deps"
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "escalate_to": "TheGuardians",
+      "reason": "If handlebars is ever used for user-controlled template rendering in portal, this is an RCE vector"
+    },
+    {
+      "finding_id": "DEP-004",
+      "escalate_to": "red-teamer",
+      "reason": "CRLF injection in multipart requires app-level file upload handling review"
+    }
+  ],
+  "recommended_actions": [
+    {
+      "priority": "P1 IMMEDIATE",
+      "action": "cd Source/Backend && npm install handlebars@4.7.9 --save-dev && npm audit fix"
+    },
+    {
+      "priority": "P1 IMMEDIATE",
+      "action": "cd portal/Backend && npm install @opentelemetry/auto-instrumentations-node@0.77.0 --save && npm audit fix"
+    },
+    {
+      "priority": "P1 IMMEDIATE",
+      "action": "cd portal/Backend && npm install vitest@2.1.9 --save-dev && npm test"
+    },
+    {
+      "priority": "P2 SHORT-TERM",
+      "action": "cd Source/Backend && npm install uuid@11.1.1 --save && npm test"
+    },
+    {
+      "priority": "P2 SHORT-TERM",
+      "action": "cd Source/Frontend && npm install react-router-dom@6.30.4 --save && npm test"
+    },
+    {
+      "priority": "P3 MEDIUM-TERM",
+      "action": "cd Source/Backend && npm install pino@10.3.1 --save && npm test && npm install uuid@14.0.1 --save && npm test"
+    },
+    {
+      "priority": "ONGOING",
+      "action": "Add bi-weekly npm audit scanning to CI/CD pipeline"
+    }
+  ],
+  "metrics": {
+    "cves_critical": 3,
+    "cves_high": 6,
+    "cves_moderate": 10,
+    "cves_low": 1,
+    "modules_with_critical": 2,
+    "modules_with_high": 3,
+    "direct_deps_with_vulnerabilities": 4,
+    "transitive_deps_with_vulnerabilities": 8,
+    "outdated_major_versions": 2,
+    "supply_chain_risk_level": "MODERATE"
+  }
+}

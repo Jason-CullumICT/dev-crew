@@ -1,18 +1,25 @@
-# Dependency Auditor Findings Index
+# TheInspector Findings Index
 
 **Audit Date:** 2026-07-01  
+**Grade:** **D** (4 P1 findings, 12 P2 findings, 27% full-spec coverage)  
+**Audit ID:** `run-20260701-064802`  
 **Project:** dev-crew  
-**Scope:** npm packages across 6 workspaces
+**Scope:** Full codebase static analysis
 
 ---
 
 ## Quick Links
 
-### 📊 Executive Summary
+### 📊 Full Audit Report
+- **[audit-2026-07-01-D.html](audit-2026-07-01-D.html)** — Complete HTML health report (all 16 mandatory sections, grade D)
+- **[bug-backlog-2026-07-01.json](bug-backlog-2026-07-01.json)** — Machine-readable bug backlog with escalations array (TheFixer + TheGuardians routing)
+- **[../../inspector-report.md](../../inspector-report.md)** — Top-level summary at repo root
+
+### 📊 Dependency Sub-Report
 - **[AUDIT-SUMMARY.txt](AUDIT-SUMMARY.txt)** — Quick reference with metrics, critical findings, and next steps (1-page overview)
 
 ### 📄 Detailed Reports
-- **[dependency-audit-2026-07-01.md](dependency-audit-2026-07-01.md)** — Full audit report with all 26+ findings, remediation guidance, and cross-references (545 lines)
+- **[dependency-audit-2026-07-01.md](dependency-audit-2026-07-01.md)** — Full dependency audit report with all 26+ findings, remediation guidance, and cross-references (545 lines)
 - **[dependency-audit-summary-2026-07-01.json](dependency-audit-summary-2026-07-01.json)** — Machine-readable JSON for dashboards and tooling
 
 ### 🧠 Persistent Learnings

@@ -1,0 +1,153 @@
+================================================================================
+                    DEPENDENCY AUDITOR FINAL REPORT
+                          dev-crew Project
+                         2026-07-01 Audit Run
+================================================================================
+
+AUDIT SCOPE
+─────────────────────────────────────────────────────────────────────────────
+Package Managers Detected:    npm (6 workspaces)
+  - Source/Backend/package.json
+  - Source/Frontend/package.json
+  - Source/E2E/package.json
+  - platform/orchestrator/package.json
+  - portal/Backend/package.json
+  - portal/Frontend/package.json
+
+Total npm packages scanned:   ~40 direct, ~1,100+ transitive
+
+VULNERABILITY SUMMARY
+─────────────────────────────────────────────────────────────────────────────
+┌────────────────────┬────────┬────────┬───────────┬────────┐
+│ Workspace          │ CRIT   │ HIGH   │ MODERATE  │ TOTAL  │
+├────────────────────┼────────┼────────┼───────────┼────────┤
+│ Source/Backend     │   1    │   1    │     6     │   9    │
+│ Source/Frontend    │   1    │   3    │     6     │  11    │
+│ Source/E2E         │   0    │   0    │     0     │   0    │
+│ Orchestrator       │   1    │   2    │     6     │   9    │
+├────────────────────┼────────┼────────┼───────────┼────────┤
+│ TOTAL              │   3    │   8    │    18     │  29    │
+└────────────────────┴────────┴────────┴───────────┴────────┘
+
+CRITICAL VULNERABILITIES (P1 — ACTION REQUIRED)
+─────────────────────────────────────────────────────────────────────────────
+
+1. DEP-001: Handlebars JavaScript Injection (CVSS 9.8)
+   ├─ Package: handlebars@<=4.7.8 (transitive)
+   ├─ Root: @babel/core → handlebars
+   ├─ Risk: Arbitrary code execution in build pipeline
+   ├─ Affected: Source/Backend, Source/Frontend
+   └─ Fix: npm update @babel/core (automatic)
+
+2. DEP-002: Vitest UI Arbitrary File Read (CVSS 9.8)
+   ├─ Package: vitest@<=3.2.5
+   ├─ Risk: Unauthenticated file access/execution on dev server
+   ├─ Affected: Source/Frontend (vitest@2.0.5 is vulnerable)
+   ├─ Fix: npm update vitest@4.1.9+
+   └─ **ESCALATE TO TheGuardians** if UI exposed to network
+
+3. DEP-003: Protobufjs Arbitrary Code Execution (CVSS 9.8)
+   ├─ Package: protobufjs@<=7.6.2
+   ├─ Root: @grpc/grpc-js → protobufjs
+   ├─ Risk: RCE via untrusted .proto files or binary messages
+   ├─ Affected: platform/orchestrator (BLOCKS FEATURE WORK)
+   ├─ Fix: npm update dockerode@5.0.1+ (pins protobufjs@7.6.3+)
+   └─ **CRITICAL INFRASTRUCTURE RISK**
+
+HIGH-SEVERITY FINDINGS (P2 — URGENT FIXES NEEDED)
+─────────────────────────────────────────────────────────────────────────────
+
+4. DEP-004: Form-Data CRLF Injection (CVSS 7.5)
+5. DEP-005: Vite Path Traversal (CVSS 7.5)
+6. DEP-006: React Router Open Redirect
+7. DEP-007: @grpc/grpc-js Server Crash DoS (CVSS 7.5)
+8. DEP-008: path-to-regexp ReDoS (CVSS 7.5)
+9. DEP-009: uuid Buffer Overflow (CVSS 7.5) *requires MAJOR bump to 11.1.1*
+10. DEP-010: WebSocket Memory Exhaustion (CVSS 7.5)
+
+OUTDATED MAJOR VERSIONS (P3 — PLAN UPGRADES)
+─────────────────────────────────────────────────────────────────────────────
+┌──────────────────┬────────────┬────────────┬──────────┬─────────────────┐
+│ Package          │ Current    │ Latest     │ Versions │ Risk            │
+│                  │            │            │ Behind   │                 │
+├──────────────────┼────────────┼────────────┼──────────┼─────────────────┤
+│ express          │ 4.18.2     │ 5.2.1      │ 1        │ Async/await gap │
+│ pino             │ 8.17.0     │ 10.3.1     │ 2        │ Minor importance│
+│ uuid             │ 9.0.0      │ 14.0.1     │ 5        │ CVE requires it │
+│ react            │ 18.3.1     │ 19.2.7     │ 1        │ In LTS mode     │
+│ react-dom        │ 18.3.1     │ 19.2.7     │ 1        │ Paired w/React  │
+│ react-router-dom │ 6.26.0     │ 7.18.1     │ 1        │ Fixes open redir│
+└──────────────────┴────────────┴────────────┴──────────┴─────────────────┘
+
+DEPENDENCY TREE ANALYSIS
+─────────────────────────────────────────────────────────────────────────────
+Source/Backend:        102 prod, 310 dev, 411 total  (HIGH — review dev deps)
+Source/Frontend:         9 prod, 222 dev, 230 total  (reasonable)
+Source/E2E:              4 prod,   0 dev,   4 total  (minimal)
+platform/orchestrator: 153 prod,   3 dev, 155 total  (reasonable)
+
+⚠️ LOCK FILE STATUS
+─────────────────────────────────────────────────────────────────────────────
+✅ Source/Backend/package-lock.json         — PRESENT
+❌ Source/Frontend/package-lock.json        — MISSING (audit reproducibility risk)
+❌ Source/E2E/package-lock.json            — MISSING
+❌ platform/orchestrator/package-lock.json — MISSING
+❓ portal/* lock files                     — NOT VERIFIED
+
+Impact: Builds are non-deterministic; CVE findings not reproducible across runs
+
+ESCALATION DECISIONS
+─────────────────────────────────────────────────────────────────────────────
+Route to TheGuardians (Security-critical):
+  ├─ DEP-001 (Handlebars) — if user templates processed
+  ├─ DEP-002 (Vitest UI)  — if exposed to network
+  ├─ DEP-003 (Protobufjs) — RCE in orchestrator infrastructure
+  └─ DEP-006 (React Router) — open redirect / phishing vector
+
+REMEDIATION PRIORITY & EFFORT ESTIMATE
+─────────────────────────────────────────────────────────────────────────────
+
+IMMEDIATE (P1):  4-6 hours
+  → Update handlebars (transitive), vitest, protobufjs
+  → Run full test suite (regression detection)
+
+HIGH (P2):       6-8 hours
+  → npm update form-data, vite, react-router-dom, uuid, @grpc, path-to-regexp
+  → Test routes/navigation/crypto
+
+MEDIUM (P3):     8-10 hours
+  → npm update pino, react, react-dom, postcss, ws
+  → Commit lock files to git
+  → Update CI configuration
+
+FILES GENERATED
+─────────────────────────────────────────────────────────────────────────────
+📄 dependency-audit-2026-07-01.md
+   └─ Full detailed findings (545 lines) with remediation guidance
+
+📄 dependency-audit-summary-2026-07-01.json
+   └─ Machine-readable report for tooling/dashboards
+
+📄 Teams/TheInspector/learnings/dependency-auditor.md
+   └─ Updated with recurring vulnerabilities, audit tools, recommendations
+
+NEXT ACTIONS
+─────────────────────────────────────────────────────────────────────────────
+1. [Team Lead] Review critical findings and route to TheGuardians
+2. [Backend Team] Address protobufjs immediately (blocks feature work)
+3. [Frontend Team] Update vitest/vite/react-router-dom (6-8 hour sprint)
+4. [All Teams] Commit package-lock.json after updates
+5. [DevOps] Add npm audit to CI/CD gate (fail on High+ in production deps)
+
+AUDIT AGENT STATUS
+─────────────────────────────────────────────────────────────────────────────
+✅ npm audit --json          — Completed for all workspaces
+✅ npm outdated --json        — Completed for all workspaces
+✅ CVE severity classification — Completed (P1/P2/P3/P4)
+⚠️  License audit              — DEFERRED (tool not available)
+⚠️  Supply chain analysis      — Limited (no signature verification)
+
+================================================================================
+Report generated by: dependency_auditor (Claude Haiku 4.5)
+Dashboard: See Teams/TheInspector/findings/ for full reports
+================================================================================

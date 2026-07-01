@@ -1,0 +1,375 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-01",
+    "agent": "dependency_auditor",
+    "project": "dev-crew",
+    "total_findings": 26,
+    "critical_count": 3,
+    "high_count": 8,
+    "moderate_count": 10,
+    "low_count": 1,
+    "info_count": 4
+  },
+  "workspace_summary": {
+    "Source/Backend": {
+      "package_manager": "npm",
+      "direct_dependencies": 6,
+      "transitive_dependencies": 411,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 6,
+        "low": 1
+      },
+      "outdated_packages": [
+        {
+          "name": "express",
+          "current": "4.18.2",
+          "wanted": "4.22.2",
+          "latest": "5.2.1",
+          "major_versions_behind": 1
+        },
+        {
+          "name": "pino",
+          "current": "8.17.0",
+          "wanted": "8.21.0",
+          "latest": "10.3.1",
+          "major_versions_behind": 2
+        },
+        {
+          "name": "uuid",
+          "current": "9.0.0",
+          "wanted": "9.0.1",
+          "latest": "14.0.1",
+          "major_versions_behind": 5
+        }
+      ]
+    },
+    "Source/Frontend": {
+      "package_manager": "npm",
+      "direct_dependencies": 7,
+      "transitive_dependencies": 230,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 6,
+        "low": 1
+      },
+      "outdated_packages": [
+        {
+          "name": "react",
+          "current": "18.3.1",
+          "wanted": "18.3.1",
+          "latest": "19.2.7",
+          "major_versions_behind": 1
+        },
+        {
+          "name": "react-dom",
+          "current": "18.3.1",
+          "wanted": "18.3.1",
+          "latest": "19.2.7",
+          "major_versions_behind": 1
+        },
+        {
+          "name": "react-router-dom",
+          "current": "6.26.0",
+          "wanted": "6.30.4",
+          "latest": "7.18.1",
+          "major_versions_behind": 1
+        }
+      ]
+    },
+    "Source/E2E": {
+      "package_manager": "npm",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "notes": "No CVEs detected. Minimal dependency footprint."
+    },
+    "platform/orchestrator": {
+      "package_manager": "npm",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 155,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0
+      },
+      "critical_issue": "Protobufjs RCE (GHSA-xq3m-2v4x-88gg) — blocks feature work"
+    },
+    "portal/Backend": {
+      "package_manager": "npm",
+      "note": "Similar to Source/Backend; separate audit recommended"
+    },
+    "portal/Frontend": {
+      "package_manager": "npm",
+      "note": "PostCSS XSS (8.4.38); otherwise similar to Source/Frontend"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars Multiple JavaScript Injection Vulnerabilities",
+      "severity": "CRITICAL",
+      "category": "cve",
+      "package": "handlebars@<=4.7.8",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "max_cvss": 9.8,
+      "type": "Arbitrary Code Execution via AST Type Confusion",
+      "affected_workspaces": ["Source/Backend", "Source/Frontend"],
+      "is_transitive": true,
+      "root_path": "@babel/core → handlebars",
+      "exploit_requires": "Processing untrusted Handlebars templates in build pipeline",
+      "fix_command": "npm update handlebars",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read and Execution",
+      "severity": "CRITICAL",
+      "category": "cve",
+      "package": "vitest@<=3.2.5",
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "cvss": 9.8,
+      "type": "Unauthenticated File Access via UI Server",
+      "affected_workspaces": ["Source/Frontend"],
+      "is_transitive": false,
+      "exploit_requires": "Vitest UI server running on exposed port (--ui flag)",
+      "fix_command": "npm update vitest  # to 4.1.9+",
+      "escalation": "TheGuardians",
+      "note": "HIGH RISK if vitest dev server exposed on shared infrastructure or CI"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "CRITICAL",
+      "category": "cve",
+      "package": "protobufjs@<=7.6.2",
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "cvss": 9.8,
+      "type": "Arbitrary Code Execution via Untrusted .proto Files",
+      "affected_workspaces": ["platform/orchestrator"],
+      "is_transitive": true,
+      "root_path": "@grpc/grpc-js → protobufjs",
+      "exploit_requires": "Processing user-supplied protobuf definitions",
+      "fix_command": "npm update protobufjs  # to 7.6.3+ (may require dockerode@5.0.1+)",
+      "escalation": "TheGuardians",
+      "blocking_work": true,
+      "note": "CRITICAL RISK IN INFRASTRUCTURE — Blocks feature work until resolved"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "Form-Data CRLF Injection",
+      "severity": "HIGH",
+      "package": "form-data@4.0.0-4.0.5",
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "cvss": 7.5,
+      "type": "HTTP Header Injection via Multipart Field Names"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Vite Path Traversal and server.fs.deny Bypass",
+      "severity": "HIGH",
+      "package": "vite@<=6.4.2",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-fx2h-pf6j-xcff"],
+      "cvss": 7.5,
+      "type": "Dev Server Path Traversal (Windows alternate paths)",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-006",
+      "title": "React Router Open Redirect",
+      "severity": "HIGH",
+      "package": "react-router-dom@6.7.0-6.30.3",
+      "cves": ["GHSA-2j2x-hqr9-3h42"],
+      "type": "Protocol-Relative URL Open Redirect",
+      "affected_workspaces": ["Source/Frontend"]
+    },
+    {
+      "id": "DEP-007",
+      "title": "@grpc/grpc-js Server Crash DoS",
+      "severity": "HIGH",
+      "package": "@grpc/grpc-js@1.14.0-1.14.3",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "cvss": 7.5,
+      "type": "Remote Denial of Service via Malformed Requests",
+      "affected_workspaces": ["platform/orchestrator"]
+    },
+    {
+      "id": "DEP-008",
+      "title": "path-to-regexp Regular Expression DoS",
+      "severity": "HIGH",
+      "package": "path-to-regexp@<0.1.13",
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "cvss": 7.5,
+      "type": "ReDoS via Multiple Route Parameters",
+      "affected_workspaces": ["Source/Backend", "platform/orchestrator"]
+    },
+    {
+      "id": "DEP-009",
+      "title": "uuid Missing Buffer Bounds Check",
+      "severity": "HIGH",
+      "package": "uuid@<11.1.1",
+      "cves": ["GHSA-w5hq-g745-h8pq"],
+      "cvss": 7.5,
+      "type": "Buffer Overflow in Custom Buffer Handling",
+      "affected_workspaces": ["Source/Backend", "Source/E2E", "portal/Backend"]
+    },
+    {
+      "id": "DEP-010",
+      "title": "WebSocket Memory Exhaustion DoS",
+      "severity": "HIGH",
+      "package": "ws@8.0.0-8.20.1",
+      "cves": ["GHSA-96hv-2xvq-fx4p"],
+      "cvss": 7.5,
+      "type": "Memory Exhaustion via Tiny Fragments",
+      "affected_workspaces": ["Source/Frontend"]
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "id": "DEP-017",
+      "package": "express",
+      "current": "4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "major_versions_behind": 1,
+      "severity": "MODERATE",
+      "reason": "Breaking changes in async/await handling; missing 18+ months of security patches"
+    },
+    {
+      "id": "DEP-018",
+      "package": "pino",
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2,
+      "severity": "LOW"
+    },
+    {
+      "id": "DEP-019",
+      "package": "uuid",
+      "current": "9.0.0",
+      "wanted": "9.0.1",
+      "latest": "14.0.1",
+      "major_versions_behind": 5,
+      "severity": "HIGH (due to CVE)",
+      "reason": "Security fix (buffer bounds) requires MAJOR bump to 11.1.1+"
+    },
+    {
+      "id": "DEP-020",
+      "package": "react",
+      "current": "18.3.1",
+      "wanted": "18.3.1",
+      "latest": "19.2.7",
+      "major_versions_behind": 1,
+      "severity": "LOW",
+      "reason": "React 19 stable for 6+ months; current version in LTS maintenance"
+    },
+    {
+      "id": "DEP-021",
+      "package": "react-dom",
+      "current": "18.3.1",
+      "wanted": "18.3.1",
+      "latest": "19.2.7",
+      "major_versions_behind": 1,
+      "severity": "LOW"
+    },
+    {
+      "id": "DEP-022",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "wanted": "6.30.4",
+      "latest": "7.18.1",
+      "major_versions_behind": 1,
+      "severity": "MODERATE (fixes open redirect CVE)",
+      "reason": "React Router 7 stable; 6.30.4+ fixes GHSA-2j2x-hqr9-3h42"
+    }
+  ],
+  "remediation_timeline": {
+    "immediate": {
+      "priority": "P1",
+      "hours_estimated": "4-6",
+      "findings": ["DEP-001", "DEP-002", "DEP-003"],
+      "actions": [
+        "Update @babel/core (handlebars transitive)",
+        "Update vitest@4.1.9+",
+        "Update protobufjs@7.6.3+ via dockerode@5.0.1+"
+      ]
+    },
+    "high_priority": {
+      "priority": "P2",
+      "hours_estimated": "6-8",
+      "findings": ["DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009"],
+      "actions": [
+        "npm update form-data",
+        "npm update vite (to 8.1.2+)",
+        "npm update react-router-dom (to 6.30.4+)",
+        "npm update @grpc/grpc-js (to 1.14.4+)",
+        "npm update path-to-regexp",
+        "npm update uuid (to 11.1.1+ or 14.0.1+)"
+      ]
+    },
+    "medium_priority": {
+      "priority": "P3",
+      "hours_estimated": "8-10",
+      "findings": ["DEP-010", "DEP-012", "DEP-013", "DEP-014", "DEP-015", "DEP-018", "DEP-020", "DEP-021", "DEP-023"],
+      "actions": [
+        "npm update ws (via vitest/vite)",
+        "npm update postcss (portal/Frontend to 8.5.10+)",
+        "npm update pino (8->10)",
+        "npm update react@19 (test UI components)",
+        "Commit package-lock.json to all workspaces"
+      ]
+    }
+  },
+  "cross_references": [
+    {
+      "escalation_team": "TheGuardians",
+      "findings": ["DEP-001", "DEP-002", "DEP-003"],
+      "reason": "RCE/arbitrary code execution in infrastructure or build pipeline"
+    },
+    {
+      "cross_ref": "quality-oracle",
+      "findings": ["DEP-020", "DEP-021"],
+      "reason": "Outdated major versions require regression testing of UI components"
+    },
+    {
+      "cross_ref": "performance-profiler",
+      "findings": ["DEP-010", "DEP-011", "DEP-013"],
+      "reason": "DoS/memory exhaustion vulnerabilities may impact latency profiles"
+    }
+  ],
+  "lock_file_status": {
+    "Source/Backend": "✅ Present (package-lock.json)",
+    "Source/Frontend": "❌ Missing",
+    "Source/E2E": "❌ Missing",
+    "platform/orchestrator": "❌ Missing",
+    "portal/Backend": "❓ Not verified",
+    "portal/Frontend": "❓ Not verified",
+    "severity": "P3",
+    "impact": "Builds non-deterministic; audit findings not reproducible"
+  },
+  "license_audit_status": "DEFERRED — no license-checker tool available; manual review needed",
+  "next_audit_recommendations": [
+    "Automate lock file checks in CI (fail if package-lock.json not up-to-date)",
+    "Run npm audit in CI post-install (npm 10+ integration)",
+    "Test Vitest config (disable --ui in CI; add env check)",
+    "Document Protobufjs version requirement in platform/orchestrator/README",
+    "Implement audit policy: fail on High+ CVEs in production dependencies"
+  ]
+}

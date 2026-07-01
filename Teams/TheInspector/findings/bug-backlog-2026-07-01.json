@@ -1,0 +1,307 @@
+{
+  "audit_metadata": {
+    "audit_id": "run-20260701-064802",
+    "date": "2026-07-01",
+    "branch": "audit/inspector-2026-07-01-24b0cc",
+    "grade": "D",
+    "grade_rationale": "4 P1 findings exceed C-grade threshold of max_p1=2. 12 P2 findings. Full spec coverage 27% (below C threshold of 40%). Both metrics independently place this audit at grade D.",
+    "prior_audit": null,
+    "baseline": "First audit — no prior baseline",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler (static/no-service)", "chaos-monkey (static/no-service)"]
+  },
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 12,
+    "p3_total": 12,
+    "p4_total": 4,
+    "fixed_total": 0,
+    "spec_coverage_enforcer_scope": "100%",
+    "spec_coverage_full_specifications": "27%",
+    "dynamic_tests_run": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars Multiple JavaScript Injection Vulnerabilities",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "reason": "Arbitrary code execution via AST type confusion (CVSS 9.8) — injection trigger matches security escalation policy",
+      "trigger": "injection",
+      "package": "handlebars@<=4.7.8",
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6"],
+      "affected_workspaces": ["Source/Backend", "Source/Frontend"],
+      "fix": "npm update @babel/core (automatic transitive update)"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read and Execution",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "reason": "Unauthenticated arbitrary file read and code execution (CVSS 9.8) — sensitive data exposed + code execution match security escalation policy",
+      "trigger": "sensitive data exposed",
+      "package": "vitest@<3.2.6",
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "affected_workspaces": ["Source/Frontend"],
+      "fix": "npm update vitest to 4.1.9+"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution in Orchestrator",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "reason": "Arbitrary code execution via untrusted .proto processing (CVSS 9.8) in orchestrator infrastructure — injection trigger matches security escalation policy",
+      "trigger": "injection",
+      "package": "protobufjs@<=7.6.2",
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "affected_workspaces": ["platform/orchestrator"],
+      "fix": "npm update protobufjs to 7.6.3+ (may require dockerode@5.0.1+)",
+      "blocking_work": true
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "title": "GET /api/search not registered — DependencyPicker broken at runtime",
+      "severity": "P1",
+      "category": "spec-drift/unimplemented",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "file": "Source/Backend/src/app.ts",
+      "spec": "FR-dependency-search",
+      "description": "The search route required by FR-dependency-search is not wired in app.ts. The DependencyPicker component silently receives 404s and shows empty results — the entire dependency search UI is non-functional at runtime.",
+      "recommendation": "Register GET /api/search in app.ts. Store findAll() already supports filtering; create src/routes/search.ts as a thin wrapper.",
+      "exploit_scenario": "User opens DependencyPicker, types a search query, gets empty results with no error. Feature appears to work but no data is ever returned."
+    },
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "title": "Handlebars Multiple JavaScript Injection Vulnerabilities",
+      "severity": "P1",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "escalated": true,
+      "package": "handlebars@<=4.7.8",
+      "max_cvss": 9.8,
+      "recommendation": "Update @babel/core transitive chain: npm update handlebars"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "title": "Vitest UI Server Arbitrary File Read and Execution",
+      "severity": "P1",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "escalated": true,
+      "package": "vitest@<3.2.6",
+      "cvss": 9.8,
+      "recommendation": "Update vitest to 4.1.9+; disable --ui flag in CI scripts"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "title": "Protobufjs Arbitrary Code Execution in Orchestrator",
+      "severity": "P1",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheGuardians",
+      "escalated": true,
+      "package": "protobufjs@<=7.6.2",
+      "cvss": 9.8,
+      "blocking_work": true,
+      "recommendation": "Update protobufjs to 7.6.3+ via dockerode@5.0.1+ in platform/orchestrator"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "title": "Route handlers call store directly, bypassing service layer",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "files": ["Source/Backend/src/routes/workItems.ts", "Source/Backend/src/routes/workflow.ts", "Source/Backend/src/routes/intake.ts"],
+      "recommendation": "Extract workItemService.ts and intakeService.ts; move store calls out of route handlers"
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "title": "pending_dependencies status missing from enum; dispatch-gating deviates from spec",
+      "severity": "P2",
+      "category": "spec-drift",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "files": ["Source/Shared/types/workflow.ts:213", "Source/Backend/src/routes/workflow.ts:231-244"],
+      "spec": "FR-dependency-dispatch-gating",
+      "recommendation": "Add PendingDependencies to WorkItemStatus enum and implement spec'd status-transition behavior, OR formally deviate in spec"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer blind spot: FR-dependency-* not tracked",
+      "severity": "P2",
+      "category": "spec-drift/untested",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Add FR-dependency-* requirements to Plans/self-judging-workflow/requirements.md; enforcer currently covers only 12% of all declared requirements"
+    },
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "title": "FR-dependency-schema: in-memory arrays vs SQLite junction table",
+      "severity": "P2",
+      "category": "spec-drift",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "files": ["Source/Shared/types/workflow.ts:81-87", "Source/Backend/src/store/workItemStore.ts"],
+      "spec": "FR-dependency-schema",
+      "recommendation": "Update spec to document in-memory approach as intentional, or implement junction table. Test traceability comments must not claim SQLite compliance."
+    },
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "title": "FR-dependency-seed: no seed data implemented",
+      "severity": "P2",
+      "category": "spec-drift/unimplemented",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "spec": "FR-dependency-seed",
+      "recommendation": "Add src/seed.ts with spec'd seed relationships populated on startup (NODE_ENV !== 'test'), or defer requirement"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "title": "Form-Data CRLF Injection",
+      "severity": "P2",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "package": "form-data@4.0.0-4.0.5",
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "cvss": 7.5,
+      "recommendation": "npm update form-data to 4.0.6+ (auto-resolved via express/vite update)"
+    },
+    {
+      "id": "DEP-005",
+      "source": "dependency-auditor",
+      "title": "Vite Path Traversal and server.fs.deny Bypass",
+      "severity": "P2",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "package": "vite@<=6.4.2",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-fx2h-pf6j-xcff"],
+      "recommendation": "Update vite to 8.1.2+ in Source/Frontend and portal/Frontend"
+    },
+    {
+      "id": "DEP-006",
+      "source": "dependency-auditor",
+      "title": "React Router Open Redirect via Protocol-Relative URLs",
+      "severity": "P2",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "package": "react-router-dom@6.7.0-6.30.3",
+      "cves": ["GHSA-2j2x-hqr9-3h42"],
+      "recommendation": "Update react-router-dom to 6.30.4+ or React Router v7"
+    },
+    {
+      "id": "DEP-007",
+      "source": "dependency-auditor",
+      "title": "@grpc/grpc-js Server Crash Denial of Service",
+      "severity": "P2",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "package": "@grpc/grpc-js@1.14.0-1.14.3",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "cvss": 7.5,
+      "recommendation": "Update @grpc/grpc-js to 1.14.4+ in platform/orchestrator"
+    },
+    {
+      "id": "DEP-008",
+      "source": "dependency-auditor",
+      "title": "path-to-regexp Regular Expression Denial of Service",
+      "severity": "P2",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "package": "path-to-regexp@<0.1.13",
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "cvss": 7.5,
+      "recommendation": "npm update path-to-regexp (transitive via express); update express to 5.x for full fix",
+      "cross_ref": "QO-002 — route handler complexity compounds ReDoS surface"
+    },
+    {
+      "id": "DEP-009",
+      "source": "dependency-auditor",
+      "title": "uuid Missing Buffer Bounds Check",
+      "severity": "P2",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "package": "uuid@<11.1.1",
+      "cves": ["GHSA-w5hq-g745-h8pq"],
+      "cvss": 7.5,
+      "recommendation": "Bump uuid to 11.1.1+ or 14.0.1+ (major version required) in Source/Backend and portal/Backend"
+    },
+    {
+      "id": "DEP-010",
+      "source": "dependency-auditor",
+      "title": "WebSocket Memory Exhaustion Denial of Service",
+      "severity": "P2",
+      "category": "cve",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "package": "ws@8.0.0-8.20.1",
+      "cves": ["GHSA-96hv-2xvq-fx4p"],
+      "cvss": 7.5,
+      "recommendation": "Update ws via vitest/vite update in Source/Frontend"
+    }
+  ],
+  "p3_findings": [
+    { "id": "QO-007", "source": "quality-oracle", "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage", "severity": "P3", "category": "test-quality", "route_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-008", "source": "quality-oracle", "title": "eslint-disable suppresses react-hooks/exhaustive-deps in two production files", "severity": "P3", "category": "pattern-violation", "route_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-009", "source": "quality-oracle", "title": "FR-001 to FR-069 in dev-workflow-platform.md untracked; scope boundary undocumented", "severity": "P3", "category": "spec-drift/doc-stale", "route_to": "requirements-reviewer", "status": "NEW" },
+    { "id": "QO-010", "source": "quality-oracle", "title": "FR-WF-013 workflow metrics not directly verified by any test", "severity": "P3", "category": "untested", "route_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-011", "source": "dependency-auditor", "title": "brace-expansion Zero-Step Sequence DoS", "severity": "P3", "category": "cve", "route_to": "TheFixer", "status": "NEW", "package": "brace-expansion@<1.1.13" },
+    { "id": "DEP-012", "source": "dependency-auditor", "title": "qs Query String DoS via TypeError", "severity": "P3", "category": "cve", "route_to": "TheFixer", "status": "NEW", "package": "qs@6.11.1-6.15.1" },
+    { "id": "DEP-013", "source": "dependency-auditor", "title": "PostCSS XSS via Unescaped </style>", "severity": "P3", "category": "cve", "route_to": "TheFixer", "status": "NEW", "package": "postcss@<8.5.10", "affected": "portal/Frontend" },
+    { "id": "DEP-014", "source": "dependency-auditor", "title": "esbuild CORS Bypass (dev server)", "severity": "P3", "category": "cve", "route_to": "TheFixer", "status": "NEW", "package": "esbuild@<=0.24.2", "note": "Resolved by vite update (DEP-005)" },
+    { "id": "DEP-015", "source": "dependency-auditor", "title": "js-yaml Quadratic Complexity DoS", "severity": "P3", "category": "cve", "route_to": "TheFixer", "status": "NEW", "package": "js-yaml@<3.15.0" },
+    { "id": "DEP-016", "source": "dependency-auditor", "title": "@babel/core Arbitrary File Read via sourceMappingURL", "severity": "P3", "category": "cve", "route_to": "TheFixer", "status": "NEW", "package": "@babel/core@<=7.29.0" },
+    { "id": "DEP-017", "source": "dependency-auditor", "title": "Express 4.x — 1 major version behind; missing 18 months of security patches", "severity": "P3", "category": "outdated-major", "route_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-018", "source": "dependency-auditor", "title": "Missing lock files in Frontend, E2E, Orchestrator workspaces", "severity": "P3", "category": "build-hygiene", "route_to": "TheFixer", "status": "NEW" }
+  ],
+  "p4_findings": [
+    { "id": "DEP-019", "source": "dependency-auditor", "title": "High transitive dependency count in Source/Backend (411)", "severity": "P4", "category": "supply-chain" },
+    { "id": "DEP-020", "source": "dependency-auditor", "title": "Single-maintainer packages (uuid, pino) — supply chain informational", "severity": "P4", "category": "supply-chain" },
+    { "id": "DEP-021", "source": "dependency-auditor", "title": "React 18 → 19 major version upgrade", "severity": "P4", "category": "outdated-major" },
+    { "id": "DEP-022", "source": "dependency-auditor", "title": "License audit deferred — no license-checker run", "severity": "P4", "category": "compliance" }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Route handler complexity — business logic, store calls, and HTTP mapping in single function",
+      "findings": ["QO-002", "DEP-008"],
+      "single_fix": "Extract workItemService.ts; store calls via service layer. Path-to-regexp ReDoS surface is reduced because simpler handlers = fewer complex parameterized routes.",
+      "fix_impact": "Resolves QO-002 (architecture violation) + reduces attack surface for DEP-008 (ReDoS)"
+    },
+    {
+      "root_cause": "Dependency hygiene process gap — no audit policy in CI, no lock files, no version pinning",
+      "findings": ["DEP-018", "DEP-001", "DEP-002", "DEP-003"],
+      "single_fix": "Add npm audit --audit-level=high to CI gate; commit package-lock.json to all workspaces. The critical CVEs would have been caught immediately at install time.",
+      "fix_impact": "Resolves DEP-018 (lock files) + creates ongoing detection for DEP-001/002/003 class of issues"
+    },
+    {
+      "root_cause": "Spec traceability coverage gap — enforcer scope covers only 12% of declared requirements",
+      "findings": ["QO-004", "QO-001", "QO-003"],
+      "single_fix": "Expand traceability enforcer to include FR-dependency-* requirements. QO-001 (missing route) and QO-003 (enum gap) would both be caught by a properly-scoped enforcer.",
+      "fix_impact": "Resolves QO-004 directly; makes QO-001 and QO-003 detectable by automated gate"
+    }
+  ]
+}

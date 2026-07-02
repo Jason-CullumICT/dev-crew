@@ -1,0 +1,340 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-02",
+    "run_id": "run-20260702-061439",
+    "auditor": "TheInspector (team_leader)",
+    "branch": "unknown",
+    "scope": "Full codebase — static analysis (services offline)",
+    "grade": "D",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler (services offline)", "chaos-monkey (services offline)"],
+    "prior_audit": null
+  },
+  "summary": {
+    "overall_grade": "D",
+    "p1_total": 4,
+    "p2_total": 7,
+    "p3_total": 9,
+    "p4_total": 1,
+    "fixed_total": 0,
+    "new_total": 21,
+    "still_open_total": 0,
+    "regressed_total": 0,
+    "spec_coverage_pct": 91,
+    "dynamic_tests_run": 0,
+    "deployment_blocked": true
+  },
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "title": "dependencyCheckDuration Histogram missing from Source/Backend",
+      "category": "spec-drift",
+      "file": "Source/Backend/src/metrics.ts",
+      "description": "FR-dependency-metrics requires 4 metrics (3 counters + 1 histogram). Source/ only has the 3 counters. The histogram exists in portal/Backend/src/metrics.ts but was never ported to Source/. Spec coverage drops to 75% for this FR.",
+      "recommendation": "Port `dependencyCheckDuration` histogram from portal/Backend/src/metrics.ts to Source/Backend/src/metrics.ts. Add // Verifies: FR-dependency-metrics comment.",
+      "effort": "30 minutes",
+      "status": "NEW",
+      "escalation": null
+    },
+    {
+      "id": "DEP-001",
+      "specialist": "dependency-auditor",
+      "title": "Vitest UI Server Arbitrary Code Execution (CVSS 9.8)",
+      "category": "cve",
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "file": "Source/Frontend/package.json, portal/Backend/package.json, portal/Frontend/package.json",
+      "description": "Vitest UI server allows remote code execution — attacker can read and execute arbitrary files. Affects Source/Frontend, portal/Backend, portal/Frontend. Blocks deployment.",
+      "recommendation": "npm update vitest to >=3.2.6 across all affected workspaces.",
+      "fix_command": "npm update vitest --save",
+      "effort": "1 hour",
+      "blocks_deployment": true,
+      "status": "NEW",
+      "escalation": null
+    },
+    {
+      "id": "DEP-002",
+      "specialist": "dependency-auditor",
+      "title": "Handlebars JavaScript Injection (CVSS 9.8) [ESCALATE → TheGuardians]",
+      "category": "cve",
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-2qvq-rjwj-gvw9"],
+      "file": "Source/Backend/package.json (transitive)",
+      "description": "Handlebars JS injection via AST type confusion — allows arbitrary JavaScript execution if backend renders templates from user input. 8 related CVEs. Blocks deployment. INJECTION trigger → TheGuardians required.",
+      "recommendation": "1) Identify if handlebars is used: npm list handlebars && grep -r handlebars Source/Backend/. 2) If yes, upgrade to >=4.7.9. 3) If no direct usage, remove transitive dependency. 4) TheGuardians review required.",
+      "effort": "1-2 hours",
+      "blocks_deployment": true,
+      "status": "NEW",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "specialist": "dependency-auditor",
+      "title": "Protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "category": "cve",
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "file": "platform/orchestrator/package.json, portal/Backend/package.json (transitive)",
+      "description": "Protobufjs arbitrary code execution if backend parses untrusted protobuf messages. Affects platform/orchestrator (deployment blocked) and portal/Backend.",
+      "recommendation": "npm update protobufjs to >=7.5.5 in affected workspaces.",
+      "fix_command": "npm update protobufjs",
+      "effort": "1 hour",
+      "blocks_deployment": true,
+      "status": "NEW",
+      "escalation": null
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer validates only 1 of 8 plans; 7 false positives on dependency-linking",
+      "category": "tooling",
+      "file": "tools/traceability-enforcer.py:49",
+      "description": "Enforcer selects only the most-recently-modified plan — 7 other plans are silently skipped. Additionally, the free-text regex FR-[A-Z0-9-]+ produces 7 false-positive failures against dependency-linking/requirements.md.",
+      "recommendation": "Update enforcer to iterate all plans in Plans/. Tighten regex to match only canonical FR-\\d{3,} IDs or anchored patterns to eliminate false positives.",
+      "effort": "2-3 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "title": "3 confirmed open portal/ requirements (types, seed data, tests missing)",
+      "category": "spec-drift",
+      "file": "portal/Shared/api.ts:32, portal/Backend/src/database/, portal/Frontend/tests/",
+      "description": "FR-dependency-api-types: blocked_by? field missing from PATCH input types (frontend uses `as any`). FR-dependency-seed: no seed.ts; known dependency chains never inserted into store. FR-dependency-frontend-tests: DependencySection.test.tsx and BlockedBadge.test.tsx don't exist.",
+      "recommendation": "1) Add blocked_by? to PortalPatch input types. 2) Create portal/Backend/src/database/seed.ts with canonical dependency chains. 3) Write DependencySection.test.tsx and BlockedBadge.test.tsx.",
+      "effort": "4-6 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "title": "FR-TMP-008 missing Verifies: traceability annotation",
+      "category": "traceability",
+      "file": "platform/orchestrator/lib/workflow-engine.js",
+      "description": "FR-TMP-008 (Worker Container Prerequisites) is the only FR-TMP requirement without a // Verifies: comment. All 9 others are traced.",
+      "recommendation": "Add // Verifies: FR-TMP-008 comment to the relevant code section in platform/orchestrator/lib/workflow-engine.js.",
+      "effort": "15 minutes",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "specialist": "dependency-auditor",
+      "title": "Vite server.fs.deny Bypass on Windows (CVSS 7.5)",
+      "category": "cve",
+      "cve_id": "GHSA-fx2h-pf6j-xcff",
+      "file": "Source/Frontend/package.json",
+      "description": "Path traversal on Windows dev servers — attacker can read files outside intended root including source maps and secrets. Fix: upgrade vite to >=5.5.0 or >=6.4.3.",
+      "fix_command": "npm update vite",
+      "effort": "1 hour",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "specialist": "dependency-auditor",
+      "title": "Form-data CRLF Injection (CVSS 7.5) [ESCALATE → TheGuardians if uploads unvalidated]",
+      "category": "cve",
+      "cve_id": "GHSA-hmw2-7cc7-3qxx",
+      "file": "Source/Backend/package.json, Source/Frontend/package.json (transitive)",
+      "description": "HTTP header injection via multipart form data with crafted filenames. Affects file upload handlers. CRLF injection trigger → TheGuardians review required if file uploads not validated.",
+      "recommendation": "1) Upgrade form-data to >=4.0.6. 2) Validate filenames server-side. 3) Sanitize control characters. 4) TheGuardians review if uploads exist.",
+      "fix_command": "npm update",
+      "effort": "2 hours",
+      "status": "NEW",
+      "escalation": "TheGuardians (conditional — if file uploads not validated)"
+    },
+    {
+      "id": "DEP-006",
+      "specialist": "dependency-auditor",
+      "title": "UUID Buffer Bounds Check Bypass (CVSS 7.5)",
+      "category": "cve",
+      "cve_id": "GHSA-w5hq-g745-h8pq",
+      "file": "Source/Backend/package.json",
+      "description": "Buffer overflow if untrusted buffers passed to uuid v3/v5/v6 functions — memory corruption can lead to crash or arbitrary write. Requires major version bump from uuid@9 to uuid@11.",
+      "recommendation": "Upgrade uuid to >=11.1.1. Audit uuid usage to ensure untrusted buffers are never passed. Test thoroughly after major version bump.",
+      "fix_command": "npm update uuid --save",
+      "effort": "2 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "specialist": "dependency-auditor",
+      "title": "Vitest Mocker + esbuild CORS bypass + Vite transitive vulnerabilities",
+      "category": "cve",
+      "cve_ids": ["GHSA-67mh-4wv8-2f99", "GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3"],
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "description": "esbuild dev server CORS/origin bypass (CSRF risk); vite path traversal in optimized deps; vite launch-editor NTLM hash disclosure on Windows. All dev-server-only but increase attack surface during development.",
+      "recommendation": "Upgrade vitest to >=3.2.6 (resolves DEP-001 simultaneously). Enforce --host localhost only. Never expose dev servers.",
+      "fix_command": "npm update vitest",
+      "effort": "1 hour",
+      "cross_ref": "DEP-001 (same vitest upgrade resolves both)",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "specialist": "quality-oracle",
+      "title": "Spec has no numbered FR-XXX IDs — traceability depends on Plan file",
+      "category": "traceability",
+      "file": "Specifications/workflow-engine.md",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "specialist": "quality-oracle",
+      "title": "No requirements.md for tiered-merge-pipeline; platform/ excluded from enforcer",
+      "category": "tooling",
+      "file": "Plans/tiered-merge-pipeline/",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "specialist": "quality-oracle",
+      "title": "DebugPortalPage.tsx uses informal Verifies comment with no backing FR",
+      "category": "traceability",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "specialist": "dependency-auditor",
+      "title": "React 18→19 and React Router 6→7 major version lag",
+      "category": "outdated",
+      "file": "Source/Frontend/package.json",
+      "timeline": "Q3-Q4 2026",
+      "effort": "8 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "specialist": "dependency-auditor",
+      "title": "Express 4→5 major version lag",
+      "category": "outdated",
+      "file": "Source/Backend/package.json",
+      "effort": "4 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "specialist": "dependency-auditor",
+      "title": "Pino 2-major-version lag (8.x installed, 10.x available)",
+      "category": "outdated",
+      "file": "Source/Backend/package.json",
+      "effort": "3 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "specialist": "dependency-auditor",
+      "title": "QS query string parsing DoS via deeply nested inputs",
+      "category": "cve",
+      "file": "Source/Backend/package.json (transitive via express)",
+      "fix_command": "npm update",
+      "effort": "0.5 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "specialist": "dependency-auditor",
+      "title": "Brace-expansion memory exhaustion in glob patterns",
+      "category": "cve",
+      "file": "Source/Backend/package.json (transitive, build-time only)",
+      "fix_command": "npm audit fix",
+      "effort": "0.5 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "specialist": "dependency-auditor",
+      "title": "JS-YAML code execution if parsing untrusted YAML",
+      "category": "cve",
+      "file": "Source/Backend/package.json (transitive)",
+      "recommendation": "Only parse YAML from trusted files; use yaml.load() with safe schema only.",
+      "effort": "1 hour",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-013",
+      "specialist": "dependency-auditor",
+      "title": "@babel/core arbitrary file read via source map comments",
+      "category": "cve",
+      "file": "Source/Backend, Source/Frontend (transitive)",
+      "fix_command": "npm update @babel/core",
+      "effort": "0.5 hours",
+      "status": "NEW"
+    }
+  ],
+  "escalations": {
+    "the_guardians": [
+      {
+        "finding_id": "DEP-002",
+        "title": "Handlebars JavaScript Injection via AST Type Confusion",
+        "trigger": "injection",
+        "priority": "P1",
+        "reason": "CVSS 9.8 injection vulnerability in Source/Backend transitive dependency. Requires TheGuardians security review — cannot be deferred."
+      },
+      {
+        "finding_id": "DEP-005",
+        "title": "Form-data CRLF Injection in multipart field names",
+        "trigger": "injection",
+        "priority": "P2",
+        "reason": "CRLF injection via form-data multipart filenames. Conditional: if file uploads exist and are not validated, TheGuardians review required."
+      }
+    ],
+    "the_fixer": [
+      "QO-001", "DEP-001", "DEP-003",
+      "QO-002", "QO-003", "QO-004", "DEP-004", "DEP-006", "DEP-007",
+      "QO-005", "QO-006", "QO-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-014",
+      "DEP-013"
+    ]
+  },
+  "cross_reference_map": [
+    {
+      "root_cause": "Outdated vitest across all workspaces",
+      "findings": ["DEP-001", "DEP-007"],
+      "single_fix": "npm update vitest to >=3.2.6 across Source/Frontend, portal/Backend, portal/Frontend",
+      "fix_impact": "Resolves 1 P1 + 1 P2 finding"
+    },
+    {
+      "root_cause": "portal/Backend dev/test dependencies mixed into production paths",
+      "findings": ["DEP-001 (portal/Backend)", "DEP-003 (portal/Backend)", "DEP-007"],
+      "single_fix": "Restructure portal/Backend to separate devDependencies; fix npm update in that workspace",
+      "fix_impact": "Reduces portal/Backend from 54 CVEs; unblocks deployment"
+    },
+    {
+      "root_cause": "No automated CVE scanning gate in CI",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007"],
+      "single_fix": "Add npm audit --audit-level=high gate to CI pipeline; fail on P1/P2 CVEs",
+      "fix_impact": "Prevents all future P1/P2 CVE findings from reaching audit"
+    },
+    {
+      "root_cause": "Spec-to-implementation porting gap between portal/ and Source/",
+      "findings": ["QO-001"],
+      "single_fix": "Cross-check portal/Backend/src/metrics.ts vs Source/Backend/src/metrics.ts as part of every portal feature port",
+      "fix_impact": "Resolves 1 P1 spec drift finding; prevents future porting gaps"
+    }
+  ],
+  "remediation_plan": {
+    "block_deployment": {
+      "label": "Block Deployment — Fix Before Next Release",
+      "findings": ["DEP-001", "DEP-002", "DEP-003"],
+      "effort_hours": 3,
+      "notes": "3 CVSS 9.8 RCE vulnerabilities. Two deployment targets currently blocked."
+    },
+    "this_sprint": {
+      "label": "This Sprint",
+      "findings": ["QO-001", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "QO-002", "QO-003", "QO-004"],
+      "effort_hours": 14
+    },
+    "next_sprint": {
+      "label": "Next Sprint",
+      "findings": ["QO-005", "QO-006", "QO-007", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-014"]
+    },
+    "backlog": {
+      "label": "Backlog",
+      "findings": ["DEP-008", "DEP-013"]
+    }
+  }
+}

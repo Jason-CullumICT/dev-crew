@@ -1,0 +1,630 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-02",
+    "auditor": "dependency_auditor",
+    "scope": "All npm workspaces (Source/Backend, Source/Frontend, Source/E2E, platform/orchestrator, portal/Backend, portal/Frontend)",
+    "version": "1.0",
+    "grade": "C"
+  },
+  "summary": {
+    "total_projects": 6,
+    "total_cves": {
+      "critical": 5,
+      "high": 12,
+      "moderate": 34,
+      "low": 3,
+      "total": 54
+    },
+    "total_dependencies": {
+      "direct": 75,
+      "transitive": "~1100",
+      "with_vulnerabilities": 20
+    },
+    "outdated_major_versions": 6,
+    "blocking_deployments": [
+      "portal/Backend",
+      "platform/orchestrator"
+    ]
+  },
+  "projects": [
+    {
+      "name": "Source/Backend",
+      "package_manager": "npm",
+      "direct_deps": 8,
+      "transitive_deps": 102,
+      "cves": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 6,
+        "low": 1,
+        "total": 9
+      },
+      "grade": "B",
+      "blocking": false,
+      "notes": "Handlebars JS injection (transitive); uuid buffer overflow (direct); form-data CRLF"
+    },
+    {
+      "name": "Source/Frontend",
+      "package_manager": "npm",
+      "direct_deps": 13,
+      "transitive_deps": "102+",
+      "cves": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 1,
+        "total": "9+"
+      },
+      "grade": "B",
+      "blocking": false,
+      "notes": "Vitest RCE (direct); vite FS bypass (direct); form-data CRLF"
+    },
+    {
+      "name": "Source/E2E",
+      "package_manager": "npm",
+      "direct_deps": 4,
+      "transitive_deps": "~40",
+      "cves": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "grade": "A",
+      "blocking": false,
+      "notes": "Clean; minimal dependencies"
+    },
+    {
+      "name": "platform/orchestrator",
+      "package_manager": "npm",
+      "direct_deps": 12,
+      "transitive_deps": "~150",
+      "cves": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0,
+        "total": 9
+      },
+      "grade": "B",
+      "blocking": true,
+      "notes": "Protobufjs RCE (transitive); blocks deployment until fixed"
+    },
+    {
+      "name": "portal/Backend",
+      "package_manager": "npm",
+      "direct_deps": 25,
+      "transitive_deps": "~300+",
+      "cves": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 46,
+        "low": 0,
+        "total": 54
+      },
+      "grade": "C",
+      "blocking": true,
+      "notes": "HIGHEST RISK PROJECT. Test deps (vitest) in prod-like paths; protobufjs critical; 54 total CVEs. Requires restructuring."
+    },
+    {
+      "name": "portal/Frontend",
+      "package_manager": "npm",
+      "direct_deps": 13,
+      "transitive_deps": "~150",
+      "cves": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 5,
+        "low": 1,
+        "total": 11
+      },
+      "grade": "B",
+      "blocking": false,
+      "notes": "Vitest RCE (direct)"
+    }
+  ],
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary Code Execution",
+      "severity": "P1",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "vitest",
+          "affected_versions": "<=3.2.5",
+          "current_version_in_projects": [
+            "Source/Frontend@^2.0.5",
+            "portal/Backend@<3.2.6",
+            "portal/Frontend@^2.0.5"
+          ]
+        }
+      ],
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "cve_title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+      "cvss": {
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "cwe": ["CWE-862"],
+      "impact": "Remote code execution via vitest UI server; attacker can read and execute arbitrary files",
+      "likelihood": "medium_dev_high_prod",
+      "recommendation": "Update vitest to >=3.2.6 immediately; requires testing for major version bump",
+      "fix_command": "npm update vitest --save",
+      "blocks_deployment": true,
+      "effort_hours": 1,
+      "cross_ref": ["TheInspector/findings/dependency-audit-20260702.md#dep-001"]
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion",
+      "severity": "P1",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "handlebars",
+          "affected_versions": ">=4.0.0 <=4.7.8",
+          "found_in": "Source/Backend (transitive, likely via js-yaml or build tools)",
+          "cve_count": 8
+        }
+      ],
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "primary_cve_title": "JavaScript Injection via AST Type Confusion",
+      "cvss": {
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "cwe": ["CWE-94", "CWE-843"],
+      "impact": "Code injection if backend renders templates from user input; allows arbitrary JavaScript execution",
+      "likelihood": "high_if_templates_rendered",
+      "recommendation": "1) Identify if handlebars is used in Source/Backend; 2) If yes, upgrade to >=4.7.9; 3) If no, remove dependency",
+      "investigation_command": "npm list handlebars && grep -r \"handlebars\\|require.*hb\\|import.*handlebars\" Source/Backend",
+      "blocks_deployment": true,
+      "effort_hours": 1,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "protobufjs",
+          "affected_versions": "<7.5.5",
+          "found_in": [
+            "platform/orchestrator (transitive)",
+            "portal/Backend (transitive)"
+          ]
+        }
+      ],
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "cve_title": "Arbitrary code execution in protobufjs",
+      "cvss": {
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "cwe": ["CWE-94"],
+      "impact": "Remote code execution if backend parses untrusted protobuf messages",
+      "likelihood": "medium_if_accepts_user_protos_high",
+      "recommendation": "Upgrade protobufjs to >=7.5.5; verify that backend does not accept arbitrary .proto files from users",
+      "fix_command": "npm update protobufjs",
+      "blocks_deployment": true,
+      "effort_hours": 1,
+      "cross_ref": ["TheGuardians", "TheInspector/inspector.config.yml#threat_scenarios"]
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vite server.fs.deny Bypass on Windows",
+      "severity": "P2",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "vite",
+          "affected_versions": "<=6.4.2",
+          "current_version_in_projects": ["Source/Frontend@^5.4.0"]
+        }
+      ],
+      "cve_id": "GHSA-fx2h-pf6j-xcff",
+      "cve_title": "vite: server.fs.deny bypass on Windows alternate paths",
+      "cvss": {
+        "score": 7.5,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+      },
+      "cwe": ["CWE-22", "CWE-200"],
+      "impact": "Path traversal on Windows dev servers; attacker can read files outside intended root (source maps, secrets)",
+      "likelihood": "medium_windows_dev_low_prod",
+      "recommendation": "Upgrade vite to >=5.5.0 or >=6.4.3; enforce server.fs.deny in vite.config.ts",
+      "fix_command": "npm update vite",
+      "blocks_deployment": false,
+      "dev_only": true,
+      "effort_hours": 1
+    },
+    {
+      "id": "DEP-005",
+      "title": "Form-data CRLF Injection",
+      "severity": "P2",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "form-data",
+          "affected_versions": ">=4.0.0 <4.0.6",
+          "found_in": [
+            "Source/Backend (transitive)",
+            "Source/Frontend (transitive)"
+          ]
+        }
+      ],
+      "cve_id": "GHSA-hmw2-7cc7-3qxx",
+      "cve_title": "form-data: CRLF injection in multipart field names and filenames",
+      "cvss": {
+        "score": 7.5,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+      },
+      "cwe": ["CWE-93"],
+      "impact": "HTTP header injection via multipart form data with crafted filenames; affects file upload handlers",
+      "likelihood": "medium_if_uploads",
+      "recommendation": "1) Upgrade form-data to >=4.0.6 via npm update; 2) Validate filenames server-side; 3) Sanitize control characters",
+      "fix_command": "npm update",
+      "blocks_deployment": true,
+      "effort_hours": 2,
+      "escalation": "TheGuardians if file uploads not validated"
+    },
+    {
+      "id": "DEP-006",
+      "title": "UUID Buffer Bounds Check Bypass",
+      "severity": "P2",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "uuid",
+          "affected_versions": "<11.1.1",
+          "current_version_in_projects": ["Source/Backend@^9.0.0"],
+          "isDirect": true
+        }
+      ],
+      "cve_id": "GHSA-w5hq-g745-h8pq",
+      "cve_title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "cvss": {
+        "score": 7.5,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+      },
+      "cwe": ["CWE-787", "CWE-1285"],
+      "impact": "Buffer overflow if untrusted buffers passed to uuid functions; memory corruption → crash or arbitrary write",
+      "likelihood": "low_unless_untrusted_buffers",
+      "recommendation": "Upgrade uuid to >=11.1.1 (major version); audit uuid usage to ensure untrusted buffers not passed; test after upgrade",
+      "fix_command": "npm update uuid --save",
+      "blocks_deployment": true,
+      "effort_hours": 2,
+      "major_version_bump": true
+    },
+    {
+      "id": "DEP-007",
+      "title": "Vitest Mocker + Vite Transitive Vulnerabilities",
+      "severity": "P2",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "@vitest/mocker",
+          "sub_issues": ["vite", "esbuild", "vite-node"]
+        }
+      ],
+      "cve_ids": [
+        "GHSA-67mh-4wv8-2f99",
+        "GHSA-4w7w-66w2-5vf9",
+        "GHSA-v6wh-96g9-6wx3"
+      ],
+      "issues": [
+        {
+          "package": "esbuild",
+          "title": "esbuild dev server CORS/origin bypass",
+          "cve": "GHSA-67mh-4wv8-2f99",
+          "impact": "CSRF attacks; any website can send requests to dev server"
+        },
+        {
+          "package": "vite",
+          "title": "vite path traversal in optimized deps",
+          "cve": "GHSA-4w7w-66w2-5vf9",
+          "impact": "Source maps or dependency code can be read via path traversal"
+        },
+        {
+          "package": "vite",
+          "title": "launch-editor NTLM hash disclosure",
+          "cve": "GHSA-v6wh-96g9-6wx3",
+          "impact": "Windows NTLM credentials disclosed on Windows dev machines"
+        }
+      ],
+      "found_in": ["Source/Frontend", "portal/Frontend"],
+      "impact": "Dev server security compromised; isolation broken; CSRF and info disclosure",
+      "likelihood": "medium_dev_low_prod",
+      "recommendation": "Upgrade esbuild to >=0.24.3; upgrade vitest to >=3.2.6 or >=4.1.9; use --host localhost only; never expose dev servers",
+      "fix_command": "npm update vitest",
+      "blocks_deployment": false,
+      "dev_only": true,
+      "effort_hours": 1
+    },
+    {
+      "id": "DEP-008",
+      "title": "React & React Router Major Version Lag",
+      "severity": "P3",
+      "category": "outdated",
+      "packages": [
+        {
+          "name": "react",
+          "current": "18.3.1",
+          "latest": "19.2.7",
+          "lag_majors": 1
+        },
+        {
+          "name": "react-dom",
+          "current": "18.3.1",
+          "latest": "19.2.7",
+          "lag_majors": 1
+        },
+        {
+          "name": "react-router-dom",
+          "current": "6.26.0",
+          "latest": "7.18.1",
+          "lag_majors": 1
+        }
+      ],
+      "found_in": ["Source/Frontend"],
+      "impact": "Missing perf improvements; new APIs unavailable; may miss security patches if React 18 EOLs",
+      "recommendation": "Plan React 18→19 upgrade (requires component testing); review React Router 6→7 migration guide",
+      "timeline": "Q3-Q4 2026; schedule as dedicated sprint",
+      "effort_hours": 8,
+      "major_version_bump": true,
+      "blocks_deployment": false
+    },
+    {
+      "id": "DEP-009",
+      "title": "Express Major Version Lag",
+      "severity": "P3",
+      "category": "outdated",
+      "packages": [
+        {
+          "name": "express",
+          "current": "4.18.2",
+          "latest": "5.2.1",
+          "lag_majors": 1
+        }
+      ],
+      "found_in": ["Source/Backend"],
+      "impact": "Missing middleware improvements; may miss security patches; qs vulnerability related to query parsing",
+      "recommendation": "Plan upgrade; review middleware compatibility; test REST API endpoints thoroughly",
+      "timeline": "Next sprint; relatively low risk for simple REST APIs",
+      "effort_hours": 4,
+      "major_version_bump": true,
+      "blocks_deployment": false
+    },
+    {
+      "id": "DEP-010",
+      "title": "Pino Major Version Lag",
+      "severity": "P3",
+      "category": "outdated",
+      "packages": [
+        {
+          "name": "pino",
+          "current": "8.17.0",
+          "latest": "10.3.1",
+          "lag_majors": 2
+        }
+      ],
+      "found_in": ["Source/Backend"],
+      "impact": "Missing perf improvements; may miss security & bug fixes; indicates stale dependencies",
+      "recommendation": "Plan pino 8→10 upgrade; test logging output format compatibility; verify log parsing pipeline",
+      "timeline": "Next 2 sprints",
+      "effort_hours": 3,
+      "major_version_bump": true,
+      "blocks_deployment": false
+    },
+    {
+      "id": "DEP-011",
+      "title": "QS Query String Parsing DoS",
+      "severity": "P3",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "qs",
+          "impact": "Deeply nested query strings cause CPU exhaustion"
+        }
+      ],
+      "found_in": ["Source/Backend (via express, body-parser)"],
+      "recommendation": "Fixed via npm update; typically resolves automatically",
+      "fix_command": "npm update",
+      "blocks_deployment": false,
+      "effort_hours": 0.5
+    },
+    {
+      "id": "DEP-012",
+      "title": "Brace Expansion Memory Exhaustion",
+      "severity": "P3",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "brace-expansion",
+          "affected_versions": "<1.1.13",
+          "impact": "Zero-step sequences in glob patterns hang process and exhaust memory"
+        }
+      ],
+      "found_in": ["Source/Backend (transitive, likely via build tools)"],
+      "likelihood": "low_build_time_only",
+      "recommendation": "Fixed via npm update or npm audit fix",
+      "blocks_deployment": false,
+      "effort_hours": 0.5
+    },
+    {
+      "id": "DEP-013",
+      "title": "@babel/core Arbitrary File Read",
+      "severity": "P4",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "@babel/core",
+          "affected_versions": "<=7.29.0",
+          "impact": "Source map comments can leak file contents"
+        }
+      ],
+      "found_in": ["Source/Backend, Source/Frontend (transitive)"],
+      "likelihood": "low",
+      "recommendation": "Upgrade to >=7.30.0",
+      "blocks_deployment": false,
+      "effort_hours": 0.5
+    },
+    {
+      "id": "DEP-014",
+      "title": "JS-YAML Eval or Code Execution",
+      "severity": "P3",
+      "category": "cve",
+      "packages": [
+        {
+          "name": "js-yaml",
+          "impact": "Code execution if backend parses YAML from untrusted sources"
+        }
+      ],
+      "found_in": ["Source/Backend (likely transitive)"],
+      "recommendation": "Only parse YAML from trusted files; use yaml.load() with safe schema only",
+      "blocks_deployment": false,
+      "effort_hours": 1
+    }
+  ],
+  "remediation_roadmap": {
+    "immediate": {
+      "timeframe": "This week",
+      "priority": "P1 Blockers",
+      "items": [
+        {
+          "id": "DEP-001",
+          "title": "Update vitest to >=3.2.6",
+          "effort_hours": 1,
+          "projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+          "command": "npm update vitest"
+        },
+        {
+          "id": "DEP-002",
+          "title": "Identify & fix handlebars usage",
+          "effort_hours": 1,
+          "projects": ["Source/Backend"],
+          "command": "npm list handlebars && grep -r handlebars Source/Backend"
+        },
+        {
+          "id": "DEP-003",
+          "title": "Update protobufjs to >=7.5.5",
+          "effort_hours": 1,
+          "projects": ["platform/orchestrator", "portal/Backend"],
+          "command": "npm update protobufjs"
+        }
+      ]
+    },
+    "short_term": {
+      "timeframe": "This sprint",
+      "priority": "P2 Blockers",
+      "items": [
+        {
+          "id": "DEP-006",
+          "title": "Update uuid to >=11.1.1",
+          "effort_hours": 2,
+          "projects": ["Source/Backend"],
+          "command": "npm update uuid --save"
+        },
+        {
+          "id": "DEP-004",
+          "title": "Update vite to >=5.5.0",
+          "effort_hours": 1,
+          "projects": ["Source/Frontend"],
+          "command": "npm update vite"
+        },
+        {
+          "id": "DEP-005",
+          "title": "Update form-data to >=4.0.6",
+          "effort_hours": 1,
+          "projects": ["Source/Backend", "Source/Frontend"],
+          "command": "npm update"
+        }
+      ]
+    },
+    "medium_term": {
+      "timeframe": "Next 2 sprints",
+      "priority": "P3 Improvements",
+      "items": [
+        {
+          "id": "DEP-009",
+          "title": "Plan express 4→5 upgrade",
+          "effort_hours": 4,
+          "projects": ["Source/Backend"],
+          "timeline": "Sprint N+1"
+        },
+        {
+          "id": "DEP-008",
+          "title": "Plan React 18→19 upgrade",
+          "effort_hours": 8,
+          "projects": ["Source/Frontend"],
+          "timeline": "Sprint N+2"
+        },
+        {
+          "id": "DEP-010",
+          "title": "Update pino to 10.x",
+          "effort_hours": 3,
+          "projects": ["Source/Backend"],
+          "timeline": "Sprint N+1"
+        },
+        {
+          "id": "INFRA-001",
+          "title": "Restructure portal/Backend (dev/prod deps)",
+          "effort_hours": 6,
+          "projects": ["portal/Backend"],
+          "timeline": "Sprint N+2"
+        }
+      ]
+    }
+  },
+  "escalations": {
+    "the_guardians": [
+      {
+        "finding_id": "DEP-002",
+        "reason": "Handlebars JS injection; requires security review if templates are rendered"
+      },
+      {
+        "finding_id": "DEP-005",
+        "reason": "Form-data CRLF injection; escalate if file uploads not validated"
+      }
+    ],
+    "the_fixer": [
+      "DEP-001",
+      "DEP-002",
+      "DEP-003",
+      "DEP-004",
+      "DEP-005",
+      "DEP-006",
+      "DEP-007",
+      "DEP-008",
+      "DEP-009",
+      "DEP-010"
+    ]
+  },
+  "grading": {
+    "overall_grade": "C",
+    "rationale": "Baseline B (<=8 P2 findings) degraded to C due to 5 P1 critical CVEs (vitest RCE, handlebars JS injection, protobufjs RCE, vite FS bypass, form-data CRLF)",
+    "to_grade_b": [
+      "Fix all 5 P1 CVEs",
+      "Update uuid to >=11.1.1",
+      "Establish automated CVE scanning in CI"
+    ],
+    "to_grade_a": [
+      "All Grade B requirements",
+      "Update express, pino, react, react-router-dom to latest majors",
+      "Implement SLA for CVE remediation (P1: 24h)",
+      "Add SLSA & supply chain scanning"
+    ]
+  }
+}

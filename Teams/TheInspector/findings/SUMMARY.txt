@@ -1,0 +1,216 @@
+════════════════════════════════════════════════════════════════════════════════
+                    DEPENDENCY AUDITOR — FINAL REPORT
+                           dev-crew | 2026-07-03
+════════════════════════════════════════════════════════════════════════════════
+
+PROJECT RISK GRADE: C  (Multiple critical/high CVEs require immediate remediation)
+
+════════════════════════════════════════════════════════════════════════════════
+VULNERABILITY SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+Total CVEs Detected: 20
+├── CRITICAL (P1):   2  [require immediate patch]
+├── HIGH (P2):       4  [patch within 1 week]
+├── MODERATE (P3):  10  [patch within 2 weeks]
+└── LOW (P4):        2  [address in next release]
+
+════════════════════════════════════════════════════════════════════════════════
+WORKSPACE BREAKDOWN
+════════════════════════════════════════════════════════════════════════════════
+
+Backend (Source/Backend)
+  Package Manager:  npm
+  Direct Deps:      4
+  Transitive Deps:  408 (102x multiplier)
+  CVEs:             9 (1 critical, 1 high, 6 moderate, 1 low)
+  Status:           ⚠ NEEDS REMEDIATION
+
+Frontend (Source/Frontend)
+  Package Manager:  npm
+  Direct Deps:      3
+  Transitive Deps:  228 (76x multiplier)
+  CVEs:             11 (1 critical, 3 high, 6 moderate, 1 low)
+  Status:           ⚠ NEEDS REMEDIATION
+
+E2E (Source/E2E)
+  Package Manager:  npm
+  Direct Deps:      4
+  Transitive Deps:  1 (minimal)
+  CVEs:             0
+  Status:           ✓ CLEAN
+
+════════════════════════════════════════════════════════════════════════════════
+CRITICAL FINDINGS (IMMEDIATE ACTION REQUIRED)
+════════════════════════════════════════════════════════════════════════════════
+
+DEP-001: Handlebars.js JavaScript Injection via AST Type Confusion
+  Package:     handlebars@4.7.8
+  Workspace:   Backend (transitive)
+  Severity:    CRITICAL (CVSS 9.8)
+  CVE:         GHSA-2w6w-674q-4c4q (+ 7 related)
+  Impact:      Arbitrary code execution via template processing
+  Fix:         npm update handlebars to >=4.7.9
+  Escalate:    TheGuardians (JS injection exploitability assessment)
+
+DEP-002: Vitest UI Server Arbitrary File Read & Execution
+  Package:     vitest@3.2.5
+  Workspace:   Frontend (direct devDependency)
+  Severity:    CRITICAL (CVSS 9.8)
+  CVE:         GHSA-5xrq-8626-4rwp
+  Impact:      Unauthenticated file read/execute when UI server is listening
+  Fix:         npm update vitest to >=3.2.6
+  Note:        Only critical if UI server exposed beyond localhost dev
+  Escalate:    TheGuardians (CI infrastructure audit needed)
+
+════════════════════════════════════════════════════════════════════════════════
+HIGH SEVERITY FINDINGS (PATCH THIS WEEK)
+════════════════════════════════════════════════════════════════════════════════
+
+DEP-003: form-data CRLF Injection via Multipart Field Names
+  Package:     form-data@4.0.5
+  Severity:    HIGH (CVSS 7.5)
+  CVE:         GHSA-hmw2-7cc7-3qxx
+  Affected:    Backend, Frontend
+  Impact:      HTTP header injection via unescaped field names
+  Fix:         npm update form-data to >=4.0.6
+
+DEP-004: Vite fs.deny Bypass on Windows Alternate Paths
+  Package:     vite@6.4.2
+  Severity:    HIGH
+  CVE:         GHSA-fx2h-pf6j-xcff
+  Affected:    Frontend
+  Impact:      Path traversal to access files outside project root (Windows)
+  Fix:         npm update vite to >=6.4.3 (test for breaking changes)
+
+DEP-005: ws WebSocket Memory Exhaustion DoS
+  Package:     ws@8.20.1 (transitive via vite)
+  Severity:    HIGH (CVSS 7.5)
+  CVE:         GHSA-96hv-2xvq-fx4p
+  Affected:    Frontend
+  Impact:      Memory exhaustion and DoS via malformed WebSocket fragments
+  Fix:         Update vitest (cascades to ws >=8.21.0)
+
+════════════════════════════════════════════════════════════════════════════════
+LICENSE COMPLIANCE
+════════════════════════════════════════════════════════════════════════════════
+
+Overall Status: ✓ PASS
+
+License Distribution:
+  MIT:           348 packages ✓ (safe)
+  ISC:            34 packages ✓ (compatible)
+  BSD-3-Clause:   15 packages ✓ (compatible)
+  Apache-2.0:      8 packages ✓ (compatible)
+  BSD-2-Clause:    2 packages ✓ (compatible)
+  Other/CC-BY-4:   5 packages ✓ (low impact)
+
+GPL/AGPL Licenses: NONE DETECTED ✓
+Post-Install Scripts: NONE DETECTED ✓
+
+════════════════════════════════════════════════════════════════════════════════
+OUTDATED MAJOR VERSIONS (Supply Chain Risk)
+════════════════════════════════════════════════════════════════════════════════
+
+Six direct dependencies are 1+ major versions behind latest:
+
+  1. express         4.18.2  → 5.2.1   (+1 major, security/performance)
+  2. pino            8.17.0  → 10.3.1  (+2 majors, 2+ years behind)
+  3. uuid            9.0.1   → 14.0.1  (+5 majors, BUFFER_OVERFLOW + old)
+  4. react           18.3.1  → 19.2.7  (+1 major, performance)
+  5. react-router    6.26.0  → 7.18.1  (+1 major, security)
+  6. vite            5.4.0   → 8.1.3   (+3 majors, multiple CVE fixes)
+
+Risk: All 6 should be planned for migration within 1-2 months.
+
+════════════════════════════════════════════════════════════════════════════════
+DEPENDENCY TREE ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+Total Dependency Graph:
+  Direct Dependencies:        11
+  Transitive Dependencies:    637
+  Total Packages:             648
+
+Supply Chain Risk Assessment:
+  Backend: 408 transitive deps (102x multiplication factor)
+    → Risk: Expanded attack surface; watch @babel/*, jest, typescript chains
+
+  Frontend: 228 transitive deps (76x multiplication factor)
+    → Risk: Expanded attack surface; watch vite/vitest/React ecosystem
+
+  Recommendation: Monitor for abandoned/deprecated packages quarterly
+
+════════════════════════════════════════════════════════════════════════════════
+REMEDIATION ROADMAP
+════════════════════════════════════════════════════════════════════════════════
+
+THIS WEEK (P1/P2 Critical Fixes):
+  [ ] Backend: npm update handlebars → >=4.7.9
+  [ ] Frontend: npm update vitest → >=3.2.6
+  [ ] Both: npm update form-data → >=4.0.6
+  [ ] Backend: npm update express → >=4.22.2
+  [ ] Run: npm audit && npm test on all workspaces
+
+NEXT 1-2 WEEKS (P2 High Priority):
+  [ ] Frontend: npm update vite → >=6.4.3 (test for breaking changes)
+  [ ] Backend: npm update uuid → >=11.1.1 (major version; test suite required)
+  [ ] All: npm update js-yaml, brace-expansion, postcss (moderate/low)
+  [ ] Frontend: npm update react-router-dom → >=6.30.4
+
+1-2 MONTHS (Major Version Migrations):
+  [ ] Plan express 4.x → 5.x migration
+  [ ] Plan pino 8.x → 10.x migration
+  [ ] Plan uuid 11.x → 14.x upgrade
+  [ ] Plan react 18.x → 19.x compatibility testing
+  [ ] Plan react-router 6.x → 7.x migration
+  [ ] Plan vite 6.x/7.x/8.x incremental upgrade path
+
+════════════════════════════════════════════════════════════════════════════════
+CROSS-TEAM ESCALATIONS
+════════════════════════════════════════════════════════════════════════════════
+
+[ESCALATE → TheGuardians]
+  ✓ DEP-001 (Handlebars JS injection) — Assess template processing for untrusted input
+  ✓ DEP-002 (Vitest file read) — Audit CI/testing infrastructure; ensure UI not exposed
+  ✓ DEP-003 (form-data CRLF) — Verify multipart form handling doesn't process untrusted filenames
+  ✓ DEP-004 (Vite path traversal) — Check if dev servers run on Windows; assess risk
+  ✓ DEP-011 (React Router open redirect) — Verify redirect routes don't use user-controlled paths
+
+════════════════════════════════════════════════════════════════════════════════
+FINDINGS SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+Total Findings: 19 (18 vulnerabilities + 1 supply chain assessment)
+
+  Vulnerabilities:  18
+    ├── Critical:    2
+    ├── High:        4
+    ├── Moderate:   10
+    └── Low:         2
+
+  Outdated Major Versions: 6
+  License Issues: 0
+  Abandoned Packages: 0
+
+Reports Generated:
+  ✓ Markdown:  Teams/TheInspector/findings/dependency-audit-2026-07-03.md
+  ✓ JSON:      Teams/TheInspector/findings/dependency-audit-2026-07-03.json
+  ✓ Learnings: Teams/TheInspector/learnings/dependency-auditor.md (updated)
+
+════════════════════════════════════════════════════════════════════════════════
+NEXT STEPS
+════════════════════════════════════════════════════════════════════════════════
+
+1. IMMEDIATE: Address DEP-001 and DEP-002 (critical)
+2. COORDINATE: Loop TheGuardians for security escalations
+3. SCHEDULE: Plan major version migrations (quarterly roadmap)
+4. MONITOR: Re-audit after P1/P2 fixes to verify remediation
+5. DOCUMENT: Update CLAUDE.md dependency policy based on learnings
+
+════════════════════════════════════════════════════════════════════════════════
+Audit Status: COMPLETE ✓
+Auditor:      dependency_auditor (Claude Haiku)
+Date:         2026-07-03
+Grade:        C (requires remediation)
+════════════════════════════════════════════════════════════════════════════════

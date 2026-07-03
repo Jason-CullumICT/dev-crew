@@ -1,0 +1,186 @@
+{
+  "audit": {
+    "date": "2026-07-03",
+    "auditor": "dependency_auditor",
+    "project": "dev-crew",
+    "risk_grade": "C"
+  },
+  "summary": {
+    "total_vulnerabilities": 20,
+    "critical": 2,
+    "high": 4,
+    "moderate": 10,
+    "low": 2,
+    "outdated_major_versions": 6,
+    "license_compliance": "PASS",
+    "post_install_scripts": 0
+  },
+  "packages": {
+    "direct_dependencies": 11,
+    "transitive_dependencies": 637,
+    "total_packages": 648
+  },
+  "workspaces": [
+    {
+      "name": "Backend",
+      "path": "Source/Backend",
+      "manager": "npm",
+      "direct": 4,
+      "transitive": 408,
+      "cves": 9,
+      "critical": 1,
+      "high": 1,
+      "moderate": 6,
+      "low": 1
+    },
+    {
+      "name": "Frontend",
+      "path": "Source/Frontend",
+      "manager": "npm",
+      "direct": 3,
+      "transitive": 228,
+      "cves": 11,
+      "critical": 1,
+      "high": 3,
+      "moderate": 6,
+      "low": 1
+    },
+    {
+      "name": "E2E",
+      "path": "Source/E2E",
+      "manager": "npm",
+      "direct": 4,
+      "transitive": 1,
+      "cves": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "severity": "critical",
+      "workspace": "Backend",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "fix": "Update to >=4.7.9",
+      "escalate": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "package": "vitest",
+      "version": "3.2.5",
+      "severity": "critical",
+      "workspace": "Frontend",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "fix": "Update to >=3.2.6",
+      "escalate": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "form-data CRLF Injection via Multipart Field Names",
+      "package": "form-data",
+      "version": "4.0.5",
+      "severity": "high",
+      "workspaces": ["Backend", "Frontend"],
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "fix": "Update to >=4.0.6"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vite fs.deny Bypass on Windows Alternate Paths",
+      "package": "vite",
+      "version": "6.4.2",
+      "severity": "high",
+      "workspace": "Frontend",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "fix": "Update to >=6.4.3"
+    },
+    {
+      "id": "DEP-005",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "package": "ws",
+      "version": "8.20.1",
+      "severity": "high",
+      "workspace": "Frontend",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "cvss": 7.5,
+      "fix": "Update vitest/vite to >=8.21.0 (indirect)"
+    }
+  ],
+  "remediation_roadmap": {
+    "immediate": [
+      {
+        "finding": "DEP-001",
+        "action": "npm update handlebars",
+        "workspace": "Backend",
+        "priority": "P1"
+      },
+      {
+        "finding": "DEP-002",
+        "action": "npm update vitest",
+        "workspace": "Frontend",
+        "priority": "P1"
+      },
+      {
+        "finding": "DEP-003",
+        "action": "npm update form-data",
+        "workspaces": ["Backend", "Frontend"],
+        "priority": "P2"
+      }
+    ],
+    "short_term": [
+      {
+        "finding": "DEP-004",
+        "action": "npm update vite",
+        "workspace": "Frontend",
+        "priority": "P2",
+        "note": "Test for breaking changes"
+      },
+      {
+        "finding": "DEP-007",
+        "action": "npm install uuid@latest --save",
+        "workspace": "Backend",
+        "priority": "P3",
+        "note": "Major version bump; test suite required"
+      }
+    ],
+    "medium_term": [
+      {
+        "finding": "DEP-013..018",
+        "action": "Plan major version migrations",
+        "packages": ["express", "pino", "uuid", "react", "react-router-dom", "vite"],
+        "priority": "P3",
+        "timeframe": "1-2 months"
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "gpl_agpl": false,
+    "distribution": {
+      "MIT": 348,
+      "ISC": 34,
+      "BSD-3-Clause": 15,
+      "Apache-2.0": 8,
+      "BSD-2-Clause": 2,
+      "Other": 5
+    }
+  },
+  "supply_chain_risk": {
+    "transitive_multiplier_backend": 102,
+    "transitive_multiplier_frontend": 76,
+    "post_install_scripts_detected": 0,
+    "assessment": "Medium (>100 transitive deps = expanded attack surface)"
+  }
+}

@@ -1,0 +1,275 @@
+{
+  "audit_id": "run-20260704-055843",
+  "audit_date": "2026-07-04",
+  "project": "dev-crew Source App",
+  "branch": "audit/inspector-2026-07-04-171a4a",
+  "grade": "D",
+  "prior_grade": null,
+  "trend": "first_audit",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 8,
+    "p3_total": 10,
+    "p4_total": 2,
+    "escalations_total": 3,
+    "spec_coverage_percent": 97,
+    "enforcer_coverage_percent": 32,
+    "dynamic_specialists": 0,
+    "fixed_since_prior": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "team": "TheGuardians",
+      "severity": "P1",
+      "title": "Handlebars.js JavaScript Injection via jest transitive chain",
+      "package": "handlebars (4.0.0–4.7.8)",
+      "file": "Source/Backend/package-lock.json",
+      "cvss": 9.8,
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6"],
+      "impact": "Arbitrary JavaScript execution via template injection; affects test infrastructure",
+      "fix": "Upgrade jest → ^30.0.0 to pull fixed handlebars chain",
+      "trigger": "injection",
+      "status": "OPEN"
+    },
+    {
+      "id": "DEP-002",
+      "team": "TheGuardians",
+      "severity": "P1",
+      "title": "vitest UI Server — Arbitrary File Read & Remote Code Execution",
+      "package": "vitest (<=3.2.5)",
+      "file": "Source/Frontend/package.json",
+      "cvss": 9.8,
+      "cve_ids": ["GHSA-5xrq-8626-4rwp"],
+      "impact": "Any file on disk readable and executable if vitest UI exposed on network (CI/dev)",
+      "fix": "npm install --save-dev vitest@^4.1.9",
+      "trigger": "sensitive data exposed / RCE",
+      "status": "OPEN"
+    },
+    {
+      "id": "DEP-003",
+      "team": "TheGuardians",
+      "severity": "P1",
+      "title": "protobufjs Arbitrary Code Execution via malformed gRPC schema",
+      "package": "protobufjs (<=7.6.2)",
+      "file": "platform/orchestrator/package-lock.json",
+      "cvss": 9.8,
+      "cve_ids": ["GHSA-xq3m-2v4x-88gg", "GHSA-66ff-xgx4-vchm", "GHSA-75px-5xx7-5xc7"],
+      "impact": "Arbitrary code execution when orchestrator parses untrusted protobuf schemas",
+      "fix": "Upgrade protobufjs → ^8.0.0 via gRPC chain upgrade",
+      "trigger": "injection / code execution",
+      "status": "OPEN"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift / runtime-breakage",
+      "title": "GET /api/search endpoint not registered — DependencyPicker search broken in production",
+      "file": "Source/Backend/src/app.ts",
+      "line": null,
+      "detail": "FR-dependency-search requires GET /api/search?q= for typeahead. Route logic and tests exist but the router is never mounted in app.ts. Frontend calls /api/search and receives 404.",
+      "recommendation": "Mount searchRouter in app.ts: app.use('/api/search', searchRouter)",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers import store directly, bypassing service layer (3 files)",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/intake.ts:4"
+      ],
+      "recommendation": "Create services/workItem.ts wrapper; route handlers call service, not store",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    },
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "pattern-violation / test-coverage",
+      "title": "Traceability enforcer covers only 32.5% of spec requirements (13/40)",
+      "file": "tools/traceability-enforcer.py",
+      "line": 55,
+      "recommendation": "Add --all-specs flag or run with explicit --file for all 3 spec files",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    },
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 (Worker Container Prerequisites) has zero traceability references",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "recommendation": "Locate implementation in platform/ and add // Verifies: FR-TMP-008, or confirm deferred",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    },
+    {
+      "id": "DEP-004",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / path-traversal",
+      "title": "Vite path traversal & fs.deny bypass (GHSA-4w7w-66w2-5vf9, GHSA-fx2h-pf6j-xcff)",
+      "package": "vite (<=5.4.x)",
+      "file": "Source/Frontend/package.json",
+      "fix": "Upgrade vite to >=5.5.0",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    },
+    {
+      "id": "DEP-005",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / injection",
+      "title": "form-data CRLF injection (GHSA-hmw2-7cc7-3qxx)",
+      "package": "form-data (4.0.0–4.0.5)",
+      "file": "Source/Backend/package-lock.json, Source/Frontend/package-lock.json",
+      "fix": "Upgrade express to >=4.21.0 (pulls fixed form-data)",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    },
+    {
+      "id": "DEP-006",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "ws WebSocket memory exhaustion DoS (GHSA-96hv-2xvq-fx4p)",
+      "package": "ws (8.0.0–8.20.1)",
+      "file": "Source/Frontend/package-lock.json",
+      "fix": "Upgrade vite to >=5.5.0 (pulls ws >=8.21.0)",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    },
+    {
+      "id": "DEP-007",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "path-to-regexp ReDoS via crafted URLs (GHSA-37ch-88jc-xwx2)",
+      "package": "path-to-regexp (<0.1.13)",
+      "file": "platform/orchestrator/package-lock.json",
+      "fix": "Upgrade express to >=4.21.0",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    },
+    {
+      "id": "DEP-008",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "@grpc/grpc-js server crash via malformed request (GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq)",
+      "package": "@grpc/grpc-js (1.14.0–1.14.3)",
+      "file": "platform/orchestrator/package-lock.json",
+      "fix": "Upgrade @grpc/grpc-js to >=1.14.4",
+      "route_to": "TheFixer",
+      "status": "OPEN"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005", "specialist": "quality-oracle", "severity": "P3",
+      "title": "Spec drift — dev-workflow-platform.md references deleted portal/ paths",
+      "file": "Specifications/dev-workflow-platform.md", "line": 467,
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "QO-006", "specialist": "quality-oracle", "severity": "P3",
+      "title": "Dual logger abstractions — src/logger.ts shim vs src/utils/logger.ts canonical",
+      "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "QO-007", "specialist": "quality-oracle", "severity": "P3",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "files": ["Source/Frontend/tests/WorkItemDetailPage.test.tsx", "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx"],
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "DEP-009", "specialist": "dependency-auditor", "severity": "P3",
+      "title": "uuid buffer bounds check CVE (GHSA-w5hq-g745-h8pq) — major version upgrade required",
+      "package": "uuid 9.x", "fix": "Upgrade uuid to >=11.1.1",
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "DEP-010", "specialist": "dependency-auditor", "severity": "P3",
+      "title": "qs query string DoS (GHSA-q8mj-m7cp-5q26)",
+      "package": "qs 6.11.x", "fix": "Upgrade express to >=4.18.3",
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "DEP-011", "specialist": "dependency-auditor", "severity": "P3",
+      "title": "brace-expansion zero-step sequence hang (GHSA-f886-m6hf-6m8v)",
+      "package": "brace-expansion <1.1.13", "fix": "npm audit fix in Backend",
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "DEP-012", "specialist": "dependency-auditor", "severity": "P3",
+      "title": "PostCSS XSS via unescaped </style> (GHSA-qx2v-qp2m-jg93)",
+      "package": "postcss <8.5.10", "fix": "Upgrade vite (pulls postcss >=8.5.10)",
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "DEP-013", "specialist": "dependency-auditor", "severity": "P3",
+      "title": "react-router open redirect via // path (GHSA-2j2x-hqr9-3h42)",
+      "package": "react-router-dom 6.26.0", "fix": "npm install --save react-router-dom@^6.30.4",
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "DEP-014", "specialist": "dependency-auditor", "severity": "P3",
+      "title": "js-yaml DoS via merge key aliases (GHSA-h67p-54hq-rp68)",
+      "package": "js-yaml <3.15.0", "fix": "npm audit fix in Backend",
+      "route_to": "TheFixer", "status": "OPEN"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008", "specialist": "quality-oracle", "severity": "P4",
+      "title": "eslint-disable-next-line suppressions without explanatory comments (2 instances)",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "route_to": "TheFixer", "status": "OPEN"
+    },
+    {
+      "id": "DEP-015", "specialist": "dependency-auditor", "severity": "P4",
+      "title": "@babel/core arbitrary file read via sourceMappingURL (GHSA-4x5r-pxfx-6jf8)",
+      "package": "@babel/core <=7.29.0", "fix": "npm audit fix in Backend/Frontend",
+      "route_to": "TheFixer", "status": "OPEN"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Outdated gRPC chain in Orchestrator",
+      "findings": ["DEP-003", "DEP-008"],
+      "single_fix": "Upgrade @grpc/proto-loader + @grpc/grpc-js → pulls protobufjs >=8.0.0 and grpc-js >=1.14.4",
+      "fix_impact": "Eliminates 1 P1 escalation + 1 P2"
+    },
+    {
+      "root_cause": "Vite dev chain outdated in Frontend",
+      "findings": ["DEP-004", "DEP-006", "DEP-012"],
+      "single_fix": "Upgrade vite to >=5.5.0 (pulls ws >=8.21.0, postcss >=8.5.10, fixes path traversal)",
+      "fix_impact": "Eliminates 3 findings (1 P2 + 1 P2 + 1 P3)"
+    },
+    {
+      "root_cause": "express <=4.18.x across Backend and Orchestrator",
+      "findings": ["DEP-005", "DEP-007", "DEP-010"],
+      "single_fix": "Upgrade express to >=4.21.0 in Backend + Orchestrator",
+      "fix_impact": "Eliminates 3 findings (1 P2 + 1 P2 + 1 P3)"
+    },
+    {
+      "root_cause": "Traceability enforcer auto-selects only most-recently-modified spec file",
+      "findings": ["QO-003", "QO-004"],
+      "single_fix": "Fix enforcer to scan all Specifications/*.md and Plans/*/requirements.md",
+      "fix_impact": "Eliminates 1 P2 + exposes FR-TMP-008 gap (QO-004)"
+    }
+  ]
+}

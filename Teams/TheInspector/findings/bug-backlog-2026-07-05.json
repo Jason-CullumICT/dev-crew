@@ -1,0 +1,382 @@
+{
+  "meta": {
+    "audit_date": "2026-07-05",
+    "run_id": "run-20260705-061917",
+    "grade": "D",
+    "branch": "audit/inspector-2026-07-05-63734e",
+    "project": "dev-crew Source App",
+    "specialists": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "backend and frontend services offline",
+    "prior_audit": null,
+    "summary": {
+      "p1_total": 4,
+      "p2_total": 9,
+      "p3_total": 9,
+      "p4_total": 2,
+      "escalations_total": 2,
+      "fixed_total": 0,
+      "active_spec_coverage_pct": 90,
+      "full_spec_coverage_pct": 11
+    }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "route_to": "TheGuardians",
+      "title": "Handlebars.js Multiple RCE Vulnerabilities (CVSS 9.8)",
+      "package": "handlebars@4.0.0-4.7.8",
+      "module": "Source/Backend",
+      "dependency_type": "transitive",
+      "cvss_max": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "fix": "npm update handlebars >= 4.7.9 in Source/Backend",
+      "status": "NEW",
+      "exploit_scenario": "Template rendered from user-controlled input executes arbitrary JavaScript server-side",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "route_to": "TheGuardians",
+      "title": "Vitest UI Server Arbitrary File Read and Execute (CVSS 9.8)",
+      "package": "vitest@<=3.2.5",
+      "module": "Source/Frontend",
+      "dependency_type": "direct",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "fix": "npm update vitest >= 3.2.6 or >= 4.1.9 in Source/Frontend",
+      "status": "NEW",
+      "exploit_scenario": "HTTP client on network reads/executes arbitrary files when Vitest UI server is running",
+      "trigger": "injection"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "GET /api/search not registered in app.ts — all typeahead calls return 404",
+      "file": "Source/Backend/src/app.ts",
+      "cross_ref_files": ["Source/Backend/tests/routes/search.test.ts"],
+      "fr_id": "FR-dependency-search",
+      "exploit_scenario": "User opens DependencyPicker, all searchItems() calls return 404 silently. Dependency linking is completely broken at runtime.",
+      "impact": "FR-dependency-search requirement unmet. All users of dependency management feature cannot create relationships via typeahead.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts and add app.use('/api/search', searchRouter) in app.ts.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer fallback always picks stale requirements.md — CI reports PASSED with 89 FR IDs untraced",
+      "file": "tools/traceability-enforcer.py",
+      "file_line": 57,
+      "exploit_scenario": "CI gate passes green. dev-workflow-platform.md (76 FR IDs) and tiered-merge-pipeline.md (13 FR IDs) never enter coverage window. Spec debt accumulates invisibly.",
+      "impact": "Architecture rule 'every FR needs a test with // Verifies: FR-XXX' is not enforced for 87% of the spec corpus.",
+      "recommendation": "Add --all-specs flag or update CLAUDE.md CI gate to run enforcer against each Specifications/ file explicitly.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "3 route files bypass service layer with direct store calls",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "recommendation": "Create Source/Backend/src/services/workItemService.ts. Route all three handlers through it.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Specifications/tiered-merge-pipeline.md — 13 FR-TMP-* IDs with 0% implementation coverage",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "recommendation": "Tag spec [Status: Planned — not yet started] or open a Plans/tiered-merge-pipeline/ entry with FR-TMP-* IDs mapped to implementation tasks.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Specifications/dev-workflow-platform.md — FR-001–FR-069 (76 IDs) with 0% implementation coverage",
+      "file": "Specifications/dev-workflow-platform.md",
+      "recommendation": "Tag spec [Status: Future] if aspirational; clarify relationship to workflow-engine.md which is the current implementation.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "dependencyCheckDuration Histogram missing from metrics.ts (FR-dependency-metrics partial)",
+      "file": "Source/Backend/src/metrics.ts",
+      "fr_id": "FR-dependency-metrics",
+      "recommendation": "Add Histogram import and define dependencyCheckDurationHistogram in metrics.ts. Instrument BFS call in dependency.ts.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P2",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "title": "Duplicate test files: WorkItemDetailPage and WorkItemListPage in both tests/ and tests/pages/",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Delete root-level duplicates; keep Source/Frontend/tests/pages/ variants as canonical.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-dependency-seed: no seed.ts — fresh server has no demo dependency data",
+      "file": "Source/Backend/src/",
+      "fr_id": "FR-dependency-seed",
+      "recommendation": "Create Source/Backend/src/seed.ts with idempotent seeding. Wire into startup with SEED_DATA=true guard.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "form-data CRLF Injection (CVSS 7.5, GHSA-hmw2-7cc7-3qxx)",
+      "package": "form-data@4.0.0-4.0.5",
+      "modules": ["Source/Backend", "Source/Frontend"],
+      "fix": "npm update form-data >= 4.0.6 in both modules",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Vite fs.deny Bypass on Windows (GHSA-fx2h-pf6j-xcff)",
+      "package": "vite@<=6.4.2",
+      "module": "Source/Frontend",
+      "fix": "npm update vite >= 6.5.0 in Source/Frontend",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "WebSocket Memory Exhaustion DoS (CVSS 7.5, GHSA-96hv-2xvq-fx4p)",
+      "package": "ws@8.0.0-8.20.1",
+      "module": "Source/Frontend",
+      "fix": "npm update ws >= 8.21.0 in Source/Frontend",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable react-hooks/exhaustive-deps in 2 files — potential stale closures",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "recommendation": "Replace suppressions with proper useCallback/useMemo patterns or documented justification comments.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "DebugPortalPage.tsx has no FR-backed spec reference",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "recommendation": "Add FR entry or mark as '// Dev tooling only — not part of the product spec'.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-011",
+      "severity": "P3",
+      "category": "doc-stale",
+      "specialist": "quality-oracle",
+      "title": "dependency-linking requirements.md references portal/ paths instead of Source/",
+      "file": "Plans/dependency-linking/requirements.md",
+      "file_lines": "15-29",
+      "recommendation": "Replace all portal/Backend/ → Source/Backend/, portal/Frontend/ → Source/Frontend/, portal/Shared/ → Source/Shared/.",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Express/qs DoS (GHSA-q8mj-m7cp-5q26)",
+      "package": "qs@6.11.1-6.15.1",
+      "module": "Source/Backend",
+      "fix": "npm update express in Source/Backend",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Brace-Expansion DoS (GHSA-f886-m6hf-6m8v)",
+      "package": "brace-expansion@<1.1.13",
+      "module": "Source/Backend",
+      "dependency_type": "transitive",
+      "fix": "Transitive fix via dependency upgrade",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "React Router Open Redirect (GHSA-2j2x-hqr9-3h42)",
+      "package": "react-router-dom@6.6.3-6.30.3",
+      "module": "Source/Frontend",
+      "fix": "npm update react-router-dom in Source/Frontend",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "PostCSS XSS in generated CSS (GHSA-qx2v-qp2m-jg93)",
+      "package": "postcss@<8.5.10",
+      "module": "Source/Frontend",
+      "fix": "npm update postcss in Source/Frontend",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "JS-YAML Quadratic Complexity DoS (GHSA-h67p-54hq-rp68)",
+      "package": "js-yaml@<3.15.0",
+      "module": "Source/Backend",
+      "fix": "npm update js-yaml in Source/Backend",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Babel Arbitrary File Read (GHSA-4x5r-pxfx-6jf8)",
+      "package": "@babel/core@<=7.29.0",
+      "modules": ["Source/Backend", "Source/Frontend"],
+      "fix": "npm update @babel/core in both modules",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-LOW-1",
+      "severity": "P4",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Low-severity transitive vulnerability — Backend",
+      "module": "Source/Backend",
+      "dependency_type": "transitive",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-LOW-2",
+      "severity": "P4",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Low-severity transitive vulnerability — Frontend",
+      "module": "Source/Frontend",
+      "dependency_type": "transitive",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "No CI dependency audit gate",
+      "linked_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011"],
+      "single_fix": "Add npm audit --audit-level=high to CI; run npm update across both modules",
+      "fix_impact": "Clears all 11 dependency CVEs (2 P1 escalations + 3 P2 + 6 P3). Eliminates grade-D drivers."
+    },
+    {
+      "root_cause": "Traceability enforcer blind spot",
+      "linked_findings": ["QO-002", "QO-004", "QO-005"],
+      "single_fix": "Update enforcer to scan all Specifications/ files or update CI gate",
+      "fix_impact": "Resolves false-green CI gate; surfaces 89 untraced FR IDs as explicit debt."
+    },
+    {
+      "root_cause": "Missing service layer for CRUD and search",
+      "linked_findings": ["QO-001", "QO-003"],
+      "single_fix": "Create workItemService.ts + register search.ts router in app.ts",
+      "fix_impact": "Fixes runtime 404 on all typeahead calls AND decouples 3 route handlers from the store."
+    }
+  ],
+  "grading_breakdown": {
+    "grade": "D",
+    "thresholds_applied": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+      "D": "anything worse"
+    },
+    "actual": {
+      "p1_count": 4,
+      "p2_count": 9,
+      "active_spec_coverage_pct": 90
+    },
+    "bottleneck": "P1 count (4) exceeds C threshold of max 2",
+    "path_to_C": "Fix QO-001 (register search route), QO-002 (enforcer fix), DEP-001 (upgrade handlebars), DEP-002 (upgrade vitest) — reduces P1 count to 0, P2 count to 9 → grade C"
+  }
+}

@@ -1,0 +1,259 @@
+{
+  "audit_id": "run-20260706-065058",
+  "audit_date": "2026-07-06",
+  "branch": "audit/inspector-2026-07-06-fdc2ba",
+  "grade": "C",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — backend and frontend unavailable during audit window",
+  "totals": {
+    "p1": 2,
+    "p2": 7,
+    "p3": 8,
+    "p4": 2,
+    "fixed": 0,
+    "first_audit_no_baseline": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Handlebars.js JavaScript Injection — Multiple RCE CVEs",
+      "package": "handlebars",
+      "cves": ["GHSA-2w6w-674q-4c4q (CVSS 9.8)", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"],
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "failure_scenario": "User-controlled data passed to Handlebars template compilation triggers arbitrary JavaScript execution (CVSS 9.8)",
+      "fix": "npm update handlebars (target ≥4.7.9); identify which direct dep pulls handlebars; remove if unused"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Vitest UI Server Remote Code Execution",
+      "package": "vitest",
+      "cves": ["GHSA-5xrq-8626-4rwp (CVSS 9.8)"],
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "failure_scenario": "When vitest UI server is listening (dev/CI), any network-reachable attacker can read and execute arbitrary files with no authentication",
+      "fix": "npm update vitest (target ≥3.2.6); disable vitest UI server in CI; resolves DEP-012 (@vitest/mocker) as a side-effect"
+    }
+  ],
+  "p1_findings": [],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-search: /api/search endpoint not registered",
+      "file": "Source/Backend/src/app.ts",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "failure_scenario": "DependencyPicker modal's typeahead calls GET /api/search?q= which has no route handler; all cross-entity search returns 404",
+      "recommendation": "Create Source/Backend/src/routes/search.ts with GET /api/search?q=; register in app.ts; wire to searchService.search(q). Tests already written at Source/Backend/tests/routes/search.test.ts — just waiting on implementation.",
+      "cross_ref": ["QO-002"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers access workItemStore directly — service layer bypass",
+      "file": "Source/Backend/src/routes/workItems.ts:12",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "failure_scenario": "Adding caching, pagination, or access control to work items requires editing three route files (workItems.ts, workflow.ts, intake.ts) instead of one service, risking inconsistency",
+      "recommendation": "Extract Source/Backend/src/services/workItemService.ts wrapping all store.* calls. Update workItems.ts, workflow.ts, intake.ts to import from workItemService only.",
+      "cross_ref": ["QO-001"]
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "spec-drift-audit.py generates false 0% coverage signal",
+      "file": "tools/spec-drift-audit.py:43",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "failure_scenario": "Future agent reads spec-drift-report.json, sees 0% coverage, concludes Source/ is unimplemented — triggers unnecessary rework or stalled pipelines",
+      "recommendation": "Add Plans/self-judging-workflow/requirements.md as alias source to spec-drift-audit.py, or move workflow requirements into Specifications/ using canonical FR-WF-\\d{3} format.",
+      "cross_ref": []
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P2",
+      "category": "cve",
+      "title": "form-data CRLF Injection — Backend",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx (CVSS 7.5)",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "failure_scenario": "Attacker injects CRLF sequences in multipart field names/filenames, enabling HTTP header injection in multipart requests",
+      "recommendation": "cd Source/Backend && npm update form-data",
+      "cross_ref": ["DEP-009"]
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve",
+      "title": "Vite server.fs.deny bypass via Windows alternate paths",
+      "package": "vite",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "failure_scenario": "On Windows, alternate path notation bypasses the server.fs.deny allowlist, allowing reads of files outside the configured deny boundary",
+      "recommendation": "cd Source/Frontend && npm update vite (resolves DEP-010 as well)",
+      "cross_ref": ["DEP-010"]
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "cve",
+      "title": "WebSocket memory exhaustion DoS",
+      "package": "ws",
+      "cves": ["GHSA-96hv-2xvq-fx4p (CVSS 7.5)", "GHSA-58qx-3vcg-4xpx (CVSS 4.4)"],
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "failure_scenario": "Attacker sends tiny fragmented WebSocket messages causing unbounded memory growth and process OOM; secondary: uninitialized memory disclosure",
+      "recommendation": "cd Source/Frontend && npm update ws",
+      "cross_ref": []
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "cve",
+      "title": "form-data CRLF Injection — Frontend (duplicate of DEP-002)",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx (CVSS 7.5)",
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "failure_scenario": "Same as DEP-002 — present in Frontend transitive deps as well",
+      "recommendation": "cd Source/Frontend && npm update form-data",
+      "cross_ref": ["DEP-002"]
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Stale pipeline run ID hardcoded in playwright.pipeline.config.ts",
+      "file": "Source/E2E/playwright.pipeline.config.ts:4",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "untested",
+      "title": "DebugPortalPage has no spec requirement — unlinked implementation",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "test-coverage",
+      "title": "Duplicate test files for WorkItemListPage and WorkItemDetailPage components",
+      "file": "Source/Frontend/tests/WorkItemListPage.test.tsx",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P3",
+      "category": "cve",
+      "title": "brace-expansion process hang (GHSA-f886-m6hf-6m8v)",
+      "package": "brace-expansion",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "cve",
+      "title": "Vite path traversal in optimized deps .map handling (GHSA-4w7w-66w2-5vf9)",
+      "package": "vite",
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": ["DEP-007"]
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "cve",
+      "title": "react-router-dom outdated (6.26.0 → 6.30.4 available)",
+      "package": "react-router-dom",
+      "file": "Source/Frontend/package.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "cve",
+      "title": "@vitest/mocker transitive RCE (resolved by updating vitest)",
+      "package": "@vitest/mocker",
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": ["DEP-006"]
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "cve",
+      "title": "Build toolchain moderate CVEs (postcss, esbuild, vite-node)",
+      "packages": ["postcss", "esbuild", "vite-node"],
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "eslint-disable without documented reason (DependencyPicker.tsx, useWorkItems.ts)",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P4",
+      "category": "cve",
+      "title": "@babel/core arbitrary file read via sourceMappingURL (GHSA-4x5r-pxfx-6jf8)",
+      "package": "@babel/core",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

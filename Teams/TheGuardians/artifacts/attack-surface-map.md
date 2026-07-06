@@ -224,3 +224,175 @@ The following are the highest-priority end-to-end exploit chains for the red-tea
 | A04: Insecure Design | PEN-002, PEN-003, PEN-006, PEN-007 |
 | A07: Identification and Authentication Failures | PEN-001, PEN-005 |
 | A09: Security Logging & Monitoring Failures | PEN-008 (metrics exposed), PEN-010 (error leakage) |
+
+---
+
+## Red Team Results
+
+**Executed:** 2026-07-06  
+**Environment:** Source/Backend workflow engine (port 3002, ephemeral — docker-compose.test.yml + local tsx)  
+**All chains executed without authentication headers.**
+
+---
+
+### RED-001: Complete Authentication Bypass — Anonymous Full API Access
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items`
+- **Based On:** PEN-001
+- **Exploit Scenario:**
+  1. Issued `GET http://localhost:3002/api/work-items` with zero headers → HTTP 200, full paginated store returned.
+  2. Issued `POST http://localhost:3002/api/work-items` with no Authorization → HTTP 201, item created.
+  3. Issued `GET http://localhost:3002/metrics` with no headers → HTTP 200, full Prometheus output returned.
+  4. Every subsequent exploit chain executed without any credential or token — confirming PEN-001 is a universal enabler.
+- **Evidence:** `{"data":[],"total":0,"page":1,"limit":20,"totalPages":1}` returned on anonymous GET. HTTP 201 on anonymous POST with complete item object in response.
+- **Recommendation:** Add JWT/session middleware before all `/api/*` route registrations in `app.ts`. Protect `/metrics` with IP allowlist or bearer token. Without this gate, all other mitigations are moot.
+
+---
+
+### RED-002: Full Lifecycle State Machine Bypass — Backlog to In-Progress with Zero Review
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/:id/route`
+- **Based On:** PEN-001, PEN-002
+- **Exploit Scenario:**
+  1. `POST /api/work-items` (no auth) → created item WI-002 in `backlog` status, `assessments: []`.
+  2. `POST /api/work-items/WI-002/route` with body `{"overrideRoute":"fast-track"}` → item immediately transitions `backlog → routing → approved`. Change history reads: `"Fast-tracked: bypasses assessment pod"`. `assessments[]` remains empty.
+  3. `POST /api/work-items/WI-002/dispatch {"team":"TheATeam"}` → item moves to `in-progress`, team assigned.
+  4. Full lifecycle from creation to `in-progress` in 3 unauthenticated HTTP calls. Zero assessment records.
+- **Evidence:** Final item state: `status: "in-progress"`, `assessments: []`, change history contains no assessment-pod entries, `route: "fast-track"`.
+- **Recommendation:** Remove `overrideRoute` from the public API surface entirely, or gate it behind a privilege-checked admin role. The fast-track path must never be accessible to anonymous callers.
+
+---
+
+### RED-003: Assessment Pod Bypass via Direct Approve Endpoint
+- **Severity:** High
+- **Objective Achieved:** Yes — assessment pod fully skipped
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/:id/approve`
+- **Based On:** PEN-001, PEN-003
+- **Exploit Scenario:**
+  1. `POST /api/work-items` → created item WI-003.
+  2. `POST /api/work-items/WI-003/route {"overrideRoute":"full-review"}` → status: `proposed`.
+  3. `POST /api/work-items/WI-003/approve {"reason":"Skipping full assessment review"}` → HTTP 200, status: `approved`, `assessments: []`.
+  4. Standard workflow (`proposed → assess → reviewing → approved`) was completely bypassed. Change history shows: `proposed → approved` via `manual-override` agent with no reviewing or assessment entries.
+- **Evidence:** Response contained `"status":"approved"`, `"assessments":[]`, `"changeHistory"` with `"agent":"manual-override"` — no `"agent":"assessment-pod"` entries.
+- **Recommendation:** Remove or heavily gate `POST /approve`. Approval should only be possible after the assessment pod has completed at least one full review cycle. Add a precondition check: `assessments.length >= 4` (one per required role) before allowing approval.
+
+---
+
+### RED-004: Unlimited Pagination — Full Dataset and History Dump in One Request
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items?limit=9999999`
+- **Based On:** PEN-001, PEN-004
+- **Exploit Scenario:**
+  1. `GET /api/work-items?limit=9999999` → HTTP 200, all items returned in a single response (`data.length == total`). No pagination boundary enforced.
+  2. `GET /api/dashboard/activity?limit=9999999` → HTTP 200, complete change history of all items (17 activity entries) returned in one response.
+  3. `GET /api/work-items?limit=-1` → HTTP 200, returns N-1 items (all except last) — integer underflow/slice behavior.
+  4. `GET /api/work-items?limit=abc` → silently falls back to default (20), no error.
+- **Evidence:** `"total":8`, `"data"` array length: 8 with `limit=9999999`. `limit=-1` returned 7 of 8 items.
+- **Recommendation:** Add a `MAX_PAGE_SIZE = 100` constant. Validate `limit = Math.min(Math.max(1, parseInt(limit) || 20), MAX_PAGE_SIZE)`. Return 400 on non-positive or non-numeric limit values.
+
+---
+
+### RED-005: Ghost Blocker Permanent DoS — Soft-Delete Creates Undispatchable Dependency
+- **Severity:** High
+- **Objective Achieved:** Partial — item permanently blocked; ghost link confirmed; removal possible via explicit API call
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/:id/dispatch`
+- **Based On:** PEN-001, PEN-007
+- **Exploit Scenario:**
+  1. Created item C (blocker) and item D (dependent), added dependency `D blocked by C`.
+  2. Fast-track approved D.
+  3. `DELETE /api/work-items/C` → HTTP 204, C soft-deleted. `GET /api/work-items/C` → 404.
+  4. `POST /api/work-items/D/dispatch {"team":"TheATeam"}` → HTTP 400: `"Cannot dispatch: work item has unresolved blocking dependencies"`. `unresolvedBlockers` array in error body exposes deleted item's UUID and docId.
+  5. D is stuck in `approved` with no user-facing path to clear the ghost dependency (requires manual `remove` API call if UUID is known).
+- **Evidence:** Dispatch error body: `{"error":"Cannot dispatch: work item has unresolved blocking dependencies","unresolvedBlockers":[{"blockerItemId":"669abd07-4b51-47e7-b342-ae396e0b1e38","blockerItemDocId":"WI-011",...}]}`. Attacker can also weaponize this offensively: create a dependency, then delete the blocker to permanently block a legitimate item.
+- **Recommendation:** `computeHasUnresolvedBlockers` must treat a soft-deleted blocker as resolved (not unresolved). When `store.findById(link.blockerItemId)` returns undefined, the blocker should be treated as cleared. Additionally, soft-delete should cascade-remove all dependency links where the deleted item is a blocker.
+
+---
+
+### RED-006: Cascade Dispatch Hijack — Reject One, Auto-Dispatch N
+- **Severity:** High
+- **Objective Achieved:** Yes — items dispatched without explicit action
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/:id/reject`
+- **Based On:** PEN-001, PEN-006
+- **Exploit Scenario:**
+  1. Created trigger item A and dependents B, C. Added: `B blocked by A`, `C blocked by A`.
+  2. Fast-track approved B and C (both `approved` status, blocked by A).
+  3. Routed A to `proposed` status.
+  4. `POST /api/work-items/A/reject {"reason":"Triggering cascade auto-dispatch exploit"}` → A moves to `rejected`.
+  5. `onItemResolved(A)` triggered internally — B and C auto-dispatched to `in-progress` with `assignedTeam: "TheATeam"`. No explicit `/dispatch` call made on B or C.
+- **Evidence:** B and C final status: `"in-progress"`, `"assignedTeam":"TheATeam"`. Change history entry: `"reason":"Auto-dispatched after blocker WI-013 resolved"`. Prometheus metric confirmed: `dispatch_gating_events_total{event="cascade_dispatched"} 2`.
+- **Recommendation:** Remove automatic cascade dispatch from the reject handler. `onItemResolved` should only unblock items (remove the blocker link), not auto-dispatch them. Dispatch must always be an explicit human/orchestrator action through the `/dispatch` endpoint with team allowlist validation.
+
+---
+
+### RED-007: Unauthenticated Intake Injection with Invalid Enum Values
+- **Severity:** High
+- **Objective Achieved:** Yes — items with invalid types stored in live data store
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/intake/zendesk`, `http://localhost:3002/api/intake/automated`
+- **Based On:** PEN-001, PEN-005
+- **Exploit Scenario:**
+  1. `POST /api/intake/zendesk {"title":"INJECTED","type":"MALICIOUS_VALUE","priority":"critical"}` — no `X-Zendesk-Webhook-Signature` header — → HTTP 201, item WI-016 created with `type: "MALICIOUS_VALUE"` stored verbatim.
+  2. `POST /api/intake/automated {"title":"INJECTED","type":"arbitrary_invalid","priority":null}` — no auth — → HTTP 201, item WI-017 created with `type: "arbitrary_invalid"`.
+  3. Both items now exist in the store with invalid enum values. `GET /api/work-items?limit=9999999` confirms their presence.
+  4. Prometheus metric `workflow_items_created_total{source="zendesk",type="MALICIOUS_VALUE"} 1` confirmed in `/metrics`.
+- **Evidence:** Items WI-016 and WI-017 visible in store dump; `type` fields contain non-enum values not accepted by main `POST /api/work-items` route.
+- **Recommendation:** Add `X-Zendesk-Webhook-Signature` HMAC verification to the Zendesk intake route. Add enum validation to both intake routes matching the validation in `POST /api/work-items`. Add IP allowlist or API key auth to `/api/intake/*`.
+
+---
+
+### RED-008: Prometheus Metrics Expose Full Operational Intelligence Unauthenticated
+- **Severity:** Medium
+- **Objective Achieved:** Yes — complete operational state visible
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/metrics`
+- **Based On:** PEN-008
+- **Exploit Scenario:**
+  1. `GET http://localhost:3002/metrics` (no headers) → HTTP 200, full Prometheus exposition.
+  2. Metrics reveal: item creation rates by source/type (including injected `"MALICIOUS_VALUE"`), routing decisions, assessment verdicts, dispatch counts by team, event loop lag, heap size.
+  3. Post-exploit, metrics confirmed all red-team activity: `workflow_items_routed_total{route="fast-track"} 6`, `dispatch_gating_events_total{event="cascade_dispatched"} 2`.
+- **Evidence:** Raw metric output includes `workflow_items_created_total{source="zendesk",type="MALICIOUS_VALUE"} 1` and `dispatch_gating_events_total{event="blocked"} 2` — full trace of exploit execution.
+- **Recommendation:** Protect `/metrics` behind IP allowlist (scraper-only) or a bearer token. This endpoint should never be publicly reachable.
+
+---
+
+### RED-009: Error Messages Disclose Internal State and Domain Logic
+- **Severity:** Low
+- **Objective Achieved:** Yes — internal messages exposed
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3002/api/work-items/:id/dependencies`, `http://localhost:3002/api/work-items/:id/approve`
+- **Based On:** PEN-010
+- **Exploit Scenario:**
+  1. Self-reference: `POST /dependencies {"action":"add","blockerId":"<same-id>"}` → `{"error":"A work item cannot depend on itself (self-reference)"}` — internal function message verbatim.
+  2. Non-existent UUID: `POST /route` → `{"error":"Work item 00000000-dead-beef-0000-000000000000 not found"}` — confirms store key format.
+  3. Invalid transition: `POST /approve` on `backlog` item → `{"error":"Cannot approve work item in status 'backlog'. Valid source statuses: proposed, reviewing, routing."}` — exposes full valid transition map to attacker.
+- **Evidence:** All error messages returned as-is from catch blocks, confirming PEN-010 static analysis.
+- **Recommendation:** Standardize all catch blocks to return `{"error":"Operation failed"}` (or equivalent generic message). Map specific errors to user-safe messages at the route layer. Use an error code enum rather than raw message strings.
+
+---
+
+## Red Team Objectives Summary
+
+| Objective | Result | Chain |
+|-----------|--------|-------|
+| Bypass work item state machine to reach an invalid status | **ACHIEVED** | RED-002 (fast-track: backlog→in-progress, 0 assessments) |
+| Access or modify a soft-deleted work item via direct ID reference | **Partial** — direct access blocked (404), but ghost blocker exploits dependency link | RED-005 |
+| Submit a malformed assessment verdict that bypasses routing logic | **Not Achieved** — `POST /assess` runs automated pod, ignores submitted verdict; use RED-003 instead | N/A |
+| Enumerate all work items without pagination limit enforcement | **ACHIEVED** | RED-004 (`limit=9999999` dumps full store) |
+
+## Red Team Metrics
+
+| Metric | Value |
+|--------|-------|
+| Chains attempted | 6 (CHAIN-A through CHAIN-F) |
+| Confirmed breaches | 5 (RED-002 through RED-006 critical/high) |
+| Objectives achieved | 3 of 4 (1 partial) |
+| All chains required authentication | No — zero credentials used across all exploits |

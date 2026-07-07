@@ -1,0 +1,535 @@
+{
+  "audit_summary": {
+    "audit_date": "2026-07-07T06:18:07.525852",
+    "audit_scope": "Comprehensive npm package audit of dev-crew project",
+    "total_manifests": 6,
+    "manifests_with_vulnerabilities": 5,
+    "manifests_clean": 1,
+    "total_vulnerabilities_critical": 6,
+    "total_vulnerabilities_high": 16,
+    "total_vulnerabilities_moderate": 69,
+    "total_vulnerabilities_low": 3,
+    "total_vulnerabilities": 94,
+    "total_outdated_packages": 25,
+    "total_direct_dependencies": 79,
+    "overall_risk_level": "HIGH"
+  },
+  "risk_matrix": {
+    "P1_CRITICAL": {
+      "description": "Critical CVE in direct dependency - immediate action required",
+      "count": 6,
+      "packages": [
+        "vitest (Source/Frontend, portal/Backend)",
+        "handlebars (Source/Backend)",
+        "protobufjs (platform/orchestrator, portal/Backend)"
+      ]
+    },
+    "P2_HIGH": {
+      "description": "High CVE in direct dependency OR >2 major versions outdated",
+      "count": 20,
+      "includes": [
+        "CVEs: vite (Frontend), @opentelemetry/auto-instrumentations-node (portal/Backend)",
+        "Outdated: pino 8->10 (Backend), uuid 9->14 (Backend), react 18->19 (Frontend/Portal)"
+      ]
+    },
+    "P3_MODERATE": {
+      "description": "Moderate CVE OR >1 major version behind",
+      "count": 27,
+      "includes": [
+        "Direct dep CVEs: uuid (Backend), react-router-dom (Frontend)",
+        "Outdated: express, react-dom, other packages"
+      ]
+    },
+    "P4_LOW": {
+      "description": "Low severity, informational",
+      "count": 21
+    }
+  },
+  "critical_findings": {
+    "finding_1": {
+      "id": "DEP-CRIT-001",
+      "title": "Vitest arbitrary file read/execution vulnerability",
+      "severity": "P1 (CRITICAL)",
+      "cvss": 9.8,
+      "packages_affected": ["vitest in Source/Frontend", "vitest in portal/Backend"],
+      "description": "When Vitest UI server is listening, arbitrary files can be read and executed",
+      "vulnerable_range": "<3.2.6",
+      "fix": "npm update vitest to >=3.2.6",
+      "impact": "Used in development and testing - low runtime risk if UI not exposed in production",
+      "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp"
+    },
+    "finding_2": {
+      "id": "DEP-CRIT-002",
+      "title": "Handlebars JavaScript Injection vulnerabilities (7 CVEs)",
+      "severity": "P1 (CRITICAL)",
+      "cvss": "8.1-9.8",
+      "packages_affected": ["handlebars (transitive in Source/Backend)"],
+      "description": "Multiple JS injection vectors via AST type confusion, prototype pollution, and missing validation",
+      "vulnerable_range": "<=4.7.8",
+      "root_cause": "Handlebars is a transitive dependency - need to identify direct dependency requiring it",
+      "impact": "Template injection attacks, code execution",
+      "remediation": "Upgrade handlebars to >=4.7.9 or identify and update direct dependency",
+      "url": "https://github.com/advisories?query=handlebars"
+    },
+    "finding_3": {
+      "id": "DEP-CRIT-003",
+      "title": "Protobufjs arbitrary code execution (11 CVEs)",
+      "severity": "P1 (CRITICAL)",
+      "cvss": "5.3-9.8",
+      "packages_affected": ["protobufjs (transitive in platform/orchestrator, portal/Backend)"],
+      "description": "Multiple code execution, injection, and DoS vectors in protobuf parsing and code generation",
+      "vulnerable_range": "<=7.6.2",
+      "root_cause": "Transitive dependency via @grpc/grpc-js",
+      "impact": "Remote code execution, DoS, prototype pollution attacks",
+      "remediation": "Upgrade @grpc/grpc-js which should pull protobufjs >=7.6.3",
+      "url": "https://github.com/advisories?query=protobufjs"
+    }
+  },
+  "high_priority_findings": {
+    "finding_4": {
+      "id": "DEP-HIGH-001",
+      "title": "Vite Path Traversal and bypass vulnerabilities",
+      "severity": "P2 (HIGH)",
+      "packages_affected": ["vite in Source/Frontend, portal/Frontend"],
+      "vulnerabilities": [
+        "Path Traversal in Optimized Deps .map handling (CVSS 0, but HIGH severity)",
+        "NTLMv2 hash disclosure on Windows",
+        "server.fs.deny bypass on Windows alternate paths"
+      ],
+      "vulnerable_range": "<=6.4.2",
+      "fix": "npm update vite",
+      "current_versions": "5.4.0",
+      "latest": ">=8.1.3",
+      "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+    },
+    "finding_5": {
+      "id": "DEP-HIGH-002",
+      "title": "@opentelemetry/auto-instrumentations-node Prometheus DoS",
+      "severity": "P2 (HIGH)",
+      "cvss": 7.5,
+      "packages_affected": ["@opentelemetry/auto-instrumentations-node in portal/Backend (DIRECT)"],
+      "description": "Malformed HTTP request causes process crash via Prometheus exporter",
+      "vulnerable_range": "<0.75.0",
+      "current": "0.40.3",
+      "latest": "0.78.0",
+      "fix": "npm update @opentelemetry/auto-instrumentations-node to >=0.75.0",
+      "impact": "Service availability - malicious requests cause crash",
+      "url": "https://github.com/advisories/GHSA-q7rr-3cgh-j5r3"
+    }
+  },
+  "major_version_outdated_packages": {
+    "count": 12,
+    "findings": [
+      {
+        "package": "pino",
+        "current": "8.21.0",
+        "latest": "10.3.1",
+        "versions_behind": 2,
+        "affected_in": "Source/Backend (DIRECT)",
+        "recommendation": "Major version upgrades - review breaking changes"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.1",
+        "latest": "14.0.1",
+        "versions_behind": 5,
+        "affected_in": "Source/Backend (DIRECT), platform/orchestrator (DIRECT)",
+        "note": "Also has active CVE GHSA-w5hq-g745-h8pq in current version",
+        "recommendation": "URGENT: Update to 14.0.1"
+      },
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.2.7",
+        "versions_behind": 1,
+        "affected_in": "Source/Frontend, portal/Frontend (DIRECT)",
+        "recommendation": "Major version upgrade - likely breaking changes"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "latest": "19.2.7",
+        "versions_behind": 1,
+        "affected_in": "Source/Frontend, portal/Frontend (DIRECT)",
+        "recommendation": "Update in lockstep with react"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.30.4",
+        "latest": "7.18.1",
+        "versions_behind": 1,
+        "affected_in": "Source/Frontend, portal/Frontend (DIRECT)",
+        "recommendation": "Major version upgrade"
+      },
+      {
+        "package": "express",
+        "current": "4.22.2",
+        "latest": "5.2.1",
+        "versions_behind": 1,
+        "affected_in": "Source/Backend, platform/orchestrator, portal/Backend (DIRECT)",
+        "note": "Also affected by qs CVE",
+        "recommendation": "Major version upgrade - breaking changes likely"
+      },
+      {
+        "package": "@opentelemetry/api",
+        "current": "1.9.1",
+        "latest": "1.9.1",
+        "versions_behind": 0,
+        "affected_in": "portal/Backend",
+        "note": "Actually up to date despite outdated output"
+      },
+      {
+        "package": "@opentelemetry/auto-instrumentations-node",
+        "current": "0.40.3",
+        "latest": "0.78.0",
+        "versions_behind": "MAJOR",
+        "affected_in": "portal/Backend (DIRECT)",
+        "note": "Also has active HIGH severity CVE",
+        "recommendation": "URGENT: Update to >=0.75.0 minimum for security"
+      },
+      {
+        "package": "dockerode",
+        "current": "4.0.12",
+        "latest": "5.0.1",
+        "versions_behind": 1,
+        "affected_in": "platform/orchestrator (DIRECT)",
+        "recommendation": "Major version upgrade"
+      },
+      {
+        "package": "multer",
+        "current": "1.4.5-lts.2",
+        "latest": "2.2.0",
+        "versions_behind": 1,
+        "affected_in": "platform/orchestrator (DIRECT)",
+        "recommendation": "Major version upgrade - LTS version may be intentional"
+      }
+    ]
+  },
+  "transitive_dependency_risks": {
+    "handlebars": {
+      "severity": "CRITICAL",
+      "found_in": ["Source/Backend"],
+      "transitive_path": "Unknown - need to trace",
+      "vulnerable_range": "<=4.7.8",
+      "cvss_scores": ["8.1", "9.8", "4.7", "4.8", "3.7", "8.1", "7.5", "8.2"],
+      "impact": "7 distinct JavaScript injection vulnerabilities",
+      "remediation": "Find which direct dependency requires handlebars and update that"
+    },
+    "protobufjs": {
+      "severity": "CRITICAL",
+      "found_in": ["platform/orchestrator", "portal/Backend"],
+      "transitive_path": "Likely from @grpc/grpc-js",
+      "vulnerable_range": "<=7.6.2",
+      "cvss_scores": ["9.8", "5.3", "8.1", "7.5"],
+      "impact": "Arbitrary code execution, code injection, DoS attacks",
+      "remediation": "Update @grpc/grpc-js to latest stable version"
+    },
+    "form-data": {
+      "severity": "HIGH",
+      "found_in": ["Source/Backend", "Source/Frontend", "portal/Frontend"],
+      "vulnerable_range": ">=4.0.0 <4.0.6",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "impact": "CRLF injection via unescaped multipart field names",
+      "remediation": "Update form-data to >=4.0.6"
+    }
+  },
+  "direct_dependency_vulnerabilities": {
+    "count": 8,
+    "critical": 3,
+    "high": 3,
+    "moderate": 2,
+    "packages": [
+      {
+        "name": "uuid",
+        "package_json": "Source/Backend/package.json",
+        "severity": "MODERATE",
+        "cve": "GHSA-w5hq-g745-h8pq",
+        "description": "Missing buffer bounds check in v3/v5/v6 when buf is provided",
+        "vulnerable_range": "<11.1.1",
+        "current": "9.0.0",
+        "cvss": 7.5
+      },
+      {
+        "name": "vitest",
+        "package_json": "Source/Frontend/package.json",
+        "severity": "CRITICAL",
+        "cve": "GHSA-5xrq-8626-4rwp",
+        "description": "Arbitrary file read/execution when UI server listening",
+        "vulnerable_range": "<3.2.6",
+        "current": "2.0.5",
+        "cvss": 9.8
+      },
+      {
+        "name": "vite",
+        "package_json": "Source/Frontend/package.json",
+        "severity": "HIGH",
+        "cves": 3,
+        "description": "Path traversal, NTLMv2 disclosure, fs.deny bypass on Windows",
+        "vulnerable_range": "<=6.4.2",
+        "current": "5.4.0",
+        "latest": "8.1.3"
+      },
+      {
+        "name": "@opentelemetry/auto-instrumentations-node",
+        "package_json": "portal/Backend/package.json",
+        "severity": "HIGH",
+        "cve": "GHSA-q7rr-3cgh-j5r3",
+        "description": "Prometheus exporter process crash via malformed HTTP",
+        "vulnerable_range": "<0.75.0",
+        "current": "0.40.3",
+        "cvss": 7.5
+      },
+      {
+        "name": "@opentelemetry/sdk-node",
+        "package_json": "portal/Backend/package.json",
+        "severity": "HIGH",
+        "cve": "GHSA-q7rr-3cgh-j5r3",
+        "description": "Prometheus exporter process crash via malformed HTTP",
+        "vulnerable_range": "<0.217.0",
+        "current": "0.41.0"
+      },
+      {
+        "name": "vitest",
+        "package_json": "portal/Backend/package.json",
+        "severity": "CRITICAL",
+        "cve": "GHSA-5xrq-8626-4rwp",
+        "description": "Arbitrary file read/execution when UI server listening",
+        "vulnerable_range": "<3.2.6",
+        "current": "1.2.0"
+      },
+      {
+        "name": "dockerode",
+        "package_json": "platform/orchestrator/package.json",
+        "severity": "MODERATE",
+        "via": "uuid CVE",
+        "description": "Inherits uuid buffer bounds check vulnerability"
+      },
+      {
+        "name": "express",
+        "package_json": "Source/Backend, platform/orchestrator, portal/Backend",
+        "severity": "MODERATE",
+        "via": "qs vulnerability",
+        "description": "Indirect qs vulnerability in query string parsing"
+      }
+    ]
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": {
+      "status": "UNKNOWN",
+      "note": "Would need to check each package.json for postinstall hooks"
+    },
+    "abandoned_packages": {
+      "status": "UNKNOWN",
+      "note": "Would need to check npm registry for last publish date"
+    }
+  },
+  "manifest_breakdown": {
+    "Source/Backend": {
+      "status": "VULNERABLE",
+      "direct_deps": 13,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 6,
+        "low": 1,
+        "total": 9
+      },
+      "outdated": 4,
+      "critical_issues": [
+        "handlebars: 7 JavaScript injection CVEs (transitive)"
+      ],
+      "action_required": "URGENT - Patch handlebars vulnerability"
+    },
+    "Source/Frontend": {
+      "status": "VULNERABLE",
+      "direct_deps": 13,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 6,
+        "low": 1,
+        "total": 11
+      },
+      "outdated": 3,
+      "critical_issues": [
+        "vitest: Arbitrary file read/execution (CRITICAL, CVSS 9.8)",
+        "vite: Path traversal and bypass vulnerabilities (HIGH)",
+        "react: 1 major version outdated (High-impact update)"
+      ],
+      "action_required": "HIGH - Vitest and Vite updates required"
+    },
+    "Source/E2E": {
+      "status": "CLEAN",
+      "direct_deps": 1,
+      "vulnerabilities": 0,
+      "outdated": 1,
+      "note": "@playwright/test is up to date"
+    },
+    "platform/orchestrator": {
+      "status": "VULNERABLE",
+      "direct_deps": 3,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0,
+        "total": 9
+      },
+      "outdated": 3,
+      "critical_issues": [
+        "protobufjs: Arbitrary code execution (11 CVEs, CRITICAL)",
+        "@grpc/grpc-js: Server crash on malformed requests (HIGH)"
+      ],
+      "action_required": "CRITICAL - Update @grpc/grpc-js and dependencies"
+    },
+    "portal/Backend": {
+      "status": "CRITICAL",
+      "direct_deps": 22,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 46,
+        "low": 0,
+        "total": 54
+      },
+      "outdated": 3,
+      "critical_issues": [
+        "protobufjs: 11 CVEs via @grpc/grpc-js",
+        "vitest: Arbitrary file read/execution (CRITICAL, CVSS 9.8)",
+        "@opentelemetry/auto-instrumentations-node: Prometheus DoS (HIGH)"
+      ],
+      "action_required": "CRITICAL - Multiple high-severity vulnerabilities"
+    },
+    "portal/Frontend": {
+      "status": "VULNERABLE",
+      "direct_deps": 17,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 5,
+        "low": 1,
+        "total": 11
+      },
+      "outdated": 3,
+      "critical_issues": [
+        "vitest: Arbitrary file read/execution (CRITICAL, CVSS 9.8)",
+        "form-data: CRLF injection (HIGH)",
+        "vite: Multiple security issues (HIGH)"
+      ],
+      "action_required": "HIGH - Vitest and Vite require immediate updates"
+    }
+  },
+  "remediation_plan": {
+    "immediate_actions": [
+      {
+        "priority": "P0 CRITICAL",
+        "action": "Update vitest to >=3.2.6",
+        "affected": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+        "reason": "Arbitrary file read/execution via UI server",
+        "command": "npm update vitest"
+      },
+      {
+        "priority": "P0 CRITICAL",
+        "action": "Update @grpc/grpc-js to >=1.15.0 (fixes protobufjs)",
+        "affected": ["platform/orchestrator", "portal/Backend"],
+        "reason": "Remote code execution in protobufjs",
+        "command": "npm update @grpc/grpc-js"
+      },
+      {
+        "priority": "P1 HIGH",
+        "action": "Update vite to >=8.1.3",
+        "affected": ["Source/Frontend", "portal/Frontend"],
+        "reason": "Path traversal and fs.deny bypass",
+        "command": "npm update vite"
+      },
+      {
+        "priority": "P1 HIGH",
+        "action": "Update @opentelemetry/auto-instrumentations-node to >=0.75.0",
+        "affected": ["portal/Backend"],
+        "reason": "Prometheus exporter DoS vulnerability",
+        "command": "npm update @opentelemetry/auto-instrumentations-node"
+      }
+    ],
+    "short_term_actions": [
+      {
+        "priority": "P2 HIGH",
+        "action": "Update uuid to >=11.1.1 OR >=14.0.1",
+        "affected": ["Source/Backend", "platform/orchestrator"],
+        "reason": "Buffer bounds check missing in uuid",
+        "command": "npm update uuid"
+      },
+      {
+        "priority": "P2 HIGH",
+        "action": "Update react/react-dom to 19.x",
+        "affected": ["Source/Frontend", "portal/Frontend"],
+        "reason": "Major version upgrades available",
+        "command": "npm update react react-dom"
+      },
+      {
+        "priority": "P2 HIGH",
+        "action": "Update express to 5.x",
+        "affected": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+        "reason": "Latest version, major upgrade available",
+        "command": "npm update express"
+      }
+    ],
+    "long_term_actions": [
+      {
+        "priority": "P3 MODERATE",
+        "action": "Update pino to 10.x",
+        "affected": ["Source/Backend"],
+        "reason": "2 major versions outdated"
+      },
+      {
+        "priority": "P3 MODERATE",
+        "action": "Update react-router-dom to 7.x",
+        "affected": ["Source/Frontend", "portal/Frontend"],
+        "reason": "Major version available"
+      },
+      {
+        "priority": "P3 MODERATE",
+        "action": "Update dockerode to 5.x",
+        "affected": ["platform/orchestrator"],
+        "reason": "Major version available"
+      },
+      {
+        "priority": "P3 MODERATE",
+        "action": "Update multer to 2.x",
+        "affected": ["platform/orchestrator"],
+        "reason": "Major version available, but check breaking changes"
+      }
+    ]
+  },
+  "statistics": {
+    "total_findings": 94,
+    "by_severity": {
+      "P1_CRITICAL": 6,
+      "P2_HIGH": 20,
+      "P3_MODERATE": 27,
+      "P4_LOW": 41
+    },
+    "by_category": {
+      "cve": 69,
+      "outdated": 25
+    },
+    "by_manifest": {
+      "Source/Backend": 9,
+      "Source/Frontend": 11,
+      "Source/E2E": 1,
+      "platform/orchestrator": 9,
+      "portal/Backend": 54,
+      "portal/Frontend": 11
+    },
+    "manifests_requiring_action": 5,
+    "manifests_clean": 1
+  },
+  "recommendations": {
+    "1_immediate_security_patches": "Apply P0 and P1 fixes immediately - they address remote code execution and critical info disclosure",
+    "2_testing_strategy": "Vitest and Vite updates may have breaking changes - run full test suite and e2e after updates",
+    "3_dependency_management": "Implement automated dependency checking (npm audit, dependabot, snyk)",
+    "4_lock_file_review": "Review package-lock.json for deduplication opportunities to reduce attack surface",
+    "5_transitive_dependency_audit": "Trace handlebars and protobufjs to find which direct dependencies require them",
+    "6_ci_cd_integration": "Add 'npm audit' to CI/CD pipeline with fail-on-high threshold",
+    "7_update_cadence": "Establish monthly security patch review process"
+  }
+}

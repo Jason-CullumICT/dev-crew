@@ -1,0 +1,313 @@
+{
+  "audit_id": "run-20260707-062428",
+  "audit_date": "2026-07-07",
+  "grade": "D",
+  "branch": "audit/inspector-2026-07-07-dc32f5",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend and frontend services not running — static analysis only",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 11,
+    "p3_total": 30,
+    "p4_total": 22,
+    "spec_coverage_pct": 88,
+    "escalations_to_guardians": 2,
+    "fixed_since_prior": 0,
+    "prior_audit": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-CRIT-002",
+      "severity": "P1",
+      "title": "Handlebars JavaScript Injection — 7 CVEs (CVSS 8.1–9.8)",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "file": "Source/Backend (transitive dependency)",
+      "description": "Handlebars ≤4.7.8 contains 7 distinct JS injection vulnerabilities including AST type confusion, prototype pollution, and missing validation. As a transitive dependency in Source/Backend, an attacker who can influence template inputs could execute arbitrary code.",
+      "exploit_scenario": "If any user-controlled string reaches a Handlebars template render call, prototype pollution or AST injection allows arbitrary code execution in the Node process.",
+      "cvss": "8.1–9.8",
+      "recommendation": "Identify which direct dependency pulls in handlebars (npm ls handlebars in Source/Backend); upgrade that package or add a forced resolution to handlebars >=4.7.9.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-CRIT-003",
+      "severity": "P1",
+      "title": "Protobufjs Arbitrary Code Execution — 11 CVEs (CVSS up to 9.8)",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "file": "platform/orchestrator, portal/Backend (via @grpc/grpc-js)",
+      "description": "Protobufjs ≤7.6.2 contains 11 CVEs including remote code execution, code injection, and DoS vectors. Pulled in transitively through @grpc/grpc-js, which is used by the gRPC communication layer of the orchestrator and portal backend.",
+      "exploit_scenario": "A malicious gRPC message containing crafted protobuf data can trigger RCE in the orchestrator process. The orchestrator is the core infrastructure managing all agent pipelines.",
+      "cvss": "5.3–9.8",
+      "recommendation": "Update @grpc/grpc-js to >=1.15.0 in platform/orchestrator and portal/Backend to pull in a fixed protobufjs version.",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "title": "GET /api/search route not registered in app.ts — DependencyPicker broken in production",
+      "specialist": "quality-oracle",
+      "category": "correctness",
+      "file": "Source/Backend/src/app.ts",
+      "description": "The search route handler exists and has tests, but is never wired into the Express app. The DependencyPicker typeahead component silently fails in production because all search requests return 404.",
+      "exploit_scenario": "Any user navigating to a work item detail page and attempting to add a dependency will see an empty picker with no results — the feature is completely broken.",
+      "impact": "P1 functional regression — core dependency management feature non-operational",
+      "recommendation": "Add `app.use('/api/search', searchRouter)` to Source/Backend/src/app.ts. One-liner fix.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-CRIT-001",
+      "severity": "P1",
+      "title": "Vitest Arbitrary File Read & Execution (CVSS 9.8)",
+      "specialist": "dependency-auditor",
+      "category": "dependency-cve",
+      "file": "Source/Frontend/package.json, portal/Backend/package.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "description": "Vitest <3.2.6 allows arbitrary file read and code execution when the Vitest UI server is listening. Affects Source/Frontend (v2.0.5) and portal/Backend (v1.2.0).",
+      "exploit_scenario": "If the Vitest UI server is exposed on a reachable network interface during CI/CD or development, an attacker can read arbitrary files and execute code on the host.",
+      "impact": "Critical if Vitest UI exposed; medium if strictly localhost dev-only use.",
+      "recommendation": "Update vitest to >=3.2.6 in Source/Frontend and portal/Backend. Run: cd Source/Frontend && npm update vitest; cd portal/Backend && npm update vitest",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "title": "pending_dependencies missing from WorkItemStatus enum",
+      "specialist": "quality-oracle",
+      "category": "api-contract",
+      "file": "Source/Shared/types/workflow.ts",
+      "description": "API contracts spec requires a 200 response with status=pending_dependencies when dispatch is blocked by unresolved dependencies. Implementation returns 400 instead. VALID_STATUS_TRANSITIONS has a comment claiming it but no implementation.",
+      "recommendation": "Add pending_dependencies to WorkItemStatus enum, add transition rules to VALID_STATUS_TRANSITIONS, update route handler to return 200+status.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "title": "BlockedBadge missing amber state for pending_dependencies",
+      "specialist": "quality-oracle",
+      "category": "ui-completeness",
+      "file": "Source/Frontend/src/components/BlockedBadge.tsx",
+      "description": "Component only renders red badge or nothing. The amber branch for status='pending_dependencies' has no prop, no render path, and no test. Coupled to QO-002.",
+      "recommendation": "Add amber badge variant after QO-002 enum fix. Add prop + render path + snapshot test.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "title": "dependencyCheckDuration histogram absent from metrics",
+      "specialist": "quality-oracle",
+      "category": "observability",
+      "file": "Source/Backend/src/metrics.ts",
+      "description": "FR-dependency-metrics requires 4 Prometheus metrics for dependency tracking. Only 3 are present — the timing histogram for readiness checks (dependencyCheckDuration) is missing.",
+      "recommendation": "Add dependencyCheckDuration histogram to metrics.ts with appropriate buckets for ms-range operations.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-HIGH-001",
+      "severity": "P2",
+      "title": "Vite Path Traversal and FS Security Bypass (3 CVEs)",
+      "specialist": "dependency-auditor",
+      "category": "dependency-cve",
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "cve": "GHSA-fx2h-pf6j-xcff (and 2 others)",
+      "description": "Vite ≤6.4.2 has path traversal in optimized deps .map handling, NTLMv2 hash disclosure on Windows, and server.fs.deny bypass on Windows alternate paths. Current version 5.4.0.",
+      "recommendation": "Update vite to >=8.1.3 in Source/Frontend and portal/Frontend.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-HIGH-002",
+      "severity": "P2",
+      "title": "@opentelemetry/auto-instrumentations-node Prometheus DoS (CVSS 7.5)",
+      "specialist": "dependency-auditor",
+      "category": "dependency-cve",
+      "file": "portal/Backend/package.json",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "description": "Malformed HTTP request to the Prometheus exporter endpoint causes the portal/Backend process to crash. Exploitable by any network-adjacent attacker. Current version 0.40.3, fix in >=0.75.0.",
+      "recommendation": "Update @opentelemetry/auto-instrumentations-node to >=0.75.0. Also update @opentelemetry/sdk-node to >=0.217.0.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-HIGH-003",
+      "severity": "P2",
+      "title": "UUID buffer bounds check missing (CVSS 7.5)",
+      "specialist": "dependency-auditor",
+      "category": "dependency-cve",
+      "file": "Source/Backend/package.json, platform/orchestrator/package.json",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "description": "uuid 9.0.0 is missing buffer bounds check in v3/v5/v6 when buf parameter is provided. Current version is 9.0.0; fix requires >=11.1.1 (or latest >=14.0.1).",
+      "recommendation": "Update uuid to 14.0.1 in Source/Backend and platform/orchestrator.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-HIGH-004",
+      "severity": "P2",
+      "title": "pino 2 major versions behind (8 → 10)",
+      "specialist": "dependency-auditor",
+      "category": "dependency-outdated",
+      "file": "Source/Backend/package.json",
+      "description": "pino is at 8.21.0, latest is 10.3.1. Two major versions behind means missing security patches, API improvements, and Node.js version support.",
+      "recommendation": "Plan major version upgrade to pino 10.x with review of breaking changes in logging API.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-HIGH-005",
+      "severity": "P2",
+      "title": "react ecosystem 1 major version behind (18 → 19)",
+      "specialist": "dependency-auditor",
+      "category": "dependency-outdated",
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "description": "react, react-dom (18.3.1 → 19.2.7) and react-router-dom (6.30.4 → 7.18.1) are all one major version behind. These should be updated in lockstep.",
+      "recommendation": "Plan React 19 upgrade sprint. Test all component rendering and hook behaviour. Update react-router-dom separately if API changes require it.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-HIGH-006",
+      "severity": "P2",
+      "title": "express 1 major version behind (4 → 5)",
+      "specialist": "dependency-auditor",
+      "category": "dependency-outdated",
+      "file": "Source/Backend/package.json, platform/orchestrator/package.json, portal/Backend/package.json",
+      "description": "Express 4.22.2 in use, latest 5.2.1. Affects all three server packages. Express 5 has breaking API changes that require careful migration.",
+      "recommendation": "Plan Express 5 migration. Review breaking changes (router, error handling, deprecated methods). Coordinate across all three backends.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "title": "Dual logger implementations — violates FR-003 dev pretty-printing",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/src/logger.ts",
+      "recommendation": "Consolidate to single logger with dev/prod mode switch. Remove the compat shim.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "title": "Traceability enforcer blind to FR-dependency-* requirements",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Extend enforcer to include Specifications/Implementation/dependency-management.md (or equivalent) so FR-dependency-* defects are caught automatically.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "title": "eslint-disable-next-line with no rationale comment",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "recommendation": "Add a comment explaining why react-hooks/exhaustive-deps is suppressed, or fix the underlying hook dependency.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD-001",
+      "severity": "P3",
+      "title": "react-router-dom path handling CVE (Source/Frontend)",
+      "specialist": "dependency-auditor",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "Update react-router-dom to 7.x as part of React ecosystem upgrade sprint.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD-002",
+      "severity": "P3",
+      "title": "qs prototype pollution via express (transitive)",
+      "specialist": "dependency-auditor",
+      "file": "Source/Backend, platform/orchestrator, portal/Backend",
+      "recommendation": "Updating express to 5.x should resolve qs transitive vulnerability.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD-003",
+      "severity": "P3",
+      "title": "form-data CRLF injection via multipart field names",
+      "specialist": "dependency-auditor",
+      "file": "Source/Backend, Source/Frontend, portal/Frontend (transitive)",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "recommendation": "Update form-data to >=4.0.6 in all affected manifests.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD-004",
+      "severity": "P3",
+      "title": "dockerode 1 major version behind (4 → 5)",
+      "specialist": "dependency-auditor",
+      "file": "platform/orchestrator/package.json",
+      "recommendation": "Plan dockerode 5 upgrade; review Docker API breaking changes.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD-005",
+      "severity": "P3",
+      "title": "multer 1 major version behind (1 → 2)",
+      "specialist": "dependency-auditor",
+      "file": "Source/Backend/package.json (or platform/orchestrator)",
+      "recommendation": "Upgrade multer to 2.x with breaking change review.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "title": "dev-workflow-platform.md and tiered-merge-pipeline.md orphaned from traceability",
+      "specialist": "quality-oracle",
+      "file": "Specifications/",
+      "description": "These spec files target portal/ not Source/; not a defect but a documentation gap.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "No automated dependency management (Dependabot/Renovate absent)",
+      "affected_findings": ["DEP-CRIT-001", "DEP-CRIT-002", "DEP-CRIT-003", "DEP-HIGH-001", "DEP-HIGH-002", "DEP-HIGH-003", "DEP-HIGH-004", "DEP-HIGH-005", "DEP-HIGH-006"],
+      "single_fix": "Configure Dependabot or Renovate to send weekly PRs for security patches and monthly PRs for minor/major upgrades. Immediate patches eliminate 6 CRITICAL CVEs."
+    },
+    {
+      "root_cause": "pending_dependencies status not implemented across all layers",
+      "affected_findings": ["QO-002", "QO-003"],
+      "single_fix": "Add pending_dependencies to WorkItemStatus enum in Source/Shared/types/workflow.ts. BlockedBadge amber state, dispatch logic, and API response follow from that single enum change."
+    },
+    {
+      "root_cause": "Observability implementation incomplete",
+      "affected_findings": ["QO-004", "QO-005"],
+      "single_fix": "Consolidate to single logger (eliminate shim), add missing dependencyCheckDuration histogram. Both are in Source/Backend observability layer."
+    },
+    {
+      "root_cause": "Traceability enforcer scope not expanded for FR-dependency-*",
+      "affected_findings": ["QO-006", "QO-008"],
+      "single_fix": "Update tools/traceability-enforcer.py to also scan FR-dependency-* requirements, and add traceability header to relevant spec files."
+    }
+  ]
+}

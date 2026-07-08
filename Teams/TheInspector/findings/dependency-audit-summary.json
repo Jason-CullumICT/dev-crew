@@ -1,0 +1,89 @@
+{
+  "audit_id": "dep-audit-2026-07-08",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "auditor": "dependency-auditor",
+  "scope": "npm projects (dev-crew monorepo)",
+  "projects_scanned": 6,
+  "status": "COMPLETE",
+  "grade": "F",
+  "summary": {
+    "total_cves": 94,
+    "critical": 6,
+    "high": 16,
+    "medium": 69,
+    "low": 3,
+    "dependencies": {
+      "direct_total": 38,
+      "transitive_total": 1821,
+      "largest_project": "portal/Backend (578 transitive)"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection (CVSS 9.8)",
+      "packages": ["handlebars ≤4.7.8"],
+      "projects": ["Source/Backend", "Source/Frontend"],
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpj-hc6g-r9c6", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs RCE & Prototype Pollution (11 CVEs)",
+      "packages": ["protobufjs (all versions)"],
+      "projects": ["portal/Backend"],
+      "cves": ["1117571", "1118641", "1118924", "1118926", "1118928", "1118930", "1118932", "1118935", "1119378", "1120742", "1120799"],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest UI Arbitrary File Read/Execute (CVSS 9.8)",
+      "packages": ["vitest <3.2.6"],
+      "projects": ["portal/Backend"],
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "form-data CRLF Injection (CVSS 7.5)",
+      "packages": ["form-data 4.0.0-4.0.5"],
+      "affected_projects": 3
+    },
+    {
+      "id": "DEP-008",
+      "title": "OpenTelemetry gRPC Chain (High)",
+      "packages": ["@opentelemetry/sdk-node", "@grpc/grpc-js", "@opentelemetry/auto-instrumentations-node"],
+      "affected_projects": 1,
+      "note": "Cascading vulnerabilities through observability infrastructure"
+    }
+  ],
+  "supply_chain_assessment": {
+    "postinstall_scripts": "CLEAN - None detected",
+    "dependency_bloat": "ALERT - portal/Backend has 578 transitive deps (57.8x multiplier)",
+    "license_compliance": "PASS - All licenses permissive (MIT, Apache-2.0, BSD, ISC)",
+    "version_consistency": "MIXED - express 4.18 vs 4.21 across projects; compatible"
+  },
+  "recommended_actions": {
+    "phase_1_24h": [
+      "Upgrade handlebars to ^4.7.9 (Source/Backend, Source/Frontend)",
+      "Upgrade protobufjs to ^7.7.0 (portal/Backend)",
+      "Upgrade vitest to ^3.2.6 (all projects with vitest)"
+    ],
+    "phase_2_1week": [
+      "Upgrade form-data to ^4.0.6",
+      "Upgrade vite to latest",
+      "Upgrade @grpc/grpc-js to ^1.14.4",
+      "Upgrade @opentelemetry stack to latest"
+    ],
+    "phase_3_4weeks": [
+      "Implement npm audit in CI/CD (fail on critical/high)",
+      "Set up Dependabot for automated patch PRs",
+      "Review portal/Backend transitive dependency bloat"
+    ]
+  },
+  "files_generated": [
+    "Teams/TheInspector/findings/dependency-audit.md",
+    "Teams/TheInspector/learnings/dependency-auditor.md"
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "audit_id": "inspector-2026-07-08",
+  "audit_date": "2026-07-08",
+  "grade": "D",
+  "branch": "audit/inspector-2026-07-08-af2a95",
+  "generated_by": "TheInspector · team-leader",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 8,
+    "p3_total": 9,
+    "p4_total": 1,
+    "escalations_to_guardians": 3,
+    "fixed_since_prior": 0,
+    "prior_audit": null,
+    "note": "First audit — no baseline"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Handlebars JavaScript Injection (CVSS 9.8)",
+      "description": "handlebars ≤4.7.8 allows template injection through AST type confusion, partial block tampering, and prototype pollution. 8 CVEs including GHSA-2w6w-674q-4c4q.",
+      "packages": ["handlebars ≤4.7.8"],
+      "projects": ["Source/Backend", "Source/Frontend"],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "fix": "Upgrade handlebars to >=4.7.9",
+      "cvss": 9.8,
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "protobufjs RCE & Prototype Pollution (11 CVEs, CVSS 9.8)",
+      "description": "protobufjs has 11 CVEs including arbitrary code execution via crafted protobuf messages, prototype pollution, and unbounded recursion DoS. Present in portal/Backend via gRPC/OpenTelemetry chain.",
+      "packages": ["protobufjs (all versions)"],
+      "projects": ["portal/Backend", "platform/orchestrator"],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "fix": "Upgrade protobufjs to >=7.7.0",
+      "cvss": 9.8,
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Vitest UI Arbitrary File Read/Execute (CVSS 9.8)",
+      "description": "vitest <3.2.6 UI server allows arbitrary file read and execution when the UI server is accessible. Affects Source/Frontend, portal/Backend, portal/Frontend.",
+      "packages": ["vitest <3.2.6"],
+      "projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "fix": "Upgrade vitest to >=3.2.6 on all projects; disable Vitest UI in production",
+      "cvss": 9.8,
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Direct store access from route handlers",
+      "description": "Three route files (workItems.ts, workflow.ts, intake.ts) call store.* functions directly, bypassing the service layer. CLAUDE.md mandates 'No direct DB calls from route handlers'.",
+      "files": ["Source/Backend/src/routes/workItems.ts", "Source/Backend/src/routes/workflow.ts", "Source/Backend/src/routes/intake.ts"],
+      "recommendation": "Extract a workItemService.ts wrapping CRUD store calls. Move changeHistory mutation in approve/reject/dispatch into the service layer.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "GET /api/search not wired — FR-dependency-search unimplemented",
+      "description": "FR-dependency-search requires a cross-entity typeahead endpoint. A test file exists that explicitly documents the route is missing and will fail. No route file exists in src/routes/.",
+      "files": ["Source/Backend/src/app.ts", "Source/Backend/tests/routes/search.test.ts"],
+      "recommendation": "Implement src/routes/search.ts with GET /api/search?q=, register in app.ts, return {data: WorkItem[]}.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Missing dependencyCheckDuration histogram metric",
+      "description": "FR-dependency-metrics specifies dependency_check_duration_seconds histogram. It is absent from metrics.ts. The gap is also untested.",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "recommendation": "Add dependencyCheckDurationHistogram to metrics.ts; instrument isReady() in dependency.ts; add test case.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer has 11 FR-dependency-* requirements untracked",
+      "description": "11 implemented FR-dependency-* requirements are not in the enforcer's requirements file. The enforcer passes even when requirements are missing (QO-002 is evidence).",
+      "files": ["tools/traceability-enforcer.py", "Plans/self-judging-workflow/requirements.md"],
+      "recommendation": "Add FR-dependency-* requirements to requirements.md or create a new plan file. Add a failing test for GET /api/search.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "QO-002"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "form-data CRLF Injection (CVSS 7.5)",
+      "description": "form-data 4.0.0–4.0.5 allows CRLF injection in multipart boundary handling. Affects 3 projects.",
+      "packages": ["form-data 4.0.0-4.0.5"],
+      "projects": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "recommendation": "Upgrade form-data to >=4.0.6 across all affected projects.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "Vite server.fs.deny path traversal bypass",
+      "description": "Vite dev server has a path traversal vulnerability allowing bypass of server.fs.deny restrictions. Affects Source/Frontend and portal/Frontend.",
+      "packages": ["vite <6.5.0"],
+      "projects": ["Source/Frontend", "portal/Frontend"],
+      "recommendation": "Upgrade vite to >=6.5.0 (v5 track: >=5.5.0).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "@grpc/grpc-js DoS via malformed compressed messages (CVSS 7.5)",
+      "description": "grpc-js crashes on malformed compressed messages, enabling denial of service. Present in portal/Backend via OpenTelemetry.",
+      "packages": ["@grpc/grpc-js <1.14.4"],
+      "projects": ["portal/Backend"],
+      "recommendation": "Upgrade @grpc/grpc-js to >=1.14.4.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "OpenTelemetry SDK cascade — severely outdated (v0.47 → v0.220)",
+      "description": "portal/Backend's OpenTelemetry packages are 173 major versions behind (0.47.0 vs current 0.220.0), carrying 46 moderate CVEs through the transitive chain.",
+      "packages": ["@opentelemetry/sdk-node 0.47.0", "@opentelemetry/auto-instrumentations-node 0.40.0"],
+      "projects": ["portal/Backend"],
+      "recommendation": "Upgrade full OpenTelemetry stack to latest. Consider switching from auto-instrumentations to selective manual instrumentation to reduce dependency surface.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "Dual logger abstraction with incompatible calling conventions",
+      "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "recommendation": "Standardise on one calling convention; remove src/logger.ts shim.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "test-coverage",
+      "title": "Duplicate frontend test files at two directory locations",
+      "files": ["Source/Frontend/tests/WorkItemDetailPage.test.tsx", "Source/Frontend/tests/WorkItemListPage.test.tsx"],
+      "recommendation": "Canonicalise on tests/pages/ (more complete); delete root-level duplicates.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry tracing absent from backend (CLAUDE.md mandate)",
+      "files": ["Source/Backend/package.json"],
+      "recommendation": "Add @opentelemetry/sdk-node, @opentelemetry/auto-instrumentations-node; initialise before route setup; propagate traceparent.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppressions without justification comments",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "recommendation": "Add inline comments explaining why react-hooks/exhaustive-deps is suppressed at each location.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "dependency-vulnerability",
+      "title": "69 moderate CVEs across 5 npm projects",
+      "description": "Moderate CVEs spread across Source/Backend (uuid, esbuild), Source/Frontend (postcss, react-router), portal/Backend (OpenTelemetry chain, qs, body-parser), portal/Frontend (postcss, react-router, esbuild).",
+      "projects": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend", "platform/orchestrator"],
+      "recommendation": "Address as part of phased dependency upgrade (Phase 2 — 1 week). Run npm audit fix --force only after testing.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-009",
+      "severity": "P4",
+      "category": "dependency-vulnerability",
+      "title": "3 low-severity CVEs",
+      "description": "Low-severity CVEs in transitive dependencies with minimal exploitability.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

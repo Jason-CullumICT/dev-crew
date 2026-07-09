@@ -1,0 +1,207 @@
+{
+  "audit_meta": {
+    "run_date": "2026-07-09",
+    "auditor": "dependency-auditor",
+    "scope": "dev-crew Source App",
+    "package_managers": ["npm"],
+    "duration_seconds": 120
+  },
+  "grade": "C",
+  "grade_rationale": "2 critical and 4 high-severity vulnerabilities in production/dev dependencies require immediate remediation",
+  "vulnerability_summary": {
+    "critical": 2,
+    "high": 4,
+    "moderate": 6,
+    "low": 1,
+    "info": 0,
+    "total": 13
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read/Execute",
+      "package": "vitest",
+      "version": "2.0.5",
+      "severity": "critical",
+      "cvss_score": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "fix_available": true,
+      "fix_version": "^3.2.6",
+      "timeline": "immediate"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js JavaScript Injection (Multiple Vectors)",
+      "package": "handlebars",
+      "version": "unknown (transitive)",
+      "severity": "critical",
+      "cvss_score": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q (and 4 others)",
+      "fix_available": true,
+      "fix_via": "npm audit fix",
+      "timeline": "immediate"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "Vite server.fs.deny Bypass (Windows)",
+      "package": "vite",
+      "version": "5.4.0",
+      "severity": "high",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "fix_version": "^6.4.3"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vite Path Traversal in .map Handling",
+      "package": "vite",
+      "version": "5.4.0",
+      "severity": "high",
+      "cve": "GHSA-4w7w-66w2-5vf9"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data CRLF Injection (Multipart)",
+      "package": "form-data",
+      "version": "4.0.0-4.0.5",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "fix_version": "^4.0.6"
+    },
+    {
+      "id": "DEP-006",
+      "title": "ws Memory Exhaustion DoS",
+      "package": "ws",
+      "version": "8.0.0-8.20.1 (transitive)",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "fix_version": "^8.21.0"
+    }
+  ],
+  "outdated_packages": {
+    "backend": [
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.3.1",
+        "versions_behind": 2,
+        "severity": "moderate",
+        "reason": "Major version upgrades available; security patches included"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "14.0.1",
+        "versions_behind": 5,
+        "severity": "low",
+        "reason": "Outdated; low risk; can upgrade anytime"
+      },
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "versions_behind": 1,
+        "severity": "moderate",
+        "reason": "Major version has breaking changes; plan migration carefully"
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.2.7",
+        "versions_behind": 1,
+        "severity": "low",
+        "reason": "Optional upgrade; stable LTS available"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "latest": "19.2.7",
+        "versions_behind": 1,
+        "severity": "low"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "latest": "7.18.1",
+        "versions_behind": 1,
+        "severity": "high",
+        "reason": "Also has CVE (GHSA-2j2x-hqr9-3h42); update to ^6.30.4 minimum"
+      }
+    ]
+  },
+  "dependency_tree": {
+    "backend": {
+      "direct_total": 8,
+      "direct_production": 4,
+      "direct_development": 4,
+      "transitive_estimated": 400
+    },
+    "frontend": {
+      "direct_total": 5,
+      "direct_production": 3,
+      "direct_development": 2,
+      "transitive_estimated": 400
+    }
+  },
+  "compliance": {
+    "license_compliance": "PASS",
+    "post_install_scripts": "NONE_DETECTED",
+    "duplicate_packages": "NONE"
+  },
+  "supply_chain_risks": [
+    {
+      "risk": "Large transitive dependency count (~400)",
+      "severity": "medium",
+      "mitigation": "Continue using lock files; monitor quarterly"
+    },
+    {
+      "risk": "Handlebars in dependency chain with unclear root",
+      "severity": "high",
+      "mitigation": "Investigate npm_modules tree; identify and patch root dependency"
+    },
+    {
+      "risk": "Vitest and Vite frequent updates with security issues",
+      "severity": "medium",
+      "mitigation": "Monitor release notes; update quarterly"
+    }
+  ],
+  "remediation_timeline": {
+    "immediate": [
+      "DEP-001: Vitest critical (file read/execute)",
+      "DEP-002: Handlebars critical (code injection)",
+      "DEP-005: form-data high (CRLF injection)"
+    ],
+    "short_term_this_sprint": [
+      "DEP-003/004: Vite high (path traversal)",
+      "DEP-010: react-router CVE (open redirect)"
+    ],
+    "medium_term_next_sprint": [
+      "DEP-006: ws high (DoS)",
+      "DEP-014: Pino outdated (major version)",
+      "DEP-016: Express outdated (major version with breaking changes)"
+    ],
+    "optional_next_release": [
+      "DEP-017: React outdated (optional)",
+      "DEP-015: UUID outdated (low-risk)"
+    ]
+  },
+  "escalations": {
+    "to_guardians": [
+      "DEP-001: Vitest UI file read/execute (development-time attack surface)",
+      "DEP-002: Handlebars code injection (critical if templates are user-supplied)",
+      "DEP-005: form-data CRLF injection (if multipart uploads are exposed)"
+    ],
+    "to_red_teamer": [
+      "Verify Vitest UI server exposure in CI/local dev",
+      "Test Handlebars injection if package is actually used",
+      "Attempt CRLF injection via multipart upload feature"
+    ]
+  },
+  "next_audit": "2026-10-09",
+  "audit_frequency": "quarterly"
+}

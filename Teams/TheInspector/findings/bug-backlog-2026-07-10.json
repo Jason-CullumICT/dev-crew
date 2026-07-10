@@ -1,0 +1,372 @@
+{
+  "audit_id": "INSPECTOR-2026-07-10",
+  "audit_date": "2026-07-10",
+  "branch": "audit/inspector-2026-07-10-62d1fb",
+  "grade": "D",
+  "run_id": "run-20260710-062029",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 11,
+    "p3_total": 9,
+    "p4_total": 2,
+    "escalations_to_guardians": 3,
+    "fixer_backlog_count": 11,
+    "spec_coverage_pct": 13,
+    "services_online": 0,
+    "specialists_run": 2,
+    "specialists_skipped": 2
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve/rce",
+      "source": "dependency-auditor",
+      "title": "Vitest Arbitrary File Read/Execute (GHSA-5xrq-8626-4rwp)",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.0,
+      "package": "vitest@2.0.5",
+      "affected_files": [
+        "Source/Frontend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "exploit_scenario": "When vitest UI server is listening on a non-localhost interface, an attacker sends an HTTP GET to the vitest UI port and reads/executes arbitrary project files. No authentication required.",
+      "impact": "Remote Code Execution if vitest UI server is exposed to any network interface other than 127.0.0.1",
+      "recommendation": "1) Immediately verify vitest UI is NOT exposed (bind to localhost only or disable --ui flag). 2) Upgrade vitest to 4.1.10+.",
+      "fix_available": true,
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve/rce",
+      "source": "dependency-auditor",
+      "title": "Protobufjs Arbitrary Code Execution via gRPC (GHSA-xq3m-2v4x-88gg)",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "package": "protobufjs (transitive via @grpc/grpc-js → dockerode@4.0.4)",
+      "affected_files": [
+        "platform/orchestrator/package-lock.json"
+      ],
+      "exploit_scenario": "Orchestrator parses untrusted proto definitions from Docker API or gRPC endpoints. An attacker supplies a malicious proto message (bytes field default, option path, or recursive expansion) triggering unsafe code generation in protobufjs, achieving RCE on the orchestrator host.",
+      "impact": "Complete orchestrator compromise. CVSS 9.8 — network-accessible, no authentication required.",
+      "recommendation": "1) Assess if orchestrator receives untrusted proto sources. 2) Upgrade dockerode 4.0.4 → 5.0.1+ to pull in patched protobufjs. 3) Or pin protobufjs >= 7.5.5 explicitly in lock file.",
+      "fix_available": true,
+      "fix_blocker": "Breaking change: dockerode 4→5 API migration required",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve/path-traversal",
+      "source": "dependency-auditor",
+      "title": "Vite Path Traversal in Optimized Deps .map Handling (GHSA-4w7w-66w2-5vf9)",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "cvss": 5.3,
+      "package": "vite@5.4.0",
+      "affected_files": [
+        "Source/Frontend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "exploit_scenario": "Attacker sends a crafted request to the Vite dev server for a .map file with a path-traversal sequence. The server resolves the path outside the allowed optimized-deps directory, exposing source maps or arbitrary project files.",
+      "impact": "Source code / config disclosure from the Vite dev server. Production impact if source maps are bundled into production builds.",
+      "recommendation": "Run npm audit fix in Source/Frontend and portal/Frontend. Verify vite is upgraded to ≥5.3.5 (check exact patched version).",
+      "fix_available": true,
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift/ci-gate",
+      "source": "quality-oracle",
+      "title": "Traceability Enforcer CI Gate Reports False PASSED",
+      "file": "tools/traceability-enforcer.py",
+      "exploit_scenario": "Developer runs `python3 tools/traceability-enforcer.py` and sees TRACEABILITY PASSED. They merge code with no coverage of 34+ plan FRs and 74 spec FRs. The CI gate never catches this because the enforcer only checks the most-recently-modified requirements.md.",
+      "impact": "Over 34 plan FRs and 74 spec FRs have zero implementation coverage — completely invisible to the CI gate. Any team trusting this gate believes coverage is complete when it is ~13%.",
+      "recommendation": "Change enforcer default to scan ALL Plans/*/requirements.md files and aggregate failures. CI gate command: `for f in Plans/*/requirements.md; do python3 tools/traceability-enforcer.py --file \"$f\" || exit 1; done`",
+      "cross_ref": "QO-002 (gate blindspot hides spec drift)",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Block deployment"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "Specifications FR-001–FR-069 Completely Unimplemented (0% spec coverage)",
+      "file": "Specifications/dev-workflow-platform.md",
+      "exploit_scenario": "74 domain FRs are defined in Specifications/ but have zero implementation in Source/. Stakeholders reviewing spec documents believe functionality exists; it does not.",
+      "impact": "Spec-implementation gap is invisible due to QO-001. If the Specifications represent committed deliverables, the entire feature set is missing.",
+      "recommendation": "Clarify intent: (a) phase-gated delivery — add Phase-N headers to spec sections; update CLAUDE.md. (b) superseded — archive with notes. Either way, update enforcer to detect the gap.",
+      "cross_ref": "QO-001 (enforcer blindspot hides this)",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "This sprint"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Routes Import Store Directly — Service Layer Bypassed",
+      "file": "Source/Backend/src/routes/workItems.ts:12",
+      "additional_files": [
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/intake.ts:4"
+      ],
+      "exploit_scenario": "A new coder adds a CRUD route and calls store.createWorkItem() directly, skipping change-history tracking in changeHistory.ts, resulting in silent data corruption.",
+      "impact": "Business validation logic lives in route handlers rather than services; untestable in isolation. Architectural rule violation per CLAUDE.md.",
+      "recommendation": "Extract WorkItemService that owns all store calls. Route handlers call service methods; services call the store. Remove all store/ imports from route files.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "This sprint"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "OpenTelemetry Tracing Not Implemented — Mandatory Architecture Rule Violated",
+      "file": "Source/Backend/src/",
+      "exploit_scenario": "A production incident occurs. Engineers have no distributed traces to diagnose which workflow stage failed or how long each step took. Prometheus metrics alone cannot reconstruct request flow.",
+      "impact": "Zero distributed tracing across the application. Non-negotiable architecture requirement completely absent.",
+      "recommendation": "Add @opentelemetry/sdk-node, @opentelemetry/auto-instrumentations-node. Configure in src/telemetry.ts loaded before app.ts. Add custom spans in router.ts and assessment.ts. Add traceparent header propagation.",
+      "cross_ref": "[CROSS-REF: dependency-auditor] portal/Backend already has OTel packages — reference that implementation",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "This sprint"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "test-coverage",
+      "source": "quality-oracle",
+      "title": "Duplicate Test Files — Vitest Runs Both Copies",
+      "file": "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+      "additional_files": [
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "exploit_scenario": "A developer fixes a bug verified by the tests/pages/ version but accidentally breaks the root-level version's mock contract. CI passes because pages/ tests pass, but the root-level tests flag a different regression attributed to the same test file name.",
+      "impact": "39 redundant test cases inflate pass count. Divergent mock setups may test subtly different behaviors, masking regressions.",
+      "recommendation": "Delete root-level duplicates (tests/WorkItemDetailPage.test.tsx, tests/WorkItemListPage.test.tsx). Add explicit test.include: ['tests/**/*.test.*'] to vite.config.ts.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "This sprint"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve/injection",
+      "source": "dependency-auditor",
+      "title": "form-data CRLF Injection in Multipart Field Names (GHSA-hmw2-7cc7-3qxx)",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "package": "form-data@4.0.0-4.0.5 (transitive)",
+      "affected_files": [
+        "Source/Frontend/package-lock.json",
+        "platform/orchestrator/package-lock.json"
+      ],
+      "exploit_scenario": "Attacker crafts a multipart field name containing CRLF characters. The form-data library emits the unescaped characters into the HTTP headers, injecting arbitrary headers or content (cache poisoning, request smuggling).",
+      "recommendation": "Run npm audit fix in Source/Frontend and platform/orchestrator to pull in form-data@4.0.6+.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "This sprint"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve/dos",
+      "source": "dependency-auditor",
+      "title": "ws WebSocket Uninitialized Memory Disclosure & DoS (GHSA-58qx-3vcg-4xpx)",
+      "cve": "GHSA-58qx-3vcg-4xpx",
+      "cvss": 7.5,
+      "package": "ws@8.x (transitive via vitest/vite)",
+      "affected_files": [
+        "Source/Frontend/package-lock.json",
+        "portal/Frontend/package-lock.json"
+      ],
+      "exploit_scenario": "Attacker sends malformed WebSocket frames causing server to leak uninitialized buffer memory. Alternatively, sends tiny fragments to exhaust server memory via unbounded buffering.",
+      "recommendation": "Upgrade vitest/vite to pull in patched ws version. Track fix availability upstream.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Next sprint"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve/open-redirect",
+      "source": "dependency-auditor",
+      "title": "React Router Protocol-Relative URL Open Redirect (GHSA-2j2x-hqr9-3h42)",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "package": "react-router-dom@6.26.0",
+      "affected_files": [
+        "Source/Frontend/package.json"
+      ],
+      "exploit_scenario": "Attacker crafts a link to //attacker.com via a user-controlled redirect parameter. React Router <6.30.4 treats the double-slash path as protocol-relative, causing the browser to navigate to the attacker's domain.",
+      "recommendation": "npm install react-router-dom@6.30.4 in Source/Frontend — straightforward patch-level upgrade within v6.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "This sprint"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve/dos",
+      "source": "dependency-auditor",
+      "title": "@grpc/grpc-js Server Crash on Malformed Requests (GHSA-5375-pq7m-f5r2)",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "cvss": 7.5,
+      "package": "@grpc/grpc-js (transitive via orchestrator)",
+      "affected_files": [
+        "platform/orchestrator/package-lock.json"
+      ],
+      "exploit_scenario": "Attacker sends a malformed or compressed gRPC message to the orchestrator. The gRPC server crashes with an unhandled exception, taking down the orchestrator process.",
+      "recommendation": "Upgrade @grpc/grpc-js to 1.14.4+ in platform/orchestrator.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "This sprint"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "cve/dos",
+      "source": "dependency-auditor",
+      "title": "path-to-regexp Regular Expression Denial of Service (GHSA-37ch-88jc-xwx2)",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "package": "path-to-regexp (transitive via express)",
+      "affected_files": [
+        "platform/orchestrator/package-lock.json"
+      ],
+      "exploit_scenario": "Attacker crafts a URL with repeating route parameters (e.g. /a/:x/:y/:z/:z/:z/:z) causing catastrophic regex backtracking in path-to-regexp. The event loop blocks for seconds, DoS-ing the orchestrator API.",
+      "recommendation": "Upgrade express to v5 in platform/orchestrator (breaking change — requires API review). Or pin path-to-regexp to a fixed version.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Next sprint"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "cve/unspecified",
+      "source": "dependency-auditor",
+      "title": "@opentelemetry High-Severity CVEs in Portal Backend",
+      "package": "@opentelemetry/auto-instrumentations-node, @opentelemetry/sdk-node",
+      "affected_files": [
+        "portal/Backend/package.json"
+      ],
+      "exploit_scenario": "Uncharacterized high-severity CVEs in OpenTelemetry packages used by portal/Backend. Exact attack vector requires manual npm audit.",
+      "recommendation": "cd portal/Backend && npm audit fix. Review audit output manually.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Next sprint"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "dependency-linking Requirements Reference Stale portal/ Paths",
+      "file": "Plans/dependency-linking/requirements.md",
+      "recommendation": "Update requirements.md to use Source/ paths and current FR-dependency-* IDs so the enforcer can validate these features.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Backlog"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Dual Logger Abstraction — Two Logger Files with Different Interfaces",
+      "file": "Source/Backend/src/logger.ts",
+      "additional_files": ["Source/Backend/src/utils/logger.ts"],
+      "recommendation": "Pick utils/logger.ts as canonical. Update all callers of the shim. Delete src/logger.ts.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Backlog"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "eslint-disable suppressions Without Documented Justification",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "additional_files": ["Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "recommendation": "Investigate both react-hooks/exhaustive-deps disables. If intentional: add justification comment. If stale-closure bug: fix the hook.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Backlog"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "DebugPortalPage Uses Non-conformant Traceability ID Format",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "recommendation": "Create a spec FR for the debug portal page and assign an FR-WF-XXX ID, or document it as an exception in CLAUDE.md.",
+      "assign_to": "TheFixer",
+      "status": "NEW",
+      "sprint_priority": "Backlog"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-LIC-001",
+      "severity": "P4",
+      "category": "license-compliance",
+      "source": "dependency-auditor",
+      "title": "License Compliance — PASS",
+      "detail": "No GPL/AGPL/restrictive licenses detected. All direct dependencies use MIT or Apache-2.0.",
+      "status": "PASS"
+    },
+    {
+      "id": "DEP-SC-001",
+      "severity": "P4",
+      "category": "supply-chain",
+      "source": "dependency-auditor",
+      "title": "Supply Chain Risk — LOW",
+      "detail": "All packages have institutional backing. No single-maintainer risk for critical deps. High download counts. No deprecated packages.",
+      "status": "LOW RISK"
+    }
+  ],
+  "outdated_majors": [
+    { "package": "express", "current": "4.18.2", "latest": "5.2.1", "projects": ["Source/Backend", "platform/orchestrator"] },
+    { "package": "pino", "current": "8.17.0", "latest": "10.3.1", "projects": ["Source/Backend"] },
+    { "package": "react", "current": "18.3.1", "latest": "19.2.7", "projects": ["Source/Frontend"] },
+    { "package": "react-router-dom", "current": "6.26.0", "latest": "7.18.1", "patch_available": "6.30.4", "projects": ["Source/Frontend"] },
+    { "package": "dockerode", "current": "4.0.4", "latest": "5.0.1", "blocks_fix": "DEP-002", "projects": ["platform/orchestrator"] }
+  ],
+  "specialists": {
+    "quality-oracle": { "mode": "static", "grade": "D", "p1": 1, "p2": 4, "p3": 4, "p4": 0 },
+    "dependency-auditor": { "mode": "static", "p1": 2, "p2": 9, "p3": 5, "p4": 2 },
+    "performance-profiler": { "mode": "not-run", "reason": "backend service offline (http://localhost:3001)" },
+    "chaos-monkey": { "mode": "not-run", "reason": "services offline (backend, frontend both unreachable)" }
+  },
+  "cross_references": [
+    {
+      "root_cause": "Absent CI enforcement of code quality gates",
+      "findings": ["QO-001", "QO-002", "QO-003", "QO-004"],
+      "single_fix": "Fix traceability-enforcer to scan all Plans/*/requirements.md; add architecture-violation checks to the CI gate"
+    },
+    {
+      "root_cause": "Outdated npm dependencies (no audit cadence in CI)",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008"],
+      "single_fix": "Add npm audit --audit-level=high to CI/CD; execute npm audit fix in all project directories; plan dockerode 4→5 upgrade"
+    },
+    {
+      "root_cause": "Architecture rules not enforced in code review",
+      "findings": ["QO-003", "QO-004", "QO-007"],
+      "single_fix": "Add architecture-rule checklist to PR template; enforce no-store-import-in-routes via ESLint custom rule"
+    }
+  ]
+}

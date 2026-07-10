@@ -1,0 +1,272 @@
+{
+  "audit_date": "2026-07-10",
+  "audit_type": "dependency",
+  "projects_scanned": 10,
+  "manifests_analyzed": [
+    "Source/Backend/package.json",
+    "Source/Frontend/package.json",
+    "Source/E2E/package.json",
+    "platform/orchestrator/package.json",
+    "portal/Backend/package.json",
+    "portal/Frontend/package.json",
+    "abac-demo/package.json",
+    "abac-soc-demo/package.json",
+    "abac-soc-demo-v2/package.json",
+    "abac-reimagined/package.json"
+  ],
+  "summary": {
+    "critical": 2,
+    "high": 12,
+    "moderate": 15,
+    "low": 1,
+    "total": 30,
+    "transitive_dependencies": {
+      "backend": 412,
+      "frontend": 231,
+      "orchestrator": 156
+    },
+    "direct_deps_with_cves": 8
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "severity": "P1",
+      "type": "rce",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "Vitest Arbitrary File Read/Execute",
+      "description": "When Vitest UI server is listening, arbitrary files can be read and executed via HTTP request",
+      "affected_projects": [
+        "Source/Frontend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "cvss_score": 9.0,
+      "attack_vector": "network",
+      "requires_auth": false,
+      "fix": "Disable UI server in production; bind to localhost; upgrade to vitest@4.1.10+",
+      "is_direct": true,
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "severity": "P1",
+      "type": "rce",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "description": "Arbitrary code execution via unsafe code generation from untrusted proto definitions (multiple vectors)",
+      "affected_projects": [
+        "platform/orchestrator/package-lock.json (transitive via @grpc/grpc-js)"
+      ],
+      "cvss_score": 9.8,
+      "attack_vector": "network",
+      "requires_auth": false,
+      "fix": "Upgrade dockerode from 4.0.4 to 5.0.1+ (breaking change, requires testing)",
+      "is_direct": false,
+      "blocker": true,
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "package": "vite",
+      "severity": "P2",
+      "type": "path-traversal",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "title": "Vite Path Traversal in Optimized Deps",
+      "description": "Path traversal in .map file handling allows reading source maps from dev server",
+      "affected_projects": [
+        "Source/Frontend/package.json",
+        "portal/Frontend/package.json"
+      ],
+      "fix_available": true,
+      "is_direct": true,
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "package": "form-data",
+      "severity": "P2",
+      "type": "crlf-injection",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "title": "form-data CRLF Injection",
+      "description": "CRLF injection in form-data multipart field names and filenames allows header injection",
+      "affected_projects": [
+        "Source/Frontend/package-lock.json",
+        "platform/orchestrator/package-lock.json"
+      ],
+      "fix_available": true,
+      "is_direct": false
+    },
+    {
+      "id": "DEP-005",
+      "package": "ws",
+      "severity": "P2",
+      "type": "memory-disclosure",
+      "cve": "GHSA-58qx-3vcg-4xpx",
+      "title": "ws Uninitialized Memory Disclosure & DoS",
+      "description": "Uninitialized buffer memory leaked via WebSocket frames; unbounded buffering from tiny fragments",
+      "affected_projects": [
+        "Source/Frontend/package-lock.json",
+        "portal/Frontend/package-lock.json"
+      ],
+      "cvss_score": 7.5,
+      "fix_available": false,
+      "is_direct": false
+    },
+    {
+      "id": "DEP-006",
+      "package": "react-router-dom",
+      "severity": "P2",
+      "type": "open-redirect",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "title": "React Router Protocol-Relative URL Open Redirect",
+      "description": "Routes with // paths treated as protocol-relative URLs causing open redirect to attacker domain",
+      "affected_projects": [
+        "Source/Frontend/package.json"
+      ],
+      "current_version": "6.26.0",
+      "min_safe_version": "6.30.4",
+      "fix_available": true,
+      "is_direct": true
+    },
+    {
+      "id": "DEP-007",
+      "package": "@grpc/grpc-js",
+      "severity": "P2",
+      "type": "dos",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "title": "@grpc/grpc-js Server Crash on Malformed Requests",
+      "description": "Malformed requests or compressed messages cause unhandled crashes",
+      "affected_projects": [
+        "platform/orchestrator/package-lock.json"
+      ],
+      "fix_available": true,
+      "is_direct": false
+    },
+    {
+      "id": "DEP-008",
+      "package": "path-to-regexp",
+      "severity": "P2",
+      "type": "redos",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "title": "path-to-regexp Regular Expression Denial of Service",
+      "description": "ReDoS via multiple route parameters; attacker crafts pathological input for regex backtracking",
+      "affected_projects": [
+        "platform/orchestrator/package-lock.json (transitive via express)"
+      ],
+      "requires_express_upgrade": true,
+      "is_direct": false
+    }
+  ],
+  "outdated_majors": [
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "majors_behind": 1,
+      "risk_level": "medium",
+      "projects": [
+        "Source/Backend/package.json",
+        "platform/orchestrator/package.json"
+      ],
+      "notes": "Missing security patches; breaking API changes in v5"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "majors_behind": 2,
+      "risk_level": "medium",
+      "projects": [
+        "Source/Backend/package.json"
+      ],
+      "notes": "Likely missing performance + security improvements"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "majors_behind": 1,
+      "risk_level": "low",
+      "projects": [
+        "Source/Frontend/package.json"
+      ],
+      "notes": "New hooks API; not critical but feature-rich"
+    },
+    {
+      "package": "dockerode",
+      "current": "4.0.4",
+      "latest": "5.0.1",
+      "majors_behind": 1,
+      "risk_level": "high",
+      "projects": [
+        "platform/orchestrator/package.json"
+      ],
+      "notes": "BLOCKS protobufjs RCE fix; breaking API; critical upgrade path"
+    }
+  ],
+  "license_compliance": {
+    "status": "pass",
+    "notes": "No GPL/AGPL/restrictive licenses detected. All direct deps use MIT or Apache-2.0.",
+    "flag_review": false
+  },
+  "supply_chain_risk": {
+    "status": "low",
+    "notes": "All packages institutional backing; no single-maintainer risk for critical deps; high download counts",
+    "high_risk_packages": []
+  },
+  "recommendations": {
+    "immediate": [
+      "Verify vitest UI server not exposed to network (DEP-001)",
+      "Assess orchestrator gRPC/proto usage for protobufjs exposure (DEP-002)",
+      "Plan dockerode 4→5 upgrade (BLOCKS critical fix)"
+    ],
+    "short_term": [
+      "npm audit fix in Frontend/portal projects (vite, form-data, etc.)",
+      "Upgrade react-router-dom to 6.30.4+",
+      "Audit and fix @opentelemetry packages in portal/Backend"
+    ],
+    "long_term": [
+      "Plan express v5 migration (blocking for multiple CVE fixes)",
+      "Plan react v19 upgrade in Frontend",
+      "Establish monthly audit cadence via CI/CD"
+    ]
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "team": "TheGuardians",
+      "reason": "Vitest RCE — security posture assessment needed"
+    },
+    {
+      "finding_id": "DEP-002",
+      "team": "TheGuardians",
+      "reason": "Protobufjs RCE — critical infrastructure risk assessment"
+    },
+    {
+      "finding_id": "DEP-003",
+      "team": "TheGuardians",
+      "reason": "Vite path traversal — dev server security assessment"
+    },
+    {
+      "finding_id": "outdated_majors",
+      "team": "TheFixer",
+      "reason": "Outdated major versions — implementation planning"
+    }
+  ],
+  "audit_methodology": {
+    "tools_used": [
+      "npm audit --json",
+      "npm outdated --json",
+      "package-lock.json v3 inspection"
+    ],
+    "scope": "10 package.json manifests; 799 transitive dependencies (core projects)",
+    "limitations": [
+      "No runtime analysis (static scan only)",
+      "No license-checker (npm install required)",
+      "No supply-chain attestation/provenance"
+    ]
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "audit": {
+    "date": "2026-07-12",
+    "grade": "D",
+    "run_id": "run-20260712-054335",
+    "branch": "unknown",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services not available (static-only audit)"
+  },
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 8,
+    "p3_total": 14,
+    "p4_total": 13,
+    "escalations_total": 2,
+    "spec_coverage_pct": 73,
+    "fixed_total": 0,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "priority": "P1",
+      "category": "dependency-vulnerability",
+      "title": "protobufjs Arbitrary Code Execution (RCE)",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "file": "platform/orchestrator/package.json",
+      "package": "protobufjs@<=7.6.2",
+      "impact": "Any code parsing untrusted protocol buffer definitions can execute arbitrary code",
+      "exploit_scenario": "Attacker supplies malformed .proto file to any gRPC-backed endpoint; protobufjs parses it and executes attacker-controlled code in the server process",
+      "fix": "npm update protobufjs @grpc/grpc-js — or audit whether @grpc/grpc-js is actually needed; removing it eliminates this entire chain",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Code execution vulnerability — requires security-team triage before any mitigation"
+    },
+    {
+      "id": "DEP-002",
+      "priority": "P1",
+      "category": "dependency-vulnerability",
+      "title": "vitest UI Arbitrary File Read & Code Execution",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "file": "Source/Frontend/package.json",
+      "package": "vitest@<=3.2.5",
+      "impact": "Vitest UI server listens without authentication — any file on the machine (secrets, source code, .env) is readable; code execution also possible",
+      "exploit_scenario": "Developer runs `vitest --ui` on CI or a shared machine; attacker on the same network GETs `http://localhost:51204/.../../../.env` and retrieves all secrets without credentials",
+      "fix": "npm update vitest@>=3.2.6",
+      "status": "NEW",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Information disclosure + code execution — secrets exfiltration risk on any machine running the UI test runner"
+    }
+  ],
+  "p1": [
+    {
+      "id": "QO-001",
+      "priority": "P1",
+      "category": "traceability",
+      "title": "Traceability enforcer blind spot — portal/ never scanned",
+      "file": "tools/traceability-enforcer.py",
+      "line": 69,
+      "impact": "CI gate reports PASSED while 86% of the codebase (portal/) is never inspected for requirement traceability violations",
+      "exploit_scenario": "Developer adds untraced code or spec-violating patterns to portal/; CI gate passes; audit detects QO-002 style violations only manually",
+      "fix": "Add 'portal' to source_dirs list at line 69; pin plan with --file Plans/dev-workflow-platform/requirements.md",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "priority": "P1",
+      "category": "traceability",
+      "title": "6 orphaned FR IDs with no backing spec or plan",
+      "file": "portal/Frontend/src/components/orchestrator/",
+      "impact": "FR-090 through FR-095 referenced in RunsTab.tsx, RunDetailRow.tsx, types.ts, api/client.ts — no corresponding entry in Specifications/ or Plans/; violates spec-first mandate",
+      "exploit_scenario": "Features built without specs cannot be validated, tested against requirements, or safely changed — regression risk is unquantifiable",
+      "fix": "Create Plans/orchestrator-ui-runs/requirements.md defining FR-090–FR-095 with acceptance criteria",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    }
+  ],
+  "p2": [
+    {
+      "id": "QO-003",
+      "priority": "P2",
+      "category": "architecture",
+      "title": "Direct DB calls in route handler — teamDispatches.ts",
+      "file": "portal/Backend/src/routes/teamDispatches.ts",
+      "line": 37,
+      "impact": "Business logic coupled to transport layer; untestable in isolation; violates 'No direct DB calls from route handlers' architecture rule",
+      "fix": "Create portal/Backend/src/services/teamDispatchService.ts and move all db.prepare() calls there",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "priority": "P2",
+      "category": "error-handling",
+      "title": "Three silent .catch(() => {}) blocks — errors swallowed with no logging",
+      "file": "portal/Frontend/src/components/",
+      "impact": "RepoSelector.tsx:20, FeatureRequestDetail.tsx:80, BugDetail.tsx:82 — repo list failures silently ignored; no user feedback, no log entry; violates 'Never swallow errors silently' rule",
+      "fix": "Replace .catch(() => {}) with .catch(err => { console.error('[component] repos.list failed:', err); setError(err.message) }) or equivalent toast notification",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-005",
+      "priority": "P2",
+      "category": "traceability",
+      "title": "Specifications/tiered-merge-pipeline.md has 0% implementation traceability",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "impact": "FR-TMP-001–010 define the full risk-classification/Playwright/auto-PR/auto-merge pipeline. Zero Verifies: FR-TMP-* comments exist anywhere in Source/ or portal/",
+      "fix": "If feature lives in platform/, add a note to the spec; otherwise create implementation with traceability comments",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "priority": "P2",
+      "category": "dependency-vulnerability",
+      "title": "handlebars 8 CVEs (XSS + code injection) via @grpc/grpc-js transitive",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "file": "portal/Backend/package.json (via @grpc/grpc-js)",
+      "package": "handlebars@4.0.0-4.7.8",
+      "fix": "Remove @grpc/grpc-js if unused (eliminates chain) or update to handlebars@>=4.7.9",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "priority": "P2",
+      "category": "dependency-vulnerability",
+      "title": "vite path traversal + fs.deny bypass",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "file": "Source/Frontend/package.json",
+      "package": "vite@<=6.4.2",
+      "fix": "Update to vite@>=6.4.3 (or 8.1.4)",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "priority": "P2",
+      "category": "dependency-vulnerability",
+      "title": "form-data CRLF injection",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "file": "Source/Backend/package.json, Source/Frontend/package.json",
+      "package": "form-data@4.0.0-4.0.5",
+      "fix": "npm update form-data@>=4.0.6",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "priority": "P2",
+      "category": "dependency-vulnerability",
+      "title": "@grpc/grpc-js server crash on malformed requests",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "file": "platform/orchestrator/package.json",
+      "package": "@grpc/grpc-js@1.14.0-1.14.3",
+      "fix": "npm update @grpc/grpc-js@>=1.14.4",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "priority": "P2",
+      "category": "dependency-vulnerability",
+      "title": "path-to-regexp ReDoS via route params",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "file": "platform/orchestrator/package.json",
+      "package": "path-to-regexp@<0.1.13",
+      "fix": "npm update path-to-regexp@>=0.1.13",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p3": [
+    { "id": "QO-006", "priority": "P3", "category": "tooling", "title": "Enforcer auto-detection non-deterministic when plan files share same mtime", "file": "tools/traceability-enforcer.py", "line": 47, "fix": "Pass --plan arg explicitly in CI", "status": "NEW", "specialist": "quality-oracle" },
+    { "id": "QO-007", "priority": "P3", "category": "traceability", "title": "Specifications/workflow-engine.md has no FR IDs — two-hop trace chain", "file": "Specifications/workflow-engine.md", "fix": "Add canonical FR-WF-* IDs directly to spec file", "status": "NEW", "specialist": "quality-oracle" },
+    { "id": "QO-008", "priority": "P3", "category": "maintainability", "title": "Three files exceed 500 lines (cycleService.ts, api/client.ts, featureRequestService.ts)", "file": "portal/Backend/src/services/cycleService.ts", "fix": "Decompose into focused modules", "status": "NEW", "specialist": "quality-oracle" },
+    { "id": "QO-009", "priority": "P3", "category": "traceability", "title": "FR-0001 (4-digit) vs FR-001 (3-digit) ID format inconsistency in tests", "file": "portal/Backend/tests/", "fix": "Standardize to 3-digit FR-XXX format across all test files", "status": "NEW", "specialist": "quality-oracle" },
+    { "id": "QO-010", "priority": "P3", "category": "code-quality", "title": "3× eslint-disable react-hooks/exhaustive-deps in hooks — stale closure risk", "file": "Source/Frontend/src/hooks/useWorkItems.ts", "line": 63, "fix": "Refactor hooks to properly declare dependencies or document suppression rationale", "status": "NEW", "specialist": "quality-oracle" },
+    { "id": "DEP-008", "priority": "P3", "category": "dependency-vulnerability", "title": "qs DoS on malformed input", "package": "qs", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-009", "priority": "P3", "category": "dependency-vulnerability", "title": "js-yaml quadratic-complexity DoS", "package": "js-yaml", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-010", "priority": "P3", "category": "dependency-vulnerability", "title": "ws memory exhaustion", "package": "ws", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-011", "priority": "P3", "category": "dependency-vulnerability", "title": "@babel/core CVE", "package": "@babel/core", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-012", "priority": "P3", "category": "dependency-vulnerability", "title": "postcss CVE", "package": "postcss", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-013", "priority": "P3", "category": "dependency-vulnerability", "title": "esbuild CVE", "package": "esbuild", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-014", "priority": "P3", "category": "dependency-vulnerability", "title": "brace-expansion CVE", "package": "brace-expansion", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-015", "priority": "P3", "category": "dependency-vulnerability", "title": "react-router-dom CVE", "package": "react-router-dom", "status": "NEW", "specialist": "dependency-auditor" },
+    { "id": "DEP-016", "priority": "P3", "category": "outdated-major", "title": "pino 2 major versions behind (8.x → 10.x) — likely security fixes missed", "package": "pino@8.17.0 → 10.3.1", "status": "NEW", "specialist": "dependency-auditor" }
+  ],
+  "p4": [
+    { "id": "DEP-017-029", "priority": "P4", "category": "dependency-vulnerability", "title": "13 low-severity CVEs across npm packages", "count": 13, "status": "NEW", "specialist": "dependency-auditor" }
+  ]
+}

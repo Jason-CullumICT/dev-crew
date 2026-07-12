@@ -1,0 +1,254 @@
+================================================================================
+DEPENDENCY AUDITOR FINDINGS SUMMARY
+================================================================================
+Date: 2026-07-12
+Status: BLOCKED — P1 Critical CVEs detected
+
+================================================================================
+VERDICT: Do not deploy. 2 Critical CVEs, 5 High-severity CVEs, 21 Moderate/Low
+================================================================================
+
+CRITICAL FINDINGS (P1) — IMMEDIATE ACTION REQUIRED
+
+DEP-001: protobufjs Arbitrary Code Execution (RCE)
+  Severity:    CRITICAL (CVSS 9.8)
+  CVE:         GHSA-xq3m-2v4x-88gg
+  Location:    platform/orchestrator (indirect via @grpc/grpc-js)
+  Package:     protobufjs@<=7.6.2
+  Impact:      Any code parsing untrusted proto definitions can be exploited
+  Fix:         npm update protobufjs to >=7.6.3
+  Escalate:    TheGuardians (code execution)
+  Blocker:     YES
+
+DEP-002: vitest UI Arbitrary File Read & Code Execution
+  Severity:    CRITICAL (CVSS 9.8)
+  CVE:         GHSA-5xrq-8626-4rwp
+  Location:    Source/Frontend (dev dependency)
+  Package:     vitest@<=3.2.5
+  Impact:      Vitest UI server listens on port and exposes any file without auth
+               Risk: secrets, source code exfiltration from dev machines
+  Fix:         npm update vitest to >=3.2.6
+  Escalate:    TheGuardians (information disclosure + code execution)
+  Blocker:     YES
+
+HIGH-SEVERITY FINDINGS (P2) — FIX BEFORE DEPLOYMENT
+
+DEP-003: handlebars JavaScript Injection & XSS (8 CVEs)
+  Severity:    HIGH/CRITICAL (CVSS 8.1-9.8)
+  CVEs:        GHSA-2w6w-674q-4c4q, GHSA-3mfm-83xf-c92r, GHSA-2qvq-rjwj-gvw9,
+               GHSA-7rx3-28cr-v5wh, GHSA-442j-39wm-28r2, GHSA-xhpv-hc6g-r9c6,
+               GHSA-9cx6-37pm-9jff, GHSA-xjpj-3mr7-gcpf
+  Location:    Source/Backend (indirect via @grpc/grpc-js)
+  Package:     handlebars@4.0.0-4.7.8
+  Impact:      Multiple XSS + code injection vectors; prototype pollution
+               If user input reaches template, attacker gains code execution
+  Fix:         Option 1: Remove @grpc/grpc-js if not used
+               Option 2: Update to handlebars@>=4.7.9 (requires updating grpc-js)
+  Escalate:    TheGuardians (XSS + code injection)
+  Blocker:     YES (if @grpc/grpc-js is active)
+  Note:        First confirm whether @grpc/grpc-js is actually used in Backend
+
+DEP-004: vite Path Traversal & server.fs.deny Bypass
+  Severity:    HIGH
+  CVEs:        GHSA-4w7w-66w2-5vf9 (path traversal .map handling),
+               GHSA-fx2h-pf6j-xcff (Windows UNC path bypass),
+               GHSA-v6wh-96g9-6wx3 (NTLMv2 hash disclosure)
+  Location:    Source/Frontend (dev dependency)
+  Package:     vite@<=6.4.2
+  Impact:      Dev server can read files outside project during development
+               Windows users: UNC paths bypass fs.deny protections
+  Fix:         npm update vite to >=6.4.3 (or >=8.1.4 for max safety)
+  Escalate:    TheGuardians (information disclosure)
+  Scope:       Dev-time only (not production)
+  Note:        Recommend vite 5.x → 6.x incremental path; 8.x is major jump
+
+DEP-005: form-data CRLF Injection
+  Severity:    HIGH (CVSS 7.5)
+  CVE:         GHSA-hmw2-7cc7-3qxx
+  Location:    Source/Backend, Source/Frontend (transitive)
+  Package:     form-data@4.0.0-4.0.5
+  Impact:      CRLF injection in multipart field names/filenames
+               Can inject headers or payload boundaries
+  Fix:         npm update form-data to >=4.0.6
+  Escalate:    TheGuardians
+
+DEP-006: @grpc/grpc-js Server Crash on Malformed Requests
+  Severity:    HIGH (CVSS 7.5)
+  CVEs:        GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq
+  Location:    platform/orchestrator
+  Package:     @grpc/grpc-js@1.14.0-1.14.3
+  Impact:      DoS via crafted gRPC messages or compressed payloads
+  Fix:         npm update @grpc/grpc-js to >=1.14.4
+  Escalate:    TheGuardians
+
+DEP-007: path-to-regexp ReDoS
+  Severity:    HIGH (CVSS 7.5)
+  CVE:         GHSA-37ch-88jc-xwx2
+  Location:    platform/orchestrator (via express)
+  Package:     path-to-regexp@<0.1.13
+  Impact:      Regular expression DoS via multiple route parameters
+  Fix:         npm update path-to-regexp to >=0.1.13
+  Escalate:    TheGuardians
+
+DEP-008: uuid Missing Buffer Bounds Check
+  Severity:    MODERATE (CVSS 7.5)
+  CVE:         GHSA-w5hq-g745-h8pq
+  Location:    Source/Backend (9.0.0), platform/orchestrator (indirect)
+  Package:     uuid@<11.1.1
+  Impact:      Buffer write out-of-bounds if custom buffer passed
+               Current usage likely safe (no custom buffers); but fix is trivial
+  Fix:         npm update uuid to >=11.1.1
+  Note:        Escalate to backend team for usage audit
+
+MODERATE-SEVERITY FINDINGS (P3)
+
+DEP-009: qs DoS (Null entries crash)
+  Package:     qs@6.11.1-6.15.1 (via express)
+  CVE:         GHSA-q8mj-m7cp-5q26
+  Impact:      Crash on malformed input
+  Fix:         npm update qs
+
+DEP-010: js-yaml DoS (Merge key handling)
+  Package:     js-yaml@<3.15.0
+  CVE:         GHSA-h67p-54hq-rp68
+  Impact:      Quadratic complexity DoS via YAML aliases
+  Fix:         npm update js-yaml
+
+DEP-011: brace-expansion Hang
+  Package:     brace-expansion@<1.1.13
+  CVE:         GHSA-f886-m6hf-6m8v
+  Impact:      Process hang + memory exhaustion
+  Fix:         npm update brace-expansion
+
+DEP-012: postcss XSS
+  Package:     postcss@<8.5.10 (Frontend)
+  CVE:         GHSA-qx2v-qp2m-jg93
+  Impact:      XSS via unescaped </style> in output
+  Fix:         npm update postcss
+
+DEP-013: react-router Open Redirect
+  Package:     react-router-dom@6.6.3-6.30.3 (Frontend)
+  CVE:         GHSA-2j2x-hqr9-3h42
+  Impact:      Open redirect via protocol-relative URLs
+  Fix:         npm update react-router-dom to >=6.30.4
+
+DEP-014: ws Memory Exhaustion DoS
+  Package:     ws@8.0.0-8.20.1 (vite transitive)
+  CVEs:        GHSA-58qx-3vcg-4xpx, GHSA-96hv-2xvq-fx4p
+  Impact:      Memory DoS from tiny fragments
+  Fix:         npm update ws to >=8.21.0
+
+DEP-015: esbuild Dev Server CORS Bypass
+  Package:     esbuild@<=0.24.2 (via vite)
+  CVE:         GHSA-67mh-4wv8-2f99
+  Impact:      Any website can send requests to dev server
+  Fix:         Update vite (requires major version bump)
+
+DEP-016: @babel/core File Read
+  Package:     @babel/core@<=7.29.0
+  CVE:         GHSA-4x5r-pxfx-6jf8
+  Impact:      Local file read via sourceMappingURL comment
+  Fix:         npm update @babel/core
+
+OUTDATED MAJOR VERSIONS (P3)
+
+- express:         4.18.2 → 5.2.1   (1 major)  [defer unless critical]
+- pino:            8.17.0 → 10.3.1  (2 major)  [likely security fixes — recommend]
+- uuid:            9.0.0 → 14.0.1   (1 major)  [fix CVE first, then assess]
+- react:           18.3.1 → 19.2.7  (1 major)  [production-ready; plan migration]
+- react-dom:       18.3.1 → 19.2.7  (1 major)  [coordinate with React upgrade]
+- react-router-dom: 6.26.0 → 7.18.1 (1 major)  [breaking changes; separate cycle]
+- vite:            5.4.0 → 8.1.4    (3 minor) [multiple CVE fixes; recommend 6.x first]
+- vitest:          2.0.5 → 4.1.10   (2 minor) [critical CVE in <=3.2.5; upgrade min]
+
+LICENSE COMPLIANCE: ✓ PASS
+- No GPL/AGPL licenses detected
+- No EUPL licenses detected
+- 3 unknown/missing (non-blocking)
+
+SUPPLY CHAIN HEALTH: ✓ GOOD
+- No abandoned dependencies detected
+- No post-install scripts detected
+- No major version conflicts
+- ~796 transitive dependencies (large, but healthy)
+
+================================================================================
+REMEDIATION TIMELINE
+================================================================================
+
+IMMEDIATE (Today):
+1. escalate DEP-001, DEP-002, DEP-003, DEP-004, DEP-005, DEP-006, DEP-007 to TheGuardians
+2. Audit whether @grpc/grpc-js is actually used in Backend (if not, remove it)
+3. Plan emergency patching for critical CVEs
+
+SHORT-TERM (1-2 weeks):
+cd Source/Backend && npm update protobufjs @grpc/grpc-js handlebars express uuid pino qs form-data js-yaml brace-expansion @babel/core
+cd Source/Frontend && npm update vitest vite postcss react-router-dom qs form-data ws @babel/core
+cd Source/E2E && npm update  (clean — no vulns)
+cd platform/orchestrator && npm update protobufjs @grpc/grpc-js path-to-regexp qs form-data uuid dockerode
+
+MEDIUM-TERM (Next sprint):
+- Coordinate React 18→19 migration (Frontend team)
+- Plan Vite 5→6 incremental upgrade (dev experience)
+- Long-term Express 4→5 upgrade path (architecture decision)
+
+VERIFICATION:
+npm test --workspaces --if-present
+python3 tools/traceability-enforcer.py
+
+================================================================================
+ESCALATIONS
+================================================================================
+
+TO TheGuardians (Security):
+- DEP-001: protobufjs RCE
+- DEP-002: vitest UI disclosure
+- DEP-003: handlebars code injection
+- DEP-004: vite path traversal
+- DEP-005: form-data CRLF injection
+- DEP-006: @grpc/grpc-js DoS
+- DEP-007: path-to-regexp ReDoS
+- DEP-008: uuid buffer bounds (audit for exploitability)
+
+TO TheFixer (Maintenance):
+- Dependency upgrade plan and testing coordination
+- Post-upgrade regression suite
+- Long-term React/Vite/Express roadmap
+
+================================================================================
+METRICS FOR DASHBOARD
+================================================================================
+
+{
+  "audit_date": "2026-07-12",
+  "verdict": "BLOCKED",
+  "cves": {
+    "critical": 2,
+    "high": 5,
+    "moderate": 9,
+    "low": 13,
+    "total": 29
+  },
+  "dependencies": {
+    "direct": 26,
+    "transitive": 796
+  },
+  "outdated": {
+    "major_versions": 8,
+    "minor_versions": 0
+  },
+  "licenses": {
+    "gpl_agpl_eupl": 0,
+    "unknown": 3,
+    "compliant": true
+  },
+  "supply_chain": {
+    "abandoned": 0,
+    "post_install_scripts": 0,
+    "version_conflicts": 0
+  }
+}
+
+================================================================================
+NEXT AUDIT: 2026-08-12 (1 month) or after P1 remediation
+================================================================================

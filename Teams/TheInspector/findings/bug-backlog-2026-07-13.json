@@ -1,0 +1,291 @@
+{
+  "audit_id": "run-20260713-055359",
+  "audit_date": "2026-07-13",
+  "branch": "audit/inspector-2026-07-13-e13b0c",
+  "overall_grade": "D",
+  "grade_rationale": "3 P1 findings exceed C-grade threshold (max_p1: 2). Primary drivers: DEP-001 and DEP-002 are CRITICAL CVEs (CVSS 9.8) in the build toolchain; QO-001 is a P1 spec-governance violation.",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 10,
+    "p3_total": 51,
+    "p4_total": 1,
+    "total_findings": 65,
+    "spec_coverage_pct": 98,
+    "license_compliance": "PASS",
+    "escalations_to_guardians": 8,
+    "fixer_backlog_items": 15
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "Handlebars.js RCE via AST Type Confusion",
+      "category": "injection",
+      "package": "handlebars",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-2qvq-rjwj-gvw9", "GHSA-7rx3-28cr-v5wh", "GHSA-442j-39wm-28r2"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm audit fix (updates @babel/core → handlebars >=4.7.9)"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "Vitest UI Server Arbitrary File Read & Code Execution",
+      "category": "missing-access-control",
+      "package": "vitest",
+      "affected_projects": ["Source/Frontend", "portal/Backend"],
+      "cve_ids": ["GHSA-5xrq-8626-4rwp"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm update vitest to >=3.2.6"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "cvss": 7.5,
+      "title": "form-data CRLF Injection in Multipart Field Names",
+      "category": "injection",
+      "package": "form-data",
+      "cve_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm update form-data to >=4.0.6"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "cvss": 7.5,
+      "title": "@opentelemetry DoS via Malformed Request to /metrics",
+      "category": "denial-of-service",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "cve_ids": ["GHSA-q7rr-3cgh-j5r3"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm update @opentelemetry/sdk-node to >=0.78.0"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "cvss": 7.5,
+      "title": "@grpc/grpc-js Server Crash via Malformed gRPC Messages",
+      "category": "denial-of-service",
+      "package": "@grpc/grpc-js",
+      "cve_ids": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm update @grpc/grpc-js"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "cvss": 7.5,
+      "title": "ws WebSocket Memory Exhaustion DoS via Fragment Flooding",
+      "category": "denial-of-service",
+      "package": "ws",
+      "cve_ids": ["GHSA-96hv-2xvq-fx4p", "GHSA-58qx-3vcg-4xpx"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm update ws to >=8.21.0"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "category": "open-redirect",
+      "package": "react-router-dom",
+      "cve_ids": ["GHSA-2j2x-hqr9-3h42"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm update react-router-dom to >=6.30.4"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "cvss": 8.1,
+      "title": "Vite Dev Server CORS Bypass",
+      "category": "cors-bypass",
+      "package": "vite",
+      "cve_ids": ["GHSA-8j2g-p5x7-mh74"],
+      "escalate_to": "TheGuardians",
+      "fix": "npm update vite to >=5.5.0"
+    }
+  ],
+  "fixer_backlog": {
+    "p1": [
+      {
+        "id": "QO-001",
+        "severity": "P1",
+        "title": "FR-WF-XXX Traceability IDs Live in Plans/, Not Specifications/",
+        "category": "spec-drift",
+        "file": "Plans/self-judging-workflow/requirements.md",
+        "also_affected": ["Specifications/workflow-engine.md", "tools/traceability-enforcer.py"],
+        "route": "requirements-reviewer + TheFixer",
+        "action": "Promote FR-WF-001-013 into Specifications/workflow-engine.md. Update enforcer to point at Specifications/ only."
+      }
+    ],
+    "p2": [
+      {
+        "id": "QO-002",
+        "severity": "P2",
+        "title": "FR-090-095 Referenced in Code With Zero Spec Definition",
+        "category": "spec-drift",
+        "file": "portal/Frontend/src/components/orchestrator/",
+        "route": "requirements-reviewer",
+        "action": "Write formal spec for orchestrator dashboard features (FR-090-095)."
+      },
+      {
+        "id": "QO-003",
+        "severity": "P2",
+        "title": "Direct DB Calls in Route Handler — teamDispatches.ts",
+        "category": "architecture-violation",
+        "file": "portal/Backend/src/routes/teamDispatches.ts",
+        "lines": [37, 41, 72],
+        "route": "TheFixer (backend-coder)",
+        "action": "Extract teamDispatchService.ts. Route handlers delegate to service."
+      },
+      {
+        "id": "QO-004",
+        "severity": "P2",
+        "title": "FR-dependency-seed Not Implemented",
+        "category": "spec-drift",
+        "file": "portal/Backend/src/database/schema.ts",
+        "route": "TheFixer (backend-coder)",
+        "action": "Add idempotent seed block with INSERT OR IGNORE for dependency data."
+      },
+      {
+        "id": "QO-005",
+        "severity": "P2",
+        "title": "dependencyCheckDuration Histogram Missing from Source/Backend",
+        "category": "spec-drift",
+        "file": "Source/Backend/src/metrics.ts",
+        "route": "TheFixer (backend-coder)",
+        "action": "Add dependency_check_duration_seconds histogram. Instrument hasUnresolvedBlockers/isReady paths."
+      }
+    ],
+    "p3": [
+      {
+        "id": "DEP-009",
+        "severity": "P3",
+        "title": "Express qs DoS via malformed query string",
+        "package": "qs",
+        "route": "TheFixer",
+        "action": "npm update qs"
+      },
+      {
+        "id": "DEP-010",
+        "severity": "P3",
+        "title": "brace-expansion DoS via deeply nested braces",
+        "package": "brace-expansion",
+        "route": "TheFixer",
+        "action": "npm update brace-expansion"
+      },
+      {
+        "id": "DEP-011",
+        "severity": "P3",
+        "title": "PostCSS XSS in source map comments",
+        "package": "postcss",
+        "route": "TheFixer",
+        "action": "npm update postcss"
+      },
+      {
+        "id": "DEP-012",
+        "severity": "P3",
+        "title": "@babel/core information disclosure",
+        "package": "@babel/core",
+        "route": "TheFixer",
+        "action": "npm update @babel/core"
+      },
+      {
+        "id": "DEP-013",
+        "severity": "P3",
+        "title": "js-yaml prototype pollution",
+        "package": "js-yaml",
+        "route": "TheFixer",
+        "action": "npm update js-yaml"
+      },
+      {
+        "id": "DEP-014",
+        "severity": "P3",
+        "title": "express 4.18.2 is 1 major version behind (latest: 5.2.1)",
+        "package": "express",
+        "route": "TheFixer",
+        "action": "Plan express 4→5 migration; test for breaking changes"
+      },
+      {
+        "id": "DEP-015",
+        "severity": "P3",
+        "title": "uuid 9.0.0 is 5 major versions behind (latest: 14.0.1); has CVE",
+        "package": "uuid",
+        "route": "TheFixer",
+        "action": "npm update uuid to >=11.1.1 (buffer bounds bug fix)"
+      },
+      {
+        "id": "DEP-016",
+        "severity": "P3",
+        "title": "pino 8.17.0 is 2 major versions behind (latest: 10.3.1)",
+        "package": "pino",
+        "route": "TheFixer",
+        "action": "Plan pino 8→10 migration"
+      },
+      {
+        "id": "DEP-017",
+        "severity": "P3",
+        "title": "multer 1.4.5 is 1 major version behind (latest: 2.2.0)",
+        "package": "multer",
+        "route": "TheFixer",
+        "action": "Plan multer 1→2 migration"
+      },
+      {
+        "id": "DEP-018",
+        "severity": "P3",
+        "title": "@opentelemetry/* 150+ versions behind; multiple CVEs",
+        "package": "@opentelemetry/*",
+        "route": "TheFixer",
+        "action": "Plan staged @opentelemetry upgrade: 0.47→0.78→0.220 over quarterly schedule"
+      },
+      {
+        "id": "QO-006",
+        "severity": "P3",
+        "title": "Route Latency Histogram Missing from Source/Backend",
+        "category": "architecture-violation",
+        "file": "Source/Backend/src/app.ts",
+        "route": "TheFixer (backend-coder)",
+        "action": "Add http_request_duration_ms histogram middleware mirroring portal/Backend/src/middleware/metrics.ts"
+      },
+      {
+        "id": "QO-007",
+        "severity": "P3",
+        "title": "Traceability Enforcer Scope Excludes portal/",
+        "category": "spec-drift",
+        "file": "tools/traceability-enforcer.py",
+        "route": "TheFixer (tools)",
+        "action": "Add portal/ to scan dirs; add dev-workflow-platform.md as second requirement source"
+      },
+      {
+        "id": "QO-008",
+        "severity": "P3",
+        "title": "Duplicate Test Files for WorkItemDetailPage and WorkItemListPage",
+        "category": "test-coverage",
+        "file": "Source/Frontend/tests/",
+        "route": "TheFixer (frontend-coder)",
+        "action": "Remove top-level duplicates; keep tests/pages/ versions"
+      },
+      {
+        "id": "QO-009",
+        "severity": "P3",
+        "title": "5 Frontend Components Without Test Files",
+        "category": "test-coverage",
+        "files": ["Source/Frontend/src/components/Layout.tsx", "PriorityBadge.tsx", "StatusBadge.tsx", "TypeBadge.tsx", "pages/DebugPortalPage.tsx"],
+        "route": "TheFixer (frontend-coder)",
+        "action": "Add Vitest/RTL test files for each component"
+      }
+    ],
+    "p4": [
+      {
+        "id": "QO-010",
+        "severity": "P4",
+        "title": "eslint-disable Suppressions on React Hook Dep Arrays",
+        "category": "pattern-violation",
+        "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "src/hooks/useWorkItems.ts:63"],
+        "route": "Backlog",
+        "action": "Add explanatory comments or refactor with useCallback/useRef"
+      }
+    ]
+  }
+}

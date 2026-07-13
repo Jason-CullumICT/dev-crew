@@ -1,0 +1,311 @@
+{
+  "audit_date": "2026-07-13",
+  "audit_type": "dependency_audit",
+  "overall_grade": "C",
+  "summary": {
+    "vulnerabilities": {
+      "critical": 2,
+      "high": 10,
+      "moderate": 41,
+      "low": 1,
+      "total": 54
+    },
+    "dependencies": {
+      "direct": 36,
+      "transitive": 641,
+      "total": 877
+    },
+    "outdated_major_versions": 5,
+    "license_compliance": "PASS"
+  },
+  "projects": [
+    {
+      "name": "Source/Backend",
+      "type": "express_server",
+      "dependencies": {
+        "direct": 5,
+        "dev": 310,
+        "total": 412
+      },
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 6,
+        "low": 1,
+        "total": 9
+      },
+      "vulnerable_packages": [
+        "@babel/core",
+        "body-parser",
+        "brace-expansion",
+        "express",
+        "form-data",
+        "handlebars",
+        "js-yaml",
+        "qs",
+        "uuid"
+      ]
+    },
+    {
+      "name": "Source/Frontend",
+      "type": "react_vite",
+      "dependencies": {
+        "direct": 3,
+        "dev": 222,
+        "total": 231
+      },
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 6,
+        "low": 1,
+        "total": 11
+      },
+      "vulnerable_packages": [
+        "@babel/core",
+        "@vitest/mocker",
+        "esbuild",
+        "form-data",
+        "postcss",
+        "react-router",
+        "react-router-dom",
+        "vite",
+        "vite-node",
+        "vitest",
+        "ws"
+      ]
+    },
+    {
+      "name": "Source/E2E",
+      "type": "test_suite",
+      "dependencies": {
+        "direct": 1,
+        "dev": 0,
+        "total": 4
+      },
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "vulnerable_packages": []
+    },
+    {
+      "name": "portal/Backend",
+      "type": "dev_portal_backend",
+      "dependencies": {
+        "direct": 27,
+        "dev": 203,
+        "total": 230
+      },
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 46,
+        "low": 0,
+        "total": 54
+      },
+      "vulnerable_packages": [
+        "@grpc/grpc-js",
+        "@opentelemetry/auto-instrumentations-node",
+        "@opentelemetry/core",
+        "@opentelemetry/exporter-trace-otlp-grpc",
+        "@opentelemetry/exporter-trace-otlp-http",
+        "vitest"
+      ]
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Remote Code Execution via AST Type Confusion",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "package": "handlebars",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "description": "Multiple RCE vulnerabilities via AST type confusion and prototype pollution. Attacker can craft malicious templates to execute arbitrary JavaScript.",
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "package": "vitest",
+      "affected_projects": ["Source/Frontend", "portal/Backend"],
+      "description": "Unprotected dev UI server allows arbitrary file reads and code execution. No authentication on development server.",
+      "cve_ids": ["GHSA-5xrq-8626-4rwp"],
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "form-data CRLF Injection in Multipart Field Names",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "package": "form-data",
+      "cve_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "title": "@opentelemetry DoS via Malformed Request",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "cve_ids": ["GHSA-q7rr-3cgh-j5r3"],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "title": "@grpc/grpc-js Server Crash via Malformed Messages",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "package": "@grpc/grpc-js",
+      "cve_ids": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-006",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "package": "ws",
+      "cve_ids": ["GHSA-96hv-2xvq-fx4p", "GHSA-58qx-3vcg-4xpx"],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-007",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "severity": "HIGH",
+      "package": "react-router-dom",
+      "cve_ids": ["GHSA-2j2x-hqr9-3h42"],
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vite Dev Server CORS Bypass",
+      "severity": "HIGH",
+      "cvss_score": 8.1,
+      "package": "vite",
+      "cve_ids": ["GHSA-8j2g-p5x7-mh74"],
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "id": "DEP-014",
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "major_versions_behind": 1,
+      "severity": "MODERATE",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-015",
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "major_versions_behind": 5,
+      "has_cve": true,
+      "severity": "HIGH",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-016",
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2,
+      "severity": "MODERATE",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-017",
+      "package": "multer",
+      "current": "1.4.5-lts.1",
+      "latest": "2.2.0",
+      "major_versions_behind": 1,
+      "severity": "MODERATE",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-018",
+      "package": "@opentelemetry/*",
+      "current": "0.40.0–0.47.0",
+      "latest": "0.220.0",
+      "major_versions_behind": 8,
+      "severity": "HIGH",
+      "description": "OpenTelemetry packages are 150+ versions behind; contains multiple CVEs",
+      "escalate_to": "TheFixer"
+    }
+  ],
+  "supply_chain_risk": {
+    "total_dependencies": 877,
+    "transitive_dependencies": 641,
+    "direct_dependencies": 36,
+    "risk_assessment": "Large supply chain surface (650+ transitive deps); recommend auditing top 20 high-impact dependencies",
+    "abandoned_packages": 0,
+    "status": "HEALTHY"
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "gpl_agpl_packages": 0,
+    "unlicensed_packages": 0,
+    "restricted_licenses": 0,
+    "permissive_licenses": [
+      "MIT",
+      "Apache 2.0"
+    ]
+  },
+  "recommendations": {
+    "immediate_fixes": [
+      "Update @babel/core to fix Handlebars RCE (DEP-001)",
+      "Update vitest to >=3.2.6 to fix UI server RCE (DEP-002)"
+    ],
+    "monthly_fixes": [
+      "Update form-data to >=4.0.6 (DEP-003)",
+      "Update @opentelemetry suite to >=0.78.0 (DEP-004)",
+      "Update ws to >=8.21.0 (DEP-006)",
+      "Update react-router-dom to >=6.30.4 (DEP-007)",
+      "Update vite to >=5.5.0 (DEP-008)"
+    ],
+    "next_sprint": [
+      "Plan express major version upgrade (DEP-014)",
+      "Plan @opentelemetry major version migration (DEP-018)",
+      "Audit UUID usage and upgrade to >=11.1.1 (DEP-015)"
+    ]
+  },
+  "actions": {
+    "escalation_teams": {
+      "TheGuardians": [
+        "DEP-001: Handlebars RCE verification",
+        "DEP-002: Vitest UI RCE — check if CI uses --ui flag",
+        "DEP-003: form-data CRLF injection in file uploads",
+        "DEP-004: Prometheus DoS investigation",
+        "DEP-005: gRPC message handling",
+        "DEP-006: WebSocket DoS scenarios",
+        "DEP-007: Open redirect paths",
+        "DEP-008: Dev server exposure"
+      ],
+      "TheFixer": [
+        "DEP-014: Express 4→5 migration",
+        "DEP-015: UUID >=11.1.1 upgrade",
+        "DEP-016: Pino 8→10 migration",
+        "DEP-017: Multer 1→2 migration",
+        "DEP-018: @opentelemetry major version upgrade"
+      ]
+    }
+  }
+}

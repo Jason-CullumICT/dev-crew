@@ -509,3 +509,207 @@ The following categories are outside this pen-tester's scope and should be addre
 | PEN-012 | No CORS Policy Configured | **Low** | A05 |
 
 **Totals: 2 Critical · 4 High · 4 Medium · 2 Low**
+
+---
+
+## Red Team Results
+
+**Executed by:** red-teamer  
+**Date:** 2026-07-13  
+**Environment:** Ephemeral — `docker-compose.test.yml` (portal on :3001) + Source/Backend started on :3002  
+**Mode:** Active dynamic exploitation — zero static substitution  
+**Note:** The `docker-compose.test.yml` target runs the portal application, which has a different route surface. Source/Backend (the application the pen-tester analyzed) was compiled and run separately on port 3002 for accurate exploitation.
+
+---
+
+### Objective Achievement Summary
+
+| Objective | Status | Evidence |
+|-----------|--------|----------|
+| Bypass work item state machine to reach an invalid status | ✅ **Achieved** | WI-001 moved backlog→approved→in-progress with empty assessments[] via 3 unauthenticated requests |
+| Enumerate all work items without pagination limit enforcement | ✅ **Achieved** | `?limit=999999` returned all 7 items (total==data.length) in a single response |
+| Submit a malformed assessment verdict that bypasses routing logic | ✅ **Achieved** | Spoofed Zendesk webhook injected items with `type=malicious_type`, `priority=ultra-critical` — no validation error |
+| Access or modify a soft-deleted work item via direct ID reference | ⚠️ **Partial** | Soft-deleted items return 404; but bulk-delete of live items trivial (6 of 7 deleted unauthenticated), and deleting a blocker creates a permanent dispatch freeze |
+
+---
+
+### RED-001: Full Workflow Takeover via Unauthenticated State Machine Bypass
+
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/work-items`, `POST /api/work-items/:id/route`, `POST /api/work-items/:id/dispatch`
+- **Based On:** PEN-001, PEN-003
+- **Exploit Scenario:**
+  1. `POST /api/work-items` — no `Authorization` header, no cookie, no API key → HTTP 201, item created with `status=backlog` (WI-001: `9513fe57-6491-422e-9e93-cee88a9ab370`)
+  2. `POST /api/work-items/9513fe57.../route` body `{"overrideRoute":"fast-track"}` → HTTP 200, `status=approved`, `assessments=[]` — the entire 4-role assessment pod (requirements reviewer, domain expert, work definer, pod lead) was completely skipped. Change history records `"reason":"Fast-tracked: bypasses assessment pod"`.
+  3. `POST /api/work-items/9513fe57.../dispatch` body `{"team":"TheATeam"}` → HTTP 200, `status=in-progress`, `assignedTeam="TheATeam"`.
+  4. Full state-machine traversal (backlog → routing → approved → in-progress) achieved in **3 unauthenticated HTTP calls** with zero credentials. `assessments=[]` proves no assessment pod ran.
+- **Recommendation:** Implement authentication middleware (JWT/session) globally before any route handler. Add role-based access control (RBAC): only `pod_lead` role may use `overrideRoute`; `fast-track` classification should require explicit privilege escalation with audit logging.
+
+---
+
+### RED-002: Mass Data Exfiltration + Unauthenticated Bulk IDOR Delete
+
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/work-items?limit=999999`, `DELETE /api/work-items/:id`
+- **Based On:** PEN-001, PEN-004, PEN-006
+- **Exploit Scenario:**
+  1. `GET /api/work-items?limit=999999` → HTTP 200, returned all 7 items (total=7, data.length=7). `data.length == total` confirms **no server-side pagination cap** — the entire dataset is returned in one request. All UUIDs, docIds, change histories, assessments, and dependency graphs exposed.
+  2. For each UUID extracted from the response: `DELETE /api/work-items/:id` → HTTP 204 (all 6 non-in-progress items deleted). Zero authentication required for any delete.
+  3. After deletion: `GET /api/work-items` returns `total=1` — 86% of work items wiped in a single enumeration + delete pass.
+  4. Extension: `GET /api/dashboard/activity?limit=999999` dumps the full audit trail (35 change-history records) from all work items.
+- **Recommendation:** Enforce a hard server-side maximum on `limit` (e.g., `Math.min(limit, 100)`). Add authentication + ownership checks to DELETE. Implement soft-delete with recovery, and rate-limit bulk operations.
+
+---
+
+### RED-003: Cascade Auto-Dispatch via Unauthenticated Blocker Rejection
+
+- **Severity:** High
+- **Objective Achieved:** Yes (business logic flaw — items auto-dispatched to teams without human authorization)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/work-items/:id/dependencies`, `POST /api/work-items/:id/reject`
+- **Based On:** PEN-001, PEN-007
+- **Exploit Scenario:**
+  1. Create Item A (bug, `status=backlog`) and Item B (bug, `status=backlog`) — both unauthenticated.
+  2. Route Item A with `overrideRoute=fast-track` → `status=approved`.
+  3. Route Item B normally → `status=proposed`.
+  4. `POST /api/work-items/{A}/dependencies` body `{"action":"add","blockerId":"{B}"}` → dependency link created. Dispatch of A blocked.
+  5. `POST /api/work-items/{B}/reject` body `{"reason":"Rejecting blocker to trigger cascade"}` → Item B moves to `rejected`.
+  6. **Cascade fires**: `onItemResolved(B)` detects Item A is `Approved` and now unblocked. Item A is automatically dispatched: `status=approved → in-progress`, `assignedTeam=TheFixer`. Change history records agent `cascade-dispatcher`.
+  7. Item A was dispatched to a team **without any human dispatch action** — triggered solely by rejecting its blocker for quality reasons.
+- **Recommendation:** Remove `Rejected` from `DISPATCH_TRIGGER_STATUSES`. A rejected blocker should not trigger downstream dispatch — the dependents should require explicit re-evaluation. Add a `requires_reapproval` flag to dependents when a blocker is rejected.
+
+---
+
+### RED-004: Permanent Dispatch Freeze via Soft-Delete Blocker (DoS)
+
+- **Severity:** High
+- **Objective Achieved:** Yes — demonstrates attacker can permanently freeze any approved work item
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `DELETE /api/work-items/:blockerId`, `POST /api/work-items/:id/dispatch`
+- **Based On:** PEN-006, PEN-008
+- **Exploit Scenario:**
+  1. Create Item C (feature, routed to `approved` via fast-track).
+  2. Create Item D (bug, `status=backlog`). Add as blocker: `POST /api/work-items/{C}/dependencies {"action":"add","blockerId":"{D}"}`.
+  3. Verify: `GET /api/work-items/{C}/ready` → `{"ready":false,"unresolvedBlockers":[...]}`.
+  4. `DELETE /api/work-items/{D}` → HTTP 204. `GET /api/work-items/{D}` → HTTP 404 (confirmed deleted).
+  5. `POST /api/work-items/{C}/dispatch {"team":"TheATeam"}` → HTTP 400: `"Cannot dispatch: work item has unresolved blocking dependencies"`. The deleted item's dependency link persists.
+  6. Item C is **permanently frozen in Approved state** — it can never be dispatched because `computeHasUnresolvedBlockers()` treats `findById()→undefined` as "unresolved". The `unresolvedBlockers` array still references the ghost dependency.
+  7. An attacker who soft-deletes any in-flight blocker can permanently halt all its dependents at no cost.
+- **Recommendation:** `computeHasUnresolvedBlockers()` should treat `undefined` (not found / soft-deleted) as resolved. Either auto-resolve the dependency link when a blocker is deleted, or surface it as a "dead link" that operators must explicitly clear — but do not permanently block dispatch.
+
+---
+
+### RED-005: Webhook Spoofing + Enum Injection via Unauthenticated Intake Endpoints
+
+- **Severity:** Critical
+- **Objective Achieved:** Yes — malformed data with invalid enum values persisted and surfaced in dashboard
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/intake/zendesk`, `POST /api/intake/automated`
+- **Based On:** PEN-002
+- **Exploit Scenario:**
+  1. `POST /api/intake/zendesk` — no `X-Zendesk-Webhook-Signature` header — body `{"title":"Injected","description":"...","type":"malicious_type","priority":"ultra-critical"}` → HTTP 201. Work item WI-012 created with `source=zendesk`, `type="malicious_type"`, `priority="ultra-critical"`.
+  2. `POST /api/intake/automated` — body `{"title":"System Injection","type":"PWNED","priority":"CRITICAL_OVERRIDE"}` → HTTP 201. Work item WI-013 created with `type="PWNED"`, `priority="CRITICAL_OVERRIDE"`.
+  3. Both items appear in `GET /api/work-items` response. Dashboard summary shows `"ultra-critical": 1` and `"CRITICAL_OVERRIDE": 1` in `priorityCounts`.
+  4. Prometheus metrics record: `workflow_items_created_total{source="zendesk",type="malicious_type"} 1` and `workflow_items_created_total{source="automated",type="PWNED"} 1` — unbounded label cardinality attack vector.
+  5. Items can be routed and assessed — the assessment switch-case silently falls through for unknown types, corrupting downstream logic.
+- **Recommendation:** Validate `X-Zendesk-Webhook-Signature` using HMAC-SHA256 before processing any webhook payload. Validate `type` and `priority` fields against allowed enum values (`WorkItemType`, `WorkItemPriority`) at the intake layer and return 422 for invalid values.
+
+---
+
+### RED-006: NaN/Invalid Pagination — Partial Results and Empty Responses
+
+- **Severity:** Medium (partially confirmed)
+- **Objective Achieved:** Partial
+- **Status:** Partial (Live — some variants confirmed, others sanitized)
+- **Target URL:** `GET /api/work-items?limit=-1`, `GET /api/dashboard/activity?page=NaN`
+- **Based On:** PEN-005
+- **Exploit Scenario:**
+  1. `GET /api/work-items?limit=-1` → HTTP 200, `data.length=5` but `total=6`. With `limit=-1`, `slice(offset, offset + (-1))` = `slice(0, -1)` returns all-but-last item — silently drops one record from results.
+  2. `GET /api/dashboard/activity?page=NaN_inject` → returns `{"data":[]}` — the dashboard activity endpoint returns empty data for invalid page parameter.
+  3. `GET /api/work-items?page=abc` → returns page=1 (backend handles gracefully by falling back — NOT confirmed as exploitable for empty results).
+  4. `GET /api/work-items?limit=0` → returns all items (limit=0 bypasses pagination — unlimited dump).
+- **Recommendation:** Validate and clamp `page` and `limit` to positive integers with explicit upper bounds before use. Use `isNaN(n) || n < 1 ? defaultValue : Math.min(n, MAX_LIMIT)`.
+
+---
+
+### RED-007: Prometheus Metrics Endpoint — Full Operational Intelligence Exposed
+
+- **Severity:** Medium
+- **Objective Achieved:** Yes (reconnaissance objective)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /metrics`
+- **Based On:** PEN-009
+- **Exploit Scenario:**
+  1. `GET http://localhost:3002/metrics` → HTTP 200, full Prometheus text format, no credentials required.
+  2. Exposed metrics include: `workflow_items_created_total{source,type}`, `workflow_items_routed_total{route}`, `workflow_items_dispatched_total{team}`, `dependency_operations_total`, `dispatch_gating_events_total`, `cycle_detection_events_total`.
+  3. Also: `X-Powered-By: Express` header present — framework disclosure.
+  4. Node.js process metrics: `process_resident_memory_bytes=120442880` (120MB), `process_cpu_seconds_total=0.898`, event loop lag p99=11ms — full server profiling data accessible to any unauthenticated caller.
+  5. Attacker can use `workflow_items_assessed_total{verdict}` to infer approval rates and target timing of reject-based cascade attacks.
+- **Recommendation:** Restrict `/metrics` to internal network / monitoring IP range, or add token-based auth. Set `app.disable('x-powered-by')` to suppress framework disclosure.
+
+---
+
+### RED-008: Missing /api/search Route — Express Framework Disclosure
+
+- **Severity:** Low
+- **Objective Achieved:** N/A (reconnaissance finding)
+- **Status:** Confirmed (Live)
+- **Target URL:** `GET /api/search?q=test`
+- **Based On:** PEN-010
+- **Exploit Scenario:**
+  1. `GET /api/search?q=test` → HTTP 404 HTML response: `"Cannot GET /api/search"` — Express default 404 page.
+  2. Response headers: `X-Powered-By: Express`, `Content-Type: text/html`. Confirms Express.js framework version range to attacker.
+  3. The DependencyPicker UI search feature is broken in production — all typeahead dependency searches fail silently.
+- **Recommendation:** Register the `/api/search` route (search work items by title/docId). Add a global JSON 404 handler to prevent Express HTML disclosure. Disable `X-Powered-By`.
+
+---
+
+### RED-009: NeedsClarification Verdict Silently Rejected (Assessment Logic Flaw)
+
+- **Severity:** Medium
+- **Objective Achieved:** Yes (business logic flaw confirmed live)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/work-items`, `POST /api/work-items/:id/route`, `POST /api/work-items/:id/assess`
+- **Based On:** PEN-011
+- **Exploit Scenario:**
+  1. `POST /api/work-items` without `complexity` field (complexity is optional) — `type=feature`.
+  2. `POST /:id/route` → `status=proposed` (features take full-review path).
+  3. `POST /:id/assess` → 4 assessments run. Domain expert: `verdict=needs-clarification` ("Complexity is not set — cannot assess scope"). Pod lead: `verdict=needs-clarification`.
+  4. Final item `status=rejected` — the `needs-clarification` verdict maps to `Rejected` in the binary `if (approve) else (reject)` branch. No clarification state exists.
+  5. An item that legitimately needs more information is **rejected** rather than placed into a review queue. Attacker can weaponize this: create features without complexity to predictably cycle them through reject→backlog→route→assess indefinitely, preventing approval.
+- **Recommendation:** Add a `WorkItemStatus.NeedsClarification` state. Update `runAssessmentPod()` to handle all three verdict values. Route `NeedsClarification` to a clarification queue rather than silently rejecting.
+
+---
+
+### RED-010: Arbitrary String Route Field Corruption via overrideRoute
+
+- **Severity:** High (extension of RED-001 / PEN-003)
+- **Objective Achieved:** Yes — corrupts business domain data
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/work-items/:id/route`
+- **Based On:** PEN-003
+- **Exploit Scenario:**
+  1. `POST /api/work-items/:id/route` body `{"overrideRoute":"ANYTHING_TRUTHY_ATTACKER_CONTROLS"}` → HTTP 200.
+  2. Item `route` field set to `"ANYTHING_TRUTHY_ATTACKER_CONTROLS"` (arbitrary attacker-controlled string).
+  3. Change history records `"Classified as ANYTHING_TRUTHY_ATTACKER_CONTROLS"`. Status moves to `proposed`.
+  4. Corrupted `route` value persists in storage, will be returned in all API responses, and may break any downstream logic that `switch`es on `item.route`.
+- **Recommendation:** Validate `overrideRoute` against the `WorkItemRoute` enum values before use. Reject requests with non-enum values with HTTP 422. Require elevated role to use `overrideRoute` at all.
+
+---
+
+## Red Team Metrics
+
+| Metric | Value |
+|--------|-------|
+| Chains attempted | 10 |
+| Confirmed breaches | 9 |
+| Objectives achieved | 3 of 4 (75%) — 1 partial |
+| Critical breaches | 2 (RED-001, RED-005) |
+| High breaches | 4 (RED-002, RED-003, RED-004, RED-010) |
+| Medium breaches | 3 (RED-006 partial, RED-007, RED-009) |
+| Low confirmed | 1 (RED-008) |
+| **Grade (per grading rubric)** | **F — confirmed red-team breach of critical objective** |

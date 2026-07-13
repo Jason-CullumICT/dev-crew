@@ -1,0 +1,284 @@
+{
+  "generated": "2026-07-13",
+  "grade": "F",
+  "run_id": "run-20260713-064217",
+  "summary": {
+    "critical": 2,
+    "high": 4,
+    "medium": 6,
+    "low": 2,
+    "total": 14,
+    "confirmed_breaches": 9,
+    "theoretical_findings": 3,
+    "compliance_pass_rate_pct": 23,
+    "compliance_controls_total": 23,
+    "compliance_pass": 3,
+    "compliance_partial": 4,
+    "compliance_fail": 16,
+    "red_team_objectives_attempted": 4,
+    "red_team_objectives_achieved": 3,
+    "red_team_objectives_partial": 1,
+    "red_team_chains_attempted": 10,
+    "red_team_chains_confirmed": 9,
+    "automatic_f_grade": true,
+    "automatic_f_reason": "Confirmed live breach of critical objectives: state-machine bypass (RED-001), malformed assessment verdict bypass (RED-005)"
+  },
+  "findings": [
+    {
+      "id": "CRIT-001",
+      "title": "Full Workflow Takeover — Zero Auth + State Machine Bypass",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["SAST-01", "PEN-001", "PEN-003", "RED-001", "RED-010"],
+      "sources": ["static-analyzer", "pen-tester", "red-teamer"],
+      "owasp": ["A01: Broken Access Control", "A07: Identification and Authentication Failures"],
+      "cwe": ["CWE-306", "CWE-862"],
+      "objective_breached": "Bypass work item state machine to reach an invalid status",
+      "description": "The Express application has zero authentication middleware. Any anonymous HTTP client can reach all 18 endpoints. Additionally, the /route endpoint passes overrideRoute to routeWorkItem() without privilege checks or enum validation — any truthy string skips the 4-role assessment pod and promotes an item directly to 'approved'. Confirmed live: 3 unauthenticated HTTP calls traversed backlog→approved→in-progress with assessments=[] proving no assessment pod ran. Arbitrary overrideRoute strings also corrupt the item.route field.",
+      "evidence": "WI-001 (UUID 9513fe57-6491-422e-9e93-cee88a9ab370) moved backlog→approved→in-progress via POST /work-items, POST /:id/route {overrideRoute:'fast-track'}, POST /:id/dispatch — zero credentials, assessments=[]",
+      "affected_files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/src/routes/workflow.ts:39-62",
+        "Source/Backend/src/services/router.ts:66-75"
+      ],
+      "remediation": "1. Add JWT bearer verification middleware globally in app.ts before any route registration. 2. Add RBAC: only pod_lead role may supply overrideRoute. 3. Validate overrideRoute against WorkItemRoute enum — reject non-enum values with HTTP 422. 4. Log all overrideRoute usage with actor identity to the audit stream."
+    },
+    {
+      "id": "CRIT-002",
+      "title": "Webhook Spoofing + Enum Injection via Unauthenticated Intake Endpoints",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["SAST-02", "SAST-03", "PEN-002", "RED-005"],
+      "sources": ["static-analyzer", "pen-tester", "red-teamer"],
+      "owasp": ["A07: Identification and Authentication Failures", "A08: Software and Data Integrity Failures"],
+      "cwe": ["CWE-306", "CWE-345", "CWE-20"],
+      "objective_breached": "Submit a malformed assessment verdict that bypasses routing logic",
+      "description": "POST /api/intake/zendesk and /api/intake/automated perform no HMAC-SHA256 signature verification and do not validate type/priority enum fields before persisting. Confirmed live: items created with type='malicious_type' and priority='ultra-critical' were persisted to the system, appeared in the dashboard, and created unbounded Prometheus label cardinality. Items with corrupted type values silently fall through the assessment switch-case, corrupting downstream routing.",
+      "evidence": "WI-012 created with source=zendesk, type='malicious_type', priority='ultra-critical'. WI-013 created with type='PWNED', priority='CRITICAL_OVERRIDE'. Both surfaced in GET /api/work-items and dashboard/summary priorityCounts.",
+      "affected_files": [
+        "Source/Backend/src/routes/intake.ts:10-50"
+      ],
+      "remediation": "1. Verify X-Zendesk-Webhook-Signature header using HMAC-SHA256 before processing any zendesk webhook body. 2. Validate type against Object.values(WorkItemType) and priority against Object.values(WorkItemPriority) in both intake routes — return HTTP 422 on invalid values. 3. Mirror the validation pattern already used in workItems.ts:29-40."
+    },
+    {
+      "id": "HIGH-001",
+      "title": "Mass Data Enumeration + Bulk Unauthenticated IDOR Delete",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["SAST-09", "PEN-004", "PEN-006", "RED-002"],
+      "sources": ["static-analyzer", "pen-tester", "red-teamer"],
+      "owasp": ["A01: Broken Access Control"],
+      "cwe": ["CWE-400", "CWE-639"],
+      "objective_breached": "Enumerate all work items without pagination limit enforcement",
+      "description": "GET /api/work-items?limit=999999 returns all items in one response (no server-side cap). Combined with unauthenticated DELETE /api/work-items/:id, an attacker can enumerate all UUIDs and delete all items. Confirmed live: all 7 items enumerated in one response; 6 of 7 soft-deleted without credentials. Full audit trail (35 change-history records) also exfiltrated via GET /api/dashboard/activity?limit=999999.",
+      "evidence": "data.length==total (7) confirmed on limit=999999. 6/7 items deleted via sequential DELETE calls. dashboard/activity returned 35 records in one dump.",
+      "affected_files": [
+        "Source/Backend/src/routes/workItems.ts:68-71",
+        "Source/Backend/src/routes/workItems.ts:141-150",
+        "Source/Backend/src/routes/dashboard.ts:17-18"
+      ],
+      "remediation": "1. Enforce const safeLimit = Math.min(parseInt(req.query.limit), 100) in workItems.ts and dashboard.ts. 2. Return HTTP 400 for non-numeric or negative limit values. 3. Require authentication on DELETE endpoint. 4. Consider adding a hard cap of 100 as a named constant MAX_PAGE_SIZE."
+    },
+    {
+      "id": "HIGH-002",
+      "title": "Cascade Auto-Dispatch via Unauthenticated Blocker Rejection",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["PEN-007", "RED-003"],
+      "sources": ["pen-tester", "red-teamer"],
+      "owasp": ["A04: Insecure Design"],
+      "cwe": ["CWE-841"],
+      "description": "Rejecting a work item triggers onItemResolved() which auto-dispatches any Approved dependents. DISPATCH_TRIGGER_STATUSES includes Rejected, meaning a rejected blocker (failed quality review) causes its dependents to be dispatched to a team without human authorization. Confirmed live: rejecting Item B caused Item A (Approved, blocked by B) to auto-dispatch to TheFixer with status=in-progress — no human dispatch action taken.",
+      "evidence": "Item A changed from approved to in-progress after Item B rejection. changeHistory records agent='cascade-dispatcher'. assignedTeam=TheFixer set automatically.",
+      "affected_files": [
+        "Source/Backend/src/services/dependency.ts:251-315",
+        "Source/Backend/src/routes/workflow.ts:192-207"
+      ],
+      "remediation": "Remove Rejected from DISPATCH_TRIGGER_STATUSES (keep only Completed). When a blocker is rejected, flag its dependents as requires_reapproval rather than auto-dispatching — humans must explicitly re-approve and dispatch."
+    },
+    {
+      "id": "HIGH-003",
+      "title": "Permanent Dispatch Freeze via Soft-Deleted Blocker (DoS)",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["PEN-008", "RED-004"],
+      "sources": ["pen-tester", "red-teamer"],
+      "owasp": ["A04: Insecure Design"],
+      "cwe": ["CWE-404", "CWE-834"],
+      "description": "computeHasUnresolvedBlockers() treats findById()→undefined (soft-deleted) as an unresolved blocker. An attacker can permanently freeze any Approved item by soft-deleting its blocker. The dependency link persists as a ghost reference, blocking dispatch forever. Confirmed live: Item C permanently stuck in Approved with 'Cannot dispatch: work item has unresolved blocking dependencies' after its blocker (Item D) was soft-deleted.",
+      "evidence": "POST /api/work-items/:C/dispatch returned HTTP 400 after DELETE /api/work-items/:D. GET /api/work-items/:C/ready returned ready=false with dead dependency link in unresolvedBlockers array.",
+      "affected_files": [
+        "Source/Backend/src/services/dependency.ts:64-75"
+      ],
+      "remediation": "In computeHasUnresolvedBlockers(), treat undefined (blocker not found / soft-deleted) as resolved — change: if (!blocker || !RESOLVED_STATUSES.includes(blocker.status)) to if (blocker && !RESOLVED_STATUSES.includes(blocker.status)). Additionally, auto-remove or tombstone dependency links when a blocker is soft-deleted."
+    },
+    {
+      "id": "HIGH-004",
+      "title": "Internal Error Messages Leaked to HTTP Clients",
+      "severity": "High",
+      "status": "Theoretical",
+      "source_ids": ["SAST-04"],
+      "sources": ["static-analyzer"],
+      "owasp": ["A05: Security Misconfiguration"],
+      "cwe": ["CWE-209"],
+      "description": "All seven workflow action endpoints (/route, /assess, /approve, /reject, /dispatch, /dependencies, /ready) send the raw err.message string from caught exceptions back to the HTTP client as JSON. This exposes internal store state, item IDs, dependency graph messages, and error conditions to any caller. The global errorHandler middleware correctly sanitizes 500s, but the per-route catch blocks in workflow.ts bypass it.",
+      "affected_files": [
+        "Source/Backend/src/routes/workflow.ts:60-62",
+        "Source/Backend/src/routes/workflow.ts:87-89",
+        "Source/Backend/src/routes/workflow.ts:138-140",
+        "Source/Backend/src/routes/workflow.ts:205-207",
+        "Source/Backend/src/routes/workflow.ts:292-294",
+        "Source/Backend/src/routes/workflow.ts:331-333",
+        "Source/Backend/src/routes/workflow.ts:368-370"
+      ],
+      "remediation": "In each catch block in workflow.ts, replace res.status(500).json({ error: message }) with res.status(500).json({ error: 'Internal server error' }). Log the full error (message + stack) server-side only. Reserve specific error messages for known, safe validation errors (400/404/409 paths)."
+    },
+    {
+      "id": "MED-001",
+      "title": "NaN / Invalid Pagination Parameters Cause Misleading Responses",
+      "severity": "Medium",
+      "status": "Confirmed (Partial)",
+      "source_ids": ["PEN-005", "RED-006"],
+      "sources": ["pen-tester", "red-teamer"],
+      "owasp": ["A03: Injection"],
+      "cwe": ["CWE-20"],
+      "description": "parseInt() is called on limit and page without NaN guards. limit=-1 returns all-but-last item (silently drops one record). limit=0 returns all items (unlimited dump bypass). page=NaN causes dashboard/activity to return empty results. Confirmed partial: limit=-1 confirmed to drop last record; page=NaN confirmed to return empty on dashboard endpoint.",
+      "affected_files": [
+        "Source/Backend/src/routes/workItems.ts:69-70",
+        "Source/Backend/src/routes/dashboard.ts:17-18"
+      ],
+      "remediation": "const safePage = (isNaN(p) || p < 1) ? 1 : p; const safeLimit = (isNaN(l) || l < 1) ? 20 : Math.min(l, 100); — apply before passing to store.findAll()."
+    },
+    {
+      "id": "MED-002",
+      "title": "Prometheus /metrics Endpoint Exposed Without Authentication",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["SAST-05", "PEN-009", "RED-007"],
+      "sources": ["static-analyzer", "pen-tester", "red-teamer"],
+      "owasp": ["A02: Cryptographic Failures", "A05: Security Misconfiguration"],
+      "cwe": ["CWE-200"],
+      "description": "GET /metrics returns full Prometheus telemetry including workflow_items_created_total, workflow_items_dispatched_total, dispatch_gating_events_total, and Node.js process metrics (heap, CPU, event loop lag). Also: X-Powered-By: Express header present on all responses. Confirmed live: 120MB RSS, 0.898s CPU, p99 event loop lag=11ms, and all workflow counters exposed to unauthenticated callers.",
+      "affected_files": [
+        "Source/Backend/src/app.ts:34-37"
+      ],
+      "remediation": "1. Restrict /metrics to internal network via IP allowlist middleware, or add bearer token verification. 2. In production, bind metrics to a separate internal port. 3. Call app.disable('x-powered-by') in app.ts to suppress framework disclosure."
+    },
+    {
+      "id": "MED-003",
+      "title": "NeedsClarification Verdict Silently Mapped to Rejected Status",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["PEN-011", "RED-009"],
+      "sources": ["pen-tester", "red-teamer"],
+      "owasp": ["A04: Insecure Design"],
+      "cwe": ["CWE-710"],
+      "description": "runAssessmentPod() uses a binary if/else to map AssessmentVerdict to WorkItemStatus: Approve→Approved, everything-else→Rejected. Items with NeedsClarification verdict (e.g., feature items lacking complexity field) are rejected rather than queued for clarification. Confirmed live: feature item without complexity field was rejected with pod-lead verdict=needs-clarification. Attackers can cycle items through reject→backlog→assess indefinitely to prevent approval.",
+      "affected_files": [
+        "Source/Backend/src/services/assessment.ts:162-167"
+      ],
+      "remediation": "Add WorkItemStatus.NeedsClarification state. Update runAssessmentPod() to handle all three AssessmentVerdict values with explicit cases. Route NeedsClarification to a clarification queue rather than treating it as Rejected."
+    },
+    {
+      "id": "MED-004",
+      "title": "No CORS Policy — Missing Access-Control Headers",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["SAST-06", "PEN-012"],
+      "sources": ["static-analyzer", "pen-tester"],
+      "owasp": ["A05: Security Misconfiguration"],
+      "cwe": ["CWE-942"],
+      "description": "No CORS middleware is configured. Confirmed live: no Access-Control-Allow-Origin header present on any response. While browsers enforce SOP and block cross-origin XHR by default, the absence of an explicit CORS policy means any upstream reverse proxy adding a permissive CORS header would expose all endpoints to cross-origin browser attacks.",
+      "affected_files": [
+        "Source/Backend/src/app.ts"
+      ],
+      "remediation": "npm install cors. Apply app.use(cors({ origin: ['http://localhost:5173'], methods: ['GET','POST','PATCH','DELETE'], credentials: true })) as the first middleware in app.ts. Never use origin: '*' on state-mutation endpoints."
+    },
+    {
+      "id": "MED-005",
+      "title": "Missing HTTP Security Headers (No Helmet, CSP, HSTS, X-Frame-Options)",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source_ids": ["SAST-07"],
+      "sources": ["static-analyzer"],
+      "owasp": ["A05: Security Misconfiguration"],
+      "cwe": ["CWE-693"],
+      "description": "No security headers are set: no Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, or Referrer-Policy. The helmet package is not installed. Confirmed live: X-Powered-By: Express present on all responses; no protective headers present.",
+      "affected_files": [
+        "Source/Backend/src/app.ts"
+      ],
+      "remediation": "npm install helmet. Apply app.use(helmet()) as the first middleware in app.ts. Configure CSP to restrict script-src and object-src. Call app.disable('x-powered-by')."
+    },
+    {
+      "id": "MED-006",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source_ids": ["SAST-08"],
+      "sources": ["static-analyzer"],
+      "owasp": ["A05: Security Misconfiguration"],
+      "cwe": ["CWE-770"],
+      "description": "No rate limiting middleware (express-rate-limit or equivalent) is applied anywhere. Intake webhook endpoints and all workflow action endpoints can be called arbitrarily fast, enabling DoS via store exhaustion or CPU saturation from assessment pod logic.",
+      "affected_files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "remediation": "npm install express-rate-limit. Apply a global limiter (60 req/min) and a tighter limiter on /api/intake (10 req/min per IP)."
+    },
+    {
+      "id": "LOW-001",
+      "title": "Missing /api/search Backend Route + Express Framework Disclosure",
+      "severity": "Low",
+      "status": "Confirmed (Live)",
+      "source_ids": ["SAST-11", "PEN-010", "RED-008"],
+      "sources": ["static-analyzer", "pen-tester", "red-teamer"],
+      "owasp": ["A05: Security Misconfiguration"],
+      "cwe": ["CWE-404"],
+      "description": "GET /api/search?q= returns Express HTML 404 ('Cannot GET /api/search') with X-Powered-By: Express header. The DependencyPicker typeahead search is completely broken. Framework disclosure provides attacker with version fingerprinting data. Confirmed live.",
+      "affected_files": [
+        "Source/Frontend/src/api/client.ts:101-104",
+        "Source/Backend/src/app.ts"
+      ],
+      "remediation": "1. Implement GET /api/search?q= route with sanitized query filtering. 2. Add global JSON 404 handler to prevent HTML framework disclosure. 3. app.disable('x-powered-by')."
+    },
+    {
+      "id": "LOW-002",
+      "title": "No Input Length Caps on Free-Text Fields",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source_ids": ["SAST-10"],
+      "sources": ["static-analyzer"],
+      "owasp": ["A05: Security Misconfiguration"],
+      "cwe": ["CWE-400"],
+      "description": "The title, description, and reason fields accept unbounded string lengths server-side. Express body parser defaults limit total body to 100KB, but a series of requests each near the limit fills the in-memory store unboundedly over time.",
+      "affected_files": [
+        "Source/Backend/src/routes/workItems.ts:24-46",
+        "Source/Backend/src/routes/intake.ts:14-24"
+      ],
+      "remediation": "Add max-length validation: title.length > 500 → HTTP 400, description.length > 10000 → HTTP 400. Apply in both workItems.ts and intake.ts."
+    }
+  ],
+  "compliance": {
+    "frameworks_audited": ["OWASP-ASVS L2", "SOC2-Type2 (CC6.1-CC8.1)"],
+    "controls_total": 23,
+    "pass": 3,
+    "partial": 4,
+    "fail": 16,
+    "pass_rate_pct": 23,
+    "root_causes": [
+      "No authentication/authorization middleware (cascades into CC6.1, CC6.2, V2.1, V4.x, V3.3)",
+      "No HTTP security headers (resolves V14.4, V14.5, CORS gap with npm install helmet cors)",
+      "Missing required audit events (login_attempt, permission_denied, data_export cannot exist until auth/authz exist)"
+    ]
+  },
+  "red_team": {
+    "environment": "Ephemeral — Source/Backend compiled and started on :3002",
+    "objectives_attempted": 4,
+    "objectives_achieved": 3,
+    "objectives_partial": 1,
+    "chains_attempted": 10,
+    "chains_confirmed": 9,
+    "critical_breaches": 2,
+    "automatic_grade_f": true
+  }
+}

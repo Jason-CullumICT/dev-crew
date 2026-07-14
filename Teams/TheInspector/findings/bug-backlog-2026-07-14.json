@@ -1,0 +1,357 @@
+{
+  "meta": {
+    "audit_date": "2026-07-14",
+    "run_id": "run-20260714-051432",
+    "branch": "audit/inspector-2026-07-14-44a76c",
+    "project": "dev-crew Source App",
+    "grade": "C",
+    "report": "Teams/TheInspector/findings/audit-2026-07-14-C.html"
+  },
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 8,
+    "p3_total": 13,
+    "p4_total": 0,
+    "escalation_count": 4,
+    "fixer_count": 7,
+    "solo_count": 2,
+    "total_findings": 23
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve/injection",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "package": "handlebars@4.0.0-4.7.8",
+      "cvss": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "file": "Source/Backend/package-lock.json",
+      "threat": "RCE if any template is rendered from user-controlled input",
+      "fix": "npm audit fix (upgrade to handlebars@4.7.9+)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve/code-injection",
+      "title": "Vite Development Server Origin Bypass",
+      "package": "vite@5.4.0 (affected: <=6.4.2)",
+      "cvss": null,
+      "cve_ids": ["GHSA-2x3c-gvch-v27w"],
+      "file": "Source/Frontend/package-lock.json",
+      "threat": "MITM on dev server; cross-origin module injection and source exfiltration",
+      "fix": "npm audit fix --force (breaking: requires vite@7.x)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve/injection",
+      "title": "form-data CRLF Injection",
+      "package": "form-data@4.0.0-4.0.5",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "file": "Source/Backend/package-lock.json, Source/Frontend/package-lock.json",
+      "threat": "Header injection via form submission — can bypass CSRF tokens, inject Set-Cookie",
+      "fix": "npm audit fix (upgrade to form-data@4.0.6+)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve/dos+disclosure",
+      "title": "ws WebSocket Memory Exhaustion DoS + Uninitialized Memory Disclosure",
+      "package": "ws@8.0.0-8.20.1",
+      "cvss": null,
+      "cve_ids": ["GHSA-58qx-3vcg-4xpx", "GHSA-96hv-2xvq-fx4p"],
+      "file": "Source/Frontend/package-lock.json",
+      "threat": "OOM crash via fragmented frames; uninitialized memory returned to callers",
+      "fix": "npm audit fix (upgrade to ws@8.20.2+)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-api-types Not Implemented — missing blocked_by field in shared types",
+      "file": "portal/Shared/api.ts",
+      "line": 32,
+      "detail": "UpdateFeatureRequestInput (line 32) and UpdateBugInput (line 59) lack required blocked_by?: string[] field. Causes as any casts in DependencyPicker.tsx lines 291/293.",
+      "recommendation": "Add blocked_by?: string[]; to both interfaces in portal/Shared/api.ts; remove as any casts in DependencyPicker.tsx.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": ["QO-006"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed Not Implemented — seed.ts absent",
+      "file": "portal/Backend/src/database/seed.ts (missing)",
+      "line": null,
+      "detail": "Spec requires idempotent seed script with 7 dependency links wired into startup. No seed.ts exists. Fresh environments start with zero dependency data.",
+      "recommendation": "Create portal/Backend/src/database/seed.ts per spec; wire into portal/Backend/src/index.ts after schema init. Make idempotent.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": ["QO-006"]
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "untested",
+      "title": "FR-dependency-frontend-tests Incomplete — DependencySection and BlockedBadge have no tests",
+      "file": "portal/Frontend/tests/",
+      "line": null,
+      "detail": "DependencySection.test.tsx and BlockedBadge.test.tsx absent. Only DependencyPicker.test.tsx present. DependencySection (226 lines) and BlockedBadge (70 lines) have zero test coverage.",
+      "recommendation": "Create both test files per spec with // Verifies: FR-dependency-section and FR-dependency-blocked-badge traceability comments.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": ["QO-006"]
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Portal Routes Call getDb() Directly — service layer not self-contained",
+      "file": "portal/Backend/src/routes/bugs.ts",
+      "line": 38,
+      "detail": "Every portal route calls getDb() and passes db to service functions. 14+ call sites in bugs.ts alone. Same pattern in featureRequests.ts. Routes are coupled to DB abstraction; services untestable without stubs.",
+      "recommendation": "Move getDb() calls inside service functions. Remove db parameters from all service signatures. Routes should call services with no DB awareness.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": []
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "164 console.log Calls in Orchestrator — unstructured logging violates architecture rule",
+      "file": "platform/orchestrator/lib/workflow-engine.js",
+      "line": null,
+      "detail": "Orchestrator uses console.log pervasively (164 occurrences). No trace/span IDs, no log levels, no structured fields. Breaks log aggregation in containerised environment.",
+      "recommendation": "Introduce logger abstraction in platform/orchestrator/lib/. Replace all console.log/console.error. Solo-session only — cannot go through team pipeline.",
+      "route": "solo-session",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": []
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "Traceability Enforcer Has False Positives and Blind Spots",
+      "file": "tools/traceability-enforcer.py",
+      "line": 63,
+      "detail": "Three defects: (1) blind to portal/ — all FR-001-069 implementations invisible; (2) false positives from narrative text matching FR ID regex; (3) cannot target Specifications/ files directly.",
+      "recommendation": "Add portal/ and platform/ to source_dirs. Tighten FR ID regex. Support --file path to Specifications/.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": ["QO-001", "QO-002", "QO-003"]
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "test-coverage",
+      "title": "Duplicate Frontend Test Files for WorkItemListPage and WorkItemDetailPage",
+      "file": "Source/Frontend/tests/WorkItemListPage.test.tsx",
+      "recommendation": "Remove root-level copies; retain tests/pages/ as canonical location.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 Implemented Without Traceability Comment",
+      "file": "platform/Dockerfile.worker",
+      "line": 1,
+      "recommendation": "Update header to # Verifies: FR-TMP-008 — gh CLI and Playwright installed in worker container.",
+      "route": "solo-session",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "untested",
+      "title": "DebugPortalPage.tsx Has No FR Traceability",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "line": 1,
+      "recommendation": "Identify or create governing FR and add // Verifies: FR-XXX comment.",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P3",
+      "category": "cve/moderate",
+      "title": "@babel/core: Arbitrary file read via sourceMappingURL",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "cvss": 3.2,
+      "fix": "npm audit fix",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "cve/dos",
+      "title": "brace-expansion: zero-step sequence hangs process",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cvss": 6.5,
+      "fix": "npm audit fix",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "cve/moderate",
+      "title": "esbuild: dev server accepts cross-origin requests",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvss": 5.3,
+      "fix": "npm audit fix --force",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "cve/dos",
+      "title": "js-yaml: quadratic DoS in merge key handling",
+      "cve": "GHSA-h67p-54hq-rp68",
+      "cvss": null,
+      "fix": "npm audit fix",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "cve/xss",
+      "title": "postcss: XSS via unescaped </style> in output",
+      "cve": "GHSA-qx2v-qp2m-jg93",
+      "cvss": 6.1,
+      "fix": "npm audit fix",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "cve/dos",
+      "title": "qs: crash on null/undefined in arrays",
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "cvss": null,
+      "fix": "npm audit fix",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "cve/moderate",
+      "title": "uuid: missing buffer bounds in v3/v5/v6",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": null,
+      "fix": "npm audit fix --force (uuid@14.0.1, breaking major)",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "cve/redirect",
+      "title": "react-router: open redirect via protocol-relative URL",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "cvss": null,
+      "fix": "npm audit fix (upgrade to react-router-dom@6.30.4+)",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "react@18.3.1 — React 19.2.7 available",
+      "fix": "Plan major upgrade with react-router-dom upgrade cycle",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "outdated/cve",
+      "title": "react-router-dom@6.26.0 — 4 minor versions behind with known open-redirect CVE",
+      "fix": "npm audit fix to 6.30.4+",
+      "route": "TheFixer",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Outdated npm dependency chain",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014"],
+      "single_fix": "npm audit fix + planned Vite 7.x upgrade",
+      "closes_count": 14
+    },
+    {
+      "root_cause": "portal/ excluded from traceability enforcer scope",
+      "findings": ["QO-001", "QO-002", "QO-003", "QO-006"],
+      "single_fix": "Add portal/ to enforcer source_dirs (QO-006 fix auto-detects QO-001/002/003)",
+      "closes_count": 4
+    },
+    {
+      "root_cause": "Service layer not self-contained (DB threaded through routes)",
+      "findings": ["QO-004"],
+      "single_fix": "Move getDb() into service functions",
+      "closes_count": 1
+    }
+  ],
+  "remediation_phases": {
+    "block_deployment": ["DEP-001 audit (confirm template origin)", "Escalate DEP-001/002/003/004 to TheGuardians"],
+    "this_sprint": ["npm audit fix across all manifests (DEP-003..DEP-012)", "QO-001/002/003 dependency-linking spec implementation", "QO-006 traceability enforcer fix"],
+    "next_sprint": ["QO-004 portal service layer refactor", "DEP-002 Vite 7.x upgrade planning", "DEP-012/DEP-014 react-router-dom upgrade", "QO-007 remove duplicate test files"],
+    "backlog": ["QO-005 orchestrator logger abstraction", "DEP-013 React 19 upgrade track", "DEP-011 uuid major bump", "QO-008/009 traceability comments", "License declarations in package.json"]
+  }
+}

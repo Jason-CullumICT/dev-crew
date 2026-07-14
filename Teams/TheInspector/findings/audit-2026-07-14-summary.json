@@ -1,0 +1,235 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-14",
+    "project": "dev-crew Source App",
+    "grade": "D",
+    "status": "critical vulnerabilities detected"
+  },
+  "summary": {
+    "manifests_scanned": 4,
+    "direct_dependencies": 17,
+    "transitive_dependencies": "~200+",
+    "total_findings": 14,
+    "total_vulnerabilities": 27
+  },
+  "vulnerabilities_by_severity": {
+    "critical": 2,
+    "high": 4,
+    "moderate": 20,
+    "low": 1,
+    "total": 27
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "severity": "P1",
+      "package": "handlebars@4.0.0-4.7.8",
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q (CVSS 9.8)",
+        "GHSA-3mfm-83xf-c92r (CVSS 8.1)",
+        "GHSA-2qvq-rjwj-gvw9 (CVSS 4.7)",
+        "GHSA-7rx3-28cr-v5wh (CVSS 4.8)",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "manifest": "Source/Backend/package-lock.json",
+      "threat": "RCE if templates are user-controlled",
+      "fix": "npm audit fix (upgrade to 4.7.9+)",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vite Development Server Origin Bypass",
+      "severity": "P1",
+      "package": "vite@<=6.4.2",
+      "cve_ids": ["GHSA-2x3c-gvch-v27w"],
+      "manifest": "Source/Frontend/package-lock.json",
+      "threat": "MITM attack on dev server; code injection risk",
+      "fix": "npm audit fix --force (requires vite@>=7.x, breaking change)",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "form-data CRLF Injection",
+      "severity": "P2",
+      "package": "form-data@4.0.0-4.0.5",
+      "cve": "GHSA-hmw2-7cc7-3qxx (CVSS 7.5)",
+      "manifests": [
+        "Source/Backend/package-lock.json",
+        "Source/Frontend/package-lock.json"
+      ],
+      "threat": "Header injection via form submission",
+      "fix": "npm audit fix (upgrade to 4.0.6+)"
+    },
+    {
+      "id": "DEP-004",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "severity": "P2",
+      "package": "ws@8.0.0-8.20.1",
+      "cve_ids": [
+        "GHSA-58qx-3vcg-4xpx",
+        "GHSA-96hv-2xvq-fx4p"
+      ],
+      "manifest": "Source/Frontend/package-lock.json",
+      "threat": "OOM crash + uninitialized memory disclosure",
+      "fix": "npm audit fix (upgrade to 8.20.2+)"
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-005",
+      "package": "@babel/core",
+      "issue": "Arbitrary file read via sourceMappingURL"
+    },
+    {
+      "id": "DEP-006",
+      "package": "brace-expansion",
+      "issue": "DoS: zero-step sequence hangs process"
+    },
+    {
+      "id": "DEP-007",
+      "package": "esbuild",
+      "issue": "Dev server accepts cross-origin requests"
+    },
+    {
+      "id": "DEP-008",
+      "package": "js-yaml",
+      "issue": "Quadratic DoS in merge key handling"
+    },
+    {
+      "id": "DEP-009",
+      "package": "postcss",
+      "issue": "XSS via unescaped </style> in output"
+    },
+    {
+      "id": "DEP-010",
+      "package": "qs",
+      "issue": "DoS: crash on null/undefined in arrays"
+    },
+    {
+      "id": "DEP-011",
+      "package": "uuid",
+      "issue": "Missing buffer bounds in v3/v5/v6"
+    },
+    {
+      "id": "DEP-012",
+      "package": "react-router",
+      "issue": "Open redirect via protocol-relative URL"
+    }
+  ],
+  "outdated_packages": {
+    "backend": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "wanted": "4.22.2",
+        "latest": "5.2.1",
+        "gap": "+4 minor",
+        "risk": "maintenance debt"
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "wanted": "8.21.0",
+        "latest": "10.3.1",
+        "gap": "+4 minor, -2 major",
+        "risk": "perf fixes may lag"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "wanted": "9.0.1",
+        "latest": "14.0.1",
+        "gap": "+5 minor",
+        "risk": "buffer bounds fix requires major"
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "wanted": "6.30.4",
+        "latest": "7.18.1",
+        "gap": "+4 minor",
+        "risk": "missing security patches"
+      },
+      {
+        "package": "vite",
+        "current": "5.4.0",
+        "wanted": null,
+        "latest": "8.1.4+",
+        "gap": "-3 major",
+        "risk": "multiple CVEs unpatched"
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "⚠️ Partial",
+    "viral_licenses_detected": false,
+    "dependencies": "MIT, Apache 2.0, ISC (all permissive)",
+    "project_packages": "UNLICENSED (recommend explicit license)"
+  },
+  "dependency_health": {
+    "backend": {
+      "direct_prod": 4,
+      "direct_dev": 9,
+      "transitive": "~25-30",
+      "status": "healthy"
+    },
+    "frontend": {
+      "direct_prod": 3,
+      "direct_dev": 9,
+      "transitive": "~120-150",
+      "status": "large surface (normal for React)"
+    }
+  },
+  "supply_chain_risk": {
+    "post_install_scripts": "none detected",
+    "package_adoption": "high (express, react, vite all top-tier)",
+    "maintainer_stability": "stable, no deprecations detected",
+    "overall_risk": "moderate (~200 transitive deps)"
+  },
+  "remediation_phases": {
+    "phase_1_critical_immediate": [
+      "DEP-001: handlebars RCE (audit usage, upgrade to 4.7.9+)",
+      "DEP-002: vite origin bypass (prioritize vite@7.x upgrade)",
+      "DEP-003: form-data CRLF (upgrade to 4.0.6+)",
+      "DEP-004: ws DoS (upgrade to 8.20.2+)"
+    ],
+    "phase_2_security_1_2_sprints": [
+      "DEP-005 through DEP-012: moderate vulnerabilities via npm audit fix"
+    ],
+    "phase_3_maintenance_planned": [
+      "express 4.18.2 → 4.22.2",
+      "pino 8.17.0 → 8.21.0 or 10.3.1",
+      "uuid 9.0.0 → 14.0.1",
+      "react 18.3.1 → 19.2.7",
+      "vite 5.4.0 → 7.x or 8.x (high test burden)"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: Handlebars RCE (if templates user-controlled)",
+      "DEP-002: Vite dev server origin bypass",
+      "DEP-003: form-data header injection",
+      "DEP-004: ws memory exhaustion + info disclosure",
+      "DEP-012: react-router open redirect"
+    ],
+    "TheFixer": [
+      "Vite major upgrade (breaking change, high test burden)",
+      "React major upgrade (plan with react-router)",
+      "express/pino/uuid minor/major bumps"
+    ]
+  },
+  "notes": {
+    "re_audit_after": "vite upgrade; vite 7.x will unlock vitest and resolve transitive CVEs",
+    "handlebars_watch": "confirm templates are not user-controlled; if dynamic, immediate escalation",
+    "react_track": "React 19 available; plan adoption for long-term support",
+    "license_fix": "update workflow-engine-backend and workflow-frontend to explicit license"
+  }
+}

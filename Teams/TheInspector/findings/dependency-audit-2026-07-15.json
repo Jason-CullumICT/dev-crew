@@ -1,0 +1,238 @@
+{
+  "audit_date": "2026-07-15",
+  "agent": "dependency_auditor",
+  "model": "haiku",
+  "status": "completed",
+  "projects_scanned": 6,
+  "summary": {
+    "total_dependencies_transitive": 2000,
+    "direct_dependencies": 30,
+    "vulnerabilities_total": 31,
+    "vulnerabilities_by_severity": {
+      "critical": 3,
+      "high": 5,
+      "medium": 7,
+      "low": 1
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "version_range": ">=4.0.0 <=4.7.8",
+      "cvss_score": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "location": "Source/Backend (transitive)",
+      "impact": "Arbitrary JavaScript execution in template rendering",
+      "fix_command": "npm audit fix",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "version_range": "<=3.2.5",
+      "cvss_score": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "Arbitrary File Read & Code Execution via UI Server",
+      "location": "Source/Frontend",
+      "current_version": "^2.0.5",
+      "minimum_safe_version": ">=3.2.6",
+      "fix_command": "cd Source/Frontend && npm install vitest@^3.2.6",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "version_range": "<=7.5.5",
+      "cvss_score": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "title": "Arbitrary Code Execution (+ 7 additional high/critical CVEs)",
+      "location": "platform/orchestrator (transitive via @grpc/grpc-js)",
+      "num_related_cves": 8,
+      "impact": "Affects orchestrator infrastructure backbone",
+      "fix_command": "cd platform/orchestrator && npm audit fix",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "form-data",
+      "version_range": "4.0.0-4.0.5",
+      "cvss_score": 7.5,
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "title": "CRLF Injection in multipart field names",
+      "locations": ["Source/Backend", "Source/Frontend"],
+      "fix_command": "npm audit fix"
+    },
+    {
+      "id": "DEP-005",
+      "package": "vite",
+      "version_range": "<=6.4.2",
+      "cvss_score": 7.5,
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "title": "Path Traversal & fs.deny Bypass on Windows",
+      "location": "Source/Frontend",
+      "current_version": "^5.4.0",
+      "fix_command": "cd Source/Frontend && npm install vite@^6.4.3"
+    },
+    {
+      "id": "DEP-006",
+      "package": "ws",
+      "version_range": "8.0.0-8.20.1",
+      "cvss_score": 7.5,
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "title": "Memory Exhaustion DoS from tiny fragments",
+      "location": "Source/Frontend (transitive)",
+      "fix_command": "npm audit fix"
+    },
+    {
+      "id": "DEP-007",
+      "package": "@grpc/grpc-js",
+      "version_range": "1.14.0-1.14.3",
+      "cvss_score": 7.5,
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "title": "Server Crash via Malformed Requests",
+      "location": "platform/orchestrator",
+      "fix_command": "npm audit fix"
+    },
+    {
+      "id": "DEP-008",
+      "package": "path-to-regexp",
+      "version_range": "<0.1.13",
+      "cvss_score": 7.5,
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "location": "platform/orchestrator",
+      "fix_command": "npm audit fix"
+    }
+  ],
+  "medium_severity_findings": 7,
+  "low_severity_findings": 1,
+  "outdated_major_versions": {
+    "express": {
+      "current": "4.18.2",
+      "latest_minor": "4.22.2",
+      "latest_major": "5.2.1",
+      "risk_level": "medium"
+    },
+    "pino": {
+      "current": "8.17.0",
+      "latest_minor": "8.21.0",
+      "latest_major": "10.3.1",
+      "versions_behind": 2,
+      "risk_level": "high"
+    },
+    "uuid": {
+      "current": "9.0.1",
+      "latest": "14.0.1",
+      "versions_behind": 5,
+      "vulnerability": "Buffer overflow (CWE-787)",
+      "risk_level": "high"
+    },
+    "react": {
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "versions_behind": 1,
+      "risk_level": "low"
+    },
+    "react-router-dom": {
+      "current": "6.26.0",
+      "latest_minor": "6.30.4",
+      "latest_major": "7.18.1",
+      "vulnerability": "Open redirect",
+      "risk_level": "medium"
+    },
+    "vite": {
+      "current": "5.4.0",
+      "latest": "8.1.4",
+      "vulnerability": "Path traversal",
+      "risk_level": "medium"
+    }
+  },
+  "supply_chain_risk": {
+    "high_risk_projects": [
+      {
+        "name": "platform/orchestrator",
+        "total_dependencies": 577,
+        "prod_dependencies": 3,
+        "risk": "CRITICAL",
+        "reason": "Infrastructure backbone; highest transitive dependency count"
+      },
+      {
+        "name": "portal/Backend",
+        "total_dependencies": 577,
+        "prod_dependencies": 11,
+        "risk": "HIGH",
+        "reason": "High-value target for supply-chain attacks"
+      },
+      {
+        "name": "portal/Frontend",
+        "total_dependencies": 424,
+        "prod_dependencies": 3,
+        "risk": "HIGH",
+        "reason": "Dev tooling has many optional dependencies"
+      }
+    ],
+    "version_drift_detected": true,
+    "version_drift_detail": "Demo projects (abac-*) use React 19.2.4 and react-router-dom 7.13.2 while Source/* use older versions"
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "licenses_found": ["MIT", "Apache-2.0", "ISC", "BSD"],
+    "gpl_or_agpl_detected": false,
+    "license_issues": 0
+  },
+  "escalations": {
+    "to_guardians": [
+      "DEP-001: Handlebars code injection",
+      "DEP-002: Vitest arbitrary code execution",
+      "DEP-003: Protobufjs arbitrary code execution"
+    ],
+    "to_fixer": [
+      "All P2 and P3 severity findings",
+      "Outdated major versions requiring test & validation"
+    ]
+  },
+  "remediation_plan": {
+    "phase_1_critical": {
+      "timeline": "This week",
+      "items": [
+        "Upgrade vitest to >=3.2.6",
+        "Fix protobufjs via @grpc/grpc-js upgrade",
+        "Identify and remove/upgrade handlebars"
+      ],
+      "estimated_hours": 4
+    },
+    "phase_2_high": {
+      "timeline": "This sprint",
+      "items": [
+        "Run npm audit fix across all projects",
+        "Verify test suites pass after upgrades"
+      ],
+      "estimated_hours": 6
+    },
+    "phase_3_medium": {
+      "timeline": "Next sprint",
+      "items": [
+        "uuid major version upgrade (9→11)",
+        "pino major version upgrade (8→10)",
+        "React ecosystem upgrades in Source/Frontend"
+      ],
+      "estimated_hours": 4
+    },
+    "phase_4_ongoing": {
+      "timeline": "Continuous",
+      "items": [
+        "npm audit in CI/CD pipeline",
+        "npm outdated checks in pre-commit hooks",
+        "Track CVE resolution time metrics",
+        "Align version pins across monorepo"
+      ]
+    },
+    "total_estimated_hours": 14
+  },
+  "report_file": "Teams/TheInspector/findings/AUDIT_DEPENDENCY_AUDITOR.md",
+  "learnings_file": "Teams/TheInspector/learnings/dependency-auditor.md"
+}

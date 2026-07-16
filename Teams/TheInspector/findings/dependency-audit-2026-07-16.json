@@ -1,0 +1,232 @@
+{
+  "date": "2026-07-16",
+  "project": "dev-crew",
+  "audit_type": "dependency-audit",
+  "summary": {
+    "workspaces_audited": 6,
+    "package_managers": ["npm"],
+    "total_cves": 94,
+    "critical_count": 6,
+    "high_count": 16,
+    "moderate_count": 69,
+    "low_count": 3,
+    "outdated_major_versions": 6,
+    "high_risk_dependency_trees": 1
+  },
+  "vulnerability_by_workspace": {
+    "Source/Backend": {
+      "critical": 1,
+      "high": 1,
+      "moderate": 6,
+      "low": 1,
+      "total": 9,
+      "total_dependencies": 411,
+      "direct_dependencies": 4
+    },
+    "Source/Frontend": {
+      "critical": 1,
+      "high": 3,
+      "moderate": 6,
+      "low": 1,
+      "total": 11,
+      "total_dependencies": 230,
+      "direct_dependencies": 3
+    },
+    "Source/E2E": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "total_dependencies": 4,
+      "direct_dependencies": 4
+    },
+    "platform/orchestrator": {
+      "critical": 1,
+      "high": 2,
+      "moderate": 6,
+      "low": 0,
+      "total": 9,
+      "total_dependencies": 155,
+      "direct_dependencies": 153
+    },
+    "portal/Backend": {
+      "critical": 2,
+      "high": 6,
+      "moderate": 46,
+      "low": 0,
+      "total": 54,
+      "total_dependencies": 577,
+      "direct_dependencies": 397,
+      "supply_chain_risk": "HIGH"
+    },
+    "portal/Frontend": {
+      "critical": 1,
+      "high": 4,
+      "moderate": 5,
+      "low": 1,
+      "total": 11,
+      "total_dependencies": 274,
+      "direct_dependencies": 121
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss_score": 9.8,
+      "severity": "critical",
+      "workspaces": ["platform/orchestrator", "portal/Backend"],
+      "description": "Arbitrary code execution via crafted protobuf definitions",
+      "fix": "npm update protobufjs",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js JavaScript Injection",
+      "package": "handlebars",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss_score": 9.8,
+      "severity": "critical",
+      "workspaces": ["Source/Backend", "Source/Frontend"],
+      "description": "Multiple CVEs enabling JavaScript injection via AST type confusion",
+      "fix": "Update to handlebars 4.7.9+",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest Arbitrary File Read/Execution",
+      "package": "vitest",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "severity": "critical",
+      "workspaces": ["portal/Backend", "portal/Frontend"],
+      "description": "When Vitest UI server runs, arbitrary files can be read and executed",
+      "fix": "npm update vitest; disable UI server in CI/CD",
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "form-data CRLF Injection",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss_score": 7.5,
+      "severity": "high",
+      "workspaces": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "fix": "npm update form-data",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-008",
+      "title": "React Router Open Redirect",
+      "package": "react-router-dom",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "severity": "high",
+      "workspaces": ["Source/Frontend"],
+      "current_version": "6.26.0",
+      "patched_version": "6.30.4+",
+      "fix": "npm update react-router-dom",
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "major_gap": 1,
+      "workspace": "Source/Backend"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "major_gap": 2,
+      "workspace": "Source/Backend"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "wanted": "9.0.1",
+      "latest": "14.0.1",
+      "major_gap": 5,
+      "workspace": "Source/Backend"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "major_gap": 1,
+      "workspace": "Source/Frontend"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.1",
+      "major_gap": 1,
+      "workspace": "Source/Frontend"
+    },
+    {
+      "package": "vite",
+      "current": "5.4.0",
+      "latest": "8.1.4",
+      "major_gap": 2,
+      "workspace": "Source/Frontend"
+    }
+  ],
+  "supply_chain_risks": [
+    {
+      "id": "DEP-016",
+      "title": "Large Dependency Tree in portal/Backend",
+      "workspace": "portal/Backend",
+      "total_dependencies": 577,
+      "production_dependencies": 397,
+      "risk_level": "HIGH",
+      "recommendation": "Audit and remove unused dependencies"
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "Update vitest in portal/Backend, portal/Frontend (fix file read vulnerability)",
+      "Update protobufjs in platform/orchestrator, portal/Backend (fix RCE)",
+      "Disable vitest UI server in CI/CD environments",
+      "Update express, react-router-dom, handlebars"
+    ],
+    "short_term": [
+      "npm update form-data postcss @babel/core",
+      "Upgrade React to v19: npm update react react-dom",
+      "npm update vite to latest",
+      "Update @opentelemetry packages in portal"
+    ],
+    "medium_term": [
+      "Major version upgrades: express 4→5, pino 8→10, uuid 9→14",
+      "Audit portal/Backend; remove unused dependencies (577 total is too high)",
+      "Add npm audit gates to CI/CD pipeline (fail on critical/high)",
+      "Set up Dependabot or similar for automated updates"
+    ]
+  },
+  "escalation_summary": {
+    "to_theguardians": [
+      "DEP-001: protobufjs RCE",
+      "DEP-002: handlebars JavaScript injection",
+      "DEP-003: vitest file read/execution",
+      "DEP-004: form-data CRLF injection",
+      "DEP-008: react-router open redirect",
+      "DEP-012: @babel/core file disclosure"
+    ],
+    "reason": "Security-relevant vulnerabilities involving code execution, injection, disclosure, and auth bypass"
+  },
+  "audit_details": {
+    "tools_used": [
+      "npm audit --json",
+      "npm outdated --json"
+    ],
+    "methodology": "Scanned all package.json manifests; ran npm audit on each workspace; checked for outdated packages; analyzed supply chain risks",
+    "report_file": "Teams/TheInspector/findings/dependency-audit-2026-07-16.md"
+  }
+}

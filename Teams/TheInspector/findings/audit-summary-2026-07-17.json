@@ -1,0 +1,260 @@
+{
+  "audit_run": {
+    "date": "2026-07-17",
+    "auditor": "dependency_auditor",
+    "scope": "Source/, platform/, portal/ npm workspaces",
+    "duration_minutes": 5
+  },
+  "overall_grade": "D",
+  "severity_summary": {
+    "critical": 3,
+    "high": 8,
+    "moderate": 10,
+    "low": 2,
+    "total_vulnerabilities": 23
+  },
+  "dependency_stats": {
+    "package_managers_detected": ["npm"],
+    "total_manifests": 10,
+    "direct_dependencies": 55,
+    "transitive_dependencies": 800,
+    "workspaces": {
+      "Source/Backend": {
+        "direct": 15,
+        "transitive": 411,
+        "critical_vulns": 1,
+        "high_vulns": 1,
+        "moderate_vulns": 2
+      },
+      "Source/Frontend": {
+        "direct": 15,
+        "transitive": 230,
+        "critical_vulns": 1,
+        "high_vulns": 2,
+        "moderate_vulns": 2
+      },
+      "Source/E2E": {
+        "direct": 4,
+        "transitive": 5,
+        "critical_vulns": 0,
+        "high_vulns": 0,
+        "moderate_vulns": 0
+      },
+      "platform/orchestrator": {
+        "direct": 5,
+        "transitive": 155,
+        "critical_vulns": 1,
+        "high_vulns": 3,
+        "moderate_vulns": 2
+      },
+      "portal/Backend": {
+        "direct": 5,
+        "transitive": 100,
+        "critical_vulns": 0,
+        "high_vulns": 1,
+        "moderate_vulns": 3
+      },
+      "portal/Frontend": {
+        "direct": 8,
+        "transitive": 120,
+        "critical_vulns": 1,
+        "high_vulns": 2,
+        "moderate_vulns": 1
+      }
+    }
+  },
+  "critical_vulnerabilities": [
+    {
+      "id": "DEP-001",
+      "name": "Handlebars JavaScript Injection",
+      "package": "handlebars",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6"
+      ],
+      "location": "Source/Backend (transitive)",
+      "remediation": "Update handlebars to 4.7.9+",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "name": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "location": "platform/orchestrator (via @grpc/grpc-js)",
+      "remediation": "Update protobufjs to 7.5.5+ or @grpc/grpc-js to 1.14.4+",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "name": "Vitest UI Arbitrary File Access",
+      "package": "vitest",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "location": "Source/Frontend (dev dependency)",
+      "remediation": "Update vitest to 3.2.6+ (major version jump to 4.1.0)",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_severity_vulnerabilities": [
+    {
+      "id": "DEP-004",
+      "name": "form-data CRLF Injection",
+      "package": "form-data",
+      "cvss_score": 7.5,
+      "locations": ["Source/Backend", "Source/Frontend"],
+      "remediation": "Update to form-data@4.0.6+"
+    },
+    {
+      "id": "DEP-005",
+      "name": "Vite Path Traversal",
+      "package": "vite",
+      "cvss_score": 7.5,
+      "location": "Source/Frontend (direct)",
+      "remediation": "Update to vite@8.1.5+ (major version bump)"
+    },
+    {
+      "id": "DEP-007",
+      "name": "gRPC-js Crash on Malformed Request",
+      "package": "@grpc/grpc-js",
+      "cvss_score": 7.5,
+      "location": "platform/orchestrator",
+      "remediation": "Update to @grpc/grpc-js@1.14.4+"
+    },
+    {
+      "id": "DEP-008",
+      "name": "path-to-regexp ReDoS",
+      "package": "path-to-regexp",
+      "cvss_score": 7.5,
+      "location": "platform/orchestrator",
+      "remediation": "Update to path-to-regexp@0.1.13+"
+    },
+    {
+      "id": "DEP-009",
+      "name": "WebSocket Memory Exhaustion",
+      "package": "ws",
+      "cvss_score": 7.5,
+      "location": "Source/Frontend (transitive)",
+      "remediation": "Update to ws@8.21.0+"
+    },
+    {
+      "id": "DEP-010",
+      "name": "picomatch ReDoS",
+      "package": "picomatch",
+      "cvss_score": 7.5,
+      "location": "portal/Frontend",
+      "remediation": "Update to picomatch@2.3.2+ or 4.0.4+"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "major_version_gap": 1,
+      "priority": "HIGH"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "major_version_gap": 2,
+      "priority": "MEDIUM"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.7",
+      "major_version_gap": 1,
+      "priority": "MEDIUM"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.1",
+      "major_version_gap": 1,
+      "priority": "MEDIUM"
+    }
+  ],
+  "license_compliance": {
+    "unlicensed_internal_packages": 8,
+    "isc_licensed": 1,
+    "viral_licenses_detected": false,
+    "unknown_licenses": 0,
+    "status": "COMPLIANT"
+  },
+  "supply_chain_risks": [
+    {
+      "category": "Monorepo Fragmentation",
+      "description": "10 package.json files with no unified lockfile; different versions of same transitive deps across workspaces",
+      "severity": "MEDIUM",
+      "recommendation": "Migrate to npm workspaces with unified lockfile"
+    },
+    {
+      "category": "Large Transitive Graph",
+      "description": "~800+ transitive dependencies increase attack surface; Backend alone has 411 transitive deps",
+      "severity": "MEDIUM",
+      "recommendation": "Rationalize dependency tree; identify and remove unused transitive deps"
+    },
+    {
+      "category": "Unexplained Dependencies",
+      "description": "Handlebars appears in Backend (server-side) via unknown chain; investigate if actually needed",
+      "severity": "LOW",
+      "recommendation": "Trace dependency chain and remove if not core to functionality"
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "Update handlebars in Source/Backend to 4.7.9+",
+      "Update protobufjs in platform/orchestrator to 7.5.5+",
+      "Update vitest in Source/Frontend to 3.2.6+ (major version jump)",
+      "Update @grpc/grpc-js in platform/orchestrator to 1.14.4+"
+    ],
+    "this_week": [
+      "Patch form-data, vite, path-to-regexp, ws, postcss, picomatch",
+      "Update express to latest v4.22.2",
+      "Run full test suite after all updates",
+      "Update @opentelemetry packages for Prometheus crash fix"
+    ],
+    "process_improvements": [
+      "Set up npm workspace coordination with unified lockfile",
+      "Add 'npm audit --workspaces' to CI/CD verification gates",
+      "Generate SBOM (Software Bill of Materials) for compliance",
+      "Implement automated CVE scanning (dependabot, snyk, or npm audit)",
+      "Document transitive dependency rationale (why specific versions required)"
+    ]
+  },
+  "escalations": {
+    "security_team": "TheGuardians",
+    "findings": [
+      {
+        "issue": "Handlebars Code Injection",
+        "risk": "Template processing compromise",
+        "cve": "GHSA-2w6w-674q-4c4q"
+      },
+      {
+        "issue": "Protobufjs RCE",
+        "risk": "Infrastructure process compromise",
+        "cve": "GHSA-xq3m-2v4x-88gg"
+      },
+      {
+        "issue": "Vitest UI File Access",
+        "risk": "CI/CD or dev environment compromise",
+        "cve": "GHSA-5xrq-8626-4rwp"
+      }
+    ]
+  },
+  "reporting": {
+    "full_audit_report": "/Teams/TheInspector/findings/dependency-audit-2026-07-17.md",
+    "critical_actions": "/Teams/TheInspector/findings/CRITICAL-ACTIONS.md",
+    "learnings": "/Teams/TheInspector/learnings/dependency-auditor.md"
+  }
+}

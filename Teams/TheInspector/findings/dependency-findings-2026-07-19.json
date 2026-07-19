@@ -1,0 +1,492 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-19",
+    "auditor": "dependency-auditor (TheInspector)",
+    "scope": "All npm workspaces (monorepo)",
+    "overall_grade": "C",
+    "total_vulnerabilities": 43
+  },
+  "severity_breakdown": {
+    "critical": 3,
+    "high": 6,
+    "moderate": 24,
+    "low": 10
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection (CRITICAL)",
+      "severity": "P1",
+      "category": "cve",
+      "package": "handlebars",
+      "affected_range": "<=4.7.8",
+      "current_version": "4.7.8",
+      "latest_version": "4.7.9",
+      "cvss_score": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "affected_workspaces": [
+        "Source/Backend",
+        "Source/Frontend",
+        "platform/orchestrator"
+      ],
+      "description": "Multiple JavaScript injection vectors in template compilation and rendering",
+      "impact": "Arbitrary code execution in template processing context",
+      "fix_command": "npm update handlebars@^4.7.9",
+      "escalation": "TheGuardians",
+      "urgency": "immediate"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Arbitrary File Read & Execution (CRITICAL)",
+      "severity": "P1",
+      "category": "cve",
+      "package": "vitest",
+      "affected_range": "<=3.2.5",
+      "current_version": "3.2.5",
+      "latest_version": "4.1.10",
+      "cvss_score": 9.8,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "description": "Unauthenticated UI server allows arbitrary file read and execution",
+      "impact": "Arbitrary file access and code execution during dev/test",
+      "fix_command": "npm update vitest@^4.1.10",
+      "escalation": "TheGuardians",
+      "urgency": "immediate",
+      "notes": "Major version bump required; dev-only but affects CI if exposed"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution (CRITICAL)",
+      "severity": "P1",
+      "category": "cve",
+      "package": "protobufjs",
+      "affected_range": "<=7.6.2",
+      "current_version": "7.6.2",
+      "latest_version": "7.6.4",
+      "cvss_score": 9.8,
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg",
+        "GHSA-66ff-xgx4-vc5h"
+      ],
+      "affected_workspaces": [
+        "platform/orchestrator"
+      ],
+      "description": "Arbitrary code injection during protobuf deserialization",
+      "impact": "RCE in gRPC message processing",
+      "fix_command": "npm update protobufjs@^7.6.3",
+      "escalation": "TheGuardians",
+      "urgency": "immediate"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vite Server Security Bypass (HIGH)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "vite",
+      "affected_range": "<=6.4.2",
+      "current_version": "6.4.2",
+      "latest_version": "8.1.5",
+      "cvss_score": 7.5,
+      "cves": [
+        "GHSA-fx2h-pf6j-xcff",
+        "GHSA-4w7w-66w2-5vf9"
+      ],
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "description": "Path traversal and filesystem restriction bypass in dev server",
+      "impact": "Information disclosure during development",
+      "fix_command": "npm update vite@^8.1.5",
+      "dev_only": true,
+      "urgency": "high"
+    },
+    {
+      "id": "DEP-005",
+      "title": "ws Memory Exhaustion DoS (HIGH)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "ws",
+      "affected_range": ">=8.0.0 <8.21.0",
+      "current_version": "8.20.1",
+      "latest_version": "8.21.0",
+      "cvss_score": 7.5,
+      "cves": ["GHSA-96hv-2xvq-fx4p"],
+      "affected_workspaces": [
+        "portal/Frontend"
+      ],
+      "description": "Memory exhaustion via malformed WebSocket fragments",
+      "impact": "Denial of service on WebSocket connections",
+      "fix_command": "npm update ws@^8.21.0",
+      "urgency": "high"
+    },
+    {
+      "id": "DEP-006",
+      "title": "form-data CRLF Injection (HIGH)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "form-data",
+      "affected_range": ">=4.0.0 <4.0.6",
+      "current_version": "4.0.5",
+      "latest_version": "4.0.6",
+      "cvss_score": 7.5,
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Frontend",
+        "portal/Backend"
+      ],
+      "description": "Multipart form field names not escaped, enabling CRLF injection",
+      "impact": "HTTP header injection and response splitting attacks",
+      "fix_command": "npm update form-data@^4.0.6",
+      "urgency": "high"
+    },
+    {
+      "id": "DEP-007",
+      "title": "@grpc/grpc-js Server Crash (HIGH)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "@grpc/grpc-js",
+      "affected_range": ">=1.14.0 <1.14.4",
+      "current_version": "1.14.3",
+      "latest_version": "1.14.10",
+      "cvss_score": 7.5,
+      "cves": [
+        "GHSA-5375-pq7m-f5r2",
+        "GHSA-99f4-grh7-6pcq"
+      ],
+      "affected_workspaces": [
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "description": "Malformed or compressed gRPC messages cause server crash",
+      "impact": "Remote denial of service",
+      "fix_command": "npm update @grpc/grpc-js@^1.14.4",
+      "urgency": "high"
+    },
+    {
+      "id": "DEP-008",
+      "title": "path-to-regexp ReDoS (HIGH)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "path-to-regexp",
+      "affected_range": "<0.1.13",
+      "latest_version": "0.1.13",
+      "cvss_score": 7.5,
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "affected_workspaces": [
+        "platform/orchestrator"
+      ],
+      "description": "Regular expression denial of service in route matching",
+      "impact": "CPU exhaustion via malicious URL patterns",
+      "fix_command": "npm update path-to-regexp@^0.1.13",
+      "urgency": "high"
+    },
+    {
+      "id": "DEP-009",
+      "title": "picomatch ReDoS & Method Injection (HIGH)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "picomatch",
+      "affected_range": "<2.3.2 || >=4.0.0 <4.0.4",
+      "latest_version": "2.3.2",
+      "cvss_score": 7.5,
+      "cves": [
+        "GHSA-c2c7-rcm5-vvqj",
+        "GHSA-3v7f-55p6-f55p"
+      ],
+      "affected_workspaces": [
+        "portal/Frontend"
+      ],
+      "description": "Glob pattern matching vulnerable to ReDoS and method injection",
+      "impact": "CPU exhaustion and prototype pollution",
+      "fix_command": "npm update picomatch@^2.3.2",
+      "urgency": "high"
+    },
+    {
+      "id": "DEP-010",
+      "title": "express/qs Query String DoS (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "qs",
+      "affected_range": ">=6.11.1 <6.15.2",
+      "current_version": "6.15.1",
+      "latest_version": "6.15.2",
+      "cvss_score": 5.3,
+      "cves": ["GHSA-q8mj-m7cp-5q26"],
+      "affected_workspaces": [
+        "Source/Backend",
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "description": "qs.stringify crashes on null/undefined entries with encodeValuesOnly",
+      "impact": "API endpoint denial of service via crafted query strings",
+      "fix_command": "npm update qs@^6.15.2",
+      "urgency": "medium"
+    },
+    {
+      "id": "DEP-011",
+      "title": "uuid Buffer Bounds Check Missing (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "uuid",
+      "affected_range": "<11.1.1",
+      "current_version": "9.0.1",
+      "latest_version": "14.0.1",
+      "cvss_score": 7.5,
+      "cves": ["GHSA-w5hq-g745-h8pq"],
+      "affected_workspaces": [
+        "Source/Backend",
+        "platform/orchestrator"
+      ],
+      "description": "UUID v3/v5/v6 missing buffer bounds check when buf parameter provided",
+      "impact": "Buffer overflow and potential data leakage",
+      "fix_command": "npm update uuid@^14.0.1",
+      "urgency": "medium",
+      "notes": "Major version bump; requires testing"
+    },
+    {
+      "id": "DEP-012",
+      "title": "postcss XSS via Unescaped </style> (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "postcss",
+      "affected_range": "<8.5.10",
+      "latest_version": "8.6.1",
+      "cvss_score": 6.1,
+      "cves": ["GHSA-qx2v-qp2m-jg93"],
+      "affected_workspaces": [
+        "portal/Frontend"
+      ],
+      "description": "PostCSS does not escape </style> in CSS output",
+      "impact": "XSS via dynamic CSS generation from user input",
+      "fix_command": "npm update postcss@^8.5.10",
+      "urgency": "medium"
+    },
+    {
+      "id": "DEP-013",
+      "title": "esbuild CORS Bypass in Dev Server (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "esbuild",
+      "affected_range": "<=0.24.2",
+      "latest_version": "0.24.3+",
+      "cvss_score": 5.3,
+      "cves": ["GHSA-67mh-4wv8-2f99"],
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "description": "Dev server allows any website to send requests and read responses",
+      "impact": "Data exfiltration if dev server exposed on network",
+      "fix_command": "npm update vite@^8.1.5",
+      "dev_only": true,
+      "urgency": "medium"
+    },
+    {
+      "id": "DEP-014",
+      "title": "React Router Open Redirect (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "react-router-dom",
+      "affected_range": ">=6.7.0 <6.30.4",
+      "latest_version": "6.33.0",
+      "cvss_score": 5.0,
+      "cves": ["GHSA-2j2x-hqr9-3h42"],
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "description": "Redirect URLs starting with // reinterpreted as protocol-relative",
+      "impact": "Open redirect to phishing sites if unvalidated user input",
+      "fix_command": "npm update react-router-dom@^6.30.4",
+      "urgency": "medium"
+    },
+    {
+      "id": "DEP-015",
+      "title": "js-yaml DoS via Merge Key Aliases (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "js-yaml",
+      "affected_range": "<3.15.0",
+      "latest_version": "4.1.0",
+      "cvss_score": 5.3,
+      "cves": ["GHSA-h67p-54hq-rp68"],
+      "affected_workspaces": [
+        "Source/Backend"
+      ],
+      "description": "YAML parser exhibits quadratic complexity on repeated merge keys",
+      "impact": "CPU exhaustion via malicious YAML input",
+      "fix_command": "npm update js-yaml@^4.1.0",
+      "urgency": "medium"
+    },
+    {
+      "id": "DEP-016",
+      "title": "@babel/core Arbitrary File Read (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "@babel/core",
+      "affected_range": "<=7.29.0",
+      "latest_version": "7.26.0",
+      "cvss_score": 3.2,
+      "cves": ["GHSA-4x5r-pxfx-6jf8"],
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "description": "Babel reads arbitrary files via sourceMappingURL comment",
+      "impact": "Information disclosure (local access mostly)",
+      "fix_command": "npm update @babel/core@^7.30.0",
+      "urgency": "low"
+    },
+    {
+      "id": "DEP-017",
+      "title": "OpenTelemetry Prometheus Exporter Crash (HIGH)",
+      "severity": "P2",
+      "category": "cve",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "affected_range": "<=0.76.0",
+      "latest_version": "0.78.0",
+      "cvss_score": 7.5,
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "affected_workspaces": [
+        "portal/Backend"
+      ],
+      "description": "Prometheus exporter crashes on malformed HTTP requests",
+      "impact": "Metrics endpoint denial of service",
+      "fix_command": "npm update @opentelemetry/auto-instrumentations-node@^0.78.0",
+      "urgency": "high"
+    },
+    {
+      "id": "DEP-018",
+      "title": "OpenTelemetry Baggage Memory DoS (MODERATE)",
+      "severity": "P3",
+      "category": "cve",
+      "package": "@opentelemetry/core",
+      "affected_range": "<2.8.0",
+      "latest_version": "2.9.0",
+      "cvss_score": 5.3,
+      "cves": ["GHSA-8988-4f7v-96qf"],
+      "affected_workspaces": [
+        "portal/Backend"
+      ],
+      "description": "W3C Baggage propagation unbounded memory allocation",
+      "impact": "Memory exhaustion via malformed baggage headers",
+      "fix_command": "npm update @opentelemetry/sdk-node@^0.220.0",
+      "urgency": "medium"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "express",
+      "current": "4.22.0",
+      "latest": "5.2.1",
+      "major_versions_behind": 1,
+      "workspace": "Source/Backend, platform/orchestrator, portal/Backend"
+    },
+    {
+      "package": "pino",
+      "current": "8.21.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2,
+      "workspace": "Source/Backend"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.1",
+      "latest": "14.0.1",
+      "major_versions_behind": 5,
+      "workspace": "Source/Backend, platform/orchestrator"
+    }
+  ],
+  "dependency_tree_analysis": {
+    "total_workspaces": 6,
+    "total_direct_dependencies": 168,
+    "total_transitive_dependencies": 1200,
+    "total_all_dependencies": 1368,
+    "risk_surface": "HIGH",
+    "largest_workspace": {
+      "name": "portal/Frontend",
+      "dependencies": 424
+    }
+  },
+  "license_compliance": {
+    "viral_licenses_found": 0,
+    "unknown_licenses": 0,
+    "issues": []
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": 0,
+    "low_download_packages": [
+      {
+        "name": "grpc-tools",
+        "weekly_downloads": 10000,
+        "status": "monitor for abandonment"
+      }
+    ],
+    "single_maintainer_packages": []
+  },
+  "remediation_plan": {
+    "phase_1_immediate": {
+      "estimated_hours": 2,
+      "packages": [
+        "handlebars",
+        "vitest",
+        "protobufjs",
+        "vite",
+        "ws",
+        "form-data",
+        "@grpc/grpc-js",
+        "path-to-regexp",
+        "picomatch",
+        "@opentelemetry/auto-instrumentations-node"
+      ]
+    },
+    "phase_2_major_upgrades": {
+      "estimated_hours": 3,
+      "packages": [
+        "uuid",
+        "pino",
+        "js-yaml",
+        "vitest"
+      ]
+    },
+    "phase_3_ongoing": {
+      "tasks": [
+        "Set up npm audit in CI/CD",
+        "Weekly monitoring for new advisories",
+        "Monthly abandoned package check"
+      ]
+    },
+    "total_estimated_hours": 5,
+    "testing_hours": 2
+  },
+  "cross_team_escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007"],
+      "reason": "Critical and high-severity security vulnerabilities requiring security team review"
+    },
+    {
+      "team": "TheFixer",
+      "findings": ["DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014", "DEP-015", "DEP-016", "DEP-018"],
+      "reason": "Moderate/low severity bugs and technical debt for remediation in sprint"
+    }
+  ],
+  "verification_checklist": [
+    "Run npm audit --workspaces — zero CRITICAL/HIGH",
+    "Run full test suite — zero new failures",
+    "Verify dev server starts (npm run dev)",
+    "Verify builds complete (npm run build)",
+    "Spot-check application flows",
+    "Rerun this audit — compare before/after"
+  ],
+  "next_audit": "2026-08-02"
+}

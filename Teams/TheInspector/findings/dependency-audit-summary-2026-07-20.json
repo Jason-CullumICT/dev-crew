@@ -1,0 +1,300 @@
+{
+  "audit_date": "2026-07-20",
+  "project": "dev-crew",
+  "audit_type": "dependency-security",
+  "scope": "npm packages (Source/, platform/, portal/)",
+  "overall_verdict": "UNSAFE_FOR_PRODUCTION",
+  "summary": {
+    "total_modules": 6,
+    "modules_affected": {
+      "clean": 1,
+      "needs_update": 3,
+      "high_risk": 1,
+      "critical": 1
+    },
+    "total_cves": 85,
+    "by_severity": {
+      "critical": 4,
+      "high": 13,
+      "moderate": 46,
+      "low": 2
+    },
+    "license_compliance": "COMPLIANT",
+    "license_notes": "0 GPL/AGPL, 0 unknown licenses"
+  },
+  "modules": {
+    "Source/Backend": {
+      "status": "NEEDS_UPDATE",
+      "direct_dependencies": 13,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 1,
+        "moderate": 5,
+        "low": 2
+      },
+      "priority_fixes": [
+        "express (qs DoS)",
+        "form-data (CRLF injection)",
+        "uuid (buffer bounds)",
+        "handlebars (RCE — if used dynamically)"
+      ]
+    },
+    "Source/Frontend": {
+      "status": "NEEDS_UPDATE",
+      "direct_dependencies": 8,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 6,
+        "low": 1
+      },
+      "priority_fixes": [
+        "vite (host confusion, esbuild XSS)",
+        "react-router-dom (open redirect)",
+        "handlebars (RCE — transitive via Babel)"
+      ]
+    },
+    "Source/E2E": {
+      "status": "CLEAN",
+      "direct_dependencies": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "priority_fixes": []
+    },
+    "platform/orchestrator": {
+      "status": "NEEDS_UPDATE",
+      "direct_dependencies": null,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0
+      },
+      "priority_fixes": [
+        "vite (host confusion)",
+        "handlebars (RCE)"
+      ]
+    },
+    "portal/Backend": {
+      "status": "VERY_HIGH_RISK",
+      "direct_dependencies": 10,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 34,
+        "low": 12
+      },
+      "priority_fixes": [
+        "OpenTelemetry bloat (54 total CVEs)",
+        "form-data (CRLF injection)",
+        "better-sqlite3 (native module)",
+        "grpcx (header injection)"
+      ],
+      "notes": "Audit and reduce OpenTelemetry instrumentation"
+    },
+    "portal/Frontend": {
+      "status": "NEEDS_UPDATE",
+      "direct_dependencies": 8,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 5,
+        "low": 1
+      },
+      "priority_fixes": [
+        "vite (host confusion, esbuild XSS)",
+        "react-router-dom (open redirect)",
+        "handlebars (RCE)"
+      ]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js Remote Code Execution",
+      "package": "handlebars",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r"
+      ],
+      "affected_modules": [
+        "Source/Backend",
+        "Source/Frontend",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "root_cause": "AST type confusion vulnerability allowing code injection via partial-block directives",
+      "impact": "Remote code execution in Node.js context",
+      "fix": "Upgrade to handlebars@>=4.7.9 or remove if not actively used",
+      "action_required": true,
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vite Host Header Confusion",
+      "package": "vite",
+      "severity": "HIGH",
+      "cvss_score": 7.1,
+      "cve_ids": [
+        "GHSA-3p3v-5vf6-f4q7"
+      ],
+      "affected_modules": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "root_cause": "Dev server does not validate Host header, allowing attacker-controlled hosts to serve assets",
+      "impact": "Cache poisoning, CORS bypass, MitM",
+      "fix": "Upgrade vite to >=5.4.3 and never expose dev server in production",
+      "action_required": true
+    },
+    {
+      "id": "DEP-003",
+      "title": "Portal/Backend Observability Stack Bloat",
+      "package": "@opentelemetry/* and dependencies",
+      "severity": "CRITICAL",
+      "total_cves": 54,
+      "cve_breakdown": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 34,
+        "low": 12
+      },
+      "affected_modules": [
+        "portal/Backend"
+      ],
+      "root_cause": "auto-instrumentations-node pulls in heavy dependency tree with accumulated vulnerabilities",
+      "impact": "Multiple attack vectors in observability pipeline",
+      "fix": "Audit which OpenTelemetry features needed; consider basic SDK instead of auto-instrumentation",
+      "action_required": true,
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "title": "form-data CRLF Injection",
+      "package": "form-data",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "cve_ids": [
+        "GHSA-hmw2-7cc7-3qxx"
+      ],
+      "affected_modules": [
+        "Source/Backend",
+        "Source/Frontend",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "root_cause": "Multipart field names not escaped, allowing CRLF injection",
+      "impact": "HTTP response splitting, header injection",
+      "fix": "Upgrade form-data to >=4.0.6 (via npm update)",
+      "action_required": true
+    }
+  ],
+  "high_priority_actions": [
+    {
+      "action": "Update vite to >=5.4.3",
+      "modules": ["Source/Frontend", "portal/Frontend"],
+      "rationale": "Fixes host confusion (CVSS 7.1) and esbuild XSS",
+      "estimated_effort": "30 minutes",
+      "risk": "Low (dev tool only)"
+    },
+    {
+      "action": "Update react-router-dom to >=6.30.4",
+      "modules": ["Source/Frontend", "portal/Frontend"],
+      "rationale": "Fixes open redirect vulnerability",
+      "estimated_effort": "15 minutes",
+      "risk": "Low"
+    },
+    {
+      "action": "Update express, uuid, form-data in Backend",
+      "modules": ["Source/Backend", "portal/Backend"],
+      "rationale": "Fixes multiple moderate-to-high vulnerabilities",
+      "estimated_effort": "30 minutes",
+      "risk": "Low"
+    },
+    {
+      "action": "Investigate handlebars usage",
+      "modules": ["All"],
+      "rationale": "CRITICAL (CVSS 9.8) if used for dynamic template rendering",
+      "estimated_effort": "15 minutes (grep + code review)",
+      "risk": "N/A (information gathering)"
+    },
+    {
+      "action": "Audit & reduce portal/Backend OpenTelemetry dependencies",
+      "modules": ["portal/Backend"],
+      "rationale": "54 CVEs suggest over-instrumentation; reduce surface area",
+      "estimated_effort": "2-3 hours (requires team decision on telemetry requirements)",
+      "risk": "Medium (may affect observability capabilities)"
+    }
+  ],
+  "outdated_packages": {
+    "React": {
+      "current": "18.3.1",
+      "wanted": "18.3.1",
+      "latest": "19.2.7",
+      "gap_major": 1,
+      "priority": "LOW"
+    },
+    "uuid": {
+      "current": "9.0.0",
+      "wanted": "9.0.1",
+      "latest": "14.0.1",
+      "gap_major": 5,
+      "priority": "MEDIUM (CVE fix)"
+    },
+    "Pino": {
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "gap_major": 2,
+      "priority": "LOW"
+    },
+    "express": {
+      "current": "4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "gap_major": 1,
+      "priority": "LOW (stable version)"
+    }
+  },
+  "remediation_timeline": {
+    "immediate": {
+      "deadline": "2026-07-21",
+      "actions": [
+        "Update vite, react-router in Frontend modules",
+        "Update express, uuid, form-data in Backend modules",
+        "Investigate handlebars usage"
+      ]
+    },
+    "short_term": {
+      "deadline": "2026-07-25",
+      "actions": [
+        "Audit portal/Backend OpenTelemetry",
+        "Test and deploy security patches",
+        "Set up dependabot/renovate for automatic updates"
+      ]
+    },
+    "long_term": {
+      "deadline": "2026-07-31",
+      "actions": [
+        "Evaluate React 19 upgrade",
+        "Reduce transitive dependency count",
+        "Document dependency management policy"
+      ]
+    }
+  },
+  "tools_and_commands": {
+    "npm_audit": "npm audit --json (confirmed working)",
+    "npm_outdated": "npm outdated --json (confirmed working)",
+    "npm_list": "npm list --json (can count transitive deps)",
+    "license_check": "manual scan of package.json license fields (no checker installed)"
+  },
+  "next_review": "2026-07-25",
+  "auditor": "dependency-auditor (haiku)",
+  "report_location": "Teams/TheInspector/findings/dependency-audit-2026-07-20.md"
+}

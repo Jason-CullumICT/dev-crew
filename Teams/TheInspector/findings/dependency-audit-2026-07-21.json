@@ -1,0 +1,516 @@
+{
+  "audit": {
+    "date": "2026-07-21",
+    "auditor": "dependency_auditor",
+    "project": "dev-crew Source App",
+    "grade": "D",
+    "summary": "2 critical P1 vulnerabilities and 6 high P2 vulnerabilities require immediate action. Supply chain risk across 641 total dependencies."
+  },
+  "statistics": {
+    "dependencies": {
+      "backend": {
+        "direct_production": 4,
+        "direct_development": 9,
+        "total_transitive": 411,
+        "production_tree": 102,
+        "development_tree": 310
+      },
+      "frontend": {
+        "direct_production": 3,
+        "direct_development": 10,
+        "total_transitive": 230,
+        "production_tree": 9,
+        "development_tree": 222
+      },
+      "project_total": 641
+    },
+    "vulnerabilities": {
+      "critical_p1": 2,
+      "high_p2": 6,
+      "moderate_p3": 10,
+      "low_p4": 2,
+      "total": 20
+    },
+    "cve_counts": {
+      "backend": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 4,
+        "low": 1,
+        "total": 9
+      },
+      "frontend": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 6,
+        "low": 1,
+        "total": 11
+      }
+    }
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server RCE",
+      "severity": "P1",
+      "category": "cve",
+      "component": "vitest",
+      "location": "Source/Frontend",
+      "current_version": "2.0.5",
+      "affected_range": "<3.2.6",
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "cvss_score": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cwe": ["CWE-862"],
+      "description": "When Vitest UI server is listening, arbitrary files can be read and executed without authorization. An unauthenticated attacker can exploit this to achieve remote code execution.",
+      "impact": "Arbitrary code execution on developer machines and CI environments",
+      "fix_command": "cd Source/Frontend && npm install vitest@^3.2.6",
+      "escalation": "TheGuardians",
+      "remediation_priority": 1,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js JavaScript Injection (Critical)",
+      "severity": "P1",
+      "category": "cve",
+      "component": "handlebars",
+      "location": "Source/Backend",
+      "is_transitive": true,
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6"
+      ],
+      "cvss_scores": [9.8, 8.1, 8.1],
+      "cwe": ["CWE-94", "CWE-843"],
+      "description": "Multiple JavaScript injection vulnerabilities via AST Type Confusion. Attackers can craft malicious template inputs that execute arbitrary code.",
+      "vulnerabilities": [
+        "Template injection via AST type confusion",
+        "Prototype pollution leading to XSS",
+        "Denial of service via malformed decorators"
+      ],
+      "impact": "Template injection attacks, arbitrary code execution",
+      "fix_steps": [
+        "Run: npm ls handlebars (identify dependency chain)",
+        "Update root cause package",
+        "Verify with: npm audit"
+      ],
+      "escalation": "TheGuardians",
+      "remediation_priority": 2,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vite Path Traversal & FS Bypass",
+      "severity": "P2",
+      "category": "cve",
+      "component": "vite",
+      "location": "Source/Frontend",
+      "current_version": "5.4.0",
+      "affected_range": "<=6.4.2",
+      "cve_ids": [
+        "GHSA-fx2h-pf6j-xcff",
+        "GHSA-4w7w-66w2-5vf9",
+        "GHSA-v6wh-96g9-6wx3"
+      ],
+      "cvss_scores": [7.5, 5.3, 5.3],
+      "cwe": ["CWE-22", "CWE-200"],
+      "description": "Multiple vulnerabilities: server.fs.deny bypass on Windows, path traversal in optimized deps, NTLMv2 hash disclosure via UNC path handling.",
+      "impact": "Unauthenticated read access to source code, environment files, secrets, credential disclosure",
+      "fix_command": "cd Source/Frontend && npm install vite@latest",
+      "breaking_changes": true,
+      "note": "Major version update from 5.x to 8.x required; review release notes",
+      "escalation": "TheGuardians",
+      "remediation_priority": 4,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-004",
+      "title": "UUID Buffer Overflow",
+      "severity": "P2",
+      "category": "cve",
+      "component": "uuid",
+      "location": "Source/Backend",
+      "current_version": "9.0.0",
+      "affected_range": "<11.1.1",
+      "cve_id": "GHSA-w5hq-g745-h8pq",
+      "cvss_score": 7.5,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "cwe": ["CWE-787", "CWE-1285"],
+      "description": "Missing buffer bounds check in UUID v3/v5/v6 when buf parameter is provided. Attacker can trigger buffer overflow with smaller buffer than expected.",
+      "impact": "Potential arbitrary code execution, memory corruption, application crash",
+      "fix_command": "cd Source/Backend && npm install uuid@^11.1.1",
+      "breaking_changes": true,
+      "note": "Major version update (9.x to 11.x); test UUID generation thoroughly",
+      "test_steps": [
+        "npm test (verify ID generation)",
+        "node -e \"const {v4} = require('uuid'); console.log(v4())\""
+      ],
+      "escalation": "TheGuardians",
+      "remediation_priority": 2,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Form-Data CRLF Injection",
+      "severity": "P2",
+      "category": "cve",
+      "component": "form-data",
+      "location": "Source/Backend, Source/Frontend",
+      "is_transitive": true,
+      "affected_range": "4.0.0 - 4.0.5",
+      "cve_id": "GHSA-hmw2-7cc7-3qxx",
+      "cvss_score": 7.5,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "cwe": ["CWE-93"],
+      "description": "Multipart form field names and filenames are not properly escaped, allowing CRLF injection. Attacker can inject arbitrary HTTP headers.",
+      "impact": "HTTP response splitting, cache poisoning, session fixation, XSS via header injection",
+      "fix_command": "npm update form-data",
+      "escalation": "TheGuardians",
+      "remediation_priority": 3,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-006",
+      "title": "React Router Open Redirect",
+      "severity": "P2",
+      "category": "cve",
+      "component": "react-router-dom",
+      "location": "Source/Frontend",
+      "current_version": "6.26.0",
+      "affected_range": "6.6.3-pre.0 - 6.30.3",
+      "cve_id": "GHSA-2j2x-hqr9-3h42",
+      "cwe": ["CWE-601"],
+      "description": "Same-origin redirect with path starting with // is reinterpreted as protocol-relative URL, allowing open redirect attacks.",
+      "impact": "Phishing attacks, malware distribution, session hijacking",
+      "fix_command": "cd Source/Frontend && npm install react-router-dom@^6.30.4",
+      "escalation": "TheGuardians",
+      "remediation_priority": 3,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-007",
+      "title": "JS-YAML DoS Attack",
+      "severity": "P2",
+      "category": "cve",
+      "component": "js-yaml",
+      "location": "Source/Backend",
+      "is_transitive": true,
+      "affected_range": ">=3.0.0 <3.15.0",
+      "cve_ids": [
+        "GHSA-52cp-r559-cp3m",
+        "GHSA-h67p-54hq-rp68"
+      ],
+      "cvss_scores": [7.5, 5.3],
+      "cwe": ["CWE-400", "CWE-407"],
+      "description": "YAML merge-key chains can force quadratic CPU consumption. Specially crafted inputs cause exponential-time expansion.",
+      "impact": "Application unresponsiveness, resource exhaustion, service unavailability",
+      "fix_command": "cd Source/Backend && npm update js-yaml --depth=20",
+      "note": "Verify YAML parsing is not done on user input",
+      "escalation": "TheGuardians",
+      "remediation_priority": 5,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-008",
+      "title": "WebSocket Memory Exhaustion DoS",
+      "severity": "P2",
+      "category": "cve",
+      "component": "ws",
+      "location": "Source/Frontend",
+      "is_transitive": true,
+      "affected_range": "8.0.0 - 8.20.1",
+      "cve_ids": [
+        "GHSA-96hv-2xvq-fx4p",
+        "GHSA-58qx-3vcg-4xpx"
+      ],
+      "cvss_scores": [7.5, 4.4],
+      "cwe": ["CWE-400", "CWE-770"],
+      "description": "Memory exhaustion from tiny fragments and data chunks. Attacker sends fragmented WebSocket frames to exhaust server memory.",
+      "impact": "Server memory exhaustion, crash/restart, denial of service",
+      "fix_command": "npm update ws",
+      "note": "Consider adding frame size limits in WebSocket config",
+      "escalation": "TheGuardians",
+      "remediation_priority": 5,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-009",
+      "title": "Express Query Parser DoS",
+      "severity": "P3",
+      "category": "cve",
+      "component": "express",
+      "location": "Source/Backend",
+      "current_version": "4.18.2",
+      "affected_range": "4.21.0 - 4.22.1 || 5.0.0-alpha.1 - 5.0.1",
+      "root_cause": "qs package vulnerability",
+      "status": "not_currently_affected",
+      "note": "Current version 4.18.2 is not in vulnerable range; monitor for future updates"
+    },
+    {
+      "id": "DEP-010",
+      "title": "Body Parser Denial of Service",
+      "severity": "P3",
+      "category": "cve",
+      "component": "body-parser",
+      "location": "Source/Backend",
+      "is_transitive": true,
+      "affected_range": "<1.20.6",
+      "cve_id": "GHSA-v422-hmwv-36x6",
+      "cvss_score": 3.7,
+      "cwe": ["CWE-770"],
+      "description": "Invalid limit value silently disables size enforcement. Malformed limit option bypasses size checks.",
+      "impact": "Bypass of request size limits, potential DoS, memory exhaustion",
+      "recommendation": "Set explicit limits: app.use(express.json({ limit: '1mb' }))",
+      "remediation_priority": 6,
+      "status": "not_started"
+    },
+    {
+      "id": "DEP-011",
+      "title": "Brace Expansion DoS",
+      "severity": "P3",
+      "category": "cve",
+      "component": "brace-expansion",
+      "location": "Source/Backend",
+      "is_transitive": true,
+      "affected_range": "<=1.1.15",
+      "cve_ids": [
+        "GHSA-3jxr-9vmj-r5cp",
+        "GHSA-f886-m6hf-6m8v"
+      ],
+      "cvss_scores": [5.3, 6.5],
+      "cwe": ["CWE-400"],
+      "description": "DoS via exponential-time expansion of consecutive non-expanding {} groups. Malformed glob patterns cause process hang.",
+      "impact": "Process hang, memory exhaustion, service unavailability",
+      "recommendation": "Update all glob-related dependencies"
+    },
+    {
+      "id": "DEP-012",
+      "title": "QS Query String DoS",
+      "severity": "P3",
+      "category": "cve",
+      "component": "qs",
+      "location": "Source/Backend",
+      "is_transitive": true,
+      "affected_range": "6.11.1 - 6.15.1",
+      "cve_id": "GHSA-q8mj-m7cp-5q26",
+      "cvss_score": 5.3,
+      "cwe": ["CWE-476"],
+      "description": "qs.stringify() crashes on null/undefined entries in comma-format arrays with encodeValuesOnly=true.",
+      "impact": "Application crash on malformed input, denial of service"
+    },
+    {
+      "id": "DEP-013",
+      "title": "PostCSS XSS",
+      "severity": "P3",
+      "category": "cve",
+      "component": "postcss",
+      "location": "Source/Frontend",
+      "is_transitive": true,
+      "affected_range": "<8.5.10",
+      "cve_id": "GHSA-qx2v-qp2m-jg93",
+      "cvss_score": 6.1,
+      "cwe": ["CWE-79"],
+      "description": "Unescaped </style> in CSS Stringify output. User-provided CSS may contain unescaped style tags.",
+      "impact": "XSS in generated CSS, payload injection",
+      "fix_command": "cd Source/Frontend && npm update postcss",
+      "remediation_priority": 6
+    },
+    {
+      "id": "DEP-014",
+      "title": "Babel Core File Read",
+      "severity": "P3",
+      "category": "cve",
+      "component": "@babel/core",
+      "location": "Source/Frontend",
+      "is_transitive": true,
+      "affected_range": "<=7.29.0",
+      "cve_id": "GHSA-4x5r-pxfx-6jf8",
+      "cvss_score": 3.2,
+      "cwe": ["CWE-22", "CWE-200"],
+      "description": "Arbitrary file read via sourceMappingURL comment. Specially crafted source map URLs can read arbitrary files.",
+      "impact": "Unauthorized file access, source code/config disclosure"
+    },
+    {
+      "id": "DEP-015",
+      "title": "Vitest Transitive Issues",
+      "severity": "P3",
+      "category": "cve",
+      "component": "vitest",
+      "location": "Source/Frontend",
+      "current_version": "2.0.5",
+      "transitive_issues": [
+        "Depends on Vite with path traversal issues (DEP-003)",
+        "Depends on esbuild with dev server CSRF vulnerability (DEP-016)",
+        "Depends on @vitest/mocker with transitive vite issues"
+      ],
+      "impact": "Test environment compromise",
+      "note": "Fixes primary RCE (DEP-001); verify transitive deps after update"
+    },
+    {
+      "id": "DEP-016",
+      "title": "ESBuild Development Server CSRF",
+      "severity": "P3",
+      "category": "cve",
+      "component": "esbuild",
+      "location": "Source/Frontend",
+      "is_transitive": true,
+      "affected_range": "<=0.24.2",
+      "cve_id": "GHSA-67mh-4wv8-2f99",
+      "cvss_score": 5.3,
+      "cwe": ["CWE-346"],
+      "description": "Development server allows any website to send requests and read responses. Cross-origin requests to dev server exfiltrate data.",
+      "impact": "Source code disclosure, environment variable exposure, CSRF during development",
+      "note": "Use dev servers in isolated environments; update vite"
+    },
+    {
+      "id": "DEP-017",
+      "title": "Express 2 Major Versions Behind",
+      "severity": "P3",
+      "category": "outdated",
+      "component": "express",
+      "location": "Source/Backend",
+      "current_version": "4.18.2",
+      "latest_patch": "4.22.2",
+      "latest_major": "5.2.1",
+      "versions_behind_major": 1,
+      "recommendation": "Update to 4.22.2 for security patches; plan Express 5.x migration"
+    },
+    {
+      "id": "DEP-018",
+      "title": "Pino 2 Major Versions Behind",
+      "severity": "P3",
+      "category": "outdated",
+      "component": "pino",
+      "location": "Source/Backend",
+      "current_version": "8.17.0",
+      "latest_patch": "8.21.0",
+      "latest_major": "10.3.1",
+      "versions_behind_major": 2,
+      "recommendation": "Update to Pino 10.x for latest features and security patches"
+    },
+    {
+      "id": "DEP-019",
+      "title": "UUID 5 Major Versions Behind",
+      "severity": "P3",
+      "category": "outdated",
+      "component": "uuid",
+      "location": "Source/Backend",
+      "current_version": "9.0.0",
+      "latest_patch": "9.0.1",
+      "latest_major": "14.0.1",
+      "versions_behind_major": 5,
+      "note": "Also has buffer overflow CVE (DEP-004); requires update to 11.x+",
+      "related_cve": "DEP-004"
+    },
+    {
+      "id": "DEP-020",
+      "title": "React 1 Major Version Behind",
+      "severity": "P4",
+      "category": "outdated",
+      "component": "react",
+      "location": "Source/Frontend",
+      "current_version": "18.3.1",
+      "latest_major": "19.2.7",
+      "versions_behind_major": 1,
+      "recommendation": "Monitor React 19; consider migration after stabilization"
+    },
+    {
+      "id": "DEP-021",
+      "title": "React Router 1 Major Version Behind",
+      "severity": "P3",
+      "category": "outdated",
+      "component": "react-router-dom",
+      "location": "Source/Frontend",
+      "current_version": "6.26.0",
+      "latest_patch": "6.30.4",
+      "latest_major": "7.18.1",
+      "versions_behind_major": 1,
+      "note": "Also has open redirect CVE (DEP-006); requires update to 6.30.4+",
+      "related_cve": "DEP-006"
+    }
+  ],
+  "supply_chain_analysis": {
+    "postinstall_scripts": "CLEAN",
+    "deprecated_packages": "REVIEW_NEEDED",
+    "single_maintainer_packages": "TODO - manual review needed",
+    "high_risk_dependencies": [
+      "uuid",
+      "pino",
+      "prom-client",
+      "express",
+      "react",
+      "vite"
+    ]
+  },
+  "remediation": {
+    "status": "NOT_STARTED",
+    "immediate_action_items": 5,
+    "estimated_effort_hours": 12,
+    "roadmap": {
+      "immediate": {
+        "priority": "This Sprint",
+        "items": [
+          "DEP-001: Fix Vitest RCE",
+          "DEP-004: Update UUID",
+          "DEP-006: Update React Router",
+          "DEP-003: Update Vite",
+          "DEP-002: Update Handlebars chain"
+        ]
+      },
+      "near_term": {
+        "priority": "Next Sprint",
+        "items": [
+          "DEP-005: Update form-data",
+          "DEP-007: Update js-yaml",
+          "DEP-008: Update ws",
+          "DEP-013: Update postcss",
+          "DEP-014: Update @babel/core",
+          "DEP-009-012: Update body-parser/express/qs/brace-expansion"
+        ]
+      },
+      "long_term": {
+        "priority": "Planning Phase",
+        "items": [
+          "Express 4.x to 5.x migration",
+          "Pino 8.x to 10.x upgrade",
+          "React Router 6.x to 7.x migration",
+          "React 18.x to 19.x migration"
+        ]
+      }
+    },
+    "testing_checklist": [
+      "Backend tests pass: npm test in Source/Backend/",
+      "Frontend tests pass: npm test in Source/Frontend/",
+      "E2E tests pass (if applicable)",
+      "Dev server starts: npm run dev in Source/Frontend/",
+      "Build succeeds: npm run build in both directories",
+      "Type checking passes: npm run typecheck in both directories",
+      "Work item CRUD operations work",
+      "Routing works correctly",
+      "No new security warnings: npm audit"
+    ]
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "severity": "P1",
+      "findings": ["DEP-001", "DEP-002"],
+      "reason": "Critical code execution vulnerabilities"
+    },
+    {
+      "team": "TheGuardians",
+      "severity": "P2",
+      "findings": ["DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008"],
+      "reason": "High-severity security vulnerabilities (RCE, code injection, memory corruption, header injection, DoS)"
+    },
+    {
+      "team": "TheFixer",
+      "severity": "P3",
+      "findings": ["DEP-017", "DEP-018", "DEP-019", "DEP-020", "DEP-021"],
+      "reason": "Outdated major versions requiring engineering effort"
+    }
+  ]
+}

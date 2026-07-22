@@ -1,0 +1,220 @@
+{
+  "audit_id": "run-20260722-053537",
+  "audit_date": "2026-07-22",
+  "branch": "audit/inspector-2026-07-22-3ff6a9",
+  "commit": "e4a9c2d",
+  "grade": "D",
+  "overall": {
+    "p1_total": 3,
+    "p2_total": 7,
+    "p3_total": 13,
+    "p4_total": 2,
+    "total_cves": 31,
+    "spec_coverage_pct": 96,
+    "tests_total": 169,
+    "tests_failing": 5,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend (localhost:3001) and Frontend (localhost:5173) unreachable at audit time"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "package": "handlebars ≤4.7.8",
+      "workspace": "Backend",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "category": "CVE/code-injection",
+      "escalate_to": "TheGuardians",
+      "exploit_scenario": "Attacker crafts a Handlebars template with AST-type confusion or prototype pollution payload. If the backend renders user-supplied templates, this executes arbitrary JavaScript with Node.js process privileges.",
+      "fix": "npm update handlebars (to >=4.7.9) in Backend workspace",
+      "timeline_hours": 48,
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "Vitest Arbitrary File Read + RCE when UI Server Running",
+      "package": "vitest <3.2.6",
+      "workspace": "Frontend",
+      "cvss": 9.8,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "category": "CVE/rce",
+      "escalate_to": "TheGuardians",
+      "exploit_scenario": "When vitest --ui is running, any attacker on the network can read arbitrary files and execute code in the test runner's Node.js context. Zero authentication required.",
+      "fix": "npm update vitest vite (vitest >=3.2.6, vite >=5.5.10) in Frontend workspace",
+      "timeline_hours": 48,
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "title": "Protobufjs Arbitrary Code Execution via Malicious .proto Parsing",
+      "package": "protobufjs <7.5.5",
+      "workspace": "Orchestrator",
+      "cvss": 9.8,
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "category": "CVE/code-injection",
+      "escalate_to": "TheGuardians",
+      "exploit_scenario": "Attacker provides a crafted .proto file or JSON descriptor. When the Orchestrator deserializes it, protobufjs code generation executes injected payload. Full RCE with process privileges.",
+      "fix": "cd platform/orchestrator && npm update protobufjs (>=7.5.5). Note: platform/ is solo-session only per CLAUDE.md.",
+      "timeline_hours": 48,
+      "status": "NEW",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "title": "GET /api/search route not registered — 5 tests failing, DependencyPicker 404",
+      "category": "spec-drift",
+      "file": "Source/Backend/src/app.ts",
+      "detail": "FR-dependency-search requires a cross-entity typeahead search endpoint. The service logic exists but the route is never mounted in app.ts. Five tests in tests/routes/search.test.ts confirm the 404. DependencyPicker modal is broken at runtime.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts with GET /api/search?q= filtering non-deleted work items by title/description. Register in app.ts as app.use('/api', searchRouter).",
+      "fix_team": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "title": "Traceability enforcer only checks most-recent plan — FR-dependency-* unguarded",
+      "category": "spec-drift",
+      "file": "tools/traceability-enforcer.py:48",
+      "detail": "Enforcer auto-selects most-recently-modified requirements.md in Plans/. FR-dependency-* (16 requirements) including FR-dependency-search (5 failing tests) is never checked. CI gives a false green.",
+      "recommendation": "Run enforcer against both plan files in CI, or add glob mode to check all Plans/**/requirements.md files.",
+      "fix_team": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "title": "form-data CRLF injection via crafted filenames",
+      "category": "CVE/http-injection",
+      "package": "form-data 4.0.0–4.0.5",
+      "workspaces": ["Backend", "Frontend", "Orchestrator"],
+      "cvss": 7.5,
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "recommendation": "npm update form-data (to >=4.0.6) in all workspaces.",
+      "fix_team": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "title": "Vite dev server HMR access control bypass",
+      "category": "CVE/dev-security",
+      "package": "vite <5.5.10",
+      "workspace": "Frontend",
+      "cvss": 9.8,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "note": "Resolved together with DEP-002 (same package update)",
+      "recommendation": "npm update vite (to >=5.5.10) in Frontend workspace. Resolved as part of DEP-002 fix.",
+      "fix_team": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "title": "brace-expansion exponential expansion DoS",
+      "category": "CVE/dos",
+      "package": "brace-expansion <1.1.16",
+      "workspace": "Backend",
+      "cvss": 5.3,
+      "cves": ["GHSA-3jxr-9vmj-r5cp"],
+      "recommendation": "npm audit fix in Backend workspace to patch transitive brace-expansion.",
+      "fix_team": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "title": "js-yaml quadratic merge-key DoS",
+      "category": "CVE/dos",
+      "package": "js-yaml ≤3.14.2",
+      "workspace": "Backend",
+      "cvss": 7.5,
+      "cves": ["GHSA-h67p-54hq-rp68", "GHSA-52cp-r559-cp3m"],
+      "recommendation": "npm update js-yaml (to >=3.14.3 or 4.x) in Backend workspace.",
+      "fix_team": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "title": "path-to-regexp route-matcher ReDoS via crafted URL",
+      "category": "CVE/redos",
+      "package": "path-to-regexp <0.1.13",
+      "workspace": "Orchestrator",
+      "cvss": 7.5,
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "recommendation": "npm update in Orchestrator workspace to patch transitive path-to-regexp. Note: platform/ is solo-session only.",
+      "fix_team": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p3_findings": [
+    { "id": "QO-003", "severity": "P3", "category": "spec-drift", "title": "Canonical spec IDs (FR-001..069) never traced in Source/", "file": "Specifications/dev-workflow-platform.md", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-004", "severity": "P3", "category": "spec-drift", "title": "dependencyCheckDuration histogram missing from metrics.ts (3 of 4 dep metrics present)", "file": "Source/Backend/src/metrics.ts", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-005", "severity": "P3", "category": "arch-violation", "title": "Logger ignores LOG_LEVEL env var and NODE_ENV pretty-print switch", "file": "Source/Backend/src/utils/logger.ts", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-006", "severity": "P3", "category": "arch-violation", "title": "Route handlers directly access store — no service layer for CRUD", "file": "Source/Backend/src/routes/workItems.ts", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-007", "severity": "P3", "category": "pattern-violation", "title": "workItemStore.ts imports logger directly, bypassing the shim", "file": "Source/Backend/src/store/workItemStore.ts:10", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-008", "severity": "P3", "category": "arch-violation", "title": "OpenTelemetry tracing not implemented (CLAUDE.md + FR-021 require it)", "file": "Source/Backend/src/app.ts", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-009", "severity": "P3", "category": "test-quality", "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage", "file": "Source/Frontend/tests/", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-010", "severity": "P3", "category": "spec-drift", "title": "Dispatch gating returns 400 instead of 200+pending_dependencies status per spec", "file": "Source/Backend/src/routes/workflow.ts:231-244", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-011", "severity": "P3", "category": "pattern-violation", "title": "eslint-disable without justification comment (DependencyPicker, useWorkItems)", "file": "Source/Frontend/src/components/DependencyPicker.tsx:82", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "QO-012", "severity": "P3", "category": "doc-stale", "title": "Plans/dependency-linking Implementation Delta has stale portal/ paths", "file": "Plans/dependency-linking/requirements.md:38-53", "fix_team": "TheFixer", "status": "NEW", "source": "quality-oracle" },
+    { "id": "DEP-009", "severity": "P3", "category": "CVE/buffer", "title": "uuid missing bounds check in v3/v5/v6 buf param", "package": "uuid ^9.0.0", "workspace": "Backend", "cve": "GHSA-w5hq-g745-h8pq", "fix_team": "TheFixer", "status": "NEW", "source": "dependency-auditor" },
+    { "id": "DEP-010", "severity": "P3", "category": "CVE/multiple", "title": "react-router open redirect + ws memory disclosure + postcss XSS + esbuild CORS bypass", "workspaces": ["Frontend", "Orchestrator"], "fix_team": "TheFixer", "status": "NEW", "source": "dependency-auditor" },
+    { "id": "DEP-011", "severity": "P3", "category": "outdated", "title": "8 packages ≥1 major version behind (pino 8→10, vite 5→8, vitest 2→4, react 18→19, react-router 6→7, dockerode 4→5, express 4→5, multer 1→2)", "fix_team": "TheFixer", "status": "NEW", "source": "dependency-auditor" }
+  ],
+  "p4_findings": [
+    { "id": "DEP-012", "severity": "P4", "category": "supply-chain", "title": "842 transitive dependencies — very high supply chain surface area", "fix_team": "Monitoring", "status": "NEW", "source": "dependency-auditor" },
+    { "id": "DEP-013", "severity": "P4", "category": "compliance", "title": "License scan incomplete — npx license-checker not available in audit environment", "fix_team": "Monitoring", "status": "NEW", "source": "dependency-auditor" }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Outdated Frontend dev toolchain (Vitest + Vite)",
+      "findings": ["DEP-002", "DEP-005"],
+      "single_fix": "npm update vitest vite in Frontend workspace"
+    },
+    {
+      "root_cause": "Traceability infrastructure gaps",
+      "findings": ["QO-002", "QO-003"],
+      "single_fix": "Expand enforcer to glob Plans/**/requirements.md + add canonical FR→plan ID mapping"
+    },
+    {
+      "root_cause": "Missing route implementation + bypassed service layer",
+      "findings": ["QO-001", "QO-006"],
+      "single_fix": "Create workItemService.ts + routes/search.ts, register in app.ts"
+    },
+    {
+      "root_cause": "Stale/unpatched transitive dependencies in Backend",
+      "findings": ["DEP-001", "DEP-004", "DEP-006", "DEP-007"],
+      "single_fix": "npm audit fix in Backend workspace"
+    },
+    {
+      "root_cause": "Logger abstraction inconsistency",
+      "findings": ["QO-005", "QO-007"],
+      "single_fix": "Patch utils/logger.ts (LOG_LEVEL + NODE_ENV) and update workItemStore.ts import"
+    }
+  ],
+  "report_path": "Teams/TheInspector/findings/audit-2026-07-22-D.html"
+}

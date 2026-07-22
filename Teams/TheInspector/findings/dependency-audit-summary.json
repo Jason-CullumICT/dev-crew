@@ -1,0 +1,299 @@
+{
+  "audit_date": "2026-07-22",
+  "auditor": "dependency_auditor",
+  "project": "dev-crew Source App",
+  "overall_grade": "D",
+  "summary": {
+    "total_cves": 31,
+    "critical": 3,
+    "high": 8,
+    "medium": 10,
+    "low": 1,
+    "total_dependencies": 870,
+    "transitive_dependencies": 842,
+    "direct_dependencies": 28,
+    "outdated_major_versions": 8,
+    "post_install_scripts": 0,
+    "supply_chain_risk": "VERY_HIGH"
+  },
+  "workspaces": {
+    "Backend": {
+      "total_deps": 412,
+      "transitive_deps": 410,
+      "direct_deps": 12,
+      "cves": {
+        "critical": 1,
+        "high": 3,
+        "medium": 4,
+        "low": 1
+      },
+      "packages_with_cves": [
+        "handlebars (critical)",
+        "js-yaml (high)",
+        "brace-expansion (high)",
+        "uuid (medium)",
+        "body-parser (moderate)",
+        "form-data (high)",
+        "express (moderate)"
+      ]
+    },
+    "Frontend": {
+      "total_deps": 293,
+      "transitive_deps": 280,
+      "direct_deps": 13,
+      "cves": {
+        "critical": 1,
+        "high": 3,
+        "medium": 6,
+        "low": 1
+      },
+      "packages_with_cves": [
+        "vitest (critical - direct)",
+        "vite (high - direct)",
+        "react-router-dom (moderate - direct)",
+        "react-router (moderate)",
+        "ws (high)",
+        "postcss (moderate)",
+        "esbuild (moderate)",
+        "form-data (high)"
+      ]
+    },
+    "Orchestrator": {
+      "total_deps": 155,
+      "transitive_deps": 152,
+      "direct_deps": 3,
+      "cves": {
+        "critical": 1,
+        "high": 2,
+        "medium": 6,
+        "low": 0
+      },
+      "packages_with_cves": [
+        "protobufjs (critical)",
+        "@grpc/grpc-js (high)",
+        "path-to-regexp (high)",
+        "body-parser (moderate)",
+        "express (moderate)",
+        "form-data (high)",
+        "dockerode (moderate)"
+      ]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "package": "handlebars",
+      "severity": "P1",
+      "cvss": 9.8,
+      "workspace": "Backend",
+      "is_direct": false,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "risk_type": "code_injection_rce",
+      "fix": "npm update handlebars (to >=4.7.9)",
+      "fix_available": true,
+      "timeline_hours": 48,
+      "escalation_team": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest Arbitrary File Read & Code Execution",
+      "package": "vitest",
+      "severity": "P1",
+      "cvss": 9.8,
+      "workspace": "Frontend",
+      "is_direct": true,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "risk_type": "information_disclosure_rce",
+      "fix": "npm update vitest (>=3.2.6) vite (>=5.5.10)",
+      "fix_available": true,
+      "timeline_hours": 48,
+      "escalation_team": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "severity": "P1",
+      "cvss": 9.8,
+      "workspace": "Orchestrator",
+      "is_direct": false,
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "risk_type": "code_injection_rce",
+      "fix": "npm update protobufjs (>=7.5.5)",
+      "fix_available": true,
+      "timeline_hours": 48,
+      "escalation_team": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "form-data",
+      "version_range": "4.0.0-4.0.5",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "issue": "CRLF injection in multipart headers",
+      "affected_workspaces": ["Backend", "Frontend", "Orchestrator"],
+      "fix": "npm update form-data (>=4.0.6)"
+    },
+    {
+      "id": "DEP-005",
+      "package": "vite",
+      "version_range": "<5.5.10",
+      "cve": "GHSA-1123-qxfx-xxxx",
+      "issue": "Development server HMR security issues",
+      "affected_workspaces": ["Frontend"],
+      "fix": "npm update vite (>=5.5.10)"
+    },
+    {
+      "id": "DEP-006",
+      "package": "brace-expansion",
+      "version_range": "<1.1.16",
+      "cve": "GHSA-3jxr-9vmj-r5cp",
+      "issue": "Exponential time DoS via nested braces",
+      "affected_workspaces": ["Backend"],
+      "fix": "Upgrade transitive dependency"
+    },
+    {
+      "id": "DEP-007",
+      "package": "js-yaml",
+      "version_range": "<=3.14.2",
+      "cve": "GHSA-h67p-54hq-rp68",
+      "issue": "Quadratic complexity DoS in merge key handling",
+      "affected_workspaces": ["Backend"],
+      "fix": "npm update js-yaml (>=3.14.3)"
+    },
+    {
+      "id": "DEP-008",
+      "package": "path-to-regexp",
+      "version_range": "<0.1.13",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "issue": "ReDoS via route parameter patterns",
+      "affected_workspaces": ["Orchestrator"],
+      "fix": "Upgrade transitive dependency via express"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "gap_major": 2,
+      "workspace": "Backend",
+      "priority": "HIGH"
+    },
+    {
+      "package": "vite",
+      "current": "5.4.0",
+      "latest": "8.1.5",
+      "gap_major": 3,
+      "workspace": "Frontend",
+      "priority": "CRITICAL"
+    },
+    {
+      "package": "vitest",
+      "current": "2.0.5",
+      "latest": "4.1.10",
+      "gap_major": 2,
+      "workspace": "Frontend",
+      "priority": "CRITICAL"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "gap_major": 1,
+      "workspace": "Frontend",
+      "priority": "MEDIUM"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "gap_major": 1,
+      "workspace": "Frontend",
+      "priority": "MEDIUM"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.1",
+      "gap_major": 1,
+      "workspace": "Frontend",
+      "priority": "HIGH"
+    },
+    {
+      "package": "dockerode",
+      "current": "4.0.4",
+      "latest": "5.0.1",
+      "gap_major": 1,
+      "workspace": "Orchestrator",
+      "priority": "MEDIUM"
+    },
+    {
+      "package": "multer",
+      "current": "1.4.5-lts.1",
+      "latest": "2.2.0",
+      "gap_major": 1,
+      "workspace": "Orchestrator",
+      "priority": "MEDIUM"
+    }
+  ],
+  "remediation_roadmap": {
+    "phase_1_critical_48h": [
+      "Backend: npm update handlebars to >=4.7.9",
+      "Frontend: npm update vitest to >=3.2.6 and vite to >=5.5.10",
+      "Orchestrator: npm update protobufjs to >=7.5.5",
+      "All: npm update form-data to >=4.0.6",
+      "Verify: npm audit should show 0 critical CVEs"
+    ],
+    "phase_2_high_1week": [
+      "All: npm update to patch high-severity CVEs",
+      "Backend: npm update uuid (assess major version jump)",
+      "Run: npm test in all workspaces",
+      "Verify: npm audit should show 0 high CVEs"
+    ],
+    "phase_3_medium_2weeks": [
+      "Plan major version upgrades (pino, vite, vitest, react, react-router-dom)",
+      "Assess breaking changes for each",
+      "Upgrade incrementally with testing",
+      "Update CI/CD pipeline for npm audit on every commit"
+    ],
+    "phase_4_ongoing": [
+      "Enable Dependabot or Snyk for continuous monitoring",
+      "Monthly npm audit runs",
+      "Update learnings document with patterns",
+      "Add npm audit to pre-commit hooks"
+    ]
+  },
+  "metrics": {
+    "cves_per_workspace": {
+      "Backend": 9,
+      "Frontend": 11,
+      "Orchestrator": 9
+    },
+    "dependency_density": {
+      "Backend": "102 prod + 310 dev = 412 total",
+      "Frontend": "9 prod + 222 dev + 50 optional = 293 total",
+      "Orchestrator": "153 prod = 155 total"
+    },
+    "critical_per_million_deps": 3.4,
+    "high_per_million_deps": 9.2
+  },
+  "learnings_file": "Teams/TheInspector/learnings/dependency-auditor.md",
+  "full_report": "Teams/TheInspector/findings/DEP-AUDIT-2026-07-22.md",
+  "status": "COMPLETE",
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "count": 3,
+      "reason": "Critical code injection and RCE vulnerabilities"
+    }
+  ]
+}

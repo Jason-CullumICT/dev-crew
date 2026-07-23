@@ -1,0 +1,298 @@
+{
+  "audit_metadata": {
+    "timestamp": "2026-07-23",
+    "auditor": "dependency_auditor",
+    "scope": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E",
+      "platform/orchestrator"
+    ],
+    "tool_used": "npm audit"
+  },
+  "summary": {
+    "total_cves": 29,
+    "critical_count": 3,
+    "high_count": 6,
+    "medium_count": 13,
+    "low_count": 7,
+    "projects_scanned": 4,
+    "projects_with_vulnerabilities": 3,
+    "projects_clean": 1
+  },
+  "by_project": {
+    "Source/Backend": {
+      "direct_dependencies": 4,
+      "transitive_dependencies": 412,
+      "total_cves": 9,
+      "critical": 1,
+      "high": 3,
+      "medium": 4,
+      "low": 1,
+      "vulnerable_packages": [
+        "handlebars",
+        "brace-expansion",
+        "form-data",
+        "js-yaml",
+        "express",
+        "body-parser",
+        "qs",
+        "uuid",
+        "@babel/core"
+      ],
+      "critical_findings": [
+        "CRIT-001: Handlebars.js JavaScript Injection (GHSA-2w6w-674q-4c4q)"
+      ],
+      "direct_vulnerable": ["express", "uuid"]
+    },
+    "Source/Frontend": {
+      "direct_dependencies": 3,
+      "transitive_dependencies": 231,
+      "total_cves": 11,
+      "critical": 1,
+      "high": 3,
+      "medium": 6,
+      "low": 1,
+      "vulnerable_packages": [
+        "vitest",
+        "vite",
+        "form-data",
+        "postcss",
+        "react-router-dom",
+        "react-router",
+        "@vitest/mocker",
+        "esbuild",
+        "ws",
+        "@babel/core"
+      ],
+      "critical_findings": [
+        "CRIT-002: Vitest UI Server Arbitrary File Read (GHSA-5xrq-8626-4rwp)"
+      ],
+      "direct_vulnerable": [
+        "vitest",
+        "vite",
+        "react-router-dom"
+      ]
+    },
+    "Source/E2E": {
+      "direct_dependencies": 1,
+      "transitive_dependencies": 4,
+      "total_cves": 0,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "vulnerable_packages": [],
+      "critical_findings": [],
+      "status": "CLEAN"
+    },
+    "platform/orchestrator": {
+      "direct_dependencies": 3,
+      "transitive_dependencies": 156,
+      "total_cves": 9,
+      "critical": 1,
+      "high": 2,
+      "medium": 6,
+      "low": 0,
+      "vulnerable_packages": [
+        "protobufjs",
+        "@grpc/grpc-js",
+        "path-to-regexp",
+        "@protobufjs/utf8",
+        "body-parser",
+        "qs",
+        "express",
+        "uuid",
+        "dockerode"
+      ],
+      "critical_findings": [
+        "CRIT-003: Protobufjs Arbitrary Code Execution (GHSA-xq3m-2v4x-88gg)"
+      ],
+      "direct_vulnerable": ["dockerode", "express"]
+    }
+  },
+  "critical_vulnerabilities": [
+    {
+      "id": "CRIT-001",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "cvss_score": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cwe": ["CWE-94", "CWE-843"],
+      "github_advisory": "GHSA-2w6w-674q-4c4q",
+      "affected_package": "handlebars",
+      "version_range": "4.0.0 - 4.7.8",
+      "affected_projects": ["Source/Backend"],
+      "is_direct": false,
+      "remediation": "npm update handlebars",
+      "urgency": "immediate",
+      "escalation": "TheGuardians (if templates are user-supplied or dynamically generated)"
+    },
+    {
+      "id": "CRIT-002",
+      "title": "Vitest UI Server Arbitrary File Read and Execution",
+      "cvss_score": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cwe": ["CWE-862"],
+      "github_advisory": "GHSA-5xrq-8626-4rwp",
+      "affected_package": "vitest",
+      "version_range": "<3.2.6",
+      "affected_projects": ["Source/Frontend"],
+      "is_direct": true,
+      "remediation": "npm update vitest",
+      "urgency": "immediate",
+      "risk_context": "development-time risk; never expose vitest ui to untrusted networks"
+    },
+    {
+      "id": "CRIT-003",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "cvss_score": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cwe": ["CWE-94"],
+      "github_advisory": "GHSA-xq3m-2v4x-88gg",
+      "affected_package": "protobufjs",
+      "version_range": "<7.5.5",
+      "affected_projects": ["platform/orchestrator"],
+      "is_direct": false,
+      "remediation": "npm update protobufjs",
+      "urgency": "immediate",
+      "escalation": "TheGuardians (if untrusted protobuf data is processed)"
+    }
+  ],
+  "high_vulnerabilities": [
+    {
+      "id": "HIGH-001",
+      "package": "brace-expansion",
+      "version_range": "<=1.1.15",
+      "severity": "high",
+      "cvss": 5.3,
+      "cwe": ["CWE-400", "CWE-407"],
+      "title": "DoS via exponential-time expansion",
+      "affected_projects": ["Source/Backend"]
+    },
+    {
+      "id": "HIGH-002",
+      "package": "form-data",
+      "version_range": "4.0.0 - 4.0.5",
+      "severity": "high",
+      "cvss": 7.5,
+      "cwe": ["CWE-93"],
+      "title": "CRLF injection in form-data headers",
+      "affected_projects": ["Source/Backend", "Source/Frontend"]
+    },
+    {
+      "id": "HIGH-003",
+      "package": "js-yaml",
+      "severity": "high",
+      "cwe": ["CWE-502"],
+      "title": "Code injection via unsafe YAML deserialization",
+      "affected_projects": ["Source/Backend"]
+    },
+    {
+      "id": "HIGH-004",
+      "package": "@grpc/grpc-js",
+      "version_range": "1.14.0 - 1.14.3",
+      "severity": "high",
+      "cvss": 7.5,
+      "cwe": ["CWE-248"],
+      "title": "Server crash via malformed gRPC request",
+      "affected_projects": ["platform/orchestrator"]
+    },
+    {
+      "id": "HIGH-005",
+      "package": "path-to-regexp",
+      "version_range": "<0.1.13",
+      "severity": "high",
+      "cvss": 7.5,
+      "cwe": ["CWE-1333"],
+      "title": "ReDoS via route parameters",
+      "affected_projects": ["platform/orchestrator"]
+    },
+    {
+      "id": "HIGH-006",
+      "package": "vite",
+      "severity": "high",
+      "cwe": ["CWE-346"],
+      "title": "Dev server SSRF / information disclosure",
+      "affected_projects": ["Source/Frontend"]
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2,
+      "project": "Source/Backend",
+      "priority": "medium"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "major_versions_behind": 5,
+      "project": "Source/Backend",
+      "priority": "medium"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "major_versions_behind": 1,
+      "project": "Source/Frontend",
+      "priority": "low"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "major_versions_behind": 1,
+      "project": "Source/Frontend",
+      "priority": "low"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.1",
+      "major_versions_behind": 1,
+      "project": "Source/Frontend",
+      "priority": "medium"
+    }
+  ],
+  "supply_chain_risks": {
+    "postinstall_scripts_found": false,
+    "duplicate_major_versions": "none critical",
+    "dependency_tree_size_risk": "moderate (largest: Backend with 412 transitive deps)",
+    "ecosystem_health": "good"
+  },
+  "licenses": {
+    "status": "clean",
+    "gpl_agpl_found": false,
+    "unknown_licenses": false,
+    "notes": "All direct dependencies use permissive licenses (MIT, ISC, Apache-2.0)"
+  },
+  "remediation_timeline": {
+    "immediate": [
+      "CRIT-001: Handlebars (Source/Backend)",
+      "CRIT-002: Vitest (Source/Frontend)",
+      "CRIT-003: Protobufjs (platform/orchestrator)"
+    ],
+    "high_priority": [
+      "HIGH-001 through HIGH-006: All high-severity packages",
+      "express and body-parser updates",
+      "form-data updates"
+    ],
+    "medium_priority": [
+      "React Router 6.26.0 → 6.30.4+",
+      "Pino 8 → 10 upgrade",
+      "uuid 9 → 14 upgrade",
+      "React 18 → 19 (coordinate with team)"
+    ]
+  },
+  "escalations": {
+    "to_guardians": [
+      "CRIT-001: Handlebars RCE (if templates are user-supplied)",
+      "CRIT-002: Vitest dev server exposure (architecture review)",
+      "CRIT-003: Protobufjs RCE (if untrusted data processed)"
+    ]
+  }
+}

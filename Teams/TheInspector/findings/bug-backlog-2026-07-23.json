@@ -1,0 +1,450 @@
+{
+  "audit_id": "audit-2026-07-23-D",
+  "audit_date": "2026-07-23",
+  "overall_grade": "D",
+  "branch": "audit/inspector-2026-07-23-89aa46",
+  "generated_by": "team_leader",
+  "run_id": "run-20260723-053933",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 10,
+    "p3_total": 17,
+    "p4_total": 0,
+    "fixed_total": 0,
+    "regressed_total": 0,
+    "new_total": 32,
+    "escalations_to_guardians": 3,
+    "spec_coverage_pct": 0,
+    "cves_total": 29,
+    "cves_critical": 3,
+    "cves_high": 6,
+    "cves_medium": 13,
+    "cves_low": 7
+  },
+  "grading_breakdown": {
+    "grade": "D",
+    "p1_count": 5,
+    "p1_threshold_for_C": 2,
+    "p2_count": 10,
+    "spec_coverage_pct": 0,
+    "spec_coverage_threshold_for_C": 40,
+    "reason": "5 P1 findings exceed the C-grade ceiling of 2; spec coverage 0% is below all grade thresholds"
+  },
+  "escalations": [
+    {
+      "id": "CRIT-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "Handlebars.js ≤4.7.8 — AST Injection / Remote Code Execution",
+      "source": "dependency-auditor",
+      "project": "Source/Backend",
+      "package": "handlebars",
+      "version_affected": "<=4.7.8",
+      "advisory": "GHSA-2w6w-674q-4c4q",
+      "cwe": ["CWE-94", "CWE-843"],
+      "escalation_trigger": "injection",
+      "route_to": "TheGuardians",
+      "reason": "CVSS 9.8 RCE; attack surface depends on whether user-supplied templates are processed — requires TheGuardians code-path audit",
+      "immediate_fix": "cd Source/Backend && npm update handlebars",
+      "status": "NEW"
+    },
+    {
+      "id": "CRIT-002",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "Vitest ≤3.2.5 — Arbitrary File Read and Code Execution via UI Server",
+      "source": "dependency-auditor",
+      "project": "Source/Frontend",
+      "package": "vitest",
+      "version_affected": "<3.2.6",
+      "advisory": "GHSA-5xrq-8626-4rwp",
+      "cwe": ["CWE-862"],
+      "escalation_trigger": "missing access control",
+      "route_to": "TheGuardians",
+      "reason": "CVSS 9.8; Vitest UI server allows any network peer to read files and execute code without auth",
+      "immediate_fix": "cd Source/Frontend && npm update vitest",
+      "status": "NEW"
+    },
+    {
+      "id": "CRIT-003",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "Protobufjs ≤7.5.4 — Arbitrary Code Execution via Unsafe Code Generation",
+      "source": "dependency-auditor",
+      "project": "platform/orchestrator",
+      "package": "protobufjs",
+      "version_affected": "<7.5.5",
+      "advisory": "GHSA-xq3m-2v4x-88gg",
+      "cwe": ["CWE-94"],
+      "escalation_trigger": "injection",
+      "route_to": "TheGuardians",
+      "reason": "CVSS 9.8 RCE; attack surface depends on whether orchestrator receives untrusted protobuf data",
+      "immediate_fix": "cd platform/orchestrator && npm update protobufjs",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Domain spec 0% traced in source — 65 FRs unimplemented or unlinked",
+      "source": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "65 functional requirements in Specifications/dev-workflow-platform.md have zero // Verifies: FR-NNN comments in Source/. Entire feature areas (SQLite, Feature Request APIs, Bug Report APIs, Dev Cycle, Pipeline, OTel) are unimplemented or unlinked.",
+      "recommendation": "Add // Verifies: FR-XXX comments to source for each implemented requirement. Mark deferred FRs in the spec. Fix enforcer to detect the gap automatically (QO-002).",
+      "cross_refs": ["QO-002"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Traceability enforcer blind to Specifications/ — false-passing CI gate",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "file_lines": "49-57",
+      "detail": "Enforcer auto-selects the most-recently-modified Plans/ requirements file (13 FRs). It never reads Specifications/. Reports PASSED while 75 domain-spec FRs are untraced.",
+      "recommendation": "Extend enforcer to also scan Specifications/ for FR-\\d+ patterns. Fail CI if domain-spec coverage < 40%.",
+      "cross_refs": ["QO-001"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers call store directly — service layer bypassed",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "detail": "10+ direct store.* calls in route handlers. Business logic embedded in routes instead of services. Prevents isolation testing.",
+      "recommendation": "Extract all store access into service functions. Route handlers should only parse, delegate, and serialize.",
+      "cross_refs": ["QO-004", "QO-005"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Logger always emits raw JSON — missing dev pretty-print mode",
+      "source": "quality-oracle",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "spec_refs": ["FR-WF-013", "FR-003"],
+      "detail": "process.stdout.write(JSON.stringify(entry)) with no NODE_ENV check. Violates both plan-level and domain-spec requirements for pretty-printing in development.",
+      "recommendation": "Add NODE_ENV === 'development' branch for human-readable log output.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Two logger modules with split call signatures",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/utils/logger.ts",
+        "Source/Backend/src/store/workItemStore.ts"
+      ],
+      "detail": "src/utils/logger.ts (named export) is the canonical impl; src/logger.ts is a wrapper default export. workItemStore.ts imports the named export directly; all other files import the wrapper. Split interface: store calls logger.info('msg', ctx); routes call logger.info({msg, ...ctx}).",
+      "recommendation": "Delete src/logger.ts. Standardize all imports to src/utils/logger.ts with the logger.info(msg, ctx) signature.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "test-coverage",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "detail": "Two test files per component with diverging mocks and assertions. Creates maintenance trap and redundant CI time.",
+      "recommendation": "Remove root-level tests/WorkItemDetailPage and tests/WorkItemListPage. Keep tests/pages/ versions (more complete). Verify no test cases exist exclusively in root versions before deleting.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "HIGH-001",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "brace-expansion ≤1.1.15 — DoS via exponential glob expansion",
+      "source": "dependency-auditor",
+      "project": "Source/Backend",
+      "package": "brace-expansion",
+      "cvss": 5.3,
+      "cwe": ["CWE-400", "CWE-407"],
+      "advisory": "GHSA-3jxr-9vmj-r5cp",
+      "fix": "cd Source/Backend && npm update brace-expansion",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "HIGH-002",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "form-data 4.0.0–4.0.5 — CRLF injection in multipart headers",
+      "source": "dependency-auditor",
+      "projects": ["Source/Backend", "Source/Frontend"],
+      "package": "form-data",
+      "cvss": 7.5,
+      "cwe": ["CWE-93"],
+      "advisory": "GHSA-hmw2-7cc7-3qxx",
+      "fix": "npm update form-data (in both Backend and Frontend)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "HIGH-003",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "js-yaml — code injection via unsafe YAML deserialization",
+      "source": "dependency-auditor",
+      "project": "Source/Backend",
+      "package": "js-yaml",
+      "cwe": ["CWE-502"],
+      "fix": "cd Source/Backend && npm update js-yaml",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "HIGH-004",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "@grpc/grpc-js 1.14.0–1.14.3 — server crash via malformed request",
+      "source": "dependency-auditor",
+      "project": "platform/orchestrator",
+      "package": "@grpc/grpc-js",
+      "cvss": 7.5,
+      "cwe": ["CWE-248"],
+      "advisories": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "fix": "cd platform/orchestrator && npm update @grpc/grpc-js",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "HIGH-005",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "path-to-regexp <0.1.13 — ReDoS via crafted route parameters",
+      "source": "dependency-auditor",
+      "project": "platform/orchestrator",
+      "package": "path-to-regexp",
+      "cvss": 7.5,
+      "cwe": ["CWE-1333"],
+      "advisory": "GHSA-37ch-88jc-xwx2",
+      "fix": "cd platform/orchestrator && npm update path-to-regexp",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "HIGH-006",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "vite ≤5.x — dev server SSRF / information disclosure",
+      "source": "dependency-auditor",
+      "project": "Source/Frontend",
+      "package": "vite",
+      "cwe": ["CWE-346"],
+      "fix": "cd Source/Frontend && npm update vite",
+      "cross_refs": ["CRIT-002"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "test-coverage",
+      "title": "Layout, PriorityBadge, StatusBadge, TypeBadge — no test files",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/Layout.tsx",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx"
+      ],
+      "spec_refs": ["FR-032"],
+      "recommendation": "Add tests/components/*.test.tsx for each; verify correct CSS class per enum value.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable-next-line react-hooks/exhaustive-deps without justification comment",
+      "source": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Add inline comment explaining why dependency is intentionally omitted, or fix the dependency array.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "MED-001",
+      "severity": "P3",
+      "category": "dependency-vuln",
+      "title": "uuid ^9.0.0 — weak random number generation in certain contexts",
+      "source": "dependency-auditor",
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "fix": "npm update uuid",
+      "status": "NEW"
+    },
+    {
+      "id": "MED-002",
+      "severity": "P3",
+      "category": "dependency-vuln",
+      "title": "Express/qs — invalid limit disables body size enforcement; invalid charset causes DoS",
+      "source": "dependency-auditor",
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "fix": "npm update express body-parser",
+      "status": "NEW"
+    },
+    {
+      "id": "MED-003",
+      "severity": "P3",
+      "category": "dependency-vuln",
+      "title": "postcss <8.5.10 — XSS via unescaped </style> in CSS output",
+      "source": "dependency-auditor",
+      "project": "Source/Frontend",
+      "fix": "cd Source/Frontend && npm update postcss",
+      "status": "NEW"
+    },
+    {
+      "id": "MED-004",
+      "severity": "P3",
+      "category": "dependency-vuln",
+      "title": "react-router-dom 6.7.0–6.30.3 — open redirect via protocol-relative URLs",
+      "source": "dependency-auditor",
+      "project": "Source/Frontend",
+      "fix": "cd Source/Frontend && npm update react-router-dom",
+      "status": "NEW"
+    },
+    {
+      "id": "MED-005-013",
+      "severity": "P3",
+      "category": "dependency-vuln",
+      "title": "Remaining 9 medium CVEs (vitest mocker SSRF, protobufjs/utf8, handlebars prototype pollution x2, protobufjs DoS+prototype x2, dockerode uuid, body-parser)",
+      "source": "dependency-auditor",
+      "fix": "npm update in respective project directories",
+      "status": "NEW"
+    },
+    {
+      "id": "OUTD-001",
+      "severity": "P3",
+      "category": "outdated-dep",
+      "title": "pino 8.17.0 is 2 major versions behind latest 10.3.1",
+      "source": "dependency-auditor",
+      "project": "Source/Backend",
+      "current_version": "8.17.0",
+      "latest_version": "10.3.1",
+      "status": "NEW"
+    },
+    {
+      "id": "OUTD-002",
+      "severity": "P3",
+      "category": "outdated-dep",
+      "title": "uuid 9.0.0 is 5 major versions behind latest 14.0.1",
+      "source": "dependency-auditor",
+      "project": "Source/Backend",
+      "current_version": "9.0.0",
+      "latest_version": "14.0.1",
+      "status": "NEW"
+    },
+    {
+      "id": "OUTD-003",
+      "severity": "P3",
+      "category": "outdated-dep",
+      "title": "react + react-dom 18.3.1 — 1 major version behind latest 19.2.8",
+      "source": "dependency-auditor",
+      "project": "Source/Frontend",
+      "current_version": "18.3.1",
+      "latest_version": "19.2.8",
+      "status": "NEW"
+    },
+    {
+      "id": "OUTD-004",
+      "severity": "P3",
+      "category": "outdated-dep",
+      "title": "react-router-dom 6.26.0 — 1 major version behind latest 7.18.1",
+      "source": "dependency-auditor",
+      "project": "Source/Frontend",
+      "current_version": "6.26.0",
+      "latest_version": "7.18.1",
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Traceability enforcer scans Plans/ only, ignoring Specifications/",
+      "affected_findings": ["QO-001", "QO-002"],
+      "single_fix": "Extend tools/traceability-enforcer.py to scan Specifications/ for FR-\\d+ patterns",
+      "fix_impact": "Resolves false-green CI gate and forces the 0% coverage gap to surface on every run"
+    },
+    {
+      "root_cause": "Injection-unsafe transitive serialization/template engines",
+      "affected_findings": ["CRIT-001", "CRIT-003"],
+      "single_fix": "Update handlebars and protobufjs; audit call sites for untrusted input",
+      "fix_impact": "Eliminates two CVSS 9.8 RCE surfaces — TheGuardians must validate call-site audit"
+    },
+    {
+      "root_cause": "Route handlers embed business logic without service abstraction",
+      "affected_findings": ["QO-003", "QO-004", "QO-005"],
+      "single_fix": "Service-layer refactor of workItems.ts, workflow.ts, intake.ts; consolidate logger",
+      "fix_impact": "Resolves three P2 findings in a single focused refactor pass"
+    },
+    {
+      "root_cause": "Dev-tooling exposed to local network without access control",
+      "affected_findings": ["CRIT-002", "HIGH-006"],
+      "single_fix": "Update vitest and vite; bind dev servers to localhost; add CI policy",
+      "fix_impact": "Eliminates dev-time file-read and SSRF vectors"
+    }
+  ],
+  "specialists_that_ran": [
+    {
+      "name": "quality-oracle",
+      "mode": "static",
+      "p1": 2,
+      "p2": 4,
+      "p3": 2,
+      "grade": "D",
+      "spec_coverage_pct": 0
+    },
+    {
+      "name": "dependency-auditor",
+      "mode": "static",
+      "p1": 3,
+      "p2": 6,
+      "p3": 13,
+      "notes": "3 critical CVEs (CVSS 9.8), 6 high CVEs, 13 medium CVEs; Source/E2E is clean"
+    },
+    {
+      "name": "performance-profiler",
+      "mode": "static",
+      "skipped_reason": "Backend service offline — dynamic endpoint testing unavailable",
+      "static_risks_noted": ["Unbounded list serialization on GET /api/work-items", "Missing request body size validation"]
+    },
+    {
+      "name": "chaos-monkey",
+      "mode": "static",
+      "skipped_reason": "All services must be healthy for chaos mode — none were reachable",
+      "static_risks_noted": ["Concurrent state transition race condition", "Malformed request body handling not verified"]
+    }
+  ]
+}

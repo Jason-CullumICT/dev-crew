@@ -1,7 +1,36 @@
-# Dependency Auditor Findings - Index
+# TheInspector Findings — Index
 
 **Audit Date:** 2026-07-24  
-**Overall Grade:** C (3 P1, 8 P2 vulnerabilities)
+**Overall Grade:** D (5 P1 total — 3 CVE + 2 spec-drift)  
+**Synthesis by:** team-leader
+
+---
+
+## 🏆 Master Report Files
+
+| File | Format | Purpose |
+|------|--------|---------|
+| [`audit-2026-07-24-D.html`](audit-2026-07-24-D.html) | HTML | **PRIMARY REPORT** — 16-section graded health report with charts |
+| [`bug-backlog-2026-07-24.json`](bug-backlog-2026-07-24.json) | JSON | Machine-readable P1/P2 backlog with escalation array |
+| [`dependency-audit-2026-07-24.md`](dependency-audit-2026-07-24.md) | Markdown | Full CVE analysis from dependency-auditor |
+| [`dependency-audit-2026-07-24.json`](dependency-audit-2026-07-24.json) | JSON | Structured CVE export for dashboard |
+| [`DEPENDENCY_AUDIT_REPORT.txt`](DEPENDENCY_AUDIT_REPORT.txt) | Plain Text | CLI-friendly ASCII report |
+
+Also see: `inspector-report.md` (root level) — summary with embedded JSON backlog.
+
+---
+
+## ⚠️ Escalations → TheGuardians
+
+**DEP-001, DEP-002, DEP-003** (3× CVSS 9.8 RCE) + **DEP-008** (open redirect → XSS)  
+Read `Teams/TheGuardians/team-leader.md` and follow exactly. Target: ephemeral isolated environment.
+
+---
+
+## Dependency Auditor Findings - Detail
+
+**Audit Date:** 2026-07-24  
+**Grade:** C (3 P1, 8 P2 vulnerabilities)
 
 ---
 

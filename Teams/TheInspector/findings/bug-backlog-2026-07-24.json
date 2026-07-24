@@ -1,0 +1,512 @@
+{
+  "audit_id": "audit-2026-07-24-D",
+  "audit_date": "2026-07-24",
+  "grade": "D",
+  "branch": "audit/inspector-2026-07-24-a6276b",
+  "run_id": "run-20260724-053420",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "backend and frontend services offline — dynamic testing requires running services",
+  "prior_audit": null,
+  "baseline_note": "First audit — no prior baseline. All findings tagged NEW.",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 13,
+    "p3_total": 13,
+    "p4_total": 1,
+    "total_findings": 32,
+    "fixed_since_prior": 0,
+    "regressed_since_prior": 0,
+    "new_findings": 32,
+    "spec_coverage_canonical_pct": 0,
+    "spec_coverage_plans_pct": 94,
+    "cves_critical": 3,
+    "cves_high": 9,
+    "cves_moderate": 24,
+    "cves_low": 1,
+    "license_violations": 0,
+    "escalations_to_guardians": 4
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "title": "Arbitrary file read and execution via Vitest UI server",
+      "reason": "RCE — arbitrary code execution on developer machine",
+      "route_to": "TheGuardians",
+      "priority": "BLOCK DEPLOYMENT"
+    },
+    {
+      "id": "DEP-002",
+      "package": "handlebars",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "title": "JavaScript injection via AST type confusion and template injection RCE",
+      "reason": "Template injection RCE in backend dependency",
+      "route_to": "TheGuardians",
+      "priority": "BLOCK DEPLOYMENT"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary code execution via code generation gadget chain",
+      "reason": "Code generation RCE via OpenTelemetry gRPC channel",
+      "route_to": "TheGuardians",
+      "priority": "BLOCK DEPLOYMENT"
+    },
+    {
+      "id": "DEP-008",
+      "package": "react-router-dom",
+      "cve": "GHSA-jjmj-jmhj-qwj2",
+      "cvss": 6.9,
+      "title": "Open redirect leading to XSS via protocol-relative URL",
+      "reason": "Open redirect → XSS; missing access control for navigation",
+      "route_to": "TheGuardians",
+      "priority": "THIS SPRINT"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "Arbitrary file read and execution via Vitest UI server",
+      "package": "vitest ≤3.2.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "exploit_scenario": "Attacker on the same network as a developer running the Vitest UI server can read arbitrary files from the developer's machine and execute arbitrary code",
+      "impact": "Full developer-machine compromise during testing",
+      "fix": "npm install vitest@latest in Source/Frontend and portal/Frontend",
+      "route_to": "TheGuardians + TheFixer"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "JavaScript injection via AST type confusion and template injection RCE",
+      "package": "handlebars 4.0.0–4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "file": "Source/Backend/package.json",
+      "exploit_scenario": "Backend compiles user-supplied or attacker-controlled Handlebars template → arbitrary JavaScript execution on the server",
+      "impact": "Server-side RCE via template injection; prototype pollution → XSS",
+      "fix": "npm audit fix in Source/Backend; remove or upgrade handlebars",
+      "route_to": "TheGuardians + TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "Arbitrary code execution via protobufjs code generation gadget",
+      "package": "protobufjs ≤7.6.4",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "file": "portal/Backend/package.json",
+      "exploit_scenario": "Attacker provides a malicious .proto file or crafts a gRPC message exploiting the code generation gadget chain → arbitrary code executed in the portal backend process",
+      "impact": "Full process compromise of portal/Backend; prototype injection in message constructors",
+      "fix": "npm install protobufjs@latest OR upgrade @opentelemetry/sdk-node to ≥0.221.0",
+      "route_to": "TheGuardians + TheFixer"
+    },
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Spec-Source ID Mismatch — Source traces to Plan IDs not Specification IDs",
+      "file": "Source/ (entire codebase)",
+      "exploit_scenario": "Any agent asked to implement a requirement from Specifications/dev-workflow-platform.md will find 0 implemented counterparts in Source/; the traceability enforcer gives a false 0% result; future agents build against wrong assumptions",
+      "impact": "Structural breakdown of spec-first workflow; CLAUDE.md architecture rule violated at scale",
+      "fix": "Add FR-WF-* IDs to Specifications/workflow-engine.md OR add Spec↔Plan cross-reference tables in each Plan. Update traceability-enforcer.py accordingly.",
+      "route_to": "TheFixer (docs + enforcer config)"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "dev-workflow-platform.md FR-001…FR-069 entirely unimplemented in Source/",
+      "file": "Specifications/dev-workflow-platform.md",
+      "exploit_scenario": "Agent tasked with implementing a missing feature references this spec (SQLite store, entity names, API shapes) but Source/ implements a different in-memory engine; agent produces conflicting code",
+      "impact": "Misleading authoritative document; agent misdirection; spec-first contract broken",
+      "fix": "Formally mark FR-001…FR-069 as deferred/out-of-scope with a note about the architectural pivot, OR create a reconciliation plan for incremental implementation",
+      "route_to": "TheFixer (docs)"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "OpenTelemetry Prometheus exporter crashes on malformed HTTP request",
+      "package": "@opentelemetry/auto-instrumentations-node ≤0.76.0",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "file": "portal/Backend/package.json",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.79.0"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "gRPC server crash from malformed or compressed messages",
+      "package": "@grpc/grpc-js 1.14.0–1.14.3",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "cvss": 7.5,
+      "file": "portal/Backend/package.json",
+      "fix": "npm install @grpc/grpc-js@latest in portal/Backend"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "PostCSS reads arbitrary files via sourceMappingURL in CSS comments",
+      "package": "postcss ≤8.5.11",
+      "cve": "GHSA-6g55-p6wh-862q",
+      "cvss": 7.5,
+      "file": "portal/Frontend/package.json",
+      "fix": "npm install postcss@latest in portal/Frontend"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "Vite path traversal and server.fs.deny bypass",
+      "package": "vite ≤6.4.2",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "cvss": 7.5,
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "fix": "npm install vite@latest in Source/Frontend and portal/Frontend"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "React Router open redirect leading to XSS",
+      "package": "react-router-dom 6.6.3–6.30.4",
+      "cve": "GHSA-jjmj-jmhj-qwj2",
+      "cvss": 6.9,
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "fix": "npm install react-router-dom@latest (≥7.18.0)",
+      "cross_ref": "ESCALATE → TheGuardians"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "CRLF injection in multipart form-data field names",
+      "package": "form-data 4.0.0–4.0.5",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "file": "Transitive (via dockerode, multer, supertest)",
+      "fix": "npm audit fix --workspaces"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "Exponential-time brace-expansion DoS",
+      "package": "brace-expansion <1.1.16",
+      "cve": "GHSA-3jxr-9vmj-r5cp",
+      "cvss": 5.3,
+      "file": "Transitive (glob utility)",
+      "fix": "npm audit fix --workspaces"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "ReDoS via multiple route parameters in path-to-regexp",
+      "package": "path-to-regexp <0.1.13",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "file": "portal/Backend/package.json",
+      "fix": "cd portal/Backend && npm audit fix"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "WebSocket memory exhaustion DoS from tiny fragments",
+      "package": "ws 8.0.0–8.20.1",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "cvss": 7.5,
+      "file": "Transitive (vitest, dev servers)",
+      "fix": "npm audit fix --workspaces"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "FR-dependency-metrics: dependencyCheckDuration histogram missing from metrics.ts",
+      "file": "Source/Backend/src/metrics.ts",
+      "fix": "Add Histogram export and record timing in DependencyService.hasUnresolvedBlockers() and isReady()"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "FR-dependency-seed: no seed.ts file exists",
+      "file": "Source/Backend/src/ (missing seed.ts)",
+      "fix": "Create Source/Backend/src/seed.ts with idempotent seeding logic; call on server startup"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Traceability enforcer blind to platform/ — false-negative on FR-TMP-*",
+      "file": "tools/traceability-enforcer.py:78",
+      "fix": "Add 'platform' to source_dirs in enforcer, OR document deliberately excluded in inspector.config.yml"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "doc-stale",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Plans/dependency-linking stale portal/ paths — should be Source/",
+      "file": "Plans/dependency-linking/requirements.md",
+      "fix": "Find-replace portal/Backend/ → Source/Backend/, portal/Frontend/ → Source/Frontend/, portal/Shared/ → Source/Shared/"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "uuid buffer bounds check missing in v3/v5/v6",
+      "package": "uuid",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "fix": "Upgrade to uuid ≥11.1.1"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "body-parser DoS via invalid limit value",
+      "package": "body-parser",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "fix": "Upgrade to body-parser ≥1.20.6"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "qs DoS via stringify crash",
+      "package": "qs",
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "fix": "Upgrade to qs ≥6.15.2"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "@babel/core arbitrary file read via sourceMappingURL",
+      "package": "@babel/core",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "fix": "Upgrade to @babel/core ≥7.29.1"
+    },
+    {
+      "id": "DEP-017",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "picomatch ReDoS via extglob quantifiers",
+      "package": "picomatch",
+      "cve": "GHSA-c2c7-rcm5-vvqj",
+      "fix": "Upgrade to picomatch ≥2.3.2 or ≥4.0.4"
+    },
+    {
+      "id": "DEP-018",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "js-yaml quadratic-complexity DoS in merge key",
+      "package": "js-yaml",
+      "cve": "GHSA-52cp-r559-cp3m",
+      "fix": "Upgrade to js-yaml ≥3.15.0"
+    },
+    {
+      "id": "DEP-019",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "@opentelemetry/core unbounded memory allocation in W3C Baggage",
+      "package": "@opentelemetry/core",
+      "cve": "GHSA-8988-4f7v-96qf",
+      "fix": "Upgrade @opentelemetry/sdk-node to ≥0.221.0"
+    },
+    {
+      "id": "DEP-020",
+      "severity": "P3",
+      "category": "outdated",
+      "specialist": "dependency-auditor",
+      "title": "@opentelemetry/* packages 9+ major versions behind (0.40–0.76 vs 0.221+)",
+      "package": "@opentelemetry/*",
+      "note": "175 sub-versions behind; carries multiple transitive CVEs",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.79.0 and all @opentelemetry/* packages"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "DebugPortalPage.tsx has non-standard traceability comment",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "fix": "Map to // Verifies: FR-WF-009 or create FR-WF-014"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Two eslint-disable suppressions in production code",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Fix underlying dependency instability using useCallback / memoized stable references"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "title": "Duplicate test files for WorkItemListPage and WorkItemDetailPage",
+      "files": [
+        "Source/Frontend/tests/WorkItemListPage.test.tsx (root)",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx (root)",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx"
+      ],
+      "fix": "Consolidate into tests/pages/ versions, delete root-level duplicates"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "workflow-engine.md has no machine-verifiable FR IDs",
+      "file": "Specifications/workflow-engine.md",
+      "fix": "Add FR-WF-001…FR-WF-013 IDs to spec tables/headings"
+    },
+    {
+      "id": "QO-011",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "api-contracts.md references phantom FR-070…FR-085",
+      "file": "Source/Shared/api-contracts.md:6",
+      "fix": "Update comment to reference correct IDs: FR-dependency-types through FR-dependency-frontend-tests"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-P4-001",
+      "severity": "P4",
+      "category": "informational",
+      "specialist": "dependency-auditor",
+      "title": "Transitive dependency sprawl — ~950 transitive packages across 6 workspaces",
+      "note": "All better-sqlite3 and esbuild post-install scripts verified as native compilation — acceptable",
+      "fix": "Periodic SCA scans; consider npm audit --audit-level=moderate in merge gate"
+    }
+  ],
+  "cross_reference_groups": [
+    {
+      "root_cause": "Dev tooling suite (vitest/vite/ws) outdated across both frontend workspaces",
+      "findings": ["DEP-001", "DEP-007", "DEP-012"],
+      "single_fix": "npm install vitest@latest vite@latest ws@latest in Source/Frontend and portal/Frontend",
+      "fix_impact": "Closes 3 findings (1 P1 + 2 P2)"
+    },
+    {
+      "root_cause": "@opentelemetry package family severely outdated (9+ major versions)",
+      "findings": ["DEP-003", "DEP-004", "DEP-005", "DEP-019", "DEP-020"],
+      "single_fix": "Upgrade @opentelemetry/sdk-node to ≥0.221.0 and @opentelemetry/auto-instrumentations-node to ≥0.79.0",
+      "fix_impact": "Closes 5 findings (1 P1 + 2 P2 + 2 P3)"
+    },
+    {
+      "root_cause": "FR ID namespace fragmentation — three parallel ID systems with no cross-reference",
+      "findings": ["QO-001", "QO-002", "QO-010", "QO-011"],
+      "single_fix": "Add canonical FR-WF-* IDs to Specifications/workflow-engine.md; add cross-reference tables in Plans",
+      "fix_impact": "Closes or substantially resolves 4 findings (2 P1 + 2 P3)"
+    },
+    {
+      "root_cause": "Stale documentation paths and phantom requirement IDs",
+      "findings": ["QO-006", "QO-011"],
+      "single_fix": "Path find-replace in Plans/dependency-linking/requirements.md + update api-contracts.md status comment",
+      "fix_impact": "Closes 2 findings (1 P2 + 1 P3) — solo session task (docs are freely editable)"
+    }
+  ],
+  "recommendations": {
+    "block_deployment": [
+      "DEP-001: Upgrade vitest to ≥3.2.6 (RCE, CVSS 9.8)",
+      "DEP-002: Run npm audit fix in Source/Backend — handlebars RCE (CVSS 9.8)",
+      "DEP-003: Upgrade protobufjs in portal/Backend (RCE, CVSS 9.8)",
+      "Trigger TheGuardians security audit for DEP-001, DEP-002, DEP-003, DEP-008"
+    ],
+    "this_sprint": [
+      "DEP-008: Upgrade react-router-dom to ≥7.18.0 (open redirect → XSS)",
+      "DEP-007: Upgrade vite to ≥6.4.3 (path traversal)",
+      "DEP-004: Upgrade @opentelemetry/auto-instrumentations-node (DoS crash)",
+      "DEP-005: Upgrade @grpc/grpc-js to ≥1.14.4 (gRPC crash)",
+      "QO-006: Fix stale portal/ paths in Plans/dependency-linking (5-minute solo fix)",
+      "QO-003: Add dependencyCheckDuration histogram to metrics.ts",
+      "QO-004: Create Source/Backend/src/seed.ts",
+      "Run npm audit fix --workspaces (closes DEP-009, DEP-010, DEP-011, DEP-012)"
+    ],
+    "next_sprint": [
+      "QO-001 + QO-002 + QO-010: Establish canonical FR ID scheme in Specifications/workflow-engine.md",
+      "DEP-020: Plan @opentelemetry/* major version upgrade (175 versions behind)",
+      "Express 4.x → 5.x upgrade (breaking changes — plan carefully)",
+      "React 18.x → 19.x upgrade",
+      "QO-005: Extend traceability enforcer to scan platform/ directory"
+    ],
+    "backlog": [
+      "QO-007: Fix DebugPortalPage.tsx traceability comment",
+      "QO-008: Fix eslint-disable suppressions in DependencyPicker and useWorkItems",
+      "QO-009: Consolidate duplicate test files for WorkItemListPage and WorkItemDetailPage",
+      "QO-011: Update api-contracts.md phantom FR-070–FR-085 references",
+      "DEP-P4-001: Add npm audit --audit-level=moderate to merge gate CI policy"
+    ]
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "audit_date": "2026-07-24",
+  "auditor": "dependency_auditor",
+  "project_scope": "dev-crew (npm packages)",
+  "overall_grade": "C",
+  "summary": {
+    "cves_critical": 3,
+    "cves_high": 8,
+    "cves_moderate": 24,
+    "cves_low": 1,
+    "cves_total": 36,
+    "outdated_major": 6,
+    "outdated_minor": 4,
+    "license_violations": 0,
+    "deprecated_packages": 0,
+    "total_transitive_deps": 950
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "version": "<=3.2.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "title": "Arbitrary file read and execution via Vitest UI server",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fix": "npm install vitest@latest"
+    },
+    {
+      "id": "DEP-002",
+      "package": "handlebars",
+      "version": "4.0.0-4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "title": "JavaScript injection via AST type confusion and template injection RCE",
+      "affected_workspaces": ["Source/Backend"],
+      "fix": "npm audit fix"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "version": "<=7.6.4",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary code execution via code generation gadget",
+      "affected_workspaces": ["portal/Backend"],
+      "fix": "npm install protobufjs@latest or update @opentelemetry/sdk-node@0.221.0"
+    }
+  ],
+  "high_priority_findings": [
+    {
+      "id": "DEP-004",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "title": "Prometheus exporter process crash via malformed HTTP request"
+    },
+    {
+      "id": "DEP-005",
+      "package": "@grpc/grpc-js",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "cvss": 7.5,
+      "title": "Server crash from malformed gRPC request"
+    },
+    {
+      "id": "DEP-006",
+      "package": "postcss",
+      "cve": "GHSA-6g55-p6wh-862q",
+      "cvss": 7.5,
+      "title": "Arbitrary file read via sourceMappingURL in CSS comments"
+    },
+    {
+      "id": "DEP-007",
+      "package": "vite",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "cvss": 7.5,
+      "title": "Path traversal and server.fs.deny bypass on Windows"
+    },
+    {
+      "id": "DEP-008",
+      "package": "react-router-dom",
+      "cve": "GHSA-jjmj-jmhj-qwj2",
+      "cvss": 6.9,
+      "title": "Open redirect leading to XSS"
+    },
+    {
+      "id": "DEP-009",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "title": "CRLF injection in multipart field names"
+    },
+    {
+      "id": "DEP-010",
+      "package": "brace-expansion",
+      "cve": "GHSA-3jxr-9vmj-r5cp",
+      "cvss": 5.3,
+      "title": "DoS via exponential-time expansion"
+    },
+    {
+      "id": "DEP-011",
+      "package": "path-to-regexp",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "title": "ReDoS via multiple route parameters"
+    },
+    {
+      "id": "DEP-012",
+      "package": "ws",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "cvss": 7.5,
+      "title": "Memory exhaustion DoS from tiny fragments"
+    }
+  ],
+  "outdated_packages": {
+    "critical": [
+      {
+        "package": "@opentelemetry/*",
+        "current": "0.40-0.76",
+        "latest": "0.221+",
+        "versions_behind": 175,
+        "workspace": "portal/Backend",
+        "risk_level": "CRITICAL"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "14.0.1",
+        "versions_behind": 5,
+        "workspace": "Source/Backend",
+        "risk_level": "HIGH"
+      }
+    ],
+    "major": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "versions_behind": 1,
+        "workspace": "Source/Backend, platform/orchestrator",
+        "breaking_changes": true
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.3.1",
+        "versions_behind": 2,
+        "workspace": "Source/Backend"
+      },
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.2.8",
+        "versions_behind": 1,
+        "workspace": "Source/Frontend",
+        "note": "Concurrent rendering changes"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "latest": "7.18.1",
+        "versions_behind": 1,
+        "workspace": "Source/Frontend, portal/Frontend",
+        "breaking_changes": true
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "approved_licenses": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC"],
+    "violations": [],
+    "gpl_agpl_detected": false
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": ["better-sqlite3", "esbuild"],
+    "script_risk": "ACCEPTABLE (verified native compilation)",
+    "single_maintainer_packages": [],
+    "recently_transferred": [],
+    "transitive_dependency_count": 950
+  },
+  "recommendations": {
+    "immediate": [
+      "Fix DEP-001, DEP-002, DEP-003 (CRITICAL CVEs)",
+      "Run: npm audit fix --workspaces",
+      "Test thoroughly after fixes"
+    ],
+    "next_sprint": [
+      "Upgrade Express 4.x → 5.x (breaking changes)",
+      "Upgrade React 18.x → 19.x",
+      "Upgrade @opentelemetry/* to 0.221+ (175 versions behind!)"
+    ],
+    "ci_policy": [
+      "Add npm audit --audit-level=moderate to merge gate",
+      "Quarterly full dependency audit",
+      "Subscribe to npm security advisories"
+    ]
+  },
+  "escalations": {
+    "security": [
+      "DEP-001: vitest RCE",
+      "DEP-002: handlebars template injection RCE",
+      "DEP-003: protobufjs code generation RCE",
+      "DEP-008: react-router open redirect to XSS"
+    ],
+    "to_team": "TheGuardians"
+  }
+}

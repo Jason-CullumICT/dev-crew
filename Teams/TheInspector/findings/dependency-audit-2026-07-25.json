@@ -1,0 +1,212 @@
+{
+  "audit_date": "2026-07-25",
+  "auditor": "dependency_auditor",
+  "project": "dev-crew",
+  "grade": "C",
+  "summary": {
+    "cves": {
+      "critical": 2,
+      "high": 7,
+      "moderate": 9,
+      "low": 2,
+      "total": 20
+    },
+    "dependencies": {
+      "backend_direct": 13,
+      "backend_total": 411,
+      "frontend_direct": 13,
+      "frontend_total": 230,
+      "combined_unique": 641
+    },
+    "license_issues": 0,
+    "outdated_major": 4,
+    "supply_chain_risk": "moderate-high"
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read/Execution",
+      "severity": "P1",
+      "category": "cve",
+      "package": "vitest@^2.0.5",
+      "workspace": "Frontend",
+      "direct_dependency": true,
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "affected_range": "<=3.2.5",
+      "fix": "npm update vitest@4.1.10+ (major version bump required)"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js Multiple JavaScript Injection/Prototype Pollution",
+      "severity": "P1",
+      "category": "cve",
+      "package": "handlebars@4.7.8",
+      "workspace": "Backend",
+      "direct_dependency": false,
+      "transitive_via": ["jest", "superagent", "others"],
+      "cvss_score": 8.1,
+      "cve_id_primary": "GHSA-2w6w-674q-4c4q",
+      "cve_count": 8,
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "fix": "npm update handlebars@4.7.9+ (if used at runtime; verify usage first)"
+    }
+  ],
+  "high_priority_findings": [
+    {
+      "id": "DEP-003",
+      "title": "Vite server.fs.deny bypass on Windows",
+      "severity": "P2",
+      "package": "vite@^5.4.0",
+      "cve_id": "GHSA-fx2h-pf6j-xcff",
+      "cvss_score": 7.5
+    },
+    {
+      "id": "DEP-004",
+      "title": "Express.js via qs DoS",
+      "severity": "P2",
+      "package": "express@^4.18.2",
+      "note": "Current 4.18.2 is safe; do not upgrade to 4.21–4.22.1"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Brace-expansion DoS (multiple vectors)",
+      "severity": "P2",
+      "package": "brace-expansion",
+      "cve_count": 3
+    },
+    {
+      "id": "DEP-006",
+      "title": "Form-data CRLF Injection",
+      "severity": "P2",
+      "package": "form-data@4.0.0-4.0.5",
+      "cve_id": "GHSA-hmw2-7cc7-3qxx"
+    },
+    {
+      "id": "DEP-007",
+      "title": "js-yaml Quadratic-complexity DoS",
+      "severity": "P2",
+      "package": "js-yaml"
+    }
+  ],
+  "medium_priority_findings": [
+    {
+      "id": "DEP-008",
+      "title": "UUID buffer bounds check missing",
+      "severity": "P3",
+      "package": "uuid@^9.0.0"
+    },
+    {
+      "id": "DEP-009",
+      "title": "Babel Core arbitrary file read",
+      "severity": "P3",
+      "package": "@babel/core@^7.29.0"
+    },
+    {
+      "id": "DEP-010",
+      "title": "PostCSS source map path traversal",
+      "severity": "P3",
+      "package": "postcss@<=8.5.17"
+    },
+    {
+      "id": "DEP-011",
+      "title": "React Router open redirect",
+      "severity": "P3",
+      "package": "react-router-dom@^6.26.0"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "major_versions_behind": 3,
+      "recommendation": "Hold at 4.x; upgrade to 5.x only with framework migration"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "wanted": "18.3.1",
+      "latest": "19.2.8",
+      "major_versions_behind": 1
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "wanted": "6.30.4",
+      "latest": "7.18.1",
+      "major_versions_behind": 1
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.1",
+      "wanted": "9.0.1",
+      "latest": "14.0.1",
+      "major_versions_behind": 5
+    }
+  ],
+  "license_compliance": {
+    "status": "compliant",
+    "violations": [],
+    "notes": "No GPL/AGPL violations; all dependencies have clear licenses (mostly MIT, ISC, Apache-2.0)"
+  },
+  "supply_chain_risks": {
+    "total_dependencies": 641,
+    "total_dependency_risk": "moderate-high",
+    "deprecated_packages": [
+      "supertest@6.3.3 (upgrade to 6.3.4+ or 7.1.3+)",
+      "glob@7.2.3 (migrate to @isaacs/glob)",
+      "superagent@8.1.2 (upgrade to 10.2.2+)",
+      "inflight@1.0.6 (NOT SUPPORTED — memory leak)"
+    ]
+  },
+  "action_plan": {
+    "immediate": [
+      "Upgrade vitest to 4.1.10+ (Frontend)",
+      "Confirm handlebars runtime usage (Backend); update if unused at runtime"
+    ],
+    "this_sprint": [
+      "Upgrade vite to 6.4.3+ (Frontend)",
+      "Verify express@4.18.2 is safe; do not upgrade to 4.21–4.22.1",
+      "Update brace-expansion via glob/jest upgrade",
+      "Update form-data to 4.0.6+ via HTTP client dependency"
+    ],
+    "next_release": [
+      "Update P3 items (uuid, babel, postcss, react-router)",
+      "Plan React 19 + React Router 7 migration"
+    ]
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "team": "TheGuardians",
+      "reason": "Remote code execution via development tooling"
+    },
+    {
+      "finding_id": "DEP-002",
+      "team": "TheGuardians",
+      "reason": "Code injection vectors; verify template input handling"
+    },
+    {
+      "finding_id": "DEP-003",
+      "team": "TheGuardians",
+      "reason": "Information disclosure on Windows dev machines"
+    },
+    {
+      "finding_id": "DEP-006",
+      "team": "TheGuardians",
+      "reason": "Request/header injection via CRLF in multipart data"
+    }
+  ],
+  "learning_updates": {
+    "handlebars_watch_list": "8+ known injection vectors",
+    "vitest_ui_security": "Critical RCE if exposed to untrusted networks",
+    "form_data_common": "CRLF injection is common transitive vulnerability",
+    "audit_tools": [
+      "npm audit --json (primary)",
+      "npm outdated --json",
+      "npx license-checker --json"
+    ]
+  }
+}

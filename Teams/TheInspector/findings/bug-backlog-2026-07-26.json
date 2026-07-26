@@ -1,0 +1,209 @@
+{
+  "audit_id": "run-20260726-054655",
+  "audit_date": "2026-07-26",
+  "grade": "C",
+  "team": "TheInspector",
+  "branch": "main",
+  "route_to": "TheFixer",
+  "escalations": [],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search never wired in app.ts — production 404",
+      "severity": "P1",
+      "category": "functional-gap",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/src/app.ts",
+      "line": 1,
+      "spec_refs": ["FR-dependency-search"],
+      "description": "The DependencyPicker typeahead calls searchItems() → GET /api/search → 404 in production. The route file, client function, and 5 test cases all exist but the route is never mounted in app.ts. Tests are committed in a known-failing state.",
+      "exploit_scenario": "Any user interacting with the DependencyPicker gets a 404. Feature is entirely non-functional in production.",
+      "impact": "Work item dependency search is broken. All 5 search.test.ts cases fail. DependencyPicker UI is non-functional.",
+      "recommendation": "Add Source/Backend/src/routes/search.ts (filter getAll() items by title/description, skip deleted, return {data: WorkItem[]}), mount at /api/search in app.ts. One-sprint fix.",
+      "fix_team": "TheFixer",
+      "priority": "Block deployment",
+      "status": "NEW",
+      "cross_refs": ["QO-007"]
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "pending_dependencies missing from WorkItemStatus enum",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Source/Shared/types/workflow.ts",
+      "line": 5,
+      "spec_refs": ["FR-dependency-dispatch-gating"],
+      "description": "api-contracts.md and FR-dependency-dispatch-gating require a pending_dependencies state transition when a dispatch is blocked by unresolved dependencies. The status does not exist in the WorkItemStatus enum. Code returns a 400 error instead. Cascade auto-advance also broken.",
+      "impact": "Dispatch-gating spec cannot be implemented. Cascade auto-advance broken.",
+      "recommendation": "Add 'pending_dependencies' to WorkItemStatus enum in Source/Shared/types/workflow.ts. Coordinate with api-contract agent before editing — this is a shared type change affecting multiple layers.",
+      "fix_team": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW",
+      "cross_refs": ["QO-003"]
+    },
+    {
+      "id": "QO-003",
+      "title": "BlockedBadge missing amber Pending Dependencies state",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/components/BlockedBadge.tsx",
+      "line": 10,
+      "spec_refs": ["FR-dependency-blocked-badge"],
+      "description": "FR-dependency-blocked-badge specifies three render states; only two are implemented. The amber badge (status='pending_dependencies') is entirely absent — no status prop, no amber color, no test. Blocked on QO-002.",
+      "impact": "Users see no visual indicator for pending-dependency state. Spec compliance gap.",
+      "recommendation": "Add status prop to BlockedBadge. Implement amber 'Pending Dependencies' render state and test. Gated on QO-002 (enum must exist first).",
+      "fix_team": "TheFixer",
+      "priority": "This sprint",
+      "status": "NEW",
+      "cross_refs": ["QO-002"]
+    },
+    {
+      "id": "QO-004",
+      "title": "Route handlers call store.* directly, bypassing service layer",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "line": 44,
+      "spec_refs": [],
+      "description": "workItems.ts and workflow.ts both call the in-memory store directly from route handlers. Only dashboard.ts follows the service pattern. Architecture rule: 'No direct DB calls from route handlers — use the service layer.'",
+      "impact": "Business logic entangled in route layer. Makes testing harder, violates architecture contract.",
+      "recommendation": "Extract store calls from workItems.ts and workflow.ts into service modules. Follow the dashboardService pattern.",
+      "fix_team": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW",
+      "cross_refs": []
+    },
+    {
+      "id": "QO-005",
+      "title": "FR-TMP-001 to FR-TMP-010 have zero traceability in Source/",
+      "severity": "P2",
+      "category": "traceability-gap",
+      "specialist": "quality-oracle",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "line": 1,
+      "spec_refs": ["FR-TMP-001", "FR-TMP-002", "FR-TMP-003", "FR-TMP-004", "FR-TMP-005", "FR-TMP-006", "FR-TMP-007", "FR-TMP-008", "FR-TMP-009", "FR-TMP-010"],
+      "description": "10 tiered-merge-pipeline FRs exist in specs but are unresolvable in Source/ — they live in platform/ (orchestrator infrastructure), which pipeline agents cannot touch. These FRs are out of scope for Source/ traceability checks.",
+      "impact": "Enforcer cannot validate these FRs, creating a false coverage gap in reporting.",
+      "recommendation": "Update Specifications/tiered-merge-pipeline.md or enforcer config to explicitly mark FR-TMP-* as platform-layer scope. Add a platform-scope annotation so the enforcer can skip them without false failures.",
+      "fix_team": "TheFixer",
+      "priority": "Backlog",
+      "status": "NEW",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-001",
+      "title": "Express 4 → 5 major version gap",
+      "severity": "P2",
+      "category": "outdated-dependency",
+      "specialist": "dependency-auditor",
+      "file": "Source/Backend/package.json",
+      "line": null,
+      "spec_refs": [],
+      "description": "Express 5.x includes breaking API changes and security hardening. Current 4.x versions still receive security patches but are 2+ major versions behind. Upgrade requires code review of middleware and route handlers.",
+      "impact": "Missing security hardening in Express 5. Future CVEs in 4.x will have no upstream fix.",
+      "recommendation": "Plan express@5 migration for next major cycle. Test with express@5 in dev, update middleware/route handler code.",
+      "fix_team": "TheFixer",
+      "priority": "Next sprint",
+      "status": "NEW",
+      "cross_refs": []
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "title": "Traceability enforcer silently validates only 1 of 3 active requirement sets",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "title": "5 known-failing tests committed to repo (search.test.ts)",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "cross_refs": ["QO-001"]
+    },
+    {
+      "id": "QO-008",
+      "title": "Dual logger abstraction creates import confusion",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Pino 8 → 10 major version gap",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "title": "React 18 → 19 major version gap",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "React Router DOM 6 → 7 major version gap",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-009",
+      "title": "ESLint exhaustive-deps suppressions without justification",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "@types/node 20 → 26 major version gap (type defs only)",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "TypeScript 5.3/5.5 → 5.9 (safe minor update)",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "Vite 5.4.0 → 5.4.7 patch gap",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vitest 2.0 → 2.1 minor version gap",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "status": "NEW"
+    }
+  ],
+  "summary": {
+    "p1_total": 1,
+    "p2_total": 5,
+    "p3_total": 6,
+    "p4_total": 5,
+    "escalations_total": 0,
+    "fixed_total": 0,
+    "new_total": 17,
+    "still_open_total": 0,
+    "regressed_total": 0
+  }
+}

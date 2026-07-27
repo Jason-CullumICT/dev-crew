@@ -1,0 +1,463 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-27",
+    "agent": "dependency_auditor",
+    "version": "1.0",
+    "status": "completed",
+    "grade": "C",
+    "summary": "Critical and high-severity CVEs found across npm dependencies. Protobufjs, Vitest, and Handlebars require immediate patching."
+  },
+  "severity_summary": {
+    "critical": 3,
+    "high": 14,
+    "moderate": 79,
+    "low": 15,
+    "total": 111
+  },
+  "projects_scanned": {
+    "Source/Backend": {
+      "direct_deps": 14,
+      "transitive_deps": 88,
+      "total_deps": 102,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 9
+      }
+    },
+    "Source/Frontend": {
+      "direct_deps": 3,
+      "transitive_deps": 206,
+      "total_deps": 209,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 12
+      }
+    },
+    "Source/E2E": {
+      "direct_deps": 1,
+      "transitive_deps": 3,
+      "total_deps": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0
+      }
+    },
+    "platform/orchestrator": {
+      "direct_deps": 3,
+      "transitive_deps": 152,
+      "total_deps": 155,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 2,
+        "moderate": 3
+      }
+    },
+    "portal/Backend": {
+      "direct_deps": 22,
+      "transitive_deps": 375,
+      "total_deps": 397,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 7,
+        "moderate": 43
+      }
+    },
+    "portal/Frontend": {
+      "direct_deps": 3,
+      "transitive_deps": 406,
+      "total_deps": 424,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 12
+      }
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "CRITICAL",
+      "priority": "P1",
+      "package": "protobufjs",
+      "version_range": "<=7.6.4",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94"],
+      "impact": "Arbitrary code execution via malformed protobuf definitions",
+      "affected_projects": ["portal/Backend"],
+      "fix_version": ">=7.5.5",
+      "effort_hours": 2,
+      "escalation": "TheGuardians",
+      "blocking": true
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Arbitrary File Read/Execute",
+      "severity": "CRITICAL",
+      "priority": "P1",
+      "package": "vitest",
+      "version_range": "<=3.2.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-862"],
+      "impact": "Unauthenticated arbitrary file read and execute when UI server listening",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "fix_version": ">=4.1.10",
+      "effort_hours": 2,
+      "escalation": "TheGuardians",
+      "blocking": true,
+      "notes": "Disable --ui flag in all test configs until patched"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Handlebars JavaScript Injection (Multiple)",
+      "severity": "CRITICAL",
+      "priority": "P1",
+      "package": "handlebars",
+      "version_range": "4.0.0-4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q + 6 others",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "impact": "Multiple JavaScript injection vectors via template name confusion and partial injection",
+      "affected_projects": ["Source/Backend"],
+      "fix_version": ">=4.7.9",
+      "effort_hours": 1,
+      "escalation": "TheGuardians",
+      "blocking": true,
+      "notes": "Audit active usage first"
+    }
+  ],
+  "high_priority_findings": [
+    {
+      "id": "DEP-004",
+      "title": "OpenTelemetry SDK Prometheus DoS + Unbounded Memory",
+      "severity": "HIGH",
+      "priority": "P2",
+      "packages": [
+        "@opentelemetry/auto-instrumentations-node@0.40.0",
+        "@opentelemetry/sdk-node@0.47.0",
+        "@opentelemetry/propagator-jaeger@<=2.8.0"
+      ],
+      "cves": ["GHSA-q7rr-3cgh-j5r3", "GHSA-8988-4f7v-96qf", "GHSA-45rx-2jwx-cxfr"],
+      "cvss_scores": [7.5, 5.3, 7.5],
+      "impact": "DoS via malformed HTTP/Jaeger headers; unbounded memory in W3C baggage",
+      "affected_projects": ["portal/Backend"],
+      "fix_version": "@opentelemetry/sdk-node@>=0.221.0",
+      "effort_hours": 2,
+      "escalation": "TheGuardians",
+      "notes": "30+ transitive dependencies need upgrade; single version bump fixes cascade"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Vite Path Traversal & fs.deny Bypass",
+      "severity": "HIGH",
+      "priority": "P2",
+      "package": "vite",
+      "version_range": "<=6.4.2",
+      "cves": ["GHSA-fx2h-pf6j-xcff", "GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3"],
+      "cvss_scores": [7.5, null, null],
+      "impact": "Windows alternate path traversal; .map file disclosure; NTLMv2 hash leak",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "fix_version": ">=8.1.5",
+      "effort_hours": 6,
+      "escalation": "TheGuardians",
+      "breaking_changes": true,
+      "notes": "Major version upgrade (5→8); requires build config testing"
+    },
+    {
+      "id": "DEP-006",
+      "title": "PostCSS Arbitrary File Read via sourceMappingURL",
+      "severity": "HIGH",
+      "priority": "P2",
+      "package": "postcss",
+      "version_range": "<=8.5.17",
+      "cves": ["GHSA-6g55-p6wh-862q", "GHSA-r28c-9q8g-f849", "GHSA-qx2v-qp2m-jg93"],
+      "cvss_scores": [7.5, 7.5, 6.1],
+      "impact": "Arbitrary .map file read; path traversal; XSS via unescaped </style>",
+      "affected_projects": ["portal/Frontend"],
+      "fix_version": ">=8.5.18",
+      "effort_hours": 1,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-007",
+      "title": "React Router Open Redirect (Multiple Variants)",
+      "severity": "HIGH",
+      "priority": "P2",
+      "package": "react-router-dom",
+      "version_range": "6.0.0-7.17.0",
+      "cves": ["GHSA-2j2x-hqr9-3h42", "GHSA-wrjc-x8rr-h8h6", "GHSA-337j-9hxr-rhxg", "GHSA-jjmj-jmhj-qwj2"],
+      "cvss_scores": [null, null, 6.1, 6.9],
+      "impact": "Protocol-relative URL redirect; backslash bypass; SSR constructor injection; XSS via redirect",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "fix_version": ">=7.18.0",
+      "effort_hours": 6,
+      "escalation": "TheGuardians",
+      "breaking_changes": true,
+      "notes": "Major version upgrade (6→7); requires routing tests"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Form-Data CRLF Injection in Multipart Headers",
+      "severity": "HIGH",
+      "priority": "P2",
+      "package": "form-data",
+      "version_range": "4.0.0-4.0.5",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-93"],
+      "impact": "CRLF injection via unescaped field names/filenames; enables response splitting",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "fix_version": ">=4.0.6",
+      "effort_hours": 1,
+      "escalation": "TheGuardians",
+      "notes": "Transitive dependency; check which direct dep brings it in"
+    },
+    {
+      "id": "DEP-009",
+      "title": "path-to-regexp Regular Expression DoS (ReDoS)",
+      "severity": "HIGH",
+      "priority": "P2",
+      "package": "path-to-regexp",
+      "version_range": "<0.1.13",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-1333"],
+      "impact": "Regex DoS via complex route parameters; CPU exhaustion on routing",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "fix_version": ">=0.1.13",
+      "effort_hours": 1,
+      "escalation": "TheGuardians",
+      "notes": "Likely fixed transitively by express updates"
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-010",
+      "title": "UUID Missing Buffer Bounds Check",
+      "severity": "MODERATE",
+      "priority": "P3",
+      "package": "uuid",
+      "version_range": "<11.1.1",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "impact": "Buffer overflow in uuid v3/v5/v6 when custom buffer provided",
+      "affected_projects": ["Source/Backend", "portal/Backend", "platform/orchestrator"],
+      "fix_version": ">=14.0.1",
+      "effort_hours": 1,
+      "risk_level": "low",
+      "notes": "Requires explicit undersized buffer usage; defensive patch"
+    },
+    {
+      "id": "DEP-011",
+      "title": "js-yaml Merge Key DoS (Quadratic Complexity)",
+      "severity": "MODERATE",
+      "priority": "P3",
+      "package": "js-yaml",
+      "version_range": "<=3.14.2",
+      "cve": "GHSA-52cp-r559-cp3m",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-400", "CWE-407"],
+      "impact": "DoS via merge key chains forcing quadratic CPU",
+      "affected_projects": ["Source/Backend"],
+      "fix_version": ">=3.15.0",
+      "effort_hours": 1,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-012",
+      "title": "Brace-Expansion Unbounded DoS",
+      "severity": "MODERATE",
+      "priority": "P3",
+      "package": "brace-expansion",
+      "version_range": "<=5.0.7",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg"],
+      "cvss_scores": [6.5, 5.3, 7.5],
+      "impact": "Process hang and OOM via zero-step sequences and unbounded expansion",
+      "affected_projects": ["Source/Backend"],
+      "fix_version": ">=1.1.16",
+      "effort_hours": 1
+    },
+    {
+      "id": "DEP-013",
+      "title": "Express qs Package DoS (NULL Pointer Dereference)",
+      "severity": "MODERATE",
+      "priority": "P3",
+      "package": "qs",
+      "version_range": "6.11.1-6.15.1",
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "cvss_score": 5.3,
+      "cwe": ["CWE-476"],
+      "impact": "qs.stringify() crash on malformed arrays with encodeValuesOnly",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "fix_version": ">=6.15.2",
+      "effort_hours": 1,
+      "notes": "Transitive via express; likely fixed in 4.21+ versions"
+    },
+    {
+      "id": "DEP-014",
+      "title": "Body-Parser Invalid Limit Silent Bypass",
+      "severity": "MODERATE",
+      "priority": "P3",
+      "package": "body-parser",
+      "version_range": "<1.20.6",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "cvss_score": 3.7,
+      "cwe": ["CWE-770"],
+      "impact": "Invalid limit config silently disables size enforcement",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "fix_version": ">=1.20.6",
+      "effort_hours": 1,
+      "notes": "Transitive via express; config validation issue"
+    },
+    {
+      "id": "DEP-015",
+      "title": "Picomatch ReDoS via Extglob Quantifiers",
+      "severity": "MODERATE",
+      "priority": "P3",
+      "package": "picomatch",
+      "version_range": "<=2.3.1 || 4.0.0-4.0.3",
+      "cves": ["GHSA-3v7f-55p6-f55p", "GHSA-c2c7-rcm5-vvqj"],
+      "cvss_scores": [5.3, 7.5],
+      "impact": "Regex DoS in file globbing; build/watch process hang",
+      "affected_projects": ["portal/Frontend"],
+      "fix_version": ">=2.3.2",
+      "effort_hours": 1,
+      "notes": "Dev-only; impact on build time during file watching"
+    }
+  ],
+  "remediation_plan": {
+    "phase_1_critical": {
+      "priority": "IMMEDIATE",
+      "timeline": "This week",
+      "tasks": [
+        {
+          "task": "Update OpenTelemetry SDK",
+          "projects": ["portal/Backend"],
+          "command": "npm update @opentelemetry/auto-instrumentations-node@^0.79.0 @opentelemetry/sdk-node@^0.221.0 @opentelemetry/exporter-trace-otlp-http@^0.221.0",
+          "hours": 2,
+          "blocking": ["protobufjs", "Prometheus DoS"]
+        },
+        {
+          "task": "Update Vitest",
+          "projects": ["Source/Frontend", "portal/Frontend"],
+          "command": "npm update vitest@^4.1.10",
+          "hours": 2,
+          "immediate_action": "Disable --ui flag in all configs"
+        },
+        {
+          "task": "Audit Handlebars Usage",
+          "projects": ["Source/Backend"],
+          "command": "grep -r 'handlebars' . && npm audit fix",
+          "hours": 1
+        }
+      ]
+    },
+    "phase_2_high": {
+      "priority": "HIGH",
+      "timeline": "1-2 weeks",
+      "tasks": [
+        {
+          "task": "Upgrade Vite",
+          "projects": ["Source/Frontend", "portal/Frontend"],
+          "command": "npm update vite@^8.1.5",
+          "hours": 6,
+          "breaking_changes": true,
+          "testing_required": "Build config, dev server, E2E"
+        },
+        {
+          "task": "Upgrade React Router",
+          "projects": ["Source/Frontend", "portal/Frontend"],
+          "command": "npm update react-router-dom@^7.18.0",
+          "hours": 6,
+          "breaking_changes": true,
+          "testing_required": "Routing tests, navigation flows"
+        },
+        {
+          "task": "Update PostCSS",
+          "projects": ["portal/Frontend"],
+          "command": "npm update postcss@^8.5.18",
+          "hours": 1
+        },
+        {
+          "task": "Update Form-Data",
+          "projects": ["all"],
+          "command": "npm update form-data@^4.0.6",
+          "hours": 1
+        }
+      ]
+    },
+    "phase_3_moderate": {
+      "priority": "PLANNED",
+      "timeline": "1 month",
+      "tasks": [
+        {
+          "task": "Update UUID & Dependencies",
+          "projects": ["Source/Backend", "portal/Backend", "platform/orchestrator"],
+          "command": "npm update uuid@^14.0.1 dockerode@^5.0.1",
+          "hours": 1
+        },
+        {
+          "task": "Update Config/Build Tools",
+          "projects": ["all"],
+          "command": "npm update js-yaml@^3.15.0 brace-expansion@^1.1.16",
+          "hours": 2
+        }
+      ]
+    },
+    "total_effort_hours": {
+      "development": 40,
+      "testing": 16,
+      "total": 56
+    }
+  },
+  "escalations": {
+    "TheGuardians": {
+      "critical_issues": [
+        "DEP-001: protobufjs arbitrary code execution",
+        "DEP-002: vitest UI arbitrary file read",
+        "DEP-003: handlebars JavaScript injection"
+      ],
+      "high_issues": [
+        "DEP-004: OpenTelemetry DoS",
+        "DEP-005: Vite path traversal",
+        "DEP-006: PostCSS file read",
+        "DEP-007: React Router open redirect",
+        "DEP-008: Form-Data CRLF injection",
+        "DEP-009: path-to-regexp ReDoS"
+      ],
+      "action_items": [
+        "Assess exploitability in application context (Vitest UI exposure, untrusted protocol sources, form field control)",
+        "Review threat model for W3C baggage header handling",
+        "Evaluate Handlebars active usage"
+      ]
+    },
+    "TheFixer": {
+      "tasks": [
+        "Create branch: deps/critical-cve-fixes",
+        "Phase 1-2 dependency updates with lockfile commits",
+        "Breaking change testing: Vite v5→v8, React Router v6→v7",
+        "Verification gate: npm test --workspaces, E2E tests"
+      ]
+    }
+  },
+  "supply_chain_risk": {
+    "total_transitive_deps": 441,
+    "abandoned_packages": 0,
+    "low_download_packages": [],
+    "duplicate_major_versions": [
+      "@opentelemetry/core@<2.8.0 (multiple versions in subtrees)"
+    ],
+    "monorepo_issues": [
+      "Package trees overlap; no workspace hoisting",
+      "OpenTelemetry sub-packages duplicated across auto-instrumentations chain"
+    ]
+  },
+  "next_audit_date": "2026-08-27",
+  "audit_notes": "Critical issues require immediate action. Phase 1 updates unblock majority of CVE chain. Vite and React Router major upgrades require careful testing. Consider disabling non-essential OpenTelemetry instrumentations to reduce supply chain surface."
+}

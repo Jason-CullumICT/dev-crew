@@ -1,0 +1,374 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-27",
+    "run_id": "run-20260727-060851",
+    "synthesised_by": "team_leader",
+    "model": "sonnet",
+    "grade": "D",
+    "baseline": "first-audit",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "No reports found — services likely offline or specialists not dispatched"
+  },
+  "grade_summary": {
+    "overall_grade": "D",
+    "grade_rationale": "4 P1 findings exceed the C-threshold of max_p1=2; requires D per inspector.config.yml",
+    "p1_count": 4,
+    "p2_count": 11,
+    "p3_count": 10,
+    "p4_count": 3,
+    "spec_coverage_pct": 71,
+    "spec_threshold_used": "C min=40%",
+    "thresholds": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+      "D": { "max_p1": 999 }
+    }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "package": "protobufjs@<=7.6.4",
+      "affected": ["portal/Backend"],
+      "impact": "Arbitrary code execution via malformed protobuf definitions in OpenTelemetry chain",
+      "specialist": "dependency-auditor",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node to >=0.79.0 (transitive protobufjs bump)"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Arbitrary File Read/Execute",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "missing access control",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "package": "vitest@<=3.2.5",
+      "affected": ["Source/Frontend", "portal/Frontend"],
+      "impact": "Unauthenticated attacker on the network can read and execute arbitrary files when Vitest UI server is running",
+      "specialist": "dependency-auditor",
+      "fix": "Upgrade vitest to >=4.1.10; disable --ui flag in all configs immediately"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Handlebars JavaScript Injection (Multiple CVEs)",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "cve": "GHSA-2w6w-674q-4c4q + 6 additional",
+      "cvss": 9.8,
+      "package": "handlebars@4.0.0-4.7.8",
+      "affected": ["Source/Backend"],
+      "impact": "Multiple JavaScript injection vectors via template name/partial-block confusion; attacker can execute arbitrary JS through template rendering",
+      "specialist": "dependency-auditor",
+      "fix": "Upgrade handlebars to >=4.7.9 or remove if not directly used; audit all template render call-sites"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search endpoint not registered — DependencyPicker typeahead is broken at runtime",
+      "severity": "P1",
+      "category": "spec-drift/correctness",
+      "specialist": "quality-oracle",
+      "spec_ref": "FR-dependency-search",
+      "file": "Source/Backend/src/app.ts",
+      "status": "NEW",
+      "impact": "Frontend DependencyPicker calls /api/search on every keystroke; 404 is silently swallowed; feature appears to work but always returns nothing",
+      "recommendation": "Create Source/Backend/src/routes/search.ts; register app.use('/api/search', searchRouter) in app.ts; make search.test.ts green",
+      "route": "TheFixer",
+      "priority_label": "Block deployment"
+    },
+    {
+      "id": "DEP-001",
+      "title": "Protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "severity": "P1",
+      "category": "cve/supply-chain",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "file": "portal/Backend/package.json",
+      "status": "NEW",
+      "escalation": "[ESCALATE → TheGuardians]",
+      "route": "TheGuardians + TheFixer"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Arbitrary File Read/Execute (CVSS 9.8)",
+      "severity": "P1",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "status": "NEW",
+      "escalation": "[ESCALATE → TheGuardians]",
+      "route": "TheGuardians + TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Handlebars JavaScript Injection (CVSS 9.8)",
+      "severity": "P1",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-2w6w-674q-4c4q + 6 others",
+      "file": "Source/Backend/node_modules",
+      "status": "NEW",
+      "escalation": "[ESCALATE → TheGuardians]",
+      "route": "TheGuardians + TheFixer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "dependencyCheckDuration Prometheus histogram absent",
+      "severity": "P2",
+      "category": "spec-drift/observability",
+      "specialist": "quality-oracle",
+      "spec_ref": "FR-dependency-metrics",
+      "file": "Source/Backend/src/metrics.ts",
+      "status": "NEW",
+      "cross_ref": "QO-003, QO-008",
+      "recommendation": "Add dependencyCheckDurationHistogram to metrics.ts; instrument isReady()/hasUnresolvedBlockers()",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "title": "OpenTelemetry tracing entirely absent — hard architecture rule violated",
+      "severity": "P2",
+      "category": "architecture-violation/observability",
+      "specialist": "quality-oracle",
+      "spec_ref": "FR-021, CLAUDE.md",
+      "file": "Source/Backend/src/app.ts",
+      "status": "NEW",
+      "cross_ref": "QO-002, QO-008",
+      "recommendation": "Install @opentelemetry/sdk-node; create telemetry.ts; add spans to routeWorkItem, runAssessmentPod, dispatchWorkItem",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "title": "FR-dependency-seed unimplemented — no seed script, no trace",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "spec_ref": "FR-dependency-seed",
+      "file": "Source/Backend/src/store/",
+      "status": "NEW",
+      "recommendation": "Create Source/Backend/src/store/seed.ts with idempotent seedDependencies(); call on app init",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "title": "Tiered Merge Pipeline spec (FR-TMP-001–010) — 0% implementation trace",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "spec_ref": "Specifications/tiered-merge-pipeline.md",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "status": "NEW",
+      "cross_ref": "QO-006",
+      "recommendation": "Clarify ownership (platform/ vs Source/); if unstarted, create Plan entry and tickets; remove stale playwright.pipeline.config.ts",
+      "route": "TheATeam"
+    },
+    {
+      "id": "QO-006",
+      "title": "Traceability enforcer scope too narrow — reports false PASS at gate",
+      "severity": "P2",
+      "category": "spec-drift/process",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW",
+      "cross_ref": "QO-005",
+      "recommendation": "Extend enforcer to scan Specifications/ for FR-TMP-* and FR-dependency-seed IDs, or add to Plans/ requirements file",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "title": "OpenTelemetry SDK Prometheus DoS + Unbounded Memory (Multiple CVEs)",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cves": ["GHSA-q7rr-3cgh-j5r3", "GHSA-8988-4f7v-96qf", "GHSA-45rx-2jwx-cxfr"],
+      "file": "portal/Backend/package.json",
+      "status": "NEW",
+      "cross_ref": "DEP-001",
+      "recommendation": "Upgrade @opentelemetry/sdk-node to >=0.221.0; fixes cascade of 30+ sub-packages",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Vite Path Traversal & fs.deny Bypass (Multiple CVEs)",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cves": ["GHSA-fx2h-pf6j-xcff", "GHSA-4w7w-66w2-5vf9"],
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "status": "NEW",
+      "cross_ref": "DEP-002",
+      "recommendation": "Upgrade vite to >=8.1.5 (major bump; breaking changes — test thoroughly)",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "title": "PostCSS Arbitrary File Read via sourceMappingURL",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cves": ["GHSA-6g55-p6wh-862q", "GHSA-r28c-9q8g-f849", "GHSA-qx2v-qp2m-jg93"],
+      "file": "portal/Frontend/package.json",
+      "status": "NEW",
+      "recommendation": "Upgrade postcss to >=8.5.18",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "title": "React Router Open Redirect (Multiple Variants, including XSS)",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cves": ["GHSA-2j2x-hqr9-3h42", "GHSA-wrjc-x8rr-h8h6", "GHSA-337j-9hxr-rhxg", "GHSA-jjmj-jmhj-qwj2"],
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "status": "NEW",
+      "recommendation": "Upgrade react-router-dom to >=7.18.0 (major bump v6→v7; breaking changes)",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Form-Data CRLF Injection in Multipart Headers",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "file": "Source/Backend, Source/Frontend, portal/Backend, portal/Frontend",
+      "status": "NEW",
+      "recommendation": "Upgrade form-data to >=4.0.6 (transitive; identify root direct dep)",
+      "route": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "title": "path-to-regexp Regular Expression DoS (ReDoS)",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "file": "portal/Backend/package.json",
+      "status": "NEW",
+      "recommendation": "Upgrade portal/Backend Express to 4.21+ (includes path-to-regexp 0.1.13+)",
+      "route": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007", "title": "AssessmentResult locally defined — violates Shared types rule",
+      "severity": "P3", "specialist": "quality-oracle",
+      "file": "Source/Backend/src/services/assessment.ts:141", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "QO-008", "title": "Route latency Prometheus histogram missing — middleware absent",
+      "severity": "P3", "specialist": "quality-oracle",
+      "file": "Source/Backend/src/app.ts", "status": "NEW", "cross_ref": "QO-002, QO-003", "route": "TheFixer"
+    },
+    {
+      "id": "QO-009", "title": "Duplicate test files — two competing versions in tests/ vs tests/pages/",
+      "severity": "P3", "specialist": "quality-oracle",
+      "file": "Source/Frontend/tests/", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "QO-010", "title": "Two logger modules — compatibility shim is technical debt",
+      "severity": "P3", "specialist": "quality-oracle",
+      "file": "Source/Backend/src/logger.ts", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "DEP-010", "title": "UUID Missing Buffer Bounds Check",
+      "severity": "P3", "specialist": "dependency-auditor",
+      "cve": "GHSA-w5hq-g745-h8pq", "cvss": 7.5,
+      "file": "Source/Backend/package.json", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "DEP-011", "title": "js-yaml Merge Key DoS (Quadratic CPU)",
+      "severity": "P3", "specialist": "dependency-auditor",
+      "cve": "GHSA-52cp-r559-cp3m", "cvss": 7.5,
+      "file": "Source/Backend/node_modules", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "DEP-012", "title": "Brace-Expansion Unbounded DoS",
+      "severity": "P3", "specialist": "dependency-auditor",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg"],
+      "file": "Source/Backend/node_modules", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "DEP-013", "title": "Express qs NULL Pointer DoS",
+      "severity": "P3", "specialist": "dependency-auditor",
+      "cve": "GHSA-q8mj-m7cp-5q26", "cvss": 5.3,
+      "file": "Source/Backend, platform/orchestrator, portal/Backend", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "DEP-014", "title": "Body-Parser Invalid Limit Silent Bypass",
+      "severity": "P3", "specialist": "dependency-auditor",
+      "cve": "GHSA-v422-hmwv-36x6", "cvss": 3.7,
+      "file": "Source/Backend, platform/orchestrator, portal/Backend", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "DEP-015", "title": "Picomatch ReDoS via Extglob Quantifiers",
+      "severity": "P3", "specialist": "dependency-auditor",
+      "cves": ["GHSA-3v7f-55p6-f55p", "GHSA-c2c7-rcm5-vvqj"],
+      "file": "portal/Frontend/package.json", "status": "NEW", "route": "TheFixer"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-011", "title": "4 frontend components + DebugPortalPage untested",
+      "severity": "P4", "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/components/", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "QO-012", "title": "eslint-disable without explanation in 2 production files",
+      "severity": "P4", "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63", "status": "NEW", "route": "TheFixer"
+    },
+    {
+      "id": "DEP-016", "title": "@babel/core Arbitrary File Read (Low, dev-only)",
+      "severity": "P4", "specialist": "dependency-auditor",
+      "cve": "GHSA-4x5r-pxfx-6jf8", "cvss": 3.2,
+      "file": "Source/Backend, Source/Frontend, portal/Frontend", "status": "NEW", "route": "TheFixer"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Observability stack absent in Source/Backend",
+      "findings": ["QO-002", "QO-003", "QO-008"],
+      "single_fix": "Install @opentelemetry/sdk-node, add histograms (dependencyCheckDuration + route latency) to metrics.ts, create telemetry.ts",
+      "fix_impact": "Resolves 1 P2 + 1 P2 + 1 P3 = 3 findings across quality-oracle"
+    },
+    {
+      "root_cause": "Outdated OpenTelemetry packages in portal/Backend",
+      "findings": ["DEP-001", "DEP-004"],
+      "single_fix": "Upgrade @opentelemetry/auto-instrumentations-node to >=0.79.0 and sdk-node to >=0.221.0",
+      "fix_impact": "Resolves 1 P1 + 1 P2 = 2 findings; fixes protobufjs transitive chain + DoS cascade (30+ packages)"
+    },
+    {
+      "root_cause": "Outdated frontend toolchain (vite, vitest, postcss, react-router)",
+      "findings": ["DEP-002", "DEP-005", "DEP-006", "DEP-007", "DEP-015"],
+      "single_fix": "Upgrade vite@8.1.5, vitest@4.1.10, react-router-dom@7.18.0, postcss@8.5.18 in Source/Frontend and portal/Frontend",
+      "fix_impact": "Resolves 1 P1 + 3 P2 + 1 P3 = 5 findings; requires breaking-change test pass"
+    },
+    {
+      "root_cause": "Traceability enforcer scope too narrow",
+      "findings": ["QO-005", "QO-006"],
+      "single_fix": "Extend enforcer to scan Specifications/ for FR-TMP-* and FR-dependency-seed patterns",
+      "fix_impact": "Resolves 1 P2 + 1 P2 = 2 findings; surfaces hidden spec coverage gaps for future audits"
+    }
+  ],
+  "remediation_priorities": {
+    "block_deployment": ["DEP-001", "DEP-002", "DEP-003", "QO-001"],
+    "this_sprint": ["DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "QO-002", "QO-003", "QO-004"],
+    "next_sprint": ["QO-005", "QO-006", "QO-007", "QO-008", "QO-009", "QO-010"],
+    "backlog": ["DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014", "DEP-015", "QO-011", "QO-012", "DEP-016"]
+  }
+}

@@ -367,3 +367,185 @@
 5. **Soft-delete blocker sabotage** (PEN-007): Create two items, link as dependency, soft-delete blocker, confirm victim is permanently blocked.
 6. **Intake field injection** (PEN-002): POST to `/api/intake/zendesk` with `type: "ARBITRARY"` → confirm stored, confirm Prometheus label polluted.
 7. **Pagination DoS** (PEN-005): `GET /api/dashboard/activity?limit=999999` after populating data — measure time.
+
+---
+
+## Red Team Results
+
+**Executed:** 2026-07-27  
+**Analyst:** red_teamer  
+**Target:** portal/Backend (http://localhost:3001) — **Note:** Pen-tester analysed `Source/Backend` (work-items engine); the live `docker-compose.test.yml` service runs `portal/Backend` (feature-request/bug/cycle portal). All exploit chains were re-derived against the actual running surface and are confirmed live.
+
+> **Scope delta:** `/api/work-items` routes do not exist in the live target. Equivalent vulnerability classes were confirmed against `/api/feature-requests`, `/api/bugs`, and supporting routes.
+
+---
+
+### RED-001: Zero Authentication on All Portal API Endpoints
+- **Severity:** Critical
+- **Objective Achieved:** Yes — access baseline confirmed
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests` (and all routes)
+- **Based On:** PEN-001
+- **Exploit Scenario:**
+  1. `curl -s -X POST http://localhost:3001/api/feature-requests -H "Content-Type: application/json" -d '{"title":"Attacker-Created Feature","description":"No auth","source":"manual","priority":"critical"}'`
+  2. Response: HTTP 201 — `FR-0001` created. No `Authorization` header sent. No challenge issued.
+  3. All 9 route groups (`/api/feature-requests`, `/api/bugs`, `/api/cycles`, `/api/learnings`, `/api/features`, `/api/pipeline-runs`, `/api/search`, `/api/team-dispatches`, `/metrics`) returned data with zero credentials.
+- **Evidence:** HTTP 200/201 on all endpoints, no WWW-Authenticate header, no 401/403 ever observed.
+- **Recommendation:** Introduce an authentication middleware (JWT or session) applied globally before all API routes. Add authorisation layer (ownership checks / role checks) per resource.
+
+---
+
+### RED-002: IDOR — Anonymous Read/Modify/Delete on Any Resource
+- **Severity:** High
+- **Objective Achieved:** Yes — "access or modify a soft-deleted work item" analog confirmed
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests/:id` (PATCH, DELETE, all action endpoints)
+- **Based On:** PEN-004
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests` (no auth) — full item list returned, exposing all IDs.
+  2. `PATCH /api/feature-requests/FR-0001` with `{"status":"voting"}` — status changed on any item without ownership check. Response: HTTP 200, `status: "voting"`.
+  3. `DELETE /api/feature-requests/FR-0002` — HTTP 204, item permanently destroyed. `GET /api/feature-requests/FR-0002` → HTTP 404 confirmed.
+- **Evidence:** HTTP 200 PATCH, HTTP 204 DELETE, HTTP 404 subsequent GET — all without any credential.
+- **Recommendation:** Require authentication on all write routes. Add resource ownership validation — only the creator or an authorised role may modify/delete.
+
+---
+
+### RED-003: State Machine Bypass — Force-Approve with Zero AI Votes (Primary Objective)
+- **Severity:** Critical
+- **Objective Achieved:** Yes — **PRIMARY OBJECTIVE: "Bypass work item state machine to reach an invalid status"**
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests/:id/force-approve`
+- **Based On:** PEN-003, PEN-006
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → creates `FR-0002` in `potential` status.
+  2. `PATCH /api/feature-requests/FR-0002` with `{"status":"voting"}` → item enters `voting` state with **0 votes cast** (no AI agents ran).
+  3. `POST /api/feature-requests/FR-0002/force-approve` → HTTP 200, `status: "approved"`, `votes: []`, `human_approval_approved_at: "2026-07-27T06:43:19.743Z"`.
+  4. Feature request is now approved with zero AI review, bypassing all 5 agent votes (TechFeasibilityAgent, ResourceCostAgent, UserImpactAgent, BusinessValueAgent, SecurityReviewAgent).
+- **Evidence:** Final state `status=approved`, `votes=[]` — confirmed zero-vote approval path.
+- **Recommendation:** The `force-approve` endpoint must require: (a) authentication + elevated role (e.g., `admin`), (b) enforcement that at least N votes exist before force-approve is callable, or (c) removal in favour of a properly-gated admin override with full audit record.
+
+---
+
+### RED-004: Deleted Blocker Permanently Blocks Victim + ID Recycling Binds Orphan Links to New Items
+- **Severity:** High
+- **Objective Achieved:** Yes — sabotage of approved items; plus critical compounding ID-reuse finding
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests/:id/dependencies`
+- **Based On:** PEN-007
+- **Exploit Scenario (Sabotage Path):**
+  1. `POST /api/feature-requests` → create victim `FR-0004` (moved to `approved`).
+  2. `POST /api/feature-requests` → create attacker-controlled blocker `FR-0005`.
+  3. `POST /api/feature-requests/FR-0004/dependencies` with `{"action":"add","blocker_id":"FR-0005"}` → dependency link stored.
+  4. `DELETE /api/feature-requests/FR-0005` → blocker hard-deleted. `GET FR-0005 → 404`.
+  5. `GET /api/feature-requests/FR-0004` → `has_unresolved_blockers: true`, `blocked_by: [{item_id:"FR-0005", status:"unknown", title:"Unknown"}]`.
+  6. `GET /api/feature-requests/FR-0004/ready` → `ready: false` — victim is permanently un-dispatchable.
+- **Compounding Finding — ID Recycling:**
+  - After `FR-0005` was hard-deleted, `generateFRId()` recycles the ID (looks up max existing ID, not a monotonic counter). The next new item was assigned `FR-0005`.
+  - The new `FR-0005` ("Seed item 1") **inherited** the orphaned blocking relationship: `blocks: [{item_id:"FR-0004"}]`.
+  - Result: a completely unrelated item automatically becomes a blocker for the victim, locking it permanently.
+- **Evidence:** `has_unresolved_blockers: true`, `ready: false` confirmed live; new FR-0005 shows `blocks: [FR-0004]` despite no explicit link.
+- **Recommendation:** (a) Cascade-delete or nullify dependency links when a blocker is deleted. (b) Use UUID-based IDs to prevent ID recycling. (c) The dependency service's `isReady()` should treat a missing/deleted blocker as "resolved" (it no longer blocks), not "unknown" (unresolved).
+
+---
+
+### RED-005: Full Dataset Enumeration — No Pagination Limit Enforced
+- **Severity:** High
+- **Objective Achieved:** Yes — "enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests`
+- **Based On:** PEN-005
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests` (no auth) — returns all 9 items in a single response.
+  2. No `page`, `limit`, `total`, or `totalPages` fields in response — only `{"data": [...]}`.
+  3. Query params `limit=999999` and `page=1&limit=1` both ignored; full dataset always returned.
+  4. Response contains all IDs, statuses, votes, descriptions, and dependency links for every item.
+- **Evidence:** 9 items returned unconditionally regardless of query parameters.
+- **Recommendation:** Implement server-side pagination: enforce a maximum page size (e.g., 100), require a `page` parameter, and return `{data, page, limit, total, totalPages}` per the project's API response patterns.
+
+---
+
+### RED-006: Unauthenticated Prometheus /metrics Exposes Operational Intelligence
+- **Severity:** Medium
+- **Objective Achieved:** Partial — intelligence gathering confirmed
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/metrics`
+- **Based On:** PEN-010
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/metrics` with no credentials → HTTP 200, 41,546-byte Prometheus text exposition.
+  2. Exposed data includes: all HTTP route patterns with status codes and latency histograms (mapping full API surface), request counts, Node.js heap/CPU/memory, event-loop lag, open file descriptors.
+  3. Attacker can infer: exact API route structure, request volume per route, error rates, and server resource utilisation — without any authentication.
+- **Evidence:** HTTP 200, 41KB payload, full route table including previously-probed paths (`/api/work-items`, `/api/health` etc.) confirmed in metrics labels.
+- **Recommendation:** Restrict `/metrics` to an internal/private network interface or require a bearer token. Many deployments expose metrics only to a Prometheus scraper on a separate port.
+
+---
+
+### RED-007: Error Responses Leak Internal State Machine Details
+- **Severity:** Medium
+- **Objective Achieved:** Yes — reconnaissance aid confirmed
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** All workflow/action endpoints
+- **Based On:** PEN-011
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests/FR-XXXX/force-approve` on an item in `potential` status → `{"error":"Feature request must be in 'voting' status to force-approve. Current status: potential"}`.
+  2. `PATCH /api/feature-requests/FR-XXXX {"status":"in_development"}` from `potential` → `{"error":"Invalid status transition: potential → in_development. Allowed: voting, duplicate, deprecated"}` — full state machine graph leaked.
+  3. `POST /api/feature-requests/:id/dependencies {"blocker_id":"INVALID"}` → `{"error":"Invalid blocker_id format: INVALID. Must be BUG-XXXX or FR-XXXX"}` — internal ID schema leaked.
+- **Evidence:** All error messages contain exact internal logic, status enum values, and allowed transition tables.
+- **Recommendation:** Return generic user-facing messages (e.g., `"Invalid request"` or `"Operation not allowed in current state"`). Log full details server-side. Reserve detailed transition errors for authenticated admin callers only.
+
+---
+
+### RED-008: Cross-Type Blocker Sabotage (Bug → Feature Request)
+- **Severity:** High
+- **Objective Achieved:** Yes — cross-type dependency sabotage confirmed
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests/:id/dependencies`, `http://localhost:3001/api/bugs/:id`
+- **Based On:** PEN-007 (extended to cross-type)
+- **Exploit Scenario:**
+  1. `POST /api/bugs` → creates `BUG-0001`.
+  2. `POST /api/feature-requests/FR-0012/dependencies` with `{"action":"add","blocker_id":"BUG-0001"}` → FR-0012 is now blocked by a bug.
+  3. `DELETE /api/bugs/BUG-0001` → bug hard-deleted, HTTP 204. `GET BUG-0001 → 404`.
+  4. `GET /api/feature-requests/FR-0012/ready` → `ready: false`, `unresolved_blockers: [{item_type:"bug", item_id:"BUG-0001", title:"Unknown", status:"unknown"}]`.
+  5. FR-0012 is permanently un-dispatchable — blocked by a deleted, non-existent bug.
+- **Evidence:** `ready: false` with `status:"unknown"` for the deleted BUG-0001 confirmed live.
+- **Recommendation:** Same as RED-004: cascade-delete dependency links on item deletion, and treat missing items as resolved rather than unresolved blockers.
+
+---
+
+### RED-009: Body Parser Limit Returns 500 Instead of 413
+- **Severity:** Low
+- **Objective Achieved:** No — informational
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests`
+- **Based On:** PEN-012
+- **Exploit Scenario:**
+  1. POST a body with a field not subject to length validation (e.g., `target_repo`) set to 20KB string (total body >16KB `express.json` limit).
+  2. Response: HTTP 500 `{"error":"Internal server error"}` — the `PayloadTooLargeError` from the body parser is not caught by the error handler.
+  3. Note: fields with explicit length checks (title ≤200, description ≤10000) are correctly rejected with 400 before reaching the body parser limit.
+- **Evidence:** HTTP 500 on `target_repo: "C"*20000` body.
+- **Recommendation:** In the `errorHandler` middleware, detect `err.type === 'entity.too.large'` and return HTTP 413 with a clear message.
+
+---
+
+## Red Team Exploit Chain Summary
+
+| ID | Chain Title | Objectives Met | Severity | Status |
+|----|-------------|---------------|----------|--------|
+| RED-001 | Zero-Auth Baseline | Access baseline | Critical | Confirmed |
+| RED-002 | IDOR CRUD on Any Resource | Access/modify any item | High | Confirmed |
+| RED-003 | State Machine Bypass via Force-Approve | **PRIMARY: Bypass state machine** ★ | Critical | Confirmed |
+| RED-004 | Deleted Blocker Sabotage + ID Recycling | Sabotage approved items | High | Confirmed |
+| RED-005 | Full Dataset Enumeration | Enumerate all items ★ | High | Confirmed |
+| RED-006 | Unauthenticated /metrics | Operational intelligence | Medium | Confirmed |
+| RED-007 | Error Leaks State Machine Details | Reconnaissance | Medium | Confirmed |
+| RED-008 | Cross-Type Blocker Sabotage | Sabotage via cross-type deps | High | Confirmed |
+| RED-009 | Body Limit Returns 500 | — | Low | Confirmed |
+
+★ = Directly addresses a pentest objective in `security.config.yml`
+
+**Objectives from `security.config.yml`:**
+- ✅ "Bypass work item state machine to reach an invalid status" — RED-003 (approved with 0 AI votes)
+- ✅ "Access or modify a soft-deleted work item via direct ID reference" — RED-002 (IDOR delete), RED-004 (orphan link survives deletion)
+- ✅ "Submit a malformed assessment verdict that bypasses routing logic" — RED-003 (force-approve with empty vote set bypasses the entire AI review panel)
+- ✅ "Enumerate all work items without pagination limit enforcement" — RED-005 (full dataset in single unauthenticated response)
+
+**All 4 pentest objectives achieved. Grade: F (confirmed red-team breach of critical objectives).**

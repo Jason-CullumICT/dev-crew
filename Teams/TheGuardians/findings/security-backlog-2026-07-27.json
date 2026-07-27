@@ -1,0 +1,283 @@
+{
+  "generated": "2026-07-27",
+  "run_id": "run-20260727-065003",
+  "grade": "F",
+  "summary": {
+    "critical": 2,
+    "high": 10,
+    "medium": 6,
+    "low": 6,
+    "total": 24,
+    "confirmed_live": 8,
+    "theoretical": 16,
+    "compliance_pass_rate_pct": 4,
+    "red_team_objectives_achieved": 4,
+    "red_team_objectives_total": 4
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "Zero Authentication & Authorization on All Endpoints",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-001", "PEN-001", "COMP-001", "COMP-002", "RED-001"],
+      "cwe": ["CWE-306"],
+      "owasp": "A07: Identification and Authentication Failures",
+      "remediation": "Add JWT/API-key authentication middleware as the first app.use() call. Define roles (operator, reviewer, admin) and add route-level authorization guards. Exempt only /health.",
+      "priority": "P1"
+    },
+    {
+      "id": "F-002",
+      "title": "State Machine Bypass via Force-Approve (Zero AI Votes) — PRIMARY OBJECTIVE",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-003", "PEN-006", "RED-003"],
+      "cwe": ["CWE-285", "CWE-284"],
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Require authentication + admin role on force-approve and all override endpoints. Enforce minimum vote count before force-approve is callable. Add audit logging for all override decisions.",
+      "priority": "P1"
+    },
+    {
+      "id": "F-003",
+      "title": "IDOR on All Resource Endpoints",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-004", "RED-002"],
+      "cwe": ["CWE-639"],
+      "owasp": "A01: Broken Access Control",
+      "remediation": "After adding authentication (F-001), add resource-level ownership validation: only the creator or an authorized role may modify/delete a resource.",
+      "priority": "P1"
+    },
+    {
+      "id": "F-004",
+      "title": "Deleted Blocker Permanently Blocks Victim + ID Recycling Inherits Orphan Links",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-007", "RED-004", "RED-008"],
+      "cwe": ["CWE-672", "CWE-340"],
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "Cascade-delete or nullify dependency links on item deletion. Treat missing/deleted blocker as resolved in isReady(). Replace sequential IDs with UUIDs.",
+      "priority": "P1"
+    },
+    {
+      "id": "F-005",
+      "title": "Full Dataset Enumeration — Pagination Not Enforced",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-007", "PEN-005", "RED-005"],
+      "cwe": ["CWE-20", "CWE-770"],
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Enforce server-side pagination: max page size 100, return {data, page, limit, total, totalPages}. Add isNaN guard and Math.min(limit, 100) cap in Source/Backend.",
+      "priority": "P1"
+    },
+    {
+      "id": "F-006",
+      "title": "Intake Webhooks — No HMAC Verification + Unvalidated Enum Fields",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["SAST-004", "PEN-002", "COMP-008"],
+      "cwe": ["CWE-287", "CWE-20"],
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "Verify Zendesk HMAC-SHA256 via X-Zendesk-Webhook-Signature. Require Bearer token on automated endpoint. Validate enum fields against Object.values(WorkItemType/Priority).",
+      "priority": "P2"
+    },
+    {
+      "id": "F-007",
+      "title": "No CORS Policy",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["SAST-002", "COMP-005"],
+      "cwe": ["CWE-942"],
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Install cors package; apply app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') })). Configure ALLOWED_ORIGINS per environment.",
+      "priority": "P2"
+    },
+    {
+      "id": "F-008",
+      "title": "No HTTP Security Headers",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["SAST-003", "COMP-006"],
+      "cwe": ["CWE-16", "CWE-1021"],
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Add import helmet from 'helmet'; app.use(helmet()); as first middleware in app.ts. Tune CSP to match actual frontend sources.",
+      "priority": "P2"
+    },
+    {
+      "id": "F-009",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["SAST-010", "COMP-007"],
+      "cwe": ["CWE-770"],
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Add express-rate-limit globally (100 req/min per IP) with stricter limits on state-mutation and intake endpoints.",
+      "priority": "P2"
+    },
+    {
+      "id": "F-010",
+      "title": "Required Audit Events Not Emitted",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-003"],
+      "cwe": ["CWE-778"],
+      "owasp": "A09: Security Logging and Monitoring Failures",
+      "remediation": "Add auditLog() helper emitting {event_type, actor, target_id, timestamp, outcome}. Emit state_transition, permission_denied, and login_attempt from appropriate layers.",
+      "priority": "P2"
+    },
+    {
+      "id": "F-011",
+      "title": "No TLS / HTTPS Enforcement",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-004"],
+      "cwe": ["CWE-319"],
+      "owasp": "A02: Cryptographic Failures",
+      "remediation": "Terminate TLS at reverse-proxy/load-balancer; add HSTS header; document that http://localhost:3001 is dev-only.",
+      "priority": "P2"
+    },
+    {
+      "id": "F-012",
+      "title": "In-Memory Store — No Persistence / Encryption at Rest",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-010"],
+      "cwe": ["CWE-312"],
+      "owasp": "A02: Cryptographic Failures",
+      "remediation": "Replace in-memory store with PostgreSQL; enable database-level encryption at rest; encrypt backups.",
+      "priority": "P3"
+    },
+    {
+      "id": "F-013",
+      "title": "Prometheus /metrics Unauthenticated",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-006", "PEN-010", "COMP-009", "RED-006"],
+      "cwe": ["CWE-200"],
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Guard with a Bearer token (METRICS_TOKEN env var) or bind to a private port not exposed externally.",
+      "priority": "P3"
+    },
+    {
+      "id": "F-014",
+      "title": "Error Messages Leak Internal State Machine Details",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-005", "PEN-011", "RED-007"],
+      "cwe": ["CWE-209"],
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Return {error: 'Internal server error'} from all route-level catch blocks. Log full message server-side. Reserve detailed transition errors for authenticated admin callers only.",
+      "priority": "P3"
+    },
+    {
+      "id": "F-015",
+      "title": "No Hard Deletion / Right to Erasure (GDPR Art. 17)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["COMP-012"],
+      "cwe": ["CWE-212"],
+      "owasp": "A04: Insecure Design",
+      "remediation": "Add purgeWorkItem() function; expose DELETE /api/work-items/:id/purge restricted to admin; document DSAR process.",
+      "priority": "P3"
+    },
+    {
+      "id": "F-016",
+      "title": "Re-assessment Idempotency Flaw",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-008"],
+      "cwe": ["CWE-841"],
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "Guard the assess route: reject re-assessment if item is already in reviewing status; return HTTP 409 Conflict.",
+      "priority": "P3"
+    },
+    {
+      "id": "F-017",
+      "title": "Missing Input Length Validation Enables Memory Bloat",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-012"],
+      "cwe": ["CWE-20", "CWE-770"],
+      "owasp": "A03: Injection",
+      "remediation": "Add MAX_TITLE_LEN = 200 and MAX_DESC_LEN = 10000 guards on all POST/PATCH routes.",
+      "priority": "P3"
+    },
+    {
+      "id": "F-018",
+      "title": "Circular Dependency Guard Frontend-Only (1-hop)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-009"],
+      "cwe": ["CWE-696"],
+      "owasp": "A08: Software and Data Integrity Failures",
+      "remediation": "Add backend integration tests covering transitive cycles (depth 3+). Remove the frontend-only cycle guard and rely solely on server-side BFS validation.",
+      "priority": "P3"
+    },
+    {
+      "id": "F-019",
+      "title": "Body Parser Returns 500 Instead of 413 on Oversized Payloads",
+      "severity": "Low",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["RED-009"],
+      "cwe": ["CWE-390"],
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "In errorHandler.ts, detect err.type === 'entity.too.large' and return HTTP 413.",
+      "priority": "P4"
+    },
+    {
+      "id": "F-020",
+      "title": "Debug Portal <iframe> Missing sandbox Attribute",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["SAST-009", "PEN-014"],
+      "cwe": ["CWE-1021"],
+      "owasp": "A05: Security Misconfiguration",
+      "remediation": "Add sandbox=\"allow-scripts allow-same-origin\" to the iframe element.",
+      "priority": "P4"
+    },
+    {
+      "id": "F-021",
+      "title": "Query Filter Parameters Cast Without Runtime Enum Validation",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["SAST-008"],
+      "cwe": ["CWE-20"],
+      "owasp": "A03: Injection",
+      "remediation": "Validate each filter value against Object.values(Enum) and return HTTP 400 for invalid values.",
+      "priority": "P4"
+    },
+    {
+      "id": "F-022",
+      "title": "Sequential docId Reveals Historical Item Count",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["PEN-013"],
+      "cwe": ["CWE-200", "CWE-340"],
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Use UUIDs for public IDs (also fixes F-004 ID-recycling root cause).",
+      "priority": "P4"
+    },
+    {
+      "id": "F-023",
+      "title": "No Data Retention Policy Enforcement",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["COMP-013"],
+      "cwe": ["CWE-212"],
+      "owasp": "A04: Insecure Design",
+      "remediation": "Define DATA_RETENTION_DAYS env var; implement a scheduled cleanup job.",
+      "priority": "P4"
+    },
+    {
+      "id": "F-024",
+      "title": "Logger Lacks Sensitive-Field Redaction",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["COMP-014"],
+      "cwe": ["CWE-532"],
+      "owasp": "A09: Security Logging and Monitoring Failures",
+      "remediation": "Switch to pino with redact: ['req.headers.authorization', 'body.password', 'body.token'].",
+      "priority": "P4"
+    }
+  ]
+}

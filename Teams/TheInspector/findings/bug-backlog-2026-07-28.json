@@ -1,0 +1,331 @@
+{
+  "audit_metadata": {
+    "date": "2026-07-28",
+    "grade": "D",
+    "branch": "audit/inspector-2026-07-28-7e839c",
+    "scope": "Full codebase — static analysis",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "prior_audit": null,
+    "grading_thresholds": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": "4 P1 findings exceeds C threshold (max_p1=2)"
+    }
+  },
+  "summary": {
+    "total_findings": 21,
+    "p1_total": 4,
+    "p2_total": 9,
+    "p3_total": 7,
+    "p4_total": 1,
+    "escalations_to_guardians": 4,
+    "fixed_count": 0,
+    "new_count": 21
+  },
+  "spec_coverage": {
+    "self_judging_workflow_plan": "92.3%",
+    "dependency_linking_plan": "93.8%",
+    "dev_workflow_platform_spec": "0%",
+    "other_plans_scanned": 0,
+    "other_plans_total": 7
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "title": "Handlebars.js JavaScript Injection — arbitrary code execution (RCE)",
+      "package": "handlebars <=4.7.8",
+      "workspace": "Source/Backend",
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6"],
+      "fix": "cd Source/Backend && npm update handlebars",
+      "status": "NEW",
+      "timeline": "block-deployment"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "team": "TheGuardians",
+      "trigger": "sensitive-data-exposed",
+      "title": "Vitest Arbitrary File Read — file disclosure and RCE when UI server running",
+      "package": "vitest <3.2.6",
+      "workspace": "Source/Frontend",
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "fix": "cd Source/Frontend && npm update vitest",
+      "status": "NEW",
+      "timeline": "this-sprint"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "title": "Portal Dependencies — 4 unidentified critical CVEs (2 per workspace)",
+      "package": "portal/Backend and portal/Frontend (54+ packages each)",
+      "workspace": "portal/Backend, portal/Frontend",
+      "cves": ["TBD — requires TheGuardians investigation"],
+      "fix": "npm audit fix in each portal workspace after CVE chain identification",
+      "status": "NEW",
+      "timeline": "this-sprint"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "title": "form-data CRLF Injection in multipart headers — HTTP header poisoning",
+      "package": "form-data >=4.0.0 <4.0.6",
+      "workspace": "Source/Backend, Source/Frontend",
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "fix": "npm update form-data in both workspaces",
+      "status": "NEW",
+      "timeline": "next-sprint"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md — 69 FRs with 0% implementation",
+      "file": "Specifications/dev-workflow-platform.md:337-452",
+      "recommendation": "Add '## Status: Superseded — replaced by Specifications/workflow-engine.md' to top of file",
+      "route_to": "solo-session",
+      "status": "NEW",
+      "timeline": "this-sprint",
+      "cross_refs": ["QO-002", "QO-005"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift / architecture-violation",
+      "title": "Traceability enforcer only scans one plan file — 7 plans silently skipped",
+      "file": "tools/traceability-enforcer.py:36-38",
+      "recommendation": "Update CLAUDE.md gate to explicitly list all active plan requirements files",
+      "route_to": "solo-session",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": ["QO-001", "QO-005"]
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "untested",
+      "title": "FR-WF-013 observability — 4 workflow Prometheus counters have no test coverage",
+      "file": "Source/Backend/src/metrics.ts",
+      "recommendation": "Create Source/Backend/tests/routes/workflow-metrics.test.ts covering workflow_items_created_total, routed_total, assessed_total, dispatched_total",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": ["QO-005"]
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Route handlers import store directly, bypassing service layer",
+      "file": "Source/Backend/src/routes/workItems.ts:12, intake.ts:4, workflow.ts:15",
+      "recommendation": "Introduce thin workItemService.ts wrapper OR document exemption in Specifications/workflow-engine.md",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": []
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift / untested",
+      "title": "FR-dependency-seed — no implementation and no test",
+      "file": "Plans/dependency-linking/requirements.md:46",
+      "recommendation": "Create seed function, write test with // Verifies: FR-dependency-seed, add Plans/dependency-linking to enforcer CI",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": ["QO-002", "QO-003"]
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve / dos",
+      "title": "brace-expansion DoS — process hang via unbounded expansion (CVSS ≤7.5)",
+      "file": "Source/Backend/package-lock.json",
+      "cves": ["GHSA-mh99-v99m-4gvg", "GHSA-3jxr-9vmj-r5cp", "GHSA-f886-m6hf-6m8v"],
+      "fix": "npm update brace-expansion@>=1.1.16",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve / high",
+      "title": "vite — high-severity vulnerabilities in dev server",
+      "file": "Source/Frontend/package-lock.json",
+      "fix": "cd Source/Frontend && npm update vite@latest",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve / high",
+      "title": "postcss — potential code execution in CSS processing",
+      "file": "Source/Frontend/package-lock.json",
+      "fix": "cd Source/Frontend && npm update postcss@latest",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve / high",
+      "title": "ws (WebSocket) — high-severity vulnerability",
+      "file": "Source/Frontend/package-lock.json",
+      "fix": "cd Source/Frontend && npm update ws",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "next-sprint",
+      "cross_refs": []
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "test-coverage",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/WorkItemDetailPage.test.tsx, tests/WorkItemListPage.test.tsx",
+      "recommendation": "Delete top-level copies; keep tests/pages/ versions as canonical",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve / moderate",
+      "title": "uuid — moderate vulnerability in UUID generation",
+      "fix": "npm update uuid@latest",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve / prototype-pollution",
+      "title": "qs — prototype pollution in query string parsing (transitive via express)",
+      "fix": "npm update qs (indirectly via express update)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve / bypass",
+      "title": "body-parser — invalid limit silently disables payload size enforcement",
+      "fix": "npm update body-parser (indirectly via express update)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve / moderate",
+      "title": "react-router-dom — moderate vulnerabilities",
+      "fix": "cd Source/Frontend && npm update react-router-dom@latest",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": []
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve / build-time",
+      "title": "esbuild — moderate issue in bundler (transitive via vite)",
+      "fix": "Cascades from vite update (DEP-006)",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": ["DEP-006"]
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve / file-read",
+      "title": "@babel/core — arbitrary local file read via sourceMappingURL (<=7.29.0, CWE-22/CWE-200)",
+      "fix": "npm update @babel/core@>=7.30.0 in Backend and Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": []
+    },
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppresses exhaustive-deps in useWorkItems.ts and DependencyPicker.tsx",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, components/DependencyPicker.tsx:82",
+      "recommendation": "Refactor to satisfy react-hooks/exhaustive-deps (useCallback wrapping) and remove suppressions",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "timeline": "backlog",
+      "cross_refs": []
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Traceability infrastructure covers <15% of requirements surface",
+      "findings": ["QO-001", "QO-002", "QO-005"],
+      "single_fix": "Expand CLAUDE.md gate to all Plans/*/requirements.md + retire dev-workflow-platform.md",
+      "fix_impact": "Resolves 3 findings (QO-001 P1, QO-002 P2, QO-005 P2)"
+    },
+    {
+      "root_cause": "Spec-traced FRs exist in source but lack test implementations",
+      "findings": ["QO-003", "QO-005"],
+      "single_fix": "Write workflow-metrics.test.ts + implement FR-dependency-seed with test",
+      "fix_impact": "Resolves 2 findings (QO-003 P2, QO-005 P2)"
+    },
+    {
+      "root_cause": "No automated npm audit gate in CI — 94 CVEs accumulate undetected",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008"],
+      "single_fix": "Add npm audit --audit-level=high to CI verification gates + run npm update in each workspace",
+      "fix_impact": "Resolves 8 findings (DEP-001 P1, DEP-002 P1, DEP-003 P1, DEP-004 through DEP-008 P2)"
+    }
+  ],
+  "next_audit": {
+    "date": "2026-08-28",
+    "scope": "Full codebase + dynamic testing if services online",
+    "priority_verification": ["DEP-001", "DEP-002", "DEP-003", "QO-001"]
+  }
+}

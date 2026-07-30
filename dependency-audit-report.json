@@ -1,0 +1,890 @@
+{
+  "auditDate": "2026-07-30",
+  "summary": {
+    "totalWorkspaces": 6,
+    "primaryWorkspacesAudited": 3,
+    "totalVulnerabilities": 37,
+    "criticalCount": 3,
+    "highCount": 9,
+    "moderateCount": 15,
+    "lowCount": 1,
+    "majorVersionGaps": 11,
+    "recommendedActions": [
+      "URGENT: Fix handlebars (4.7.8 -> latest) - 1 CRITICAL + 3 HIGH vulnerabilities",
+      "URGENT: Fix vitest (2.0.5 -> 4.1.10+) - 1 CRITICAL vulnerability in UI server",
+      "URGENT: Fix protobufjs (7.6.4 -> 7.7.0+) - 1 CRITICAL RCE vulnerability",
+      "HIGH PRIORITY: Upgrade vite (5.4.0 -> 8.1.5+) - fs.deny bypass and path traversal",
+      "HIGH PRIORITY: Upgrade express (4.18.2 -> 4.22.2+) - qs DoS vulnerability",
+      "HIGH PRIORITY: Upgrade postcss - source map exploitation vulnerabilities",
+      "MEDIUM: Update uuid versions for buffer bounds check fix"
+    ]
+  },
+  "vulnerabilities": {
+    "byWorkspace": {
+      "Source/Backend": {
+        "total": 9,
+        "critical": 1,
+        "high": 3,
+        "moderate": 4,
+        "low": 1,
+        "packages": {
+          "handlebars": {
+            "currentVersion": "4.7.8",
+            "vulnerabilities": [
+              {
+                "severity": "critical",
+                "title": "Handlebars.js has code generation options that do not appropriately restrict code execution",
+                "cve": "GHSA-wl2g-4938-5p5h",
+                "cvss": 8.1,
+                "affectsVersion": "<=4.7.8"
+              },
+              {
+                "severity": "high",
+                "title": "Handlebars.js has Denial of Service via Malformed Decorator Syntax in Template Compilation",
+                "cve": "GHSA-9cx6-37pm-9jff",
+                "cvss": 7.5,
+                "affectsVersion": ">=4.0.0 <=4.7.8"
+              },
+              {
+                "severity": "high",
+                "title": "Handlebars.js has JavaScript Injection in CLI Precompiler via Unescaped Names and Options",
+                "cve": "GHSA-xjpj-3mr7-gcpf",
+                "cvss": 8.2,
+                "affectsVersion": ">=4.0.0 <=4.7.8"
+              },
+              {
+                "severity": "high",
+                "title": "Handlebars.js has Code Generation via unsafe-eval in Precompiler",
+                "cve": "GHSA-c3w5-3g5q-rrgm",
+                "cvss": 6.3,
+                "affectsVersion": ">=4.0.0 <=4.7.8"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": "latest"
+          },
+          "brace-expansion": {
+            "currentVersion": "unknown",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
+                "cve": "GHSA-3jxr-9vmj-r5cp",
+                "cvss": 5.3,
+                "affectsVersion": "<1.1.16"
+              },
+              {
+                "severity": "moderate",
+                "title": "brace-expansion: Zero-step sequence causes process hang and memory exhaustion",
+                "cve": "GHSA-f886-m6hf-6m8v",
+                "cvss": 6.5,
+                "affectsVersion": "<1.1.13"
+              },
+              {
+                "severity": "high",
+                "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+                "cve": "GHSA-mh99-v99m-4gvg",
+                "cvss": 7.5,
+                "affectsVersion": "<=5.0.7"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=1.1.16"
+          },
+          "form-data": {
+            "currentVersion": "4.0.5",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "form-data: CRLF injection in form-data via unescaped multipart field names and filenames",
+                "cve": "GHSA-hmw2-7cc7-3qxx",
+                "cvss": 7.5,
+                "affectsVersion": ">=4.0.0 <4.0.6"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=4.0.6"
+          },
+          "js-yaml": {
+            "currentVersion": "<=3.14.2",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "js-yaml: YAML merge-key chains can force quadratic CPU consumption",
+                "cve": "GHSA-52cp-r559-cp3m",
+                "cvss": 7.5,
+                "affectsVersion": ">=3.0.0 <3.15.0"
+              },
+              {
+                "severity": "moderate",
+                "title": "JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases",
+                "cve": "GHSA-h67p-54hq-rp68",
+                "cvss": 5.3,
+                "affectsVersion": "<3.15.0"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=3.15.0"
+          },
+          "uuid": {
+            "currentVersion": "9.0.1",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+                "cve": "GHSA-w5hq-g745-h8pq",
+                "cvss": 7.5,
+                "affectsVersion": "<11.1.1"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=11.1.1"
+          },
+          "body-parser": {
+            "currentVersion": "<=1.20.5",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "body-parser vulnerable to denial of service when invalid limit value silently disables size enforcement",
+                "cve": "GHSA-v422-hmwv-36x6",
+                "cvss": 3.7,
+                "affectsVersion": "<1.20.6"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "express": {
+            "currentVersion": "4.18.2",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "express affected by qs DoS vulnerability",
+                "cve": "via qs",
+                "affectsVersion": "4.21.0 - 4.22.1"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "qs": {
+            "currentVersion": "6.15.1",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set",
+                "cve": "GHSA-q8mj-m7cp-5q26",
+                "cvss": 5.3,
+                "affectsVersion": ">=6.11.1 <=6.15.1"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "@babel/core": {
+            "currentVersion": "<=7.29.0",
+            "vulnerabilities": [
+              {
+                "severity": "low",
+                "title": "@babel/core: Arbitrary File Read via sourceMappingURL Comment",
+                "cve": "GHSA-4x5r-pxfx-6jf8",
+                "cvss": 3.2,
+                "affectsVersion": "<=7.29.0"
+              }
+            ],
+            "hasFixAvailable": true
+          }
+        }
+      },
+      "Source/Frontend": {
+        "total": 11,
+        "critical": 1,
+        "high": 4,
+        "moderate": 5,
+        "low": 1,
+        "packages": {
+          "vitest": {
+            "currentVersion": "2.0.5",
+            "vulnerabilities": [
+              {
+                "severity": "critical",
+                "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+                "cve": "GHSA-5xrq-8626-4rwp",
+                "cvss": 9.8,
+                "affectsVersion": "<3.2.6"
+              },
+              {
+                "severity": "moderate",
+                "title": "vitest affected by vite and esbuild vulnerabilities",
+                "cve": "cascaded",
+                "affectsVersion": "<=3.2.5"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": "4.1.10+"
+          },
+          "vite": {
+            "currentVersion": "5.4.0",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+                "cve": "GHSA-fx2h-pf6j-xcff",
+                "cvss": 7.5,
+                "affectsVersion": "<=6.4.2"
+              },
+              {
+                "severity": "moderate",
+                "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+                "cve": "GHSA-v6wh-96g9-6wx3",
+                "affectsVersion": "<=6.4.2"
+              },
+              {
+                "severity": "moderate",
+                "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+                "cve": "GHSA-4w7w-66w2-5vf9",
+                "affectsVersion": "<=6.4.1"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": "8.1.5+"
+          },
+          "postcss": {
+            "currentVersion": "<=8.5.17",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+                "cve": "GHSA-r28c-9q8g-f849",
+                "cvss": 7.5,
+                "affectsVersion": "<=8.5.17"
+              },
+              {
+                "severity": "high",
+                "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+                "cve": "GHSA-6g55-p6wh-862q",
+                "cvss": 7.5,
+                "affectsVersion": "<=8.5.11"
+              },
+              {
+                "severity": "moderate",
+                "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
+                "cve": "GHSA-qx2v-qp2m-jg93",
+                "cvss": 6.1,
+                "affectsVersion": "<8.5.10"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">8.5.17"
+          },
+          "react-router-dom": {
+            "currentVersion": "6.26.0",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "React Router's same-origin redirect with path starting // causes open redirect via protocol-relative URL reinterpretation",
+                "cve": "GHSA-2j2x-hqr9-3h42",
+                "affectsVersion": ">=6.7.0 <6.30.4"
+              },
+              {
+                "severity": "moderate",
+                "title": "React Router: Open redirect via backslash in <Link> and useNavigate (CVE-2025-68470 bypass)",
+                "cve": "GHSA-wrjc-x8rr-h8h6",
+                "affectsVersion": ">=6.0.0 <7.18.0"
+              },
+              {
+                "severity": "moderate",
+                "title": "React Router: Arbitrary Constructor Injection via deserializeErrors() in React Router SSR Hydration",
+                "cve": "GHSA-337j-9hxr-rhxg",
+                "cvss": 6.1,
+                "affectsVersion": ">=6.4.0 <7.18.0"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=7.18.0"
+          },
+          "picomatch": {
+            "currentVersion": "<=2.3.1 || 4.0.0 - 4.0.3",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "Picomatch has a ReDoS vulnerability via extglob quantifiers",
+                "cve": "GHSA-c2c7-rcm5-vvqj",
+                "cvss": 7.5,
+                "affectsVersion": "<2.3.2 or >=4.0.0 <4.0.4"
+              },
+              {
+                "severity": "moderate",
+                "title": "Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching",
+                "cve": "GHSA-3v7f-55p6-f55p",
+                "cvss": 5.3,
+                "affectsVersion": "<2.3.2 or >=4.0.0 <4.0.4"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=2.3.2 and >=4.0.4"
+          },
+          "esbuild": {
+            "currentVersion": "<=0.24.2",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "esbuild enables any website to send any requests to the development server and read the response",
+                "cve": "GHSA-67mh-4wv8-2f99",
+                "cvss": 5.3,
+                "affectsVersion": "<=0.24.2"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "ws": {
+            "currentVersion": "8.20.1",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+                "cve": "GHSA-96hv-2xvq-fx4p",
+                "cvss": 7.5,
+                "affectsVersion": ">=8.0.0 <8.21.0"
+              },
+              {
+                "severity": "moderate",
+                "title": "ws: Uninitialized memory disclosure",
+                "cve": "GHSA-58qx-3vcg-4xpx",
+                "cvss": 4.4,
+                "affectsVersion": ">=8.0.0 <8.20.1"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=8.21.0"
+          },
+          "form-data": {
+            "currentVersion": "4.0.5",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "form-data: CRLF injection in form-data via unescaped multipart field names and filenames",
+                "cve": "GHSA-hmw2-7cc7-3qxx",
+                "cvss": 7.5,
+                "affectsVersion": ">=4.0.0 <4.0.6"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "@babel/core": {
+            "currentVersion": "<=7.29.0",
+            "vulnerabilities": [
+              {
+                "severity": "low",
+                "title": "@babel/core: Arbitrary File Read via sourceMappingURL Comment",
+                "cve": "GHSA-4x5r-pxfx-6jf8",
+                "cvss": 3.2,
+                "affectsVersion": "<=7.29.0"
+              }
+            ],
+            "hasFixAvailable": true
+          }
+        }
+      },
+      "platform/orchestrator": {
+        "total": 9,
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0,
+        "packages": {
+          "protobufjs": {
+            "currentVersion": "<=7.6.4",
+            "vulnerabilities": [
+              {
+                "severity": "critical",
+                "title": "Arbitrary code execution in protobufjs",
+                "cve": "GHSA-6jg5-4h4j-62xw",
+                "cvss": 8.1,
+                "affectsVersion": ">=4.0.0 <=4.7.8"
+              },
+              {
+                "severity": "high",
+                "title": "protobufjs: Denial of service through unbounded Any expansion during JSON conversion",
+                "cve": "GHSA-wcpc-wj8m-hjx6",
+                "cvss": 7.5,
+                "affectsVersion": "<=7.6.0"
+              },
+              {
+                "severity": "moderate",
+                "title": "protobufjs: Denial of service through unbounded Any expansion during JSON conversion",
+                "cve": "GHSA-jggg-4jg4-v7c6",
+                "cvss": 5.3,
+                "affectsVersion": "<=7.5.7"
+              },
+              {
+                "severity": "moderate",
+                "title": "protobufjs: Schema-derived names can shadow runtime-significant properties",
+                "cve": "GHSA-f38q-mgvj-vph7",
+                "cvss": 5.3,
+                "affectsVersion": "<=7.6.2"
+              },
+              {
+                "severity": "moderate",
+                "title": "protobufjs: Denial of Service via infinite loop in .proto option parsing",
+                "cve": "GHSA-j3f2-48v5-ccww",
+                "cvss": 5.3,
+                "affectsVersion": ">=7.5.0 <=7.6.4"
+              },
+              {
+                "severity": "moderate",
+                "title": "protobufjs has overlong UTF-8 decoding",
+                "cve": "GHSA-q6x5-8v7m-xcrf",
+                "cvss": 5.3,
+                "affectsVersion": "<=7.5.5"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">7.6.4"
+          },
+          "@grpc/grpc-js": {
+            "currentVersion": "1.14.3",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "@grpc/grpc-js: A malformed request can cause a server crash",
+                "cve": "GHSA-5375-pq7m-f5r2",
+                "cvss": 7.5,
+                "affectsVersion": ">=1.14.0 <1.14.4"
+              },
+              {
+                "severity": "high",
+                "title": "@grpc/grpc-js: An incoming malformed compressed message can cause a client or server crash",
+                "cve": "GHSA-99f4-grh7-6pcq",
+                "cvss": 7.5,
+                "affectsVersion": ">=1.14.0 <1.14.4"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=1.14.4"
+          },
+          "path-to-regexp": {
+            "currentVersion": "<0.1.13",
+            "vulnerabilities": [
+              {
+                "severity": "high",
+                "title": "path-to-regexp vulnerable to Regular Expression Denial of Service via multiple route parameters",
+                "cve": "GHSA-37ch-88jc-xwx2",
+                "cvss": 7.5,
+                "affectsVersion": "<0.1.13"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=0.1.13"
+          },
+          "uuid": {
+            "currentVersion": "<11.1.1",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+                "cve": "GHSA-w5hq-g745-h8pq",
+                "cvss": 7.5,
+                "affectsVersion": "<11.1.1"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=11.1.1"
+          },
+          "dockerode": {
+            "currentVersion": "4.0.12",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "dockerode affected by uuid buffer bounds check vulnerability",
+                "cve": "via uuid",
+                "affectsVersion": "4.0.3 - 4.0.12"
+              }
+            ],
+            "hasFixAvailable": true,
+            "fixVersion": ">=5.0.0"
+          },
+          "body-parser": {
+            "currentVersion": "<=1.20.5",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "body-parser vulnerable to denial of service when invalid limit value silently disables size enforcement",
+                "cve": "GHSA-v422-hmwv-36x6",
+                "cvss": 3.7,
+                "affectsVersion": "<1.20.6"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "express": {
+            "currentVersion": "4.21.0",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "express affected by qs DoS vulnerability",
+                "cve": "via qs",
+                "affectsVersion": "4.21.0 - 4.22.1"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "qs": {
+            "currentVersion": "6.15.1",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set",
+                "cve": "GHSA-q8mj-m7cp-5q26",
+                "cvss": 5.3,
+                "affectsVersion": ">=6.11.1 <=6.15.1"
+              }
+            ],
+            "hasFixAvailable": true
+          },
+          "@protobufjs/utf8": {
+            "currentVersion": "<=1.1.0",
+            "vulnerabilities": [
+              {
+                "severity": "moderate",
+                "title": "protobufjs has overlong UTF-8 decoding",
+                "cve": "GHSA-q6x5-8v7m-xcrf",
+                "cvss": 5.3,
+                "affectsVersion": "<=1.1.0"
+              }
+            ],
+            "hasFixAvailable": true
+          }
+        }
+      },
+      "Source/E2E": {
+        "total": 0,
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "notes": "E2E tests have no identified vulnerabilities"
+      },
+      "portal/Frontend": {
+        "total": "not fully audited",
+        "notes": "Partial audit - similar vulnerabilities to Source/Frontend expected (React, Vite, PostCSS)"
+      },
+      "portal/Backend": {
+        "total": "not fully audited",
+        "notes": "Contains OpenTelemetry stack with multiple vulnerabilities - full audit data truncated"
+      }
+    }
+  },
+  "outdated": {
+    "byWorkspace": {
+      "Source/Backend": {
+        "majorVersionGaps": 4,
+        "packages": {
+          "express": {
+            "current": "4.18.2",
+            "latest": "5.2.1",
+            "majorVersionsBehind": 1,
+            "priority": "HIGH - Security fixes available"
+          },
+          "pino": {
+            "current": "8.17.0",
+            "latest": "10.3.1",
+            "majorVersionsBehind": 2,
+            "priority": "MEDIUM"
+          },
+          "uuid": {
+            "current": "9.0.1",
+            "latest": "14.0.1",
+            "majorVersionsBehind": 5,
+            "priority": "HIGH - Critical buffer bounds fix in 11.1.1+"
+          },
+          "prom-client": {
+            "current": "15.1.3",
+            "latest": "15.1.3",
+            "majorVersionsBehind": 0,
+            "priority": "CURRENT"
+          }
+        }
+      },
+      "Source/Frontend": {
+        "majorVersionGaps": 3,
+        "packages": {
+          "react": {
+            "current": "18.3.1",
+            "latest": "19.2.8",
+            "majorVersionsBehind": 1,
+            "priority": "MEDIUM"
+          },
+          "react-dom": {
+            "current": "18.3.1",
+            "latest": "19.2.8",
+            "majorVersionsBehind": 1,
+            "priority": "MEDIUM"
+          },
+          "react-router-dom": {
+            "current": "6.26.0",
+            "latest": "7.18.2",
+            "majorVersionsBehind": 1,
+            "priority": "HIGH - Multiple security fixes"
+          }
+        }
+      },
+      "platform/orchestrator": {
+        "majorVersionGaps": 3,
+        "packages": {
+          "dockerode": {
+            "current": "4.0.12",
+            "latest": "5.0.1",
+            "majorVersionsBehind": 1,
+            "priority": "HIGH - uuid vulnerability fix"
+          },
+          "express": {
+            "current": "4.21.0",
+            "latest": "5.2.1",
+            "majorVersionsBehind": 1,
+            "priority": "HIGH - Security fixes available"
+          },
+          "multer": {
+            "current": "1.4.5-lts.2",
+            "latest": "2.2.0",
+            "majorVersionsBehind": 1,
+            "priority": "MEDIUM"
+          }
+        }
+      },
+      "portal/Backend": {
+        "majorVersionGaps": 11,
+        "packages": {
+          "@opentelemetry/auto-instrumentations-node": {
+            "current": "0.40.3",
+            "latest": "0.79.0",
+            "majorVersionsBehind": "39+",
+            "priority": "CRITICAL - Prometheus exporter crash vulnerability"
+          },
+          "@opentelemetry/exporter-trace-otlp-http": {
+            "current": "0.47.0",
+            "latest": "0.221.0",
+            "majorVersionsBehind": "174+",
+            "priority": "HIGH"
+          },
+          "@opentelemetry/sdk-node": {
+            "current": "0.47.0",
+            "latest": "0.221.0",
+            "majorVersionsBehind": "174+",
+            "priority": "HIGH"
+          },
+          "better-sqlite3": {
+            "current": "12.11.1",
+            "latest": "13.0.2",
+            "majorVersionsBehind": 1,
+            "priority": "MEDIUM"
+          },
+          "express": {
+            "current": "4.22.2",
+            "latest": "5.2.1",
+            "majorVersionsBehind": 1,
+            "priority": "HIGH"
+          },
+          "multer": {
+            "current": "1.4.5-lts.2",
+            "latest": "2.2.0",
+            "majorVersionsBehind": 1,
+            "priority": "MEDIUM"
+          },
+          "uuid": {
+            "current": "9.0.1",
+            "latest": "14.0.1",
+            "majorVersionsBehind": 5,
+            "priority": "HIGH"
+          }
+        }
+      },
+      "portal/Frontend": {
+        "majorVersionGaps": 3,
+        "packages": {
+          "react": {
+            "current": "18.3.1",
+            "latest": "19.2.8",
+            "majorVersionsBehind": 1
+          },
+          "react-dom": {
+            "current": "18.3.1",
+            "latest": "19.2.8",
+            "majorVersionsBehind": 1
+          },
+          "react-router-dom": {
+            "current": "6.30.4",
+            "latest": "7.18.2",
+            "majorVersionsBehind": 1
+          }
+        }
+      }
+    }
+  },
+  "criticalFindings": {
+    "codeExecutionRisks": [
+      {
+        "package": "handlebars",
+        "workspace": "Source/Backend",
+        "severity": "CRITICAL",
+        "issue": "Code generation options do not appropriately restrict code execution",
+        "cve": "GHSA-wl2g-4938-5p5h",
+        "cvss": 8.1,
+        "impact": "Arbitrary code execution possible",
+        "remediationRequired": "IMMEDIATE"
+      },
+      {
+        "package": "protobufjs",
+        "workspace": "platform/orchestrator",
+        "severity": "CRITICAL",
+        "issue": "Arbitrary code execution vulnerability",
+        "cve": "GHSA-6jg5-4h4j-62xw",
+        "cvss": 8.1,
+        "impact": "Remote code execution via protobuf handling",
+        "remediationRequired": "IMMEDIATE"
+      }
+    ],
+    "fileAccessRisks": [
+      {
+        "package": "vite",
+        "workspace": "Source/Frontend",
+        "severity": "HIGH",
+        "issue": "fs.deny bypass on Windows alternate paths",
+        "cve": "GHSA-fx2h-pf6j-xcff",
+        "cvss": 7.5,
+        "impact": "Arbitrary file read on Windows systems"
+      },
+      {
+        "package": "postcss",
+        "workspace": "Source/Frontend",
+        "severity": "HIGH",
+        "issue": "Path traversal via sourceMappingURL in CSS comments",
+        "cve": "GHSA-r28c-9q8g-f849",
+        "cvss": 7.5,
+        "impact": "Information disclosure, arbitrary .map file access"
+      }
+    ],
+    "dosRisks": [
+      {
+        "package": "brace-expansion",
+        "workspace": "Source/Backend",
+        "severity": "HIGH",
+        "issue": "DoS via unbounded expansion or exponential-time expansion",
+        "cve": "GHSA-mh99-v99m-4gvg / GHSA-3jxr-9vmj-r5cp",
+        "cvss": 7.5,
+        "impact": "Memory exhaustion, process crash"
+      },
+      {
+        "package": "picomatch",
+        "workspace": "Source/Frontend",
+        "severity": "HIGH",
+        "issue": "ReDoS vulnerability via extglob quantifiers",
+        "cve": "GHSA-c2c7-rcm5-vvqj",
+        "cvss": 7.5,
+        "impact": "CPU exhaustion via malicious glob patterns"
+      }
+    ],
+    "injectionRisks": [
+      {
+        "package": "form-data",
+        "workspace": "Source/Backend, Source/Frontend",
+        "severity": "HIGH",
+        "issue": "CRLF injection via unescaped multipart field names and filenames",
+        "cve": "GHSA-hmw2-7cc7-3qxx",
+        "cvss": 7.5,
+        "impact": "Header injection attacks possible"
+      }
+    ]
+  },
+  "deprecated": {
+    "notes": "No confirmed deprecated packages found in main package.json files. However, some transitive dependencies may be abandoned.",
+    "checkRecommendation": "Run 'npm audit' with --verbose flag to identify any deprecated transitive dependencies"
+  },
+  "licenseStatus": {
+    "notes": "License information not extracted from audit. All major packages appear to use standard OSS licenses (MIT, Apache 2.0, BSD)."
+  },
+  "duplicateVersions": {
+    "identified": "Multiple workspaces independently manage express, uuid, and qs with version mismatches",
+    "workspaceConflicts": [
+      {
+        "package": "express",
+        "versions": {
+          "Source/Backend": "4.18.2",
+          "platform/orchestrator": "4.21.0",
+          "portal/Backend": "4.22.2"
+        },
+        "recommendation": "Align to latest stable (4.22.2+) across all workspaces"
+      },
+      {
+        "package": "uuid",
+        "versions": {
+          "Source/Backend": "9.0.1",
+          "platform/orchestrator": "not explicitly listed but used via dockerode"
+        },
+        "recommendation": "Upgrade to 11.1.1+ for buffer bounds check fix"
+      }
+    ]
+  },
+  "immediateActions": [
+    {
+      "action": "BLOCK DEPLOYMENT",
+      "reason": "CRITICAL vulnerabilities present",
+      "packages": [
+        "handlebars (Source/Backend)",
+        "protobufjs (platform/orchestrator)",
+        "vitest (Source/Frontend)"
+      ]
+    },
+    {
+      "action": "Update handlebars",
+      "command": "cd Source/Backend && npm update handlebars",
+      "impact": "Removes arbitrary code execution vulnerability"
+    },
+    {
+      "action": "Update protobufjs",
+      "command": "cd platform/orchestrator && npm update protobufjs",
+      "impact": "Removes RCE and DoS vulnerabilities"
+    },
+    {
+      "action": "Update vitest",
+      "command": "cd Source/Frontend && npm install vitest@latest",
+      "impact": "Removes arbitrary file read/execute vulnerability in UI server"
+    },
+    {
+      "action": "Update vite",
+      "command": "cd Source/Frontend && npm install vite@latest",
+      "impact": "Removes fs.deny bypass and path traversal vulnerabilities"
+    },
+    {
+      "action": "Update postcss",
+      "command": "cd Source/Frontend && npm update postcss",
+      "impact": "Removes sourceMappingURL information disclosure vulnerabilities"
+    },
+    {
+      "action": "Update express across all workspaces",
+      "priority": "HIGH",
+      "impact": "Fixes qs DoS vulnerability affecting multiple services"
+    },
+    {
+      "action": "Synchronize uuid versions",
+      "target": "uuid >= 11.1.1 across all workspaces",
+      "impact": "Fixes buffer bounds check vulnerability"
+    }
+  ],
+  "recommendations": {
+    "shortTerm": [
+      "Run 'npm audit fix' in each workspace after reviewing breaking changes",
+      "Run full test suite after each update to ensure compatibility",
+      "Pay special attention to vitest and vite compatibility during upgrade"
+    ],
+    "mediumTerm": [
+      "Enable Dependabot or similar automated dependency scanning",
+      "Establish a policy for maximum age of dependencies (recommend: update when >1 major version behind)",
+      "Create a workspace-level package.json to ensure consistent dependency versions across projects",
+      "Review the portal/Backend OpenTelemetry stack - it is significantly out of date (174+ minor versions behind)"
+    ],
+    "longTerm": [
+      "Implement automated security scanning in CI/CD pipeline",
+      "Set up notifications for new CVEs affecting current dependencies",
+      "Schedule monthly dependency review and update cycles",
+      "Document why certain older versions are pinned (if applicable)"
+    ]
+  }
+}

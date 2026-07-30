@@ -1,0 +1,283 @@
+{
+  "audit_date": "2026-07-30",
+  "project": "dev-crew",
+  "summary": {
+    "total_vulnerabilities": 78,
+    "by_severity": {
+      "critical": 3,
+      "high": 10,
+      "moderate": 59,
+      "low": 6
+    },
+    "grade": "F",
+    "reason": "3 CRITICAL vulnerabilities in direct or near-direct dependencies with known exploits"
+  },
+  "workspaces": [
+    {
+      "name": "Source/Backend",
+      "critical": 1,
+      "high": 4,
+      "moderate": 4,
+      "low": 1,
+      "total": 10,
+      "direct_dependencies": 4,
+      "total_dependencies": 50,
+      "key_issues": [
+        "handlebars: JavaScript Injection (CVSS 9.8)",
+        "brace-expansion: DoS",
+        "form-data: CRLF injection",
+        "js-yaml: Quadratic DoS",
+        "uuid: Buffer bounds check"
+      ]
+    },
+    {
+      "name": "Source/Frontend",
+      "critical": 1,
+      "high": 4,
+      "moderate": 5,
+      "low": 1,
+      "total": 11,
+      "direct_dependencies": 3,
+      "total_dependencies": 150,
+      "key_issues": [
+        "vitest: Arbitrary file read/execute (CVSS 9.8)",
+        "form-data: CRLF injection",
+        "vite: Path traversal + Windows bypass",
+        "react-router-dom: Open redirect",
+        "ws: Memory exhaustion + info disclosure",
+        "postcss: XSS + file read via source maps"
+      ]
+    },
+    {
+      "name": "Source/E2E",
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "direct_dependencies": 4,
+      "total_dependencies": 50,
+      "key_issues": []
+    },
+    {
+      "name": "platform/orchestrator",
+      "critical": 1,
+      "high": 2,
+      "moderate": 6,
+      "low": 0,
+      "total": 9,
+      "direct_dependencies": 3,
+      "total_dependencies": 155,
+      "key_issues": [
+        "protobufjs: RCE via protobuf handling (CVSS 8.1) [transitive via gRPC]",
+        "dockerode-related gRPC deps: Server/client crashes",
+        "express: Multiple version gaps",
+        "multer: LTS version may have outdated transitive deps"
+      ]
+    },
+    {
+      "name": "portal/Backend",
+      "critical": 1,
+      "high": 7,
+      "moderate": 43,
+      "low": 2,
+      "total": 54,
+      "direct_dependencies": 9,
+      "total_dependencies": 577,
+      "key_issues": [
+        "@opentelemetry/auto-instrumentations-node: Prometheus exporter crash, gRPC cascade failures",
+        "@grpc/grpc-js: Malformed request crashes (2 CVEs, CVSS 7.5 each)",
+        "better-sqlite3: Transitive SQLite vulns",
+        "express: Version gap (4.18.2)",
+        "Large dep tree: 577 total (high supply chain risk)"
+      ]
+    },
+    {
+      "name": "portal/Frontend",
+      "critical": 1,
+      "high": 5,
+      "moderate": 4,
+      "low": 1,
+      "total": 11,
+      "direct_dependencies": 9,
+      "total_dependencies": 424,
+      "key_issues": [
+        "vitest: Arbitrary file read/execute (CVSS 9.8)",
+        "vite: Path traversal + fs.deny bypass",
+        "postcss: File read via source maps",
+        "tailwindcss: Transitive PostCSS vulns",
+        "react & react-router: Minor versions behind latest"
+      ]
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection (8 CVEs)",
+      "severity": "P1",
+      "package": "handlebars",
+      "version_affected": "4.0.0-4.7.8",
+      "cvss_score": 9.8,
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "workspaces": ["Source/Backend"],
+      "fix": "npm update handlebars@4.7.9 --save",
+      "effort": "LOW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "severity": "P1",
+      "package": "vitest",
+      "version_affected": "<3.2.6",
+      "cvss_score": 9.8,
+      "cve_ids": ["GHSA-5xrq-8626-4rwp"],
+      "workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fix": "npm update vitest@3.2.6 --save-dev",
+      "effort": "LOW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Portal Backend gRPC Cascade Crashes & Prometheus DoS",
+      "severity": "P1",
+      "package": "@opentelemetry/auto-instrumentations-node, @grpc/grpc-js",
+      "version_affected": "0.40.0, 1.14.0-1.14.3",
+      "cvss_score": 9.8,
+      "cve_ids": ["GHSA-q7rr-3cgh-j5r3", "GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "workspaces": ["portal/Backend"],
+      "fix": "npm update @opentelemetry/auto-instrumentations-node@latest && npm update @grpc/grpc-js@1.14.4 --save",
+      "effort": "MEDIUM"
+    }
+  ],
+  "high_findings_sample": [
+    {
+      "id": "DEP-005",
+      "title": "brace-expansion DoS",
+      "severity": "P2",
+      "package": "brace-expansion",
+      "version_affected": "<1.1.16",
+      "cvss_score": 6.5,
+      "workspaces": ["Source/Backend", "Source/Frontend"],
+      "fix": "npm audit fix"
+    },
+    {
+      "id": "DEP-006",
+      "title": "form-data CRLF Injection",
+      "severity": "P2",
+      "package": "form-data",
+      "cvss_score": 7.3,
+      "workspaces": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "fix": "npm audit fix"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vite Path Traversal & Windows Bypass",
+      "severity": "P2",
+      "package": "vite",
+      "version_affected": "<5.4.x",
+      "cvss_score": 7.5,
+      "workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fix": "npm update vite@latest --save-dev"
+    },
+    {
+      "id": "DEP-009",
+      "title": "React Router Open Redirect",
+      "severity": "P2",
+      "package": "react-router-dom",
+      "cvss_score": 6.1,
+      "workspaces": ["Source/Frontend"],
+      "fix": "npm update react-router-dom@latest --save"
+    }
+  ],
+  "remediation_priority": {
+    "immediate_24h": [
+      "Update vitest to ≥3.2.6 (Source/Frontend, portal/Frontend)",
+      "Update handlebars to ≥4.7.9 (Source/Backend)",
+      "Update @opentelemetry/auto-instrumentations-node (portal/Backend)",
+      "Update @grpc/grpc-js to 1.14.4 (portal/Backend)"
+    ],
+    "this_week": [
+      "Run npm audit fix in all workspaces",
+      "Update vite (Source/Frontend, portal/Frontend)",
+      "Update react-router-dom (Source/Frontend)",
+      "Align express versions across workspaces"
+    ],
+    "next_two_weeks": [
+      "Update uuid to ≥9.0.1",
+      "Test and verify all test suites pass",
+      "Upgrade express to 4.22.2 if safe"
+    ]
+  },
+  "outdated_packages": {
+    "express": {
+      "current_versions": ["4.18.2 (Backend)", "4.21.0 (orchestrator)", "4.18.2 (portal/Backend)"],
+      "latest_major": "5.2.1",
+      "recommended": "4.22.2",
+      "severity": "P3",
+      "note": "Align across all workspaces; plan 5.x upgrade separately"
+    },
+    "vitest": {
+      "current_versions": ["1.2.2 (portal/Backend)", "2.0.5 (Source/Frontend)", "1.4.0 (portal/Frontend)"],
+      "latest": "4.1.10",
+      "severity": "P1 (security)",
+      "note": "All versions have UI server CVE; minimum 3.2.6"
+    },
+    "vite": {
+      "current_versions": ["5.2.0 (portal/Backend)", "5.4.0 (Source/Frontend)"],
+      "latest": "8.1.5",
+      "severity": "P2",
+      "note": "Has path traversal CVEs; update to at least 5.4.0+"
+    }
+  },
+  "supply_chain_risks": {
+    "large_dependency_trees": {
+      "portal/Backend": {
+        "total": 577,
+        "prod": 397,
+        "dev": 181,
+        "optional": 75,
+        "risk": "HIGH",
+        "recommendation": "Audit OpenTelemetry footprint (pulls gRPC + protobuf cascade)"
+      },
+      "portal/Frontend": {
+        "total": 424,
+        "prod": 9,
+        "dev": 416,
+        "optional": 49,
+        "risk": "MEDIUM",
+        "recommendation": "Mostly dev-time; test coverage is high but attack surface exists"
+      }
+    },
+    "watch_list": [
+      "handlebars (JavaScript injection vectors)",
+      "vitest (UI server exposure)",
+      "vite (path traversal, Windows-specific)",
+      "react-router-dom (open redirect patterns)",
+      "@opentelemetry (large cascade, frequent updates)"
+    ]
+  },
+  "cross_team_escalation": {
+    "to_guardians": [
+      "DEP-001: Handlebars RCE — verify no user-controlled templates",
+      "DEP-002/003: Vitest UI — ensure never exposed to untrusted networks",
+      "DEP-004: OpenTelemetry crashes — verify trace exporter is firewalled"
+    ],
+    "to_fixer": [
+      "Run verification gates after fixes",
+      "npm audit should return 0 vulnerabilities",
+      "npm test should pass in all workspaces",
+      "Setup CI/CD npm audit checks"
+    ]
+  },
+  "recommendations": {
+    "immediate": "Update CRITICAL packages within 24 hours",
+    "short_term": "Apply npm audit fixes across all workspaces this week",
+    "medium_term": "Plan express 5.x and react 19 upgrades for Q4 2026",
+    "long_term": "Implement automated dependency scanning in GitHub Actions (Dependabot or npm audit on every PR)"
+  }
+}

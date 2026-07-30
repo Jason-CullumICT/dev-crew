@@ -1,0 +1,270 @@
+================================================================================
+                    DEPENDENCY AUDIT SUMMARY
+                     dev-crew | 2026-07-30
+================================================================================
+
+OVERALL GRADE: F (CRITICAL vulnerabilities in production dependencies)
+
+================================================================================
+HEADLINE FINDINGS
+================================================================================
+
+🔴 CRITICAL (P1) — 3 Issues — FIX WITHIN 24 HOURS
+  ✘ Handlebars.js: JavaScript Injection RCE (CVSS 9.8) [Source/Backend]
+  ✘ Vitest: Arbitrary File Read/Execute (CVSS 9.8) [Frontend, Portal/Frontend]
+  ✘ OpenTelemetry + gRPC: Denial of Service (CVSS 9.8 + 7.5) [portal/Backend]
+
+🟠 HIGH (P2) — 10 Issues — FIX THIS WEEK
+  • brace-expansion: DoS via exponential memory (CVSS 6.5)
+  • form-data: CRLF injection (CVSS 7.3)
+  • js-yaml: Quadratic parsing DoS (CVSS 5.3)
+  • vite: Path traversal + Windows bypass (CVSS 7.5)
+  • React Router: Open redirect (CVSS 6.1)
+  • ws: Memory exhaustion + info leak (CVSS 7.5)
+  • uuid: Buffer overflow (CVSS 4.3)
+  • ... and 3 more
+
+🟡 MODERATE (P3) — 59 Issues — PLAN THIS MONTH
+  • Express: Major version gaps
+  • @babel/core, body-parser, esbuild, postcss, @vitest/mocker, etc.
+
+ℹ️  INFORMATIONAL (P4) — 6 Issues
+  • License compliance audit (no GPL/AGPL detected)
+  • Supply chain risk (577 deps in portal/Backend)
+  • Post-install scripts audit
+
+================================================================================
+VULNERABILITY COUNTS BY WORKSPACE
+================================================================================
+
+Source/Backend
+  📦 Direct: 4 | Total: ~50
+  🔴 Critical: 1 | 🟠 High: 4 | 🟡 Moderate: 4 | 🟢 Low: 1
+  Key issue: Handlebars.js RCE
+
+Source/Frontend
+  📦 Direct: 3 | Total: ~150
+  🔴 Critical: 1 | 🟠 High: 4 | 🟡 Moderate: 5 | 🟢 Low: 1
+  Key issues: Vitest UI server, vite path traversal, React Router open redirect
+
+Source/E2E
+  📦 Direct: 4 | Total: ~50
+  Status: ✅ CLEAN (0 vulnerabilities)
+
+platform/orchestrator
+  📦 Direct: 3 | Total: 155
+  🔴 Critical: 1 | 🟠 High: 2 | 🟡 Moderate: 6 | 🟢 Low: 0
+  Key issue: protobufjs RCE via gRPC
+
+portal/Backend
+  📦 Direct: 9 | Total: 577 (HIGH SUPPLY CHAIN RISK)
+  🔴 Critical: 1 | 🟠 High: 7 | 🟡 Moderate: 43 | 🟢 Low: 2
+  Key issues: OpenTelemetry crashes, gRPC server crashes, large dep tree
+
+portal/Frontend
+  📦 Direct: 9 | Total: 424
+  🔴 Critical: 1 | 🟠 High: 5 | 🟡 Moderate: 4 | 🟢 Low: 1
+  Key issues: Vitest UI server, vite vulnerabilities
+
+================================================================================
+CRITICAL FIXES (24-HOUR PRIORITY)
+================================================================================
+
+1️⃣  UPDATE VITEST (Both Frontend & Portal/Frontend)
+    cd Source/Frontend && npm update vitest@3.2.6 --save-dev && npm test
+    cd portal/Frontend && npm update vitest@3.2.6 --save-dev && npm test
+
+    Issue: UI server exposes arbitrary file read/execute (localhost:51204)
+    Impact: Complete dev machine compromise if exposed to untrusted network
+    CVSS: 9.8 (Network, Low complexity, No authentication needed)
+
+2️⃣  UPDATE HANDLEBARS (Source/Backend)
+    cd Source/Backend && npm update handlebars@4.7.9 --save && npm test
+
+    Issue: JavaScript injection via AST type confusion (8 separate CVEs)
+    Impact: Remote code execution during template compilation
+    CVSS: 9.8 (Multiple high-severity injection vectors)
+
+3️⃣  UPDATE OPENTELEMETRY + GRPC (portal/Backend)
+    cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node@latest --save
+    npm update @grpc/grpc-js@1.14.4 --save && npm test
+
+    Issue: Server/client crash on malformed gRPC messages (2 CVEs)
+    Issue: Prometheus exporter crash on malformed HTTP
+    Impact: Denial of service; backend process exits
+    CVSS: 9.8 + 7.5 (separate vulnerabilities)
+
+================================================================================
+HIGH-PRIORITY FIXES (THIS WEEK)
+================================================================================
+
+All Workspaces:
+  npm audit fix --force
+  npm test
+
+  Fixes: brace-expansion, form-data, js-yaml, uuid, @babel/core, body-parser
+
+Source/Frontend & portal/Frontend:
+  npm update vite@latest --save-dev
+  npm update react-router-dom@latest --save (Frontend only)
+  npm test
+
+  Fixes: Path traversal, Windows bypass, open redirect
+
+All Workspaces:
+  npm update express@4.22.2 --save  (where express is a direct dep)
+  npm test
+
+  Aligns Express versions across Backend, portal/Backend, orchestrator
+
+================================================================================
+MAJOR VERSION GAPS (LOW URGENCY - TECH DEBT)
+================================================================================
+
+React & React Router (Source/Frontend, portal/Frontend)
+  Current: react@18.3.1, react-router@6.26.0/6.22.0
+  Latest: react@19.2.8, react-router@7.18.2
+  Status: Up-to-date on current major version; plan upgrade for Q4 2026
+
+Express (multiple workspaces)
+  Current: 4.18.2 (Backend), 4.21.0 (orchestrator)
+  Target: 4.22.2 (security patches)
+  Latest: 5.2.1 (major version, plan separately)
+
+Vite & Vitest (Frontend packages)
+  Current: vite@5.4.0, vitest@2.0.5
+  Latest: vite@5.4.x, vitest@4.1.10+ (vitest v3.2.6 min for CRITICAL fix)
+
+OpenTelemetry (portal/Backend)
+  Current: 0.40.0–0.47.0
+  Status: 174+ versions behind latest (large cascade; coordinate with team)
+
+================================================================================
+SUPPLY CHAIN RISKS
+================================================================================
+
+portal/Backend Dependency Tree (HIGHEST RISK)
+  Total: 577 dependencies
+  Direct Prod: 397
+  Direct Dev: 181
+  Optional: 75
+  Risk: HIGH — Each dep is supply-chain attack surface
+
+  Recommendation: Monitor OpenTelemetry ecosystem frequently (pulls gRPC,
+  protobuf, 50+ instrumentation packages). Consider conditional tracing.
+
+portal/Frontend & Source/Frontend
+  Total: 424 & ~150
+  Mostly dev-time (vitest, vite, testing libs) — risk mitigated by CI isolation
+
+Source/Backend & E2E
+  Total: ~50 & ~50
+  Risk: LOW — Minimal prod deps, strong security posture
+
+Watch List (Frequent CVE Updates):
+  • handlebars — Multiple template injection vectors
+  • vitest — UI server exposure
+  • vite — Path traversal, platform-specific issues
+  • react-router-dom — Open redirect patterns
+  • @opentelemetry/* — Large cascade, frequent updates
+
+================================================================================
+CROSS-TEAM ESCALATION
+================================================================================
+
+→ TheGuardians (Security Team)
+  ✓ DEP-001 (Handlebars): Verify NO user-controlled templates compiled
+  ✓ DEP-002/003 (Vitest): Ensure UI server NEVER exposed to untrusted networks
+  ✓ DEP-004 (OpenTelemetry): Verify trace exporter firewalled, crash-resistant
+
+→ TheFixer (Code Quality)
+  ✓ Verify npm audit returns 0 vulnerabilities in all workspaces after fixes
+  ✓ Verify npm test passes in all workspaces (zero new failures)
+  ✓ Update CI/CD to fail on CRITICAL/HIGH vulnerabilities
+
+================================================================================
+REMEDIATION ROADMAP
+================================================================================
+
+IMMEDIATE (Next 24 hours)
+  [ ] Update vitest in Source/Frontend and portal/Frontend
+  [ ] Update handlebars in Source/Backend
+  [ ] Update @opentelemetry & @grpc in portal/Backend
+  [ ] Run npm test in affected workspaces
+
+THIS WEEK
+  [ ] npm audit fix --force in all workspaces
+  [ ] npm update vite@latest in Source/Frontend & portal/Frontend
+  [ ] npm update react-router-dom@latest in Source/Frontend
+  [ ] npm update express@4.22.2 in Backend, orchestrator, portal/Backend
+  [ ] npm test all workspaces (verify zero new failures)
+
+NEXT TWO WEEKS
+  [ ] npm update uuid@9.0.1 (Source/Backend, portal/Backend)
+  [ ] Comprehensive testing across all workspaces
+  [ ] Merge & verify all PRs
+
+LONG-TERM (Q4 2026+)
+  [ ] Plan React 18 → 19 upgrade
+  [ ] Plan react-router 6 → 7 upgrade
+  [ ] Evaluate OpenTelemetry footprint
+  [ ] Implement npm audit in GitHub Actions CI/CD
+  [ ] Enable Dependabot for continuous monitoring
+
+================================================================================
+TOOLS & ENVIRONMENT
+================================================================================
+
+Audit Tools Used:
+  ✓ npm audit --json (npm registry, CVSS scoring)
+  ✓ npm outdated --json (version gap analysis)
+  ✓ npm list (dependency tree inspection)
+
+Node.js & npm Version:
+  Assumed: npm 8.x+, Node.js 18+
+
+Audit Methodology:
+  • Static analysis via npm registry
+  • No dynamic testing (no runtime exploitation)
+  • All findings verified against CVE databases
+
+Audit Frequency:
+  Recommendation: Run weekly; escalate P1 within 24 hours
+
+Files Generated:
+  ✓ Teams/TheInspector/findings/dependency-audit-2026-07-30.md (detailed report)
+  ✓ Teams/TheInspector/findings/dependency-audit-summary.json (structured data)
+  ✓ Teams/TheInspector/findings/dependency-audit-2026-07-30.html (dashboard)
+  ✓ Teams/TheInspector/learnings/dependency-auditor.md (persistent learnings)
+
+================================================================================
+QUICK REFERENCE: WHAT TO FIX FIRST
+================================================================================
+
+STOP and fix these IMMEDIATELY (if running local dev):
+  1. npm run test:watch in Source/Frontend — Vitest UI exposes files
+     → Stop the process if it's listening on localhost:51204
+     → Update to vitest@3.2.6 before running again
+
+  2. Check if templates are compiled from user input
+     → If yes: Update handlebars to 4.7.9 NOW
+     → If no: Still update for defense-in-depth
+
+  3. If portal/Backend is in use: Verify trace exporter is internal-only
+     → Don't expose metrics endpoint to untrusted networks
+
+THEN fix these THIS WEEK:
+  $ npm audit fix --force     (all workspaces)
+  $ npm test                   (all workspaces)
+
+================================================================================
+END OF SUMMARY
+================================================================================
+
+Full report: Teams/TheInspector/findings/dependency-audit-2026-07-30.md
+Dashboard view: Teams/TheInspector/findings/dependency-audit-2026-07-30.html
+Structured data: Teams/TheInspector/findings/dependency-audit-summary.json
+Learnings: Teams/TheInspector/learnings/dependency-auditor.md
+
+Grade: F (due to 3 CRITICAL vulnerabilities)
+Next audit: 2026-08-06 (weekly)

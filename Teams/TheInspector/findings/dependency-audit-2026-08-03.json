@@ -1,0 +1,284 @@
+{
+  "audit_id": "dependency-auditor-2026-08-03",
+  "timestamp": "2026-08-03T00:00:00Z",
+  "overall_grade": "D",
+  "summary": {
+    "total_vulnerabilities": 29,
+    "critical": 3,
+    "high": 9,
+    "moderate": 8,
+    "low": 1,
+    "info": 0,
+    "total_direct_dependencies": 10,
+    "total_transitive_dependencies": 796,
+    "license_violations": 0,
+    "abandoned_packages": 0
+  },
+  "workspaces": [
+    {
+      "name": "Source/Backend",
+      "manifest": "package.json",
+      "direct_deps": 4,
+      "transitive_deps": 411,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 5,
+        "low": 0
+      },
+      "critical_packages": ["handlebars@4.7.8"]
+    },
+    {
+      "name": "Source/Frontend",
+      "manifest": "package.json",
+      "direct_deps": 3,
+      "transitive_deps": 227,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 5,
+        "low": 1
+      },
+      "critical_packages": ["vitest@3.2.5"]
+    },
+    {
+      "name": "Source/E2E",
+      "manifest": "package.json",
+      "direct_deps": 2,
+      "transitive_deps": 2,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "critical_packages": []
+    },
+    {
+      "name": "platform/orchestrator",
+      "manifest": "package.json",
+      "direct_deps": 3,
+      "transitive_deps": 152,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0
+      },
+      "critical_packages": ["protobufjs@7.6.4"]
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "severity": "critical",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "title": "JavaScript Injection via AST Type Confusion",
+      "description": "Multiple AST type confusion vulnerabilities allow JavaScript injection when processing partial blocks or dynamic partials.",
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "fix_version": "4.7.9",
+      "workspace": "Source/Backend",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "version": "7.6.4",
+      "severity": "critical",
+      "cve": "GHSA-xq3m-2v4x-88gg (primary) + 9 others",
+      "cvss": 9.8,
+      "title": "Arbitrary Code Execution + Multiple Injection Vectors",
+      "description": "Code generation from .proto files can be exploited for RCE; prototype pollution and unbounded recursion DoS also present.",
+      "affected_range": "<=7.6.4",
+      "fix_version": "7.7.0+",
+      "workspace": "platform/orchestrator",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "vitest",
+      "version": "3.2.5",
+      "severity": "critical",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "title": "Arbitrary File Read & Execution when UI Server Running",
+      "description": "Vitest UI server exposes `/api/` endpoints without authentication, allowing arbitrary file read and execution.",
+      "affected_range": "<3.2.6",
+      "fix_version": "3.2.6 or 4.1.10+",
+      "workspace": "Source/Frontend",
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "brace-expansion",
+      "version": "1.1.16",
+      "severity": "high",
+      "cves": ["GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg"],
+      "cvss": [5.3, 7.5],
+      "title": "DoS via Exponential Expansion & Memory Exhaustion",
+      "fix_version": "1.1.17"
+    },
+    {
+      "id": "DEP-005",
+      "package": "form-data",
+      "version": "4.0.5",
+      "severity": "high",
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "cvss": 7.5,
+      "title": "CRLF Injection in Multipart Headers",
+      "fix_version": "4.0.6"
+    },
+    {
+      "id": "DEP-006",
+      "package": "js-yaml",
+      "version": "3.14.2",
+      "severity": "high",
+      "cves": ["GHSA-52cp-r559-cp3m"],
+      "cvss": 7.5,
+      "title": "Quadratic DoS via Merge Key Expansion",
+      "fix_version": "3.15.0"
+    },
+    {
+      "id": "DEP-007",
+      "package": "path-to-regexp",
+      "version": "0.1.12",
+      "severity": "high",
+      "cves": ["GHSA-37ch-88jc-xwx2"],
+      "cvss": 7.5,
+      "title": "ReDoS via Multiple Route Parameters",
+      "fix_version": "0.1.13"
+    },
+    {
+      "id": "DEP-008",
+      "package": "postcss",
+      "version": "8.5.17",
+      "severity": "high",
+      "cves": ["GHSA-6g55-p6wh-862q"],
+      "cvss": 7.5,
+      "title": "Arbitrary File Read via sourceMappingURL",
+      "fix_version": "8.5.18"
+    },
+    {
+      "id": "DEP-009",
+      "package": "vite",
+      "version": "6.4.2",
+      "severity": "high",
+      "cves": ["GHSA-fx2h-pf6j-xcff"],
+      "cvss": 7.5,
+      "title": "Path Traversal on Windows (alternate paths bypass)",
+      "fix_version": "6.4.3 or 8.x+"
+    },
+    {
+      "id": "DEP-010",
+      "package": "ws",
+      "version": "8.20.1",
+      "severity": "high",
+      "cves": ["GHSA-96hv-2xvq-fx4p"],
+      "cvss": 7.5,
+      "title": "Memory Exhaustion DoS from Frame Fragmentation",
+      "fix_version": "8.21.0"
+    }
+  ],
+  "license_compliance": {
+    "violations": [],
+    "summary": "All dependencies use permissive licenses (MIT, Apache 2.0). No GPL/AGPL viral licenses detected."
+  },
+  "supply_chain_risks": {
+    "postinstall_scripts": 0,
+    "deprecated_packages": 0,
+    "abandoned_packages": 0,
+    "high_churn_packages": ["protobufjs"],
+    "notes": "protobufjs has 10 CVEs across recent versions; recommend quarterly audit. All other packages are well-maintained."
+  },
+  "outdated_major_versions": [
+    {
+      "package": "dockerode",
+      "current": "4.0.12",
+      "latest": "5.0.1",
+      "versions_behind": 1,
+      "workspace": "platform/orchestrator"
+    },
+    {
+      "package": "express",
+      "current": "4.22.2",
+      "latest": "5.2.1",
+      "versions_behind": 1,
+      "workspace": "platform/orchestrator"
+    }
+  ],
+  "remediation_plan": {
+    "phase_1": {
+      "name": "Immediate (This Week)",
+      "tasks": [
+        "Upgrade vitest to 3.2.6+ in Source/Frontend",
+        "Upgrade protobufjs to 7.7.0+ in platform/orchestrator",
+        "Run npm audit fix in Source/Backend"
+      ]
+    },
+    "phase_2": {
+      "name": "This Sprint",
+      "tasks": [
+        "Run npm audit fix in Source/Frontend",
+        "Run npm audit fix in platform/orchestrator",
+        "Full test suite pass after upgrades"
+      ]
+    },
+    "phase_3": {
+      "name": "Next Sprint",
+      "tasks": [
+        "Plan major version upgrades (express 5.x, react-router-dom 7.x, dockerode 5.x)",
+        "Test in development; coordinate with teams",
+        "Merge and deploy"
+      ]
+    }
+  },
+  "escalations": {
+    "team": "TheGuardians",
+    "findings": [
+      {
+        "id": "DEP-001",
+        "reason": "JavaScript code execution in template processing"
+      },
+      {
+        "id": "DEP-002",
+        "reason": "Arbitrary code execution + prototype pollution in protocol buffers"
+      },
+      {
+        "id": "DEP-003",
+        "reason": "Credentials and source code exposure in development environment"
+      },
+      {
+        "id": "DEP-005",
+        "reason": "HTTP header injection / response splitting"
+      },
+      {
+        "id": "DEP-008",
+        "reason": "Information disclosure (file read) in build pipeline"
+      },
+      {
+        "id": "DEP-009",
+        "reason": "Credential exposure in development environment (Windows)"
+      }
+    ]
+  },
+  "audit_tools_available": {
+    "npm_audit": true,
+    "npm_outdated": true,
+    "license_checker": true,
+    "govulncheck": false,
+    "pip_audit": false
+  },
+  "next_audit": "2026-09-03",
+  "recommendations": [
+    "Execute Phase 1 remediation immediately before any production deployment",
+    "Add npm audit check to pre-commit hooks",
+    "Consider vulnerability scanning in CI/CD pipeline",
+    "Re-audit in 30 days to verify Phase 1 completion",
+    "Coordinate major version upgrades with backend/frontend teams"
+  ]
+}

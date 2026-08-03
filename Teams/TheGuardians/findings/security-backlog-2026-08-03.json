@@ -1,0 +1,330 @@
+{
+  "generated": "2026-08-03",
+  "run_id": "run-20260803-064745",
+  "grade": "F",
+  "summary": {
+    "critical": 3,
+    "high": 8,
+    "medium": 8,
+    "low": 5,
+    "total": 24,
+    "compliance_pass_rate_pct": 13,
+    "compliance_passed": 4,
+    "compliance_total": 30,
+    "red_team_objectives_total": 4,
+    "red_team_objectives_achieved": 4,
+    "red_team_chains_attempted": 9,
+    "confirmed_live_exploits": 7,
+    "partial_confirmations": 3,
+    "no_breach_confirmed": 2
+  },
+  "grade_trigger": "Automatic F — confirmed red-team breach of 2 critical objectives (RED-001, RED-002). All 4 pentest objectives achieved.",
+  "findings": [
+    {
+      "id": "F01",
+      "title": "Zero Authentication on All API Routes",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-01", "COMP-01", "COMP-02", "PEN-001", "RED-001", "RED-002"],
+      "description": "The Express application mounts zero authentication middleware. Every endpoint — CRUD, state transitions, approvals, dispatches, metrics — is accessible to any unauthenticated HTTP client. Root cause for ~80% of all other findings.",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Implement JWT or session-based authentication middleware applied globally in app.ts before any route mounting. Introduce RBAC. Gate privileged actions (approve, dispatch, override) behind admin roles.",
+      "sprint": 1
+    },
+    {
+      "id": "F02",
+      "title": "Manual Approve Bypasses Entire Assessment Pod",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-002", "RED-001"],
+      "description": "POST /api/work-items/:id/approve moves any item in proposed/reviewing directly to approved with no assessment. Confirmed chain: create → route → manual approve (no auth) → dispatch. changeHistory shows agent: manual-override with no assessment-pod entry.",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Gate manual approve behind admin/elevated role. Require explicit second-factor confirmation. Add mandatory assessment attestation or remove from public API surface.",
+      "sprint": 1
+    },
+    {
+      "id": "F03",
+      "title": "overrideRoute: fast-track Corrupts State Machine",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-005", "RED-002"],
+      "description": "POST /api/work-items/:id/route accepts body.overrideRoute without enum validation. Setting overrideRoute:fast-track on a feature type item jumps it directly to approved, bypassing the assessment pod. Arbitrary non-enum strings are also stored verbatim, corrupting the route field.",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Validate overrideRoute strictly against WorkItemRoute enum. Reject non-enum values with 400. Gate fast-track behind admin role. Add database-level constraint on route column.",
+      "sprint": 1
+    },
+    {
+      "id": "F04",
+      "title": "Uncapped Pagination Dumps Entire Work-Item Store",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-05", "PEN-003", "RED-003"],
+      "description": "GET /api/work-items?limit=999999999 returns all non-deleted items in one response including full changeHistory, assessments, and dependency graphs. Sequential WI-NNN docIds also reveal total store size.",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Enforce MAX_LIMIT=100 server-side in findAll. Clamp or reject any value above this. Default limit=0/NaN to 20. Do not expose total to unauthenticated callers.",
+      "sprint": 2
+    },
+    {
+      "id": "F05",
+      "title": "Webhook Intake Accepts Forged Signatures — Store Flooding",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-02", "PEN-007", "RED-007"],
+      "description": "POST /api/intake/zendesk and /api/intake/automated accept payloads from any source. No HMAC-SHA256 signature verification. No rate limiting. 50 consecutive forged webhook requests were all accepted, flooding the store from 11 to 61 items.",
+      "file": "Source/Backend/src/routes/intake.ts",
+      "remediation": "Verify X-Zendesk-Webhook-Signature against HMAC-SHA256(secret, rawBody). Apply express-rate-limit at 10 req/min per IP on intake endpoints. Add idempotency keys.",
+      "sprint": 2
+    },
+    {
+      "id": "F06",
+      "title": "Stored XSS via Unsanitized reason Field in Activity Feed",
+      "severity": "High",
+      "status": "Confirmed — Partial (API confirmed; frontend rendering not exercised)",
+      "sources": ["PEN-009", "RED-006"],
+      "description": "POST /api/work-items/:id/reject stores body.reason verbatim in changeHistory[].reason. GET /api/dashboard/activity returns the raw payload. XSS fires for all users viewing activity if frontend renders reason via innerHTML or dangerouslySetInnerHTML.",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Sanitize reason on ingestion using isomorphic-dompurify. Apply Content-Security-Policy: default-src 'self'. Ensure frontend renders reason via text nodes only.",
+      "sprint": 2
+    },
+    {
+      "id": "F07",
+      "title": "Prototype Pollution via Unvalidated Intake Enums",
+      "severity": "High",
+      "status": "Confirmed — Partial (dashboard pollution confirmed; full JS prototype chain not modified)",
+      "sources": ["SAST-08", "PEN-004", "RED-004"],
+      "description": "Intake endpoints accept arbitrary strings for type/priority. type:__proto__ is stored; GET /api/dashboard/summary shows constructor as a key in priorityCounts. Prometheus /metrics shows permanently polluted labels for process lifetime.",
+      "file": "Source/Backend/src/routes/intake.ts",
+      "remediation": "Validate type against WorkItemType enum and priority against WorkItemPriority enum in all intake routes. Use Object.create(null) for counters built from user-supplied keys. Add maxLength:64 on all string fields.",
+      "sprint": 2
+    },
+    {
+      "id": "F08",
+      "title": "Soft-Deleted Blocker Permanently Gates Dependent Items",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-011", "RED-005"],
+      "description": "Soft-deleting a blocker item does not trigger onItemResolved(). The blockedBy array retains a dangling reference. computeHasUnresolvedBlockers() treats the missing item as unresolved, permanently blocking dispatch. No automated recovery path exists.",
+      "file": "Source/Backend/src/services/dependency.ts",
+      "remediation": "Call onItemResolved(id) in DELETE handler before soft-deleting. Or: treat !blocker || blocker.deleted as resolved in computeHasUnresolvedBlockers().",
+      "sprint": 3
+    },
+    {
+      "id": "F09",
+      "title": "No TLS/HTTPS Enforcement",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-04"],
+      "description": "All traffic between clients and backend travels in plaintext. Credentials, work item payloads, and assessment data are exposed to network interception.",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Terminate TLS at load balancer or reverse proxy. Redirect HTTP to HTTPS. Set Strict-Transport-Security header.",
+      "sprint": 1
+    },
+    {
+      "id": "F10",
+      "title": "In-Memory Store — No Durable Audit Trail",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-08"],
+      "description": "All work item state, change history, and assessment records live in memory. A process restart loses all data and audit trails. SOC2 CC7.1 cannot be met without persistent storage.",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "remediation": "Replace in-memory store with PostgreSQL. Ensure all audit events are durably written before acknowledging requests.",
+      "sprint": 3
+    },
+    {
+      "id": "F11",
+      "title": "All 4 Required Audit Events Not Emitted",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-03"],
+      "description": "None of the 4 required audit events (login_attempt, permission_denied, state_transition, data_export) are emitted. SOC2 CC7.1 and ASVS V7.1.1 unmet.",
+      "file": "Source/Backend/src/",
+      "remediation": "Add event_type to structured logger. Instrument state_transition and data_export immediately. login_attempt and permission_denied follow from F01 remediation.",
+      "sprint": 3
+    },
+    {
+      "id": "F12",
+      "title": "Unauthenticated Prometheus /metrics Endpoint",
+      "severity": "Medium",
+      "status": "Confirmed — Partial",
+      "sources": ["SAST-04", "PEN-008", "COMP-07", "RED-008"],
+      "description": "GET /metrics is accessible without credentials, exposing dispatch targets, assessment rejection rates, CPU/heap/FD stats, and permanently polluted metric labels from F07.",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Protect with bearer token or IP allowlist middleware. Expose on a separate internal-only port (e.g., :9090).",
+      "sprint": 4
+    },
+    {
+      "id": "F13",
+      "title": "No CORS Policy + Missing HTTP Security Headers",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-07", "PEN-006", "COMP-05"],
+      "description": "No CORS middleware configured. No Helmet security headers. When cookie auth is added, this becomes a full CSRF vector.",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Add cors middleware with explicit trusted origins allowlist. Add helmet for X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy.",
+      "sprint": 4
+    },
+    {
+      "id": "F14",
+      "title": "Error Messages Leak Stack Traces (7 sites)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-03"],
+      "description": "Raw err.message included in HTTP 500 responses across 7 sites in routes/workflow.ts, leaking internal implementation details.",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Return generic {\"error\": \"Internal server error\"} to clients. Log full stack traces server-side with trace IDs.",
+      "sprint": 2
+    },
+    {
+      "id": "F15",
+      "title": "No Rate Limiting — Brute Force / DoS Risk",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-06"],
+      "description": "No express-rate-limit or equivalent. All endpoints accept unlimited requests per IP, enabling credential brute force, data harvesting loops, and webhook flooding.",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Apply express-rate-limit globally (100 req/min) with tighter limits on intake endpoints (10 req/min).",
+      "sprint": 2
+    },
+    {
+      "id": "F16",
+      "title": "Unbounded Body Size / Memory Exhaustion via changeHistory",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-010"],
+      "description": "express.json() has no limit option. Field lengths are uncapped. GET /api/dashboard/activity loads ALL change history in memory before slicing.",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Set express.json({ limit: '64kb' }). Add maxLength validation on title, description, reason. Paginate dashboard activity at database query layer.",
+      "sprint": 2
+    },
+    {
+      "id": "F17",
+      "title": "Sequential WI-NNN IDs Enable Full Enumeration",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-012"],
+      "description": "Monotonic global counter for docId reveals total store size to any caller who creates one item. Combined with F04, enables full business intelligence extraction.",
+      "file": "Source/Backend/src/utils/id.ts",
+      "remediation": "Replace global counter with random or hash-based identifiers. Or document as known design choice.",
+      "sprint": 4
+    },
+    {
+      "id": "F18",
+      "title": "MFA Not Supported",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["COMP-11"],
+      "description": "No multi-factor authentication mechanism. SOC2 CC6.2 and ASVS V2.8.1 require MFA for privileged access.",
+      "file": "Source/Backend/src/",
+      "remediation": "Implement TOTP or WebAuthn as second factor for admin/privileged roles once F01 (authentication) is resolved.",
+      "sprint": 4
+    },
+    {
+      "id": "F19",
+      "title": "Soft Delete Only — No GDPR Hard Erasure",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["COMP-09"],
+      "description": "DELETE /api/work-items/:id soft-deletes only (sets deleted: true). No mechanism for hard erasure. GDPR Article 17 requires complete data removal on request.",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Implement hard-delete path behind admin endpoint. Ensure deleted records are purged from change history and backups per retention policy.",
+      "sprint": 4
+    },
+    {
+      "id": "F20",
+      "title": "Container Runs as Root",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["SAST-09"],
+      "description": "portal/Dockerfile does not add a non-root user. Container escape exploits gain root on the host.",
+      "file": "portal/Dockerfile",
+      "remediation": "Add RUN addgroup -S app && adduser -S app -G app and USER app in Dockerfile.",
+      "sprint": 4
+    },
+    {
+      "id": "F21",
+      "title": "Change History Logs Raw Field Values",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["COMP-12"],
+      "description": "changeHistory stores raw old/new field values. If sensitive fields are added in future, they would be logged in plaintext.",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "remediation": "Introduce field-level sensitivity registry and redact sensitive fields before writing to changeHistory.",
+      "sprint": 4
+    },
+    {
+      "id": "F22",
+      "title": "Latent Prototype Risk via Object.assign in Store (Currently Mitigated)",
+      "severity": "Low",
+      "status": "No Current Exploit — PATCH allowlist effective (RED-010)",
+      "sources": ["PEN-014", "RED-010"],
+      "description": "store.updateWorkItem() uses Object.assign(item, updates) with no runtime field filter. Current PATCH handler enforces allowlist correctly. Future call sites passing req.body directly would be exploitable.",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "remediation": "Add runtime allowlist guard inside updateWorkItem() itself, not just at call sites.",
+      "sprint": 3
+    },
+    {
+      "id": "F23",
+      "title": "Missing /api/search Endpoint — Future ReDoS Risk",
+      "severity": "Low",
+      "status": "Not Exploitable — endpoint returns 404 (RED-009)",
+      "sources": ["PEN-015", "RED-009"],
+      "description": "Frontend references GET /api/search?q= for DependencyPicker typeahead. Returns 404. Future risk: ReDoS if implemented with new RegExp(q).",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "When implementing: use String.includes() not new RegExp(q). Cap results at MAX_LIMIT. Require authentication.",
+      "sprint": 4
+    },
+    {
+      "id": "F24",
+      "title": "Repeated Assessment Inflation (Partially Mitigated)",
+      "severity": "Low",
+      "status": "No Confirmed Exploit — status guard blocks linear paths (RED-011)",
+      "sources": ["PEN-013", "RED-011"],
+      "description": "Repeated assess calls could accumulate redundant assessment records. Status guard blocks linear exploit path; concurrent race condition untested.",
+      "file": "Source/Backend/src/services/assessment.ts",
+      "remediation": "Add idempotency check on (itemId, cycleNumber) in assessment records. Clear prior assessments[] on each new route action.",
+      "sprint": 3
+    }
+  ],
+  "compliance_matrix": {
+    "frameworks": ["SOC2-Type2", "OWASP-ASVS-L2", "GDPR"],
+    "controls_passed": ["SOC2-CC8.1", "ASVS-V8.1-data-classification", "GDPR-Art.25-data-minimization", "COMP-internal-changeHistory-structure"],
+    "controls_failed": [
+      "SOC2-CC6.1", "SOC2-CC6.2", "SOC2-CC6.3", "SOC2-CC7.1",
+      "ASVS-V2.1", "ASVS-V2.8", "ASVS-V3.1", "ASVS-V4.1.1", "ASVS-V4.1.3", "ASVS-V4.2.1",
+      "ASVS-V5.1", "ASVS-V5.3", "ASVS-V7.1.1", "ASVS-V7.1.2", "ASVS-V7.2",
+      "ASVS-V8.3", "ASVS-V9.1.1", "ASVS-V9.2", "ASVS-V11.1", "ASVS-V12.1",
+      "ASVS-V13.1", "ASVS-V14.4.1", "ASVS-V14.5",
+      "GDPR-Art.17", "GDPR-Art.32",
+      "Internal-audit-events", "Internal-metrics-auth"
+    ],
+    "pass_rate_pct": 13
+  },
+  "red_team_objectives": [
+    {
+      "objective": "Bypass work item state machine to reach an invalid status",
+      "status": "Achieved",
+      "chains": ["RED-001", "RED-002"]
+    },
+    {
+      "objective": "Access or modify a soft-deleted work item via direct ID reference",
+      "status": "Achieved",
+      "chains": ["RED-005"]
+    },
+    {
+      "objective": "Submit a malformed assessment verdict that bypasses routing logic",
+      "status": "Achieved",
+      "chains": ["RED-002"]
+    },
+    {
+      "objective": "Enumerate all work items without pagination limit enforcement",
+      "status": "Achieved",
+      "chains": ["RED-003"]
+    }
+  ],
+  "remediation_roadmap": {
+    "sprint_1_critical": ["F01", "F02", "F03", "F09"],
+    "sprint_2_high_input": ["F04", "F05", "F06", "F07", "F14", "F15", "F16"],
+    "sprint_3_persistence_audit": ["F08", "F10", "F11", "F22", "F24"],
+    "sprint_4_hardening": ["F12", "F13", "F17", "F18", "F19", "F20", "F21", "F23"]
+  }
+}

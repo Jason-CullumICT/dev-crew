@@ -1,0 +1,274 @@
+{
+  "audit_date": "2026-08-03",
+  "run_id": "run-20260803-055812",
+  "branch": "audit/inspector-2026-08-03-a84fb2",
+  "project": "dev-crew Source App",
+  "grade": "D",
+  "generated_by": "TheInspector team-leader",
+  "report_html": "Teams/TheInspector/findings/audit-2026-08-03-D.html",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 12,
+    "p3_total": 11,
+    "p4_total": 1,
+    "total_findings": 28,
+    "escalations": 6,
+    "fixed": 0,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend service offline at audit time"
+  },
+  "grade_derivation": {
+    "p1_count": 4,
+    "p1_threshold_C": 2,
+    "p2_count": 12,
+    "spec_coverage_pct": 95,
+    "result": "D — P1 count (4) exceeds C-grade maximum (2)",
+    "config_thresholds": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+      "D": { "max_p1": 999 }
+    }
+  },
+  "thefixer_backlog": {
+    "description": "All P1/P2 findings not escalated to TheGuardians — route to TheFixer",
+    "p1_findings": [
+      {
+        "id": "QO-001",
+        "severity": "P1",
+        "category": "spec-drift/untested",
+        "title": "GET /api/search not registered — 5 tests actively failing, CI red",
+        "source": "quality-oracle",
+        "file": "Source/Backend/tests/routes/search.test.ts",
+        "affected_files": [
+          "Source/Backend/src/app.ts",
+          "Source/Backend/tests/routes/search.test.ts"
+        ],
+        "recommendation": "Implement GET /api/search in Source/Backend/src/routes/ and register in app.ts, or quarantine test file to __pending__/",
+        "spec_ref": "FR-dependency-search",
+        "status": "NEW"
+      }
+    ],
+    "p2_findings": [
+      {
+        "id": "QO-002",
+        "severity": "P2",
+        "category": "architecture-violation",
+        "title": "Routes bypass service layer — direct store imports in 3 route files",
+        "source": "quality-oracle",
+        "affected_files": [
+          "Source/Backend/src/routes/workItems.ts",
+          "Source/Backend/src/routes/workflow.ts",
+          "Source/Backend/src/routes/intake.ts"
+        ],
+        "recommendation": "Create workflowService.ts and workItemService.ts; remove direct store imports from route handlers",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-003",
+        "severity": "P2",
+        "category": "spec-drift",
+        "title": "Traceability enforcer never scans portal/ — 70+ FRs unmonitored",
+        "source": "quality-oracle",
+        "affected_files": ["tools/traceability-enforcer.py"],
+        "recommendation": "Add 'portal' to source_dirs in traceability-enforcer.py; update inspector.config.yml source.dirs",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-004",
+        "severity": "P2",
+        "category": "test-coverage",
+        "title": "Duplicate test files — two generations of WorkItemDetailPage and WorkItemListPage tests running simultaneously",
+        "source": "quality-oracle",
+        "affected_files": [
+          "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+          "Source/Frontend/tests/WorkItemListPage.test.tsx"
+        ],
+        "recommendation": "Delete top-level test files; tests/pages/ variants are canonical",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-005",
+        "severity": "P2",
+        "category": "architecture-violation",
+        "title": "Dual logger modules with split import paths — single-source-of-truth violation",
+        "source": "quality-oracle",
+        "affected_files": [
+          "Source/Backend/src/utils/logger.ts",
+          "Source/Backend/src/logger.ts",
+          "Source/Backend/src/store/workItemStore.ts"
+        ],
+        "recommendation": "Replace hand-rolled logger with pino (already used in portal/Backend); delete src/logger.ts wrapper; unify all imports",
+        "cross_ref": "QO-006",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-006",
+        "severity": "P2",
+        "category": "architecture-violation",
+        "title": "Logger ignores LOG_LEVEL and NODE_ENV — no level filtering, no dev pretty-print",
+        "source": "quality-oracle",
+        "affected_files": ["Source/Backend/src/utils/logger.ts"],
+        "recommendation": "Add LOG_LEVEL env var gating and NODE_ENV-based pretty-print; or replace with pino",
+        "cross_ref": "QO-005",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-004",
+        "severity": "P2",
+        "category": "CVE",
+        "title": "brace-expansion DoS via exponential/unbounded expansion",
+        "source": "dependency-auditor",
+        "package": "brace-expansion@1.1.16",
+        "workspace": "Source/Backend",
+        "cve": ["GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg"],
+        "cvss": 7.5,
+        "fix": "cd Source/Backend && npm update glob",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-006",
+        "severity": "P2",
+        "category": "CVE",
+        "title": "js-yaml DoS via merge key expansion (quadratic complexity)",
+        "source": "dependency-auditor",
+        "package": "js-yaml@3.14.2",
+        "workspace": "Source/Backend",
+        "cve": ["GHSA-52cp-r559-cp3m"],
+        "cvss": 7.5,
+        "fix": "cd Source/Backend && npm update js-yaml",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-007",
+        "severity": "P2",
+        "category": "CVE",
+        "title": "path-to-regexp ReDoS via route parameters",
+        "source": "dependency-auditor",
+        "package": "path-to-regexp@0.1.12",
+        "workspace": "platform/orchestrator",
+        "cve": ["GHSA-37ch-88jc-xwx2"],
+        "cvss": 7.5,
+        "fix": "Solo session only: cd platform/orchestrator && npm update express",
+        "note": "platform/ directory requires solo session — pipeline agents must not modify",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-010",
+        "severity": "P2",
+        "category": "CVE",
+        "title": "ws memory exhaustion DoS via frame fragmentation",
+        "source": "dependency-auditor",
+        "package": "ws@8.20.1",
+        "workspace": "platform/orchestrator",
+        "cve": ["GHSA-96hv-2xvq-fx4p"],
+        "cvss": 7.5,
+        "fix": "Solo session only: cd platform/orchestrator && npm update ws",
+        "note": "platform/ directory requires solo session — pipeline agents must not modify",
+        "status": "NEW"
+      }
+    ]
+  },
+  "escalations": {
+    "team": "TheGuardians",
+    "description": "Security findings requiring full security audit — do NOT route to TheFixer",
+    "trigger_before": "next release",
+    "findings": [
+      {
+        "id": "DEP-001",
+        "severity": "P1",
+        "category": "CVE / code-execution",
+        "title": "handlebars@4.7.8 — JavaScript injection via AST type confusion",
+        "source": "dependency-auditor",
+        "package": "handlebars@4.7.8",
+        "workspace": "Source/Backend",
+        "cve": ["GHSA-2w6w-674q-4c4q"],
+        "cvss": 9.8,
+        "fix": "cd Source/Backend && npm update handlebars",
+        "escalation_reason": "Code execution risk in template processing — requires security assessment of all template processing paths",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-002",
+        "severity": "P1",
+        "category": "CVE / code-execution",
+        "title": "protobufjs@7.6.4 — Arbitrary code execution + 9 additional CVEs in gRPC layer",
+        "source": "dependency-auditor",
+        "package": "protobufjs@7.6.4",
+        "workspace": "platform/orchestrator",
+        "cve": ["GHSA-xq3m-2v4x-88gg", "GHSA-75px-5xx7-5xc7", "GHSA-685m-2w69-288q", "GHSA-jvwf-75h9-cwgg"],
+        "cvss": 9.8,
+        "fix": "Solo session only: cd platform/orchestrator && npm install protobufjs@latest @grpc/grpc-js@latest",
+        "note": "platform/ directory requires solo session",
+        "escalation_reason": "Code execution in gRPC protocol layer — requires security assessment of all gRPC endpoints for untrusted input",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-003",
+        "severity": "P1",
+        "category": "CVE / file-read-execution",
+        "title": "vitest@3.2.5 — Arbitrary file read & execution when UI server is listening",
+        "source": "dependency-auditor",
+        "package": "vitest@3.2.5",
+        "workspace": "Source/Frontend",
+        "cve": ["GHSA-5xrq-8626-4rwp"],
+        "cvss": 9.8,
+        "fix": "cd Source/Frontend && npm install vitest@latest",
+        "escalation_reason": "Credentials and source code exposure — verify .env files are not exposed in CI artefacts; check dev server network binding",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-005",
+        "severity": "P2",
+        "category": "CVE / header-injection",
+        "title": "form-data CRLF injection in multipart headers",
+        "source": "dependency-auditor",
+        "package": "form-data@4.0.5",
+        "workspace": "Source/Backend + Source/Frontend",
+        "cve": ["GHSA-hmw2-7cc7-3qxx"],
+        "cvss": 7.5,
+        "fix": "npm update form-data in both workspaces",
+        "escalation_reason": "HTTP header injection / response splitting — requires assessment of all file upload paths for untrusted filename inputs",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-008",
+        "severity": "P2",
+        "category": "CVE / info-disclosure",
+        "title": "postcss arbitrary file read via sourceMappingURL",
+        "source": "dependency-auditor",
+        "package": "postcss@8.5.17",
+        "workspace": "Source/Frontend",
+        "cve": ["GHSA-6g55-p6wh-862q"],
+        "cvss": 7.5,
+        "fix": "cd Source/Frontend && npm update postcss",
+        "escalation_reason": "Information disclosure in build pipeline — verify build secrets are not leaked during CSS processing",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-009",
+        "severity": "P2",
+        "category": "CVE / path-traversal",
+        "title": "vite@6.4.2 dev server path traversal (Windows alternate paths)",
+        "source": "dependency-auditor",
+        "package": "vite@6.4.2",
+        "workspace": "Source/Frontend",
+        "cve": ["GHSA-fx2h-pf6j-xcff"],
+        "cvss": 7.5,
+        "fix": "cd Source/Frontend && npm update vite",
+        "escalation_reason": "Credential exposure in dev environment — verify dev servers are not accessible from network in CI/CD",
+        "status": "NEW"
+      }
+    ]
+  },
+  "next_audit": {
+    "scheduled": "2026-09-03",
+    "target_grade": "C",
+    "required_to_reach_C": "Resolve all 4 P1 findings; ensure P2 count ≤ 15; maintain spec coverage ≥ 40%",
+    "coverage_gaps": [
+      "Re-run with services running to execute performance-profiler and chaos-monkey",
+      "Add portal/ to traceability enforcer to surface portal FR coverage"
+    ]
+  }
+}

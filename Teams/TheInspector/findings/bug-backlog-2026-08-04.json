@@ -1,0 +1,197 @@
+{
+  "audit_metadata": {
+    "date": "2026-08-04",
+    "run_id": "run-20260804-053133",
+    "grade": "D",
+    "project": "dev-crew Source App",
+    "scope": "Full codebase",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_static_only": ["performance-profiler", "chaos-monkey"],
+    "prior_audit": null,
+    "report_file": "Teams/TheInspector/findings/audit-2026-08-04-D.html"
+  },
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 7,
+    "p3_total": 12,
+    "p4_total": 2,
+    "total_findings": 24,
+    "fixed_count": 0,
+    "new_count": 24,
+    "regressed_count": 0,
+    "escalation_count": 2
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve-rce",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "route": "[ESCALATE → TheGuardians]",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss_score": 9.8,
+      "package": "vitest@2.0.5",
+      "file": "Source/Frontend/package.json",
+      "description": "Unauthenticated attacker can read arbitrary files and execute code when Vitest UI server is listening. No auth or origin validation.",
+      "fix": "npm install vitest@^4.1.10",
+      "exploit_scenario": "CI/CD pipeline with vitest --ui running on a shared network. Any attacker on that network sends a crafted request to port 51204 to read /etc/passwd or inject code.",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve-template-injection",
+      "title": "Handlebars.js Critical Template Injection via AST Type Confusion",
+      "route": "[ESCALATE → TheGuardians]",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss_score": 9.8,
+      "package": "handlebars<=4.7.8",
+      "file": "Source/Backend (transitive)",
+      "description": "Template engine allows JavaScript injection via AST type confusion. Attacker can execute arbitrary code within template context.",
+      "fix": "npm audit fix --force (force handlebars@>=4.7.9)",
+      "exploit_scenario": "If any build artifact or config reads from user-supplied or attacker-modified templates at build time, RCE is triggered during the build pipeline.",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "GET /api/search endpoint never registered in app.ts — 5 confirmed test failures",
+      "file": "Source/Backend/src/app.ts",
+      "related_files": ["Source/Backend/src/routes/search.ts", "Source/Frontend/src/components/DependencyPicker.tsx"],
+      "description": "GET /api/search is tested (5 tests in search.test.ts) but the route is never registered in app.ts. DependencyPicker component silently gets no results at runtime.",
+      "exploit_scenario": "User opens dependency picker — zero results returned silently. Feature is non-functional in production.",
+      "impact": "Feature regression: dependency search UI broken in production.",
+      "recommendation": "Implement Source/Backend/src/routes/search.ts and add app.use('/api/search', searchRouter) to app.ts.",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Histogram missing from metrics.ts",
+      "file": "Source/Backend/src/metrics.ts",
+      "description": "3 of 4 FR-dependency-metrics instruments present. The dependencyCheckDuration Histogram is missing — GET /metrics will never expose readiness check latency.",
+      "recommendation": "Add Histogram export to metrics.ts; record it in dependency.ts around isReady().",
+      "status": "NEW",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer blind to portal/ and platform/ directories",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Enforcer only scans Source/ and E2E/. Portal and platform FRs are invisible. Also: all requirements.md files share identical mtime causing non-deterministic CI target auto-detection.",
+      "recommendation": "Extend source_dirs to include portal and platform (guarded); pin CLAUDE.md gate to --file Plans/self-judging-workflow/requirements.md.",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": "[CROSS-REF: QO-004] same root cause — traceability tooling gaps"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-TMP-008 has zero Verifies: comments in platform/",
+      "file": "platform/orchestrator/Dockerfile.worker",
+      "description": "FR-TMP-008 (gh CLI + Playwright in Dockerfile.worker) has zero // Verifies: comments anywhere in platform/ — only gap in an otherwise well-traced tiered-merge-pipeline.",
+      "recommendation": "Add # Verifies: FR-TMP-008 comment to platform/orchestrator/Dockerfile.worker.",
+      "status": "NEW",
+      "specialist": "quality-oracle",
+      "cross_ref": "[CROSS-REF: QO-003] same root cause — traceability tooling gaps"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve-dos",
+      "title": "Brace-Expansion DoS (4 CVEs) — build tool pipeline at risk",
+      "files": ["Source/Backend", "Source/Frontend"],
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "description": "Multiple DoS vectors: zero-step sequences, exponential expansion, unbounded arrays. Affects test runners and bundlers via glob patterns.",
+      "recommendation": "npm update brace-expansion (should pull >=1.1.18) in both Backend and Frontend.",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve-header-injection",
+      "title": "Form-Data CRLF Injection via Unescaped Field Names",
+      "file": "Source/Backend (transitive)",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "description": "Multipart form-data doesn't escape field names/filenames. CRLF sequences can manipulate HTTP headers.",
+      "recommendation": "npm install form-data@>=4.0.6",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve-dos",
+      "title": "JS-YAML Quadratic Complexity DoS via Merge Key Chains",
+      "files": ["Source/Backend", "Source/Frontend"],
+      "cve": "GHSA-52cp-r559-cp3m",
+      "description": "YAML with deeply nested merge keys forces O(n²) parsing causing CPU exhaustion and build pipeline hangs.",
+      "recommendation": "npm install js-yaml@>=3.15.0; validate YAML input size; never parse untrusted YAML.",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve-cors",
+      "title": "Esbuild Dev Server Origin Validation Bypass",
+      "file": "Source/Frontend (transitive via vite)",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "description": "Dev server doesn't validate request origin. External sites can read responses, leaking source maps and environment data.",
+      "recommendation": "npm install vite@>=8.2.0 (ships esbuild>=0.24.3).",
+      "status": "NEW",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p3_findings": [
+    {"id": "QO-005", "severity": "P3", "category": "architecture-violation", "title": "Custom logger ignores LOG_LEVEL — always emits JSON", "file": "Source/Backend/src/utils/logger.ts", "specialist": "quality-oracle", "status": "NEW"},
+    {"id": "QO-006", "severity": "P3", "category": "pattern-violation", "title": "Enforcer FR regex produces 7 false-positive failures on entity IDs", "file": "tools/traceability-enforcer.py", "specialist": "quality-oracle", "status": "NEW"},
+    {"id": "QO-007", "severity": "P3", "category": "doc-stale", "title": "spec-drift-report.json claims 0% coverage — stale artifact from misconfigured run", "file": "spec-drift-report.json", "specialist": "quality-oracle", "status": "NEW"},
+    {"id": "DEP-007", "severity": "P3", "category": "cve-dos", "title": "Express → QS DoS on malformed input", "file": "Source/Backend/package.json", "cve": "GHSA-q8mj-m7cp-5q26", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-008", "severity": "P3", "category": "cve-buffer-overflow", "title": "UUID Buffer Bounds Check Missing (v3/v5/v6)", "file": "Source/Backend/package.json", "cve": "GHSA-w5hq-g745-h8pq", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-009", "severity": "P3", "category": "cve-dos", "title": "Body-Parser Size Enforcement DoS", "file": "Source/Backend (transitive)", "cve": "GHSA-v422-hmwv-36x6", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-010", "severity": "P3", "category": "outdated", "title": "Express 1+ major version behind (4.18.2 vs 5.2.1)", "file": "Source/Backend/package.json", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-011", "severity": "P3", "category": "outdated", "title": "Pino 2+ major versions behind (8.17.0 vs 10.3.1)", "file": "Source/Backend/package.json", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-012", "severity": "P3", "category": "outdated", "title": "React 1+ major version behind (18.3.1 vs 19.2.8)", "file": "Source/Frontend/package.json", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-013", "severity": "P3", "category": "outdated", "title": "React Router DOM 1+ major version behind (6.26.0 vs 7.18.2)", "file": "Source/Frontend/package.json", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-014-supply-a", "severity": "P3", "category": "supply-chain", "title": "Large transitive dependency tree (1,450+ packages) — high supply chain attack surface", "specialist": "dependency-auditor", "status": "NEW"},
+    {"id": "DEP-014-supply-b", "severity": "P3", "category": "supply-chain", "title": "No npm package signature verification — compromised packages undetected", "specialist": "dependency-auditor", "status": "NEW"}
+  ],
+  "p4_findings": [
+    {"id": "QO-008", "severity": "P4", "category": "pattern-violation", "title": "eslint-disable comments in useWorkItems.ts and DependencyPicker.tsx lack rationale", "file": "Source/Frontend/src/", "specialist": "quality-oracle", "status": "NEW"},
+    {"id": "DEP-014", "severity": "P4", "category": "outdated-low-risk", "title": "Babel 2+ major versions behind (transitive, low-severity local file read CVE)", "specialist": "dependency-auditor", "status": "NEW"}
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Build tool supply chain — critical CVEs in vitest and handlebars",
+      "affected_findings": ["DEP-001", "DEP-002"],
+      "single_fix": "Trigger TheGuardians full security audit; run npm audit fix --force; upgrade vitest@^4.1.10",
+      "fix_impact": "Resolves both P1 escalations in one security sprint"
+    },
+    {
+      "root_cause": "Traceability tooling gaps — enforcer cannot see portal/ and platform/",
+      "affected_findings": ["QO-003", "QO-004"],
+      "single_fix": "Extend source_dirs in traceability-enforcer.py to include portal and platform; add # Verifies: FR-TMP-008 to Dockerfile.worker",
+      "fix_impact": "Closes both P2 traceability findings in one tooling PR"
+    },
+    {
+      "root_cause": "Backend direct dependencies need upgrade sprint",
+      "affected_findings": ["DEP-007", "DEP-008", "DEP-010"],
+      "single_fix": "cd Source/Backend && npm install express@latest uuid@latest && npm test",
+      "fix_impact": "Resolves all three express/uuid-related P3 findings in one PR"
+    }
+  ]
+}

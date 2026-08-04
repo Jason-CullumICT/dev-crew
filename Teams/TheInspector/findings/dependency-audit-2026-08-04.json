@@ -1,0 +1,305 @@
+{
+  "audit_metadata": {
+    "date": "2026-08-04",
+    "project": "dev-crew",
+    "scope": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E"
+    ],
+    "package_managers": ["npm"],
+    "total_projects_scanned": 3
+  },
+  "summary": {
+    "grade": "D",
+    "critical_vulns": 2,
+    "high_vulns": 7,
+    "moderate_vulns": 9,
+    "low_vulns": 2,
+    "total_vulns": 20,
+    "outdated_major_versions": 5,
+    "direct_dependencies": 8,
+    "transitive_dependencies": 1450
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve-rce",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "package": "vitest",
+      "version": "2.0.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-862"],
+      "file": "Source/Frontend/package.json",
+      "isDirect": true,
+      "affected_range": "<3.2.6",
+      "description": "When Vitest UI server is listening, an unauthenticated attacker can read arbitrary files and execute code. No authentication or origin validation.",
+      "fix": "npm install vitest@^4.1.10",
+      "cross_refs": [
+        "[ESCALATE → TheGuardians] if UI server exposed in CI/CD"
+      ]
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve-template-injection",
+      "title": "Handlebars.js Critical Template Injection via AST Type Confusion",
+      "package": "handlebars",
+      "version": "<=4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "file": "Source/Backend (transitive)",
+      "isDirect": false,
+      "affected_range": ">=4.0.0 <=4.7.8",
+      "description": "Template engine allows JavaScript injection via AST type confusion. Attacker can execute arbitrary code within template context.",
+      "fix": "npm audit fix --force (or manually: npm install handlebars@>=4.7.9)",
+      "cross_refs": [
+        "[ESCALATE → TheGuardians] if templates are user-supplied or from untrusted sources"
+      ]
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve-dos",
+      "title": "Brace-Expansion DoS via Exponential Time Expansion & Memory Exhaustion",
+      "package": "brace-expansion",
+      "version": "<1.1.18",
+      "cves": [
+        "GHSA-f886-m6hf-6m8v",
+        "GHSA-3jxr-9vmj-r5cp",
+        "GHSA-mh99-v99m-4gvg",
+        "GHSA-rgw5-rvv9-x895"
+      ],
+      "cvss_score": 7.5,
+      "cwe": ["CWE-400", "CWE-770"],
+      "files": ["Source/Backend", "Source/Frontend"],
+      "isDirect": false,
+      "description": "Multiple DoS vectors: zero-step sequences, exponential expansion, unbounded arrays. Affects test runners and build tools via glob patterns.",
+      "fix": "npm update brace-expansion (should pull >=1.1.18)",
+      "impact": "Dev tool DoS, affects build/test pipeline"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve-header-injection",
+      "title": "Form-Data CRLF Injection via Unescaped Field Names",
+      "package": "form-data",
+      "version": "4.0.0-4.0.5",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-93"],
+      "file": "Source/Backend (transitive)",
+      "isDirect": false,
+      "affected_range": ">=4.0.0 <4.0.6",
+      "description": "Multipart form-data doesn't escape field names/filenames. CRLF sequences can be injected to manipulate HTTP headers.",
+      "fix": "npm install form-data@>=4.0.6"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve-dos",
+      "title": "JS-YAML Quadratic Complexity DoS via Merge Key Chains",
+      "package": "js-yaml",
+      "version": "<3.15.0",
+      "cve": "GHSA-52cp-r559-cp3m",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-400", "CWE-407"],
+      "files": ["Source/Backend", "Source/Frontend"],
+      "isDirect": false,
+      "description": "Malicious YAML with deeply nested merge keys forces O(n²) parsing, causing CPU exhaustion and build pipeline hangs.",
+      "fix": "npm install js-yaml@>=3.15.0",
+      "mitigation": "Validate YAML input size; don't parse untrusted YAML"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve-cors",
+      "title": "Esbuild Dev Server Origin Validation Bypass",
+      "package": "esbuild",
+      "version": "<=0.24.2",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvss_score": 5.3,
+      "cwe": ["CWE-346"],
+      "file": "Source/Frontend (transitive via vite)",
+      "isDirect": false,
+      "description": "Development server doesn't validate request origin. External websites can read dev server responses, leaking source maps and environment data.",
+      "fix": "npm install vite@>=8.2.0"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "cve-dos",
+      "title": "Express → QS DoS on Malformed Input",
+      "package": "express (via qs)",
+      "version": "4.18.2",
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "cvss_score": 5.3,
+      "cwe": ["CWE-476"],
+      "file": "Source/Backend/package.json",
+      "isDirect": true,
+      "description": "QS library crashes when receiving malformed input with encodeValuesOnly flag set.",
+      "fix": "npm install express@>=4.19.0"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "cve-buffer-overflow",
+      "title": "UUID Buffer Bounds Check Missing (v3/v5/v6)",
+      "package": "uuid",
+      "version": "9.0.0",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "file": "Source/Backend/package.json",
+      "isDirect": true,
+      "affected_range": "<11.1.1",
+      "description": "Missing bounds check when buf parameter provided. Attacker can overflow buffer and corrupt memory.",
+      "fix": "npm install uuid@^14.0.1 (or @^11.1.1 minimum)"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "cve-dos",
+      "title": "Body-Parser Size Enforcement DoS",
+      "package": "body-parser",
+      "version": "<1.20.6",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "cvss_score": 3.7,
+      "cwe": ["CWE-770"],
+      "file": "Source/Backend (transitive)",
+      "isDirect": false,
+      "description": "Invalid limit value silently disables size enforcement, allowing unbounded POST requests.",
+      "fix": "npm update body-parser"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Express 1+ Major Version Behind",
+      "package": "express",
+      "current_version": "4.18.2",
+      "latest_version": "5.2.1",
+      "file": "Source/Backend/package.json",
+      "gap_major": 1,
+      "risk": "Missing security patches and performance improvements",
+      "effort": "Moderate - breaking changes in routing API",
+      "note": "Has moderate CVE (DEP-007); recommend upgrade as part of security remediation"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Pino 2+ Major Versions Behind",
+      "package": "pino",
+      "current_version": "8.17.0",
+      "latest_version": "10.3.1",
+      "file": "Source/Backend/package.json",
+      "gap_major": 2,
+      "risk": "Missing security patches; potential abandonment risk (last update >1 year ago)",
+      "effort": "Moderate - breaking changes in logging API expected"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "React 1+ Major Version Behind",
+      "package": "react",
+      "current_version": "18.3.1",
+      "latest_version": "19.2.8",
+      "file": "Source/Frontend/package.json",
+      "gap_major": 1,
+      "risk": "Missing security fixes; React 19 is stable and recommended",
+      "effort": "Moderate - full test suite required"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "React Router DOM 1+ Major Version Behind",
+      "package": "react-router-dom",
+      "current_version": "6.26.0",
+      "latest_version": "7.18.2",
+      "file": "Source/Frontend/package.json",
+      "gap_major": 1
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P4",
+      "category": "outdated-low-risk",
+      "title": "Babel 2+ Major Versions Behind (Transitive, Low Risk)",
+      "package": "@babel/core",
+      "current_version": "<=7.29.0",
+      "issue": "Low-severity file read CVE (local only)",
+      "cve": "GHSA-4x5r-pxfx-6jf8"
+    }
+  ],
+  "supply_chain_risks": [
+    {
+      "risk": "Large transitive dependency tree (Frontend ~1050+ packages)",
+      "impact": "Each package is a potential supply chain attack vector",
+      "mitigation": "Regular audits, dependency pinning, SRI validation in CI"
+    },
+    {
+      "risk": "No npm package signature verification",
+      "impact": "Compromised packages can be published without detection",
+      "mitigation": "Use npm publish 2FA; enforce package-lock.json in CI"
+    },
+    {
+      "risk": "Build tool dependency concentration",
+      "impact": "Vite, Jest, Vitest share common deps (esbuild, babel)",
+      "mitigation": "Single vuln in shared dep affects all tools; monitor closely"
+    }
+  ],
+  "remediation_plan": {
+    "immediate": [
+      "Vitest RCE (Frontend): npm install vitest@^4.1.10",
+      "Handlebars Critical (Transitive): npm audit fix --force"
+    ],
+    "short_term": [
+      "Express + UUID (Backend): npm install express@latest uuid@latest",
+      "React + Router (Frontend): npm install react@latest react-dom@latest react-router-dom@latest",
+      "Full audit fix: npm audit fix in each directory"
+    ],
+    "medium_term": [
+      "Upgrade Pino and verify logging integration",
+      "Audit brace-expansion and js-yaml usage",
+      "Implement automated dependency scanning in CI/CD"
+    ]
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "finding": "Vitest UI server RCE (GHSA-5xrq-8626-4rwp)",
+      "reason": "Critical RCE if UI exposed in production/CI"
+    },
+    {
+      "team": "TheGuardians",
+      "finding": "Handlebars template injection (GHSA-2w6w-674q-4c4q)",
+      "reason": "Critical if user-supplied templates processed"
+    },
+    {
+      "team": "TheFixer",
+      "finding": "Express@5.x upgrade required",
+      "reason": "Breaking API changes; needs routing audit"
+    },
+    {
+      "team": "TheFixer",
+      "finding": "React@19.x upgrade required",
+      "reason": "May require hook refactoring"
+    }
+  ],
+  "metrics": {
+    "cves_critical": 2,
+    "cves_high": 7,
+    "cves_moderate": 9,
+    "cves_low": 2,
+    "outdated_major": 5,
+    "total_direct_deps": 8,
+    "total_transitive_deps": 1450,
+    "direct_deps_vulnerable": 5,
+    "remediation_effort_hours": 8
+  }
+}

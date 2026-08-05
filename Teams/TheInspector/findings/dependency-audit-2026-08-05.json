@@ -1,0 +1,360 @@
+{
+  "runDate": "2026-08-05",
+  "agent": "dependency_auditor",
+  "overallGrade": "D",
+  "summary": {
+    "projectsScanned": 5,
+    "criticalCVEs": 4,
+    "highCVEs": 11,
+    "mediumCVEs": 24,
+    "lowCVEs": 2,
+    "outdatedMajorVersions": 8,
+    "totalDirectDependencies": 130,
+    "totalTransitiveDependencies": 1373
+  },
+  "projects": {
+    "source_backend": {
+      "path": "Source/Backend",
+      "packageManager": "npm",
+      "packageJson": true,
+      "packageLock": true,
+      "directDependencies": 4,
+      "devDependencies": 9,
+      "transitiveDependencies": 398,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 3,
+        "moderate": 4,
+        "low": 1,
+        "total": 9
+      },
+      "outdatedMajorVersions": [
+        {
+          "package": "express",
+          "current": "4.18.2",
+          "latest": "5.2.1",
+          "majorVersionGap": 1
+        },
+        {
+          "package": "pino",
+          "current": "8.17.0",
+          "latest": "10.3.1",
+          "majorVersionGap": 2
+        },
+        {
+          "package": "uuid",
+          "current": "9.0.0",
+          "latest": "14.0.1",
+          "majorVersionGap": 5,
+          "hasCVE": true
+        }
+      ]
+    },
+    "source_frontend": {
+      "path": "Source/Frontend",
+      "packageManager": "npm",
+      "packageJson": true,
+      "packageLock": true,
+      "directDependencies": 3,
+      "devDependencies": 7,
+      "transitiveDependencies": 217,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 6,
+        "low": 1,
+        "total": 12
+      },
+      "outdatedMajorVersions": [
+        {
+          "package": "react",
+          "current": "18.3.1",
+          "latest": "19.2.8",
+          "majorVersionGap": 1
+        },
+        {
+          "package": "react-dom",
+          "current": "18.3.1",
+          "latest": "19.2.8",
+          "majorVersionGap": 1
+        },
+        {
+          "package": "react-router-dom",
+          "current": "6.26.0",
+          "latest": "7.18.2",
+          "majorVersionGap": 1,
+          "hasCVE": true
+        }
+      ]
+    },
+    "source_e2e": {
+      "path": "Source/E2E",
+      "packageManager": "npm",
+      "packageJson": true,
+      "packageLock": true,
+      "directDependencies": 1,
+      "devDependencies": 0,
+      "transitiveDependencies": 0,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "status": "clean"
+    },
+    "platform_orchestrator": {
+      "path": "platform/orchestrator",
+      "packageManager": "npm",
+      "packageJson": true,
+      "packageLock": true,
+      "directDependencies": 153,
+      "devDependencies": 0,
+      "transitiveDependencies": 0,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 6,
+        "low": 0,
+        "total": 9
+      }
+    },
+    "portal_backend": {
+      "path": "portal/Backend",
+      "packageManager": "npm",
+      "packageJson": true,
+      "packageLock": true,
+      "directDependencies": 397,
+      "devDependencies": 181,
+      "transitiveDependencies": 578,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 9,
+        "moderate": 43,
+        "low": 0,
+        "total": 54
+      },
+      "riskLevel": "CRITICAL",
+      "notes": "Largest dependency surface; infrastructure component; multiple attack vectors"
+    }
+  },
+  "criticalFindings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js - JavaScript Injection via AST Type Confusion",
+      "severity": "P1",
+      "package": "handlebars",
+      "affectedVersions": "<=4.7.8",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "cvssScores": [9.8, 8.1, 8.1, 7.5, 8.2],
+      "category": "Code Injection",
+      "attackVector": "Template processing without validation",
+      "impact": "Remote Code Execution",
+      "fix": "npm update handlebars@latest",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest - Arbitrary File Read and Execution via UI Server",
+      "severity": "P1",
+      "package": "vitest",
+      "affectedVersions": "<=3.2.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvssScore": 9.8,
+      "category": "Authentication Bypass",
+      "attackVector": "Development server without access controls",
+      "impact": "Complete file system disclosure; arbitrary code execution",
+      "fix": "npm install vitest@latest (requires major version bump)",
+      "escalation": "TheGuardians",
+      "notes": "Development environment vulnerability; serious in shared/container environments"
+    },
+    {
+      "id": "DEP-003",
+      "title": "UUID - Missing Buffer Bounds Check",
+      "severity": "P1",
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "affectedVersions": "<11.1.1",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvssScore": 7.5,
+      "category": "Buffer Overflow",
+      "attackVector": "Malformed input to uuid.v3/v5/v6 with buffer argument",
+      "impact": "Memory corruption; potential DoS or information disclosure",
+      "fix": "npm install uuid@latest",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Portal/Backend - Multiple Critical Vulnerabilities",
+      "severity": "P1",
+      "files": ["portal/Backend/package-lock.json"],
+      "summary": "2 critical, 9 high, 43 medium vulnerabilities across large dependency tree",
+      "rootCause": "Nested transitive dependencies with outdated versions",
+      "impact": "Multiple attack vectors; infrastructure component",
+      "fix": "npm audit fix in portal/Backend/",
+      "escalation": "TheGuardians, infrastructure-team"
+    }
+  ],
+  "highFindings": [
+    {
+      "id": "DEP-005",
+      "title": "Brace-Expansion - DoS via Exponential Time Expansion",
+      "package": "brace-expansion",
+      "severity": "P2",
+      "cves": ["GHSA-3jxr-9vmj-r5cp", "GHSA-f886-m6hf-6m8v"],
+      "cvssScores": [5.3, 6.5],
+      "impact": "Process hang; memory exhaustion"
+    },
+    {
+      "id": "DEP-008",
+      "title": "esbuild - CORS Bypass / Arbitrary Request Execution",
+      "package": "esbuild",
+      "severity": "P2",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvssScore": 6.8,
+      "impact": "Development-time information disclosure"
+    },
+    {
+      "id": "DEP-009",
+      "title": "React-Router-DOM - Open Redirect / XSS",
+      "package": "react-router-dom",
+      "severity": "P2",
+      "affectedVersions": ">=6.30.2 <=6.30.4",
+      "cves": ["GHSA-jjmj-jmhj-qwj2", "GHSA-2j2x-hqr9-3h42"],
+      "cvssScore": 6.9,
+      "impact": "Phishing attacks; credential theft",
+      "fix": "npm update react-router-dom@7"
+    },
+    {
+      "id": "DEP-010",
+      "title": "WS - Memory Exhaustion DoS",
+      "package": "ws",
+      "severity": "P2",
+      "affectedVersions": "8.0.0 - 8.20.1",
+      "cves": ["GHSA-96hv-2xvq-fx4p", "GHSA-58qx-3vcg-4xpx"],
+      "impact": "Server DoS via fragmented WebSocket messages"
+    }
+  ],
+  "outdatedPackages": [
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "majorVersionGap": 1,
+      "project": "Source/Backend",
+      "priority": "medium"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "majorVersionGap": 2,
+      "project": "Source/Backend",
+      "priority": "medium"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "majorVersionGap": 5,
+      "project": "Source/Backend",
+      "priority": "critical",
+      "hasActiveCVE": true
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "majorVersionGap": 1,
+      "project": "Source/Frontend",
+      "priority": "low"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "majorVersionGap": 1,
+      "project": "Source/Frontend",
+      "priority": "low"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.2",
+      "majorVersionGap": 1,
+      "project": "Source/Frontend",
+      "priority": "critical",
+      "hasActiveCVE": true
+    }
+  ],
+  "remediationPlan": {
+    "phase1": {
+      "priority": "CRITICAL",
+      "timeline": "24 hours",
+      "tasks": [
+        "Backend: npm update uuid@latest",
+        "Backend: npm update handlebars@latest",
+        "Frontend: npm install vitest@latest",
+        "Frontend: npm update react-router-dom@7",
+        "All: npm audit fix --audit-level=critical"
+      ]
+    },
+    "phase2": {
+      "priority": "HIGH",
+      "timeline": "3 days",
+      "tasks": [
+        "Backend: npm update express@5",
+        "Frontend: npm update ws@latest",
+        "Frontend: npm update postcss@latest",
+        "All: Address brace-expansion and form-data",
+        "Portal: Full audit remediation (54 CVEs)"
+      ]
+    },
+    "phase3": {
+      "priority": "MEDIUM",
+      "timeline": "1 week",
+      "tasks": [
+        "Backend: Plan pino upgrade (v8→v10)",
+        "Frontend: Plan react upgrade (v18→v19)",
+        "All: Review and update @babel/core"
+      ]
+    }
+  },
+  "supplyChainRisks": [
+    {
+      "risk": "Large transitive dependency surface (1,373+ deps)",
+      "recommendation": "Audit largest packages; implement dependency locking in CI"
+    },
+    {
+      "risk": "Nested build-tool vulnerabilities (vitest, esbuild, vite)",
+      "recommendation": "Keep dev deps updated; isolate CI/dev environments from production"
+    },
+    {
+      "risk": "Template engine vulnerabilities (handlebars)",
+      "recommendation": "Audit all template processing; consider safer alternatives"
+    }
+  ],
+  "crossReferences": {
+    "escalation_theGuardians": [
+      "DEP-001",
+      "DEP-002",
+      "DEP-003",
+      "DEP-004",
+      "DEP-009"
+    ],
+    "review_staticAnalyzer": [
+      "DEP-007"
+    ],
+    "coordination_infrastructureTeam": [
+      "DEP-004"
+    ]
+  }
+}

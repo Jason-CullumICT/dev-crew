@@ -1,0 +1,446 @@
+{
+  "audit_id": "run-20260806-053024",
+  "audit_date": "2026-08-06",
+  "branch": "audit/inspector-2026-08-06-a3fcd5",
+  "grade": "D",
+  "grade_rationale": "5 P1s (C allows max 2) + 26% overall spec coverage (C requires min 40%)",
+  "first_audit": true,
+  "specialists_run": [
+    { "name": "quality-oracle",       "mode": "static",           "status": "complete" },
+    { "name": "dependency-auditor",   "mode": "static",           "status": "complete" },
+    { "name": "performance-profiler", "mode": "static-fallback",  "status": "offline"  },
+    { "name": "chaos-monkey",         "mode": "static-fallback",  "status": "offline"  }
+  ],
+  "totals": {
+    "p1": 5,
+    "p2": 11,
+    "p3": 12,
+    "p4": 3,
+    "total": 31,
+    "escalations": 3,
+    "fixed": 0
+  },
+  "spec_coverage": {
+    "plans_self_judging_workflow": { "total": 13, "covered": 13, "pct": 100 },
+    "specifications_dev_workflow_platform_dependency_frs": { "total": 16, "covered": 15, "pct": 94 },
+    "specifications_dev_workflow_platform_main": { "total": 69, "covered": 0, "pct": 0 },
+    "specifications_tiered_merge_pipeline": { "total": 10, "covered": 0, "pct": 0 },
+    "overall": { "total": 108, "covered": 28, "pct": 26 }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve/code-execution",
+      "title": "vitest@2.0.5 arbitrary file read & code execution",
+      "package": "vitest@2.0.5",
+      "file": "Source/Frontend/package-lock.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "escalation_trigger": "code-execution, sensitive data exposed",
+      "route_to": "TheGuardians",
+      "status": "NEW",
+      "fix": "cd Source/Frontend && npm install vitest@^4.1.10",
+      "timeline": "immediate"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve/code-injection",
+      "title": "@stdlib/number-float64-base-exponent-biased code injection (transitive)",
+      "package": "@stdlib/number-float64-base-exponent-biased",
+      "file": "Source/Frontend/package-lock.json",
+      "cvss": 8.1,
+      "escalation_trigger": "injection",
+      "route_to": "TheGuardians",
+      "status": "NEW",
+      "fix": "Resolved by DEP-001 vitest upgrade (same dep chain)",
+      "timeline": "immediate"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve/code-injection",
+      "title": "handlebars injection & DoS (4 CVEs, max CVSS 8.2)",
+      "package": "handlebars@4.0-4.7.8",
+      "file": "Source/Backend/package-lock.json",
+      "cves": ["GHSA-pg8v-g987-7qf3", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"],
+      "cvss_max": 8.2,
+      "escalation_trigger": "injection",
+      "route_to": "TheGuardians",
+      "status": "NEW",
+      "fix": "cd Source/Backend && npm install handlebars@^4.7.8 (or remove if unused)",
+      "timeline": "this week"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "tool-gap",
+      "title": "Traceability enforcer never scans Specifications/",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "Enforcer targets Plans/ only. 89 FRs in Specifications/ invisible to CI. Enforcer reports PASS while 76+13 requirements are untraced.",
+      "recommendation": "Extend enforcer to iterate Specifications/*.md. Add CI gate: for f in Specifications/*.md; do python3 tools/traceability-enforcer.py --file \"$f\"; done",
+      "route_to": "TheFixer",
+      "cross_refs": ["QO-002", "QO-003"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dev-workflow-platform.md: 0% coverage (69 FRs, entire spec unimplemented)",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "Primary platform spec defines Feature Requests, Bug Reports, Dev Cycles, Pipeline Runs. Source/ implements Self-Judging Workflow Engine — completely different domain. Zero Verifies: FR-001 comments exist anywhere.",
+      "recommendation": "Option A: Retire as superseded with status annotation. Option B: Update to reflect actual domain. Option C: Create Plans/dev-workflow-platform/ implementation sprint.",
+      "route_to": "TheFixer",
+      "cross_refs": ["QO-001", "QO-010"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "tiered-merge-pipeline.md: 0% coverage (10 FRs)",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "detail": "FR-TMP-001–010 (risk classification, Playwright E2E, auto-PR, AI review, auto-merge) have zero implementation. Source/E2E/ is empty scaffold.",
+      "recommendation": "Create Plans/tiered-merge-pipeline/ plan or add roadmap status annotation to spec.",
+      "route_to": "TheFixer",
+      "cross_refs": ["QO-001"],
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Direct store access in route handlers (3 files)",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/intake.ts:4",
+        "Source/Backend/src/routes/workflow.ts:15"
+      ],
+      "detail": "Route handlers import directly from ../store/workItemStore, violating CLAUDE.md 'no direct DB calls from route handlers' rule.",
+      "recommendation": "Extract store CRUD into workItemService.ts. Route handlers call service only.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "OpenTelemetry tracing absent despite FR-WF-013 claim",
+      "file": "Source/Backend/src/ (entire)",
+      "detail": "Traceability comment claims OTel compliance but zero @opentelemetry/ imports exist. Logs and Prometheus metrics are present; tracing pillar is missing.",
+      "recommendation": "Add @opentelemetry/sdk-node + auto-instrumentations-node. Configure NodeSDK in tracing.ts bootstrap. Propagate W3C traceparent header.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration histogram missing from metrics.ts",
+      "file": "Source/Backend/src/metrics.ts",
+      "detail": "FR-dependency-metrics specifies 4 Prometheus metrics; only 3 present. dependencyCheckDuration histogram is absent.",
+      "recommendation": "Add new Histogram({ name: 'dependency_check_duration_seconds', ... }) to metrics.ts. Instrument in computeHasUnresolvedBlockers() and detectCycle().",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "pending_dependencies status unimplemented (spec gap)",
+      "files": [
+        "Source/Shared/types/workflow.ts:214",
+        "Source/Backend/src/routes/workflow.ts:230"
+      ],
+      "detail": "Spec requires persistent pending_dependencies state for blocked items. Implementation returns HTTP 400 instead, leaving item in 'approved'.",
+      "recommendation": "Option A: Add PendingDependencies = 'pending-dependencies' to WorkItemStatus enum. Option B: Document deviation formally in spec.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve/denial-of-service",
+      "title": "brace-expansion DoS via unbounded expansion (4 CVEs)",
+      "package": "brace-expansion@<1.1.18",
+      "file": "Source/Backend/package-lock.json",
+      "cves": ["GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895", "GHSA-3jxr-9vmj-r5cp", "GHSA-f886-m6hf-6m8v"],
+      "cvss_max": 7.5,
+      "fix": "cd Source/Backend && npm update brace-expansion",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve/header-injection",
+      "title": "form-data CRLF injection in multipart field names (CVSS 7.5)",
+      "package": "form-data@<4.0.6",
+      "files": ["Source/Backend/package-lock.json", "Source/Frontend/package-lock.json"],
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "fix": "cd Source/Backend && npm install form-data@^4.0.6 && cd ../Frontend && npm install form-data@^4.0.6",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve/denial-of-service",
+      "title": "js-yaml quadratic-complexity DoS via merge-key chains (CVSS 7.5)",
+      "package": "js-yaml@<3.15.0",
+      "file": "Source/Backend/package-lock.json",
+      "cves": ["GHSA-52cp-r559-cp3m", "GHSA-h67p-54hq-rp68"],
+      "cvss_max": 7.5,
+      "fix": "cd Source/Backend && npm install js-yaml@^3.15.0",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve/information-disclosure",
+      "title": "postcss arbitrary file read via sourceMappingURL + XSS (2 CVEs)",
+      "package": "postcss@<8.5.10",
+      "file": "Source/Frontend/package-lock.json",
+      "cves": ["GHSA-6g55-p6wh-862q", "GHSA-qx2v-qp2m-jg93"],
+      "cvss_max": 7.5,
+      "fix": "cd Source/Frontend && npm install postcss@^8.5.10",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve/path-traversal",
+      "title": "vite path traversal & fs.deny bypass (3 CVEs)",
+      "package": "vite@<=6.4.2",
+      "file": "Source/Frontend/package-lock.json",
+      "cves": ["GHSA-fx2h-pf6j-xcff", "GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3"],
+      "cvss_max": 7.5,
+      "fix": "cd Source/Frontend && npm install vite@^8.2.0",
+      "note": "Major version jump — test thoroughly",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve/denial-of-service",
+      "title": "ws memory exhaustion DoS from tiny fragments (CVSS 7.5)",
+      "package": "ws@>=8.0.0 <8.21.0",
+      "file": "Source/Frontend/package-lock.json",
+      "cves": ["GHSA-96hv-2xvq-fx4p", "GHSA-58qx-3vcg-4xpx"],
+      "cvss_max": 7.5,
+      "fix": "cd Source/Frontend && npm install ws@^8.21.0",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-008", "severity": "P3", "specialist": "quality-oracle", "category": "test-quality",
+      "title": "Duplicate test files: WorkItemDetailPage + WorkItemListPage (761+548 lines combined)",
+      "files": ["Source/Frontend/tests/WorkItemDetailPage.test.tsx", "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx"],
+      "recommendation": "Delete root-level file; keep tests/pages/ as canonical.",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "QO-009", "severity": "P3", "specialist": "quality-oracle", "category": "pattern-violation",
+      "title": "eslint-disable in production source (2 instances, undocumented)",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "recommendation": "Add inline reason comment or fix the dependency array.",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "QO-010", "severity": "P3", "specialist": "quality-oracle", "category": "spec-drift",
+      "title": "FR-dependency-* spec references non-existent portal files",
+      "file": "Specifications/dev-workflow-platform.md",
+      "recommendation": "Update FR-dependency-* to reference actual paths (Source/Shared/types/workflow.ts, WorkItem types).",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-010", "severity": "P3", "specialist": "dependency-auditor", "category": "cve",
+      "title": "@babel/core arbitrary file read (CVSS 3.2)",
+      "package": "@babel/core@<=7.29.0", "cve": "GHSA-4x5r-pxfx-6jf8",
+      "fix": "npm install @babel/core@latest",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-011", "severity": "P3", "specialist": "dependency-auditor", "category": "cve",
+      "title": "body-parser DoS via invalid limit (CVSS 3.7)",
+      "package": "body-parser@<1.20.6", "cve": "GHSA-v422-hmwv-36x6",
+      "fix": "cd Source/Backend && npm install body-parser@^1.20.6",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-012", "severity": "P3", "specialist": "dependency-auditor", "category": "cve",
+      "title": "express/qs moderate DoS (CVSS 5.3)",
+      "package": "express@4.18-4.21 + qs", "cve": "GHSA-q8mj-m7cp-5q26",
+      "fix": "cd Source/Backend && npm install express@^4.22.2 qs@^6.15.2",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-013", "severity": "P3", "specialist": "dependency-auditor", "category": "cve",
+      "title": "uuid buffer bounds overflow (CVSS 7.5, moderate category)",
+      "package": "uuid@<11.1.1", "cve": "GHSA-w5hq-g745-h8pq",
+      "fix": "cd Source/Backend && npm install uuid@^14.0.1",
+      "note": "Major version jump — test UUID generation paths",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-014", "severity": "P3", "specialist": "dependency-auditor", "category": "cve",
+      "title": "@remix-run/router open redirect (GHSA-2j2x-hqr9-3h42)",
+      "package": "@remix-run/router@>=1.3.0 <1.23.3",
+      "fix": "cd Source/Frontend && npm install react-router-dom@^7.0.0",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-015", "severity": "P3", "specialist": "dependency-auditor", "category": "cve",
+      "title": "esbuild CORS bypass dev server (CVSS 5.3)",
+      "package": "esbuild@<=0.24.2",
+      "fix": "Resolved by vite@^8.2.0 upgrade (DEP-008)",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-016", "severity": "P3", "specialist": "dependency-auditor", "category": "outdated",
+      "title": "react 18.3.1 → 19.2.8 (1 major version behind)",
+      "package": "react@18.3.1",
+      "fix": "cd Source/Frontend && npm install react@^19.2.0 react-dom@^19.2.0",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-017", "severity": "P3", "specialist": "dependency-auditor", "category": "outdated",
+      "title": "react-router-dom 6.30.4 → 7.18.2 (1 major version behind)",
+      "package": "react-router-dom@6.30.4",
+      "fix": "cd Source/Frontend && npm install react-router-dom@^7.0.0",
+      "route_to": "TheFixer", "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-011", "severity": "P4", "specialist": "quality-oracle", "category": "simplification",
+      "title": "logger.ts is a single-line re-export stub",
+      "file": "Source/Backend/src/logger.ts:1",
+      "recommendation": "Eliminate re-export file; update all imports to point directly to ./utils/logger.",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-018", "severity": "P4", "specialist": "dependency-auditor", "category": "outdated",
+      "title": "express 4.22.2 → 5.2.1 (1 major, 4.x still actively maintained)",
+      "package": "express@4.22.2",
+      "fix": "cd Source/Backend && npm install express@^5.0.0 (optional)",
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-019", "severity": "P4", "specialist": "dependency-auditor", "category": "outdated",
+      "title": "pino 8.21.0 → 10.3.1 (2 major versions behind)",
+      "package": "pino@8.21.0",
+      "fix": "cd Source/Backend && npm install pino@^10.0.0 (optional)",
+      "route_to": "TheFixer", "status": "NEW"
+    }
+  ],
+  "remediation_phases": [
+    {
+      "phase": 1,
+      "label": "CRITICAL — same day",
+      "findings": ["DEP-001", "DEP-002"],
+      "commands": [
+        { "workspace": "Source/Frontend", "cmd": "npm install vitest@^4.1.10" }
+      ],
+      "verify": "npm test in Source/Frontend"
+    },
+    {
+      "phase": 2,
+      "label": "URGENT — this week",
+      "findings": ["DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009"],
+      "commands": [
+        { "workspace": "Source/Frontend",  "cmd": "npm install vite@^8.2.0" },
+        { "workspace": "Source/Backend",   "cmd": "npm install form-data@^4.0.6" },
+        { "workspace": "Source/Frontend",  "cmd": "npm install form-data@^4.0.6" },
+        { "workspace": "Source/Backend",   "cmd": "npm update brace-expansion" },
+        { "workspace": "Source/Backend",   "cmd": "npm install handlebars@^4.7.8" },
+        { "workspace": "Source/Backend",   "cmd": "npm install js-yaml@^3.15.0" },
+        { "workspace": "Source/Frontend",  "cmd": "npm install postcss@^8.5.10" },
+        { "workspace": "Source/Frontend",  "cmd": "npm install ws@^8.21.0" },
+        { "workspace": "root",             "cmd": "npm install @babel/core@latest" },
+        { "workspace": "Source/Backend",   "cmd": "npm install express@^4.22.2 qs@^6.15.2 body-parser@^1.20.6" },
+        { "workspace": "Source/Backend",   "cmd": "npm install uuid@^14.0.1" }
+      ],
+      "verify": "npm audit --audit-level=high in each workspace"
+    },
+    {
+      "phase": 3,
+      "label": "This sprint — spec/arch fixes",
+      "findings": ["QO-001", "QO-002", "QO-004", "QO-005", "QO-006", "QO-007"],
+      "notes": "Extend traceability enforcer; resolve spec mismatch; extract service layer; add OTel tracing"
+    },
+    {
+      "phase": 4,
+      "label": "Next sprint — major version upgrades",
+      "findings": ["DEP-016", "DEP-017"],
+      "commands": [
+        { "workspace": "Source/Frontend", "cmd": "npm install react@^19.2.0 react-dom@^19.2.0" },
+        { "workspace": "Source/Frontend", "cmd": "npm install react-router-dom@^7.0.0" }
+      ],
+      "verify": "Full UI test suite + all routes"
+    }
+  ],
+  "projected_post_remediation_grade": {
+    "after_phase_1_2": "C (removes all P1 CVEs; 3 structural P1s remain until phase 3)",
+    "after_phase_1_2_3": "B (0 P1 CVEs, structural P1s resolved, ~52% spec coverage after domain fix)",
+    "after_all_phases": "A (0 critical/high CVEs, architecture compliance, full observability)"
+  },
+  "cross_references": [
+    {
+      "root_cause": "Vitest/build-tool chain not updated",
+      "findings": ["DEP-001", "DEP-002", "DEP-008", "DEP-009", "DEP-015"],
+      "single_fix": "npm install vitest@^4.1.10 vite@^8.2.0 in Source/Frontend"
+    },
+    {
+      "root_cause": "Backend transitive dependency staleness",
+      "findings": ["DEP-003", "DEP-005", "DEP-006"],
+      "single_fix": "npm update brace-expansion && npm install handlebars@^4.7.8 js-yaml@^3.15.0 in Source/Backend"
+    },
+    {
+      "root_cause": "Traceability enforcer scope too narrow",
+      "findings": ["QO-001", "QO-002", "QO-003"],
+      "single_fix": "Extend enforcer to iterate Specifications/*.md"
+    },
+    {
+      "root_cause": "Spec domain mismatch (dev-workflow vs workflow-engine)",
+      "findings": ["QO-002", "QO-010"],
+      "single_fix": "Update or retire dev-workflow-platform.md"
+    }
+  ],
+  "next_audit": "2026-09-06",
+  "next_audit_focus": [
+    "Verify all CVE remediation phases complete (target: 0 critical/high)",
+    "Re-check spec coverage after domain mismatch resolved (target: ≥60%)",
+    "Run performance-profiler in dynamic mode (backend must be live)",
+    "Run chaos-monkey in dynamic mode (both services must be live)",
+    "Verify traceability enforcer now scans Specifications/"
+  ]
+}

@@ -1,0 +1,316 @@
+{
+  "audit_date": "2026-08-06",
+  "auditor": "dependency-auditor",
+  "grade": "C",
+  "summary": {
+    "total_cves": 21,
+    "critical": 2,
+    "high": 7,
+    "moderate": 9,
+    "low": 2,
+    "outdated_packages": 4
+  },
+  "workspaces": {
+    "Source/Backend": {
+      "package_json": "Source/Backend/package.json",
+      "direct_dependencies": 4,
+      "total_dependencies": 411,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 3,
+        "moderate": 4,
+        "low": 1,
+        "total": 8
+      },
+      "cves": [
+        {
+          "id": "DEP-001-alt",
+          "package": "uuid",
+          "severity": "MODERATE",
+          "cve": "GHSA-w5hq-g745-h8pq",
+          "title": "Buffer bounds check missing in uuid v3/v5/v6",
+          "cvss": 7.5,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-003",
+          "package": "brace-expansion",
+          "severity": "HIGH",
+          "cve": "GHSA-mh99-v99m-4gvg",
+          "title": "DoS via unbounded expansion",
+          "cvss": 7.5,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-005",
+          "package": "handlebars",
+          "severity": "HIGH",
+          "title": "Multiple injection & DoS vulnerabilities",
+          "cve_count": 4,
+          "cvss_max": 8.2,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-006",
+          "package": "js-yaml",
+          "severity": "HIGH",
+          "cve": "GHSA-52cp-r559-cp3m",
+          "title": "Quadratic-complexity DoS via merge-key chains",
+          "cvss": 7.5,
+          "fix_available": true
+        }
+      ],
+      "outdated": [
+        {
+          "package": "express",
+          "current": "4.22.2",
+          "latest": "5.2.1",
+          "major_lag": 1,
+          "severity": "P4"
+        },
+        {
+          "package": "pino",
+          "current": "8.21.0",
+          "latest": "10.3.1",
+          "major_lag": 2,
+          "severity": "P4"
+        }
+      ]
+    },
+    "Source/Frontend": {
+      "package_json": "Source/Frontend/package.json",
+      "direct_dependencies": 3,
+      "total_dependencies": 230,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 5,
+        "low": 1,
+        "total": 11
+      },
+      "cves": [
+        {
+          "id": "DEP-001",
+          "package": "vitest",
+          "severity": "CRITICAL",
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "title": "Arbitrary file read and execution via UI server",
+          "cvss": 9.8,
+          "current_version": "2.0.5",
+          "fix_version": "4.1.10",
+          "fix_available": true
+        },
+        {
+          "id": "DEP-004",
+          "package": "form-data",
+          "severity": "HIGH",
+          "cve": "GHSA-hmw2-7cc7-3qxx",
+          "title": "CRLF injection in multipart field names",
+          "cvss": 7.5,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-007",
+          "package": "postcss",
+          "severity": "HIGH",
+          "title": "Arbitrary file read via sourceMappingURL + XSS",
+          "cve_count": 2,
+          "cvss_max": 7.5,
+          "fix_available": true
+        },
+        {
+          "id": "DEP-008",
+          "package": "vite",
+          "severity": "HIGH",
+          "title": "Path traversal and fs.deny bypass",
+          "cve_count": 3,
+          "cvss_max": 7.5,
+          "current_version": "5.4.0",
+          "fix_version": "8.2.0",
+          "fix_available": true
+        },
+        {
+          "id": "DEP-009",
+          "package": "ws",
+          "severity": "HIGH",
+          "title": "Memory exhaustion DoS from tiny fragments",
+          "cve": "GHSA-96hv-2xvq-fx4p",
+          "cvss": 7.5,
+          "fix_available": true
+        }
+      ],
+      "outdated": [
+        {
+          "package": "react",
+          "current": "18.3.1",
+          "latest": "19.2.8",
+          "major_lag": 1,
+          "severity": "P3"
+        },
+        {
+          "package": "react-router-dom",
+          "current": "6.30.4",
+          "latest": "7.18.2",
+          "major_lag": 1,
+          "severity": "P3"
+        }
+      ]
+    },
+    "Source/E2E": {
+      "package_json": "Source/E2E/package.json",
+      "direct_dependencies": 4,
+      "total_dependencies": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "status": "CLEAN"
+    }
+  },
+  "remediation": {
+    "phases": [
+      {
+        "phase": 1,
+        "priority": "CRITICAL",
+        "timeline": "immediate",
+        "actions": [
+          {
+            "workspace": "Source/Frontend",
+            "command": "npm install vitest@^4.1.10",
+            "fixes": ["DEP-001", "DEP-002"]
+          }
+        ],
+        "test_requirement": "npm test"
+      },
+      {
+        "phase": 2,
+        "priority": "URGENT",
+        "timeline": "this week",
+        "actions": [
+          {
+            "workspace": "Source/Frontend",
+            "command": "npm install vite@^8.2.0"
+          },
+          {
+            "workspace": "Source/Backend",
+            "command": "npm install form-data@^4.0.6"
+          },
+          {
+            "workspace": "Source/Frontend",
+            "command": "npm install form-data@^4.0.6"
+          },
+          {
+            "workspace": "Source/Backend",
+            "command": "npm update brace-expansion"
+          },
+          {
+            "workspace": "Source/Backend",
+            "command": "npm install handlebars@^4.7.8"
+          },
+          {
+            "workspace": "Source/Backend",
+            "command": "npm install js-yaml@^3.15.0"
+          },
+          {
+            "workspace": "Source/Frontend",
+            "command": "npm install postcss@^8.5.10"
+          },
+          {
+            "workspace": "Source/Frontend",
+            "command": "npm install ws@^8.21.0"
+          },
+          {
+            "workspace": "global",
+            "command": "npm install @babel/core@latest"
+          },
+          {
+            "workspace": "Source/Backend",
+            "command": "npm install express@^4.22.2 qs@^6.15.2 body-parser@^1.20.6"
+          },
+          {
+            "workspace": "Source/Backend",
+            "command": "npm install uuid@^14.0.1"
+          }
+        ],
+        "test_requirement": "full test suite + integration tests"
+      },
+      {
+        "phase": 3,
+        "priority": "MODERATE",
+        "timeline": "this sprint",
+        "actions": [
+          {
+            "workspace": "Source/Frontend",
+            "command": "npm install react@^19.0.0 react-dom@^19.0.0"
+          },
+          {
+            "workspace": "Source/Frontend",
+            "command": "npm install react-router-dom@^7.0.0"
+          }
+        ],
+        "test_requirement": "UI tests + route verification",
+        "note": "Major version upgrades — test thoroughly"
+      },
+      {
+        "phase": 4,
+        "priority": "OPTIONAL",
+        "timeline": "next release cycle",
+        "actions": [
+          {
+            "workspace": "Source/Backend",
+            "command": "npm install express@^5.0.0"
+          },
+          {
+            "workspace": "Source/Backend",
+            "command": "npm install pino@^10.0.0"
+          }
+        ],
+        "note": "Express 4.x still actively maintained; Pino update optional"
+      }
+    ],
+    "post_fix_grade": "A",
+    "post_fix_cves": 0
+  },
+  "supply_chain_analysis": {
+    "post_install_scripts": "none detected",
+    "maintenance_status": "all major deps actively maintained",
+    "high_risk_packages": [
+      {
+        "package": "handlebars",
+        "risk": "4 injection/DoS CVEs; recommend removal if unused",
+        "action": "review usage before upgrade"
+      },
+      {
+        "package": "vitest",
+        "risk": "CRITICAL code execution; had 9.8 CVSS CVE",
+        "action": "verify upgrade before CI/CD"
+      }
+    ],
+    "supply_chain_surface": "LOW",
+    "notes": "Small direct dependency surface (4-3 per workspace); no viral GPL/AGPL licenses detected"
+  },
+  "verification_checklist": [
+    "Phase 1: npm test passes in Source/Frontend",
+    "Phase 1: Vitest UI starts without errors",
+    "Phase 2: npm audit reports 0 vulnerabilities in all workspaces",
+    "Phase 2: All integration tests pass",
+    "Phase 3: UI renders correctly with React 19",
+    "Phase 3: All routes accessible with react-router-dom 7",
+    "Phase 3: E2E tests pass with updated dependencies",
+    "Final: npm audit confirms 0 CVEs (critical + high + moderate)",
+    "Final: Document breaking changes from major version upgrades"
+  ],
+  "recommendations": [
+    "Add npm audit to CI gate: npm audit --audit-level=moderate",
+    "Review and remove handlebars if unused",
+    "Disable Vitest UI in CI or bind to localhost only",
+    "Review quarterly: npm outdated for deprecation tracking",
+    "Batch major version upgrades and test together",
+    "Use npm ci in CI/CD (not npm install)"
+  ],
+  "next_audit": "2026-09-06",
+  "next_audit_focus": "Verify no new CVEs introduced by remediation upgrades"
+}

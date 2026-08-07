@@ -1,0 +1,120 @@
+{
+  "generated": "2026-08-07",
+  "audit_type": "full",
+  "grade": "C",
+  "spec_coverage": {
+    "active_plans_pct": 93,
+    "full_specifications_pct": 28,
+    "note": "Full pct depressed by orphaned Specifications/dev-workflow-platform.md (describes a different product)"
+  },
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "tooling-defect",
+      "title": "Traceability enforcer extracts false FR IDs from prose — false PASS/FAIL results",
+      "file": "tools/traceability-enforcer.py",
+      "line": 47,
+      "detail": "Regex FR-[A-Z0-9-]+ matches work item docIds (FR-0002..FR-0007) and spec cross-references (FR-070, FR-085) in prose, causing false FAILURE when running against Plans/dependency-linking. False positives obscure real gaps.",
+      "recommendation": "Constrain extraction to table column 1 only: r'^\\|\\s*(FR-[A-Za-z0-9-]+)\\s*\\|'",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "tooling-defect",
+      "title": "Enforcer checks single plan only; dependency requirements never audited in default run",
+      "file": "tools/traceability-enforcer.py",
+      "line": 22,
+      "detail": "auto-select picks most recently modified requirements.md (all share same mtime → non-deterministic). FR-dependency-seed has zero Verifies refs but enforcer reports PASSED because it only scanned self-judging-workflow plan.",
+      "recommendation": "Add --all-plans flag iterating every Plans/*/requirements.md; use this in CI gate.",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed unimplemented — no source reference, no test",
+      "file": "Plans/dependency-linking/requirements.md",
+      "line": 23,
+      "detail": "Implementation Delta explicitly flags FR-dependency-seed as Missing. Zero grep hits in Source/. Needs idempotent seed function calling addDependency for 4 documented work-item relationships.",
+      "recommendation": "Create Source/Backend/src/store/seedData.ts; wire into app startup; add // Verifies: FR-dependency-seed.",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md FR-001–FR-069 orphaned (different product)",
+      "file": "Specifications/dev-workflow-platform.md",
+      "line": 337,
+      "detail": "69 FRs describe a feature-request/bug/cycle SQLite platform. Current Source/ is a work-item workflow engine (in-memory store). Zero FRs are referenced in Source/. Inspector config points specs.dir to Specifications/ but enforcer ignores it.",
+      "recommendation": "Add deprecated status to dev-workflow-platform.md or archive it. Update inspector.config.yml specs.dir to Specifications/workflow-engine.md.",
+      "route": "requirements-reviewer"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers call store directly — service layer bypassed",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:44,73,79,89,134,142",
+        "Source/Backend/src/routes/workflow.ts:44,71,99,119,155,175,217,269,317,359",
+        "Source/Backend/src/routes/intake.ts:19,42"
+      ],
+      "detail": "CLAUDE.md: 'No direct DB calls from route handlers — use the service layer.' All three route files call store.* directly. Approve/reject/dispatch logic in workflow.ts mixes HTTP concerns with business logic.",
+      "recommendation": "Extract approve/reject/dispatch from workflow.ts into Source/Backend/src/services/workflowActions.ts.",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "test-coverage",
+      "title": "Duplicate frontend test files for same pages",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "detail": "Root-level and pages/ subdirectory both test the same components with overlapping but non-identical coverage. Risk of divergence; unclear which is canonical.",
+      "recommendation": "Consolidate into tests/pages/; merge unique assertions from root-level files; delete duplicates.",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Silent .catch(() => ({})) in API client swallows JSON parse errors",
+      "file": "Source/Frontend/src/api/client.ts",
+      "line": 26,
+      "detail": "CLAUDE.md: 'Never swallow errors silently.' The catch is intentional (non-JSON error bodies) but undocumented.",
+      "recommendation": "Add comment: // JSON may not be present on some error responses (e.g. 502 from proxy); fall back to empty object",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppressing react-hooks/exhaustive-deps without rationale",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "detail": "Suppressing exhaustive-deps without documented reason can mask stale closure bugs.",
+      "recommendation": "Add rationale comment or restructure hook to satisfy the rule.",
+      "route": "TheFixer"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "untested",
+      "title": "tiered-merge-pipeline NFRs have no enforcement or traceability",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "line": 136,
+      "detail": "NFR-1 (E2E <5 min), NFR-2 (additive), NFR-3 (graceful degradation) exist in spec but are untraced in E2E configs.",
+      "recommendation": "Add // Verifies: NFR-1/2/3 comments to playwright configs that implement these safeguards, or add timing assertions.",
+      "route": "TheFixer"
+    }
+  ]
+}

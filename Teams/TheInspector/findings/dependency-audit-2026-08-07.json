@@ -1,0 +1,214 @@
+{
+  "audit_date": "2026-08-07",
+  "audit_type": "dependency",
+  "overall_grade": "D",
+  "overall_status": "CRITICAL",
+  "summary": {
+    "total_cves": 30,
+    "critical_p1": 3,
+    "high_p2": 9,
+    "moderate_p3": 17,
+    "low_p4": 1,
+    "outdated_major_versions": 8
+  },
+  "workspaces": {
+    "Backend": {
+      "type": "production",
+      "direct_dependencies": 4,
+      "transitive_dependencies": 98,
+      "total_dependencies": 411,
+      "cve_critical": 1,
+      "cve_high": 3,
+      "cve_moderate": 4,
+      "status": "CRITICAL",
+      "findings": [
+        "DEP-001: handlebars CRITICAL JavaScript injection (transitive)",
+        "DEP-004: uuid HIGH buffer overflow (direct)",
+        "DEP-005: brace-expansion HIGH DoS (transitive)",
+        "DEP-011: qs MODERATE DoS (transitive)",
+        "DEP-013: @babel/core LOW file read (transitive)"
+      ]
+    },
+    "Frontend": {
+      "type": "production",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 6,
+      "total_dependencies": 230,
+      "cve_critical": 1,
+      "cve_high": 4,
+      "cve_moderate": 6,
+      "status": "CRITICAL",
+      "findings": [
+        "DEP-002: vitest CRITICAL file read (direct dev)",
+        "DEP-007: react-router MODERATE open redirect chain (transitive)",
+        "DEP-008: postcss HIGH source map disclosure (transitive)",
+        "DEP-009: vite MODERATE path traversal (direct dev)",
+        "DEP-015: esbuild MODERATE CORS bypass (transitive)"
+      ]
+    },
+    "E2E": {
+      "type": "production",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 3,
+      "total_dependencies": 4,
+      "cve_critical": 0,
+      "cve_high": 0,
+      "cve_moderate": 0,
+      "status": "PASS",
+      "findings": []
+    },
+    "Orchestrator": {
+      "type": "infrastructure",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 150,
+      "total_dependencies": 155,
+      "cve_critical": 1,
+      "cve_high": 2,
+      "cve_moderate": 6,
+      "status": "CRITICAL",
+      "findings": [
+        "DEP-003: protobufjs CRITICAL code execution (transitive via grpc)",
+        "DEP-004: uuid HIGH buffer overflow (direct)",
+        "DEP-006: form-data HIGH CRLF injection (transitive dev)",
+        "DEP-014: @grpc/grpc-js HIGH server crash (transitive)",
+        "DEP-011: qs MODERATE DoS (transitive)"
+      ]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "severity": "CRITICAL",
+      "package": "handlebars@4.7.8",
+      "workspace": "Backend",
+      "type": "transitive",
+      "impact": "Template injection → RCE if templates evaluated",
+      "fix": "Upgrade babel ecosystem to latest"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest Arbitrary File Read",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "severity": "CRITICAL",
+      "package": "vitest@2.0.5",
+      "workspace": "Frontend",
+      "type": "direct_dev",
+      "impact": "Source code + .env disclosure via UI server",
+      "fix": "Upgrade to vitest@≥3.2.6 (major version bump)"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "severity": "CRITICAL",
+      "package": "protobufjs@7.5.5",
+      "workspace": "Orchestrator",
+      "type": "transitive",
+      "impact": "RCE via malformed protobuf descriptors",
+      "fix": "Upgrade dockerode to ≥5.0.1 (includes protobufjs fix)"
+    }
+  ],
+  "high_priority_findings": [
+    {
+      "id": "DEP-004",
+      "title": "UUID Buffer Overflow",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "severity": "HIGH",
+      "package": "uuid@9.0.0, uuid@<11.1.1",
+      "workspaces": ["Backend", "Orchestrator"],
+      "impact": "Memory corruption in work item ID generation",
+      "fix": "Upgrade uuid to ≥14.0.1 across all workspaces"
+    },
+    {
+      "id": "DEP-005",
+      "title": "brace-expansion DoS",
+      "cve": "GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895",
+      "cvss": 7.5,
+      "severity": "HIGH",
+      "package": "brace-expansion@≤1.1.17",
+      "workspace": "Backend",
+      "type": "transitive",
+      "impact": "Process hang/OOM via exponential expansion",
+      "fix": "Upgrade to brace-expansion@≥1.1.18 (transitive via jest/glob)"
+    }
+  ],
+  "outdated_packages": {
+    "Backend": [
+      {"name": "pino", "current": "8.17.0", "latest": "10.3.1", "gap": "2+ major"},
+      {"name": "uuid", "current": "9.0.0", "latest": "14.0.1", "gap": "2+ major"},
+      {"name": "express", "current": "4.18.2", "latest": "5.2.1", "gap": "1+ major"}
+    ],
+    "Frontend": [
+      {"name": "react", "current": "18.3.1", "latest": "19.2.8", "gap": "1+ major"},
+      {"name": "react-dom", "current": "18.3.1", "latest": "19.2.8", "gap": "1+ major"},
+      {"name": "react-router-dom", "current": "6.26.0", "latest": "7.18.2", "gap": "1+ major"}
+    ],
+    "Orchestrator": [
+      {"name": "dockerode", "current": "4.0.4", "latest": "5.0.1", "gap": "1+ major"},
+      {"name": "express", "current": "4.21.0", "latest": "5.2.1", "gap": "1+ major"}
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "gpl_agpl_found": false,
+    "unlicensed_found": false,
+    "notes": "All direct dependencies use MIT/Apache2/BSD-compatible licenses"
+  },
+  "supply_chain_risks": {
+    "postinstall_scripts": 0,
+    "deprecated_packages": 0,
+    "high_risk_transitive": [
+      "handlebars (transpilation only, very hard to remove)",
+      "protobufjs (gRPC core infrastructure)",
+      "vitest (dev-only, but file read vulnerability)"
+    ],
+    "duplicate_versions": ["uuid (9.0.0 + <11.1.1 in dependency tree)"]
+  },
+  "grading": {
+    "logic": "A: max_p1=0, max_p2≤3; B: max_p1=0, max_p2≤8; C: max_p1≤2, max_p2≤15; D: max_p1>2 OR max_p2>15; F: exploitable auth bypass + critical domain failure",
+    "assigned_grade": "D",
+    "reason": "3 Critical P1 findings (exceeds A/B/C thresholds), 9 High P2 findings"
+  },
+  "remediation_timeline": {
+    "IMMEDIATE": [
+      "DEP-004: uuid upgrade to v14.0.1",
+      "DEP-002: vitest upgrade to ≥3.2.6 (or disable UI server)",
+      "DEP-003: dockerode upgrade to ≥5.0.1"
+    ],
+    "HIGH_PRIORITY": [
+      "DEP-001: upgrade babel ecosystem",
+      "DEP-005: run npm audit fix on Backend",
+      "DEP-008: upgrade vite to ≥8.2.1"
+    ],
+    "MEDIUM_PRIORITY": [
+      "DEP-007: upgrade react-router to ≥7.18.0",
+      "DEP-009/012: upgrade express to v5.x"
+    ]
+  },
+  "cross_references": {
+    "escalate_to_guardians": [
+      "DEP-001: handlebars if templates accept untrusted input",
+      "DEP-003: protobufjs if gRPC messages untrusted",
+      "DEP-007: react-router if app uses dynamic routing"
+    ],
+    "escalate_to_fixer": [
+      "All moderate/low CVEs for backlog prioritization"
+    ],
+    "escalate_to_performance_profiler": [
+      "DEP-005: brace-expansion DoS",
+      "DEP-010: js-yaml quadratic parsing"
+    ]
+  },
+  "audit_tool_output": {
+    "npm_audit_backend": "9 vulnerabilities (1 critical, 3 high, 4 moderate, 1 low)",
+    "npm_audit_frontend": "12 vulnerabilities (1 critical, 4 high, 6 moderate, 1 low)",
+    "npm_audit_e2e": "0 vulnerabilities",
+    "npm_audit_orchestrator": "9 vulnerabilities (1 critical, 2 high, 6 moderate)"
+  }
+}

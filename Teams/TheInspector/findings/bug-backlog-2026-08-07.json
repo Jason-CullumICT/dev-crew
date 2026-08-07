@@ -1,61 +1,126 @@
 {
   "generated": "2026-08-07",
+  "audit_id": "run-20260807-043924",
+  "branch": "audit/inspector-2026-08-07-da38e4",
   "audit_type": "full",
-  "grade": "C",
-  "spec_coverage": {
-    "active_plans_pct": 93,
-    "full_specifications_pct": 28,
-    "note": "Full pct depressed by orphaned Specifications/dev-workflow-platform.md (describes a different product)"
+  "grade": "D",
+  "grading_rationale": "5 P1 findings (threshold: max_p1=2 for C) — exceeds C/B/A thresholds",
+  "summary": {
+    "total_findings": 39,
+    "p1_total": 5,
+    "p2_total": 13,
+    "p3_total": 20,
+    "p4_total": 1,
+    "spec_coverage_active_plans_pct": 93,
+    "spec_coverage_full_pct": 28,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline — static mode only; no dynamic test results available",
+    "prior_audit": null,
+    "fixed_count": 0
   },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "title": "Handlebars JavaScript Injection — Template injection → RCE if babel output evaluated",
+      "package": "handlebars@4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "workspace": "Backend",
+      "fix": "Upgrade babel ecosystem to latest"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "sensitive data exposed",
+      "title": "Vitest Arbitrary File Read — Source code + .env disclosure via UI server on port 51204",
+      "package": "vitest@2.0.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "workspace": "Frontend",
+      "fix": "Upgrade vitest to ≥3.2.6 OR disable UI server (--no-ui)"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "trigger": "injection",
+      "title": "Protobufjs Arbitrary Code Execution — RCE via malformed protobuf descriptors in orchestrator gRPC",
+      "package": "protobufjs@7.5.5",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "workspace": "Orchestrator",
+      "fix": "Upgrade dockerode to ≥5.0.1"
+    }
+  ],
   "findings": [
     {
       "id": "QO-001",
       "severity": "P1",
       "category": "tooling-defect",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "Traceability enforcer extracts false FR IDs from prose — false PASS/FAIL results",
       "file": "tools/traceability-enforcer.py",
       "line": 47,
       "detail": "Regex FR-[A-Z0-9-]+ matches work item docIds (FR-0002..FR-0007) and spec cross-references (FR-070, FR-085) in prose, causing false FAILURE when running against Plans/dependency-linking. False positives obscure real gaps.",
       "recommendation": "Constrain extraction to table column 1 only: r'^\\|\\s*(FR-[A-Za-z0-9-]+)\\s*\\|'",
-      "route": "TheFixer"
+      "cross_ref": null
     },
     {
       "id": "QO-002",
       "severity": "P1",
       "category": "tooling-defect",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "Enforcer checks single plan only; dependency requirements never audited in default run",
       "file": "tools/traceability-enforcer.py",
       "line": 22,
       "detail": "auto-select picks most recently modified requirements.md (all share same mtime → non-deterministic). FR-dependency-seed has zero Verifies refs but enforcer reports PASSED because it only scanned self-judging-workflow plan.",
       "recommendation": "Add --all-plans flag iterating every Plans/*/requirements.md; use this in CI gate.",
-      "route": "TheFixer"
+      "cross_ref": null
     },
     {
       "id": "QO-003",
       "severity": "P2",
       "category": "spec-drift",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "FR-dependency-seed unimplemented — no source reference, no test",
       "file": "Plans/dependency-linking/requirements.md",
       "line": 23,
       "detail": "Implementation Delta explicitly flags FR-dependency-seed as Missing. Zero grep hits in Source/. Needs idempotent seed function calling addDependency for 4 documented work-item relationships.",
       "recommendation": "Create Source/Backend/src/store/seedData.ts; wire into app startup; add // Verifies: FR-dependency-seed.",
-      "route": "TheFixer"
+      "cross_ref": "DEP-004"
     },
     {
       "id": "QO-004",
       "severity": "P2",
       "category": "spec-drift",
+      "source": "quality-oracle",
+      "route": "requirements-reviewer",
+      "status": "NEW",
       "title": "Specifications/dev-workflow-platform.md FR-001–FR-069 orphaned (different product)",
       "file": "Specifications/dev-workflow-platform.md",
       "line": 337,
       "detail": "69 FRs describe a feature-request/bug/cycle SQLite platform. Current Source/ is a work-item workflow engine (in-memory store). Zero FRs are referenced in Source/. Inspector config points specs.dir to Specifications/ but enforcer ignores it.",
       "recommendation": "Add deprecated status to dev-workflow-platform.md or archive it. Update inspector.config.yml specs.dir to Specifications/workflow-engine.md.",
-      "route": "requirements-reviewer"
+      "cross_ref": null
     },
     {
       "id": "QO-005",
       "severity": "P2",
       "category": "architecture-violation",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "Route handlers call store directly — service layer bypassed",
       "files": [
         "Source/Backend/src/routes/workItems.ts:44,73,79,89,134,142",
@@ -64,12 +129,15 @@
       ],
       "detail": "CLAUDE.md: 'No direct DB calls from route handlers — use the service layer.' All three route files call store.* directly. Approve/reject/dispatch logic in workflow.ts mixes HTTP concerns with business logic.",
       "recommendation": "Extract approve/reject/dispatch from workflow.ts into Source/Backend/src/services/workflowActions.ts.",
-      "route": "TheFixer"
+      "cross_ref": "DEP-001"
     },
     {
       "id": "QO-006",
       "severity": "P2",
       "category": "test-coverage",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "Duplicate frontend test files for same pages",
       "files": [
         "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
@@ -79,23 +147,29 @@
       ],
       "detail": "Root-level and pages/ subdirectory both test the same components with overlapping but non-identical coverage. Risk of divergence; unclear which is canonical.",
       "recommendation": "Consolidate into tests/pages/; merge unique assertions from root-level files; delete duplicates.",
-      "route": "TheFixer"
+      "cross_ref": null
     },
     {
       "id": "QO-007",
       "severity": "P3",
       "category": "pattern-violation",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "Silent .catch(() => ({})) in API client swallows JSON parse errors",
       "file": "Source/Frontend/src/api/client.ts",
       "line": 26,
       "detail": "CLAUDE.md: 'Never swallow errors silently.' The catch is intentional (non-JSON error bodies) but undocumented.",
       "recommendation": "Add comment: // JSON may not be present on some error responses (e.g. 502 from proxy); fall back to empty object",
-      "route": "TheFixer"
+      "cross_ref": null
     },
     {
       "id": "QO-008",
       "severity": "P3",
       "category": "pattern-violation",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "eslint-disable suppressing react-hooks/exhaustive-deps without rationale",
       "files": [
         "Source/Frontend/src/hooks/useWorkItems.ts:63",
@@ -103,18 +177,275 @@
       ],
       "detail": "Suppressing exhaustive-deps without documented reason can mask stale closure bugs.",
       "recommendation": "Add rationale comment or restructure hook to satisfy the rule.",
-      "route": "TheFixer"
+      "cross_ref": null
     },
     {
       "id": "QO-009",
       "severity": "P3",
       "category": "untested",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "status": "NEW",
       "title": "tiered-merge-pipeline NFRs have no enforcement or traceability",
       "file": "Specifications/tiered-merge-pipeline.md",
       "line": 136,
       "detail": "NFR-1 (E2E <5 min), NFR-2 (additive), NFR-3 (graceful degradation) exist in spec but are untraced in E2E configs.",
       "recommendation": "Add // Verifies: NFR-1/2/3 comments to playwright configs that implement these safeguards, or add timing assertions.",
-      "route": "TheFixer"
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve-buffer-overflow",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "UUID Buffer Bounds Check missing — memory corruption in work item ID generation",
+      "package": "uuid@9.0.0",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "workspaces": ["Backend", "Orchestrator"],
+      "fix": "Upgrade uuid to ≥14.0.1 across all workspaces",
+      "cross_ref": "QO-003"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve-dos",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "brace-expansion DoS — exponential CPU/OOM via crafted glob patterns",
+      "package": "brace-expansion@≤1.1.17",
+      "cve": "GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895",
+      "cvss": 7.5,
+      "workspace": "Backend",
+      "fix": "Run npm audit fix on Backend; upgrade brace-expansion to ≥1.1.18 (transitive via jest/glob)",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve-header-injection",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "form-data CRLF Injection — HTTP header injection via multipart field names",
+      "package": "form-data@4.0.0-4.0.5",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "workspaces": ["Backend (dev)", "Orchestrator (dev)"],
+      "fix": "Upgrade form-data to ≥4.0.6",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve-open-redirect",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "React Router Open Redirect — XSS/session hijacking via protocol-relative URL bypass",
+      "package": "react-router@6.0.0-6.30.4",
+      "cve": "GHSA-2j2x-hqr9-3h42, GHSA-jjmj-jmhj-qwj2, GHSA-wrjc-x8rr-h8h6, GHSA-337j-9hxr-rhxg",
+      "cvss": 6.9,
+      "workspace": "Frontend",
+      "fix": "Upgrade react-router-dom to ≥7.18.0",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "cve-information-disclosure",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "PostCSS Source Map Disclosure — .env.map and config files readable via CSS sourceMappingURL",
+      "package": "postcss@≤8.5.22",
+      "cve": "GHSA-6g55-p6wh-862q, GHSA-r28c-9q8g-f849, GHSA-fxqj-rqcc-2cmp",
+      "cvss": 7.5,
+      "workspace": "Frontend",
+      "fix": "Upgrade postcss to ≥8.5.23 via vite upgrade to ≥8.2.1",
+      "cross_ref": "DEP-009"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "cve-path-traversal",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "Vite Dev Server Path Traversal — server.fs.deny bypass on Windows via alternate paths",
+      "package": "vite@5.4.0",
+      "cve": "GHSA-fx2h-pf6j-xcff, GHSA-4w7w-66w2-5vf9, GHSA-v6wh-96g9-6wx3",
+      "cvss": 7.5,
+      "workspace": "Frontend",
+      "fix": "Upgrade vite to ≥8.2.1 (major version bump — test compatibility)",
+      "cross_ref": "DEP-008"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "cve-dos",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "js-yaml Quadratic CPU DoS — repeated merge-keys cause exponential parse time",
+      "package": "js-yaml@≤3.15.0",
+      "cve": "GHSA-52cp-r559-cp3m, GHSA-h67p-54hq-rp68, GHSA-5p4m-2wfm-xmqj",
+      "cvss": 7.5,
+      "workspace": "Backend",
+      "fix": "Upgrade js-yaml to ≥3.15.1 (transitive via babel/jest)",
+      "cross_ref": "DEP-005"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "cve-dos",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "qs DoS — TypeError crash on comma-format arrays with null/undefined values",
+      "package": "qs@6.11.1-6.15.1",
+      "cve": "GHSA-q8mj-m7cp-5q26",
+      "cvss": 5.3,
+      "workspaces": ["Backend", "Orchestrator"],
+      "fix": "Upgrade express to ≥5.x (includes updated qs)",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "cve-dos",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "body-parser DoS — invalid limit value disables request body size enforcement",
+      "package": "body-parser@≤1.20.5",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "cvss": 3.7,
+      "workspaces": ["Backend", "Orchestrator"],
+      "fix": "Upgrade body-parser via express, or manually to ≥1.20.6",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "cve-information-disclosure",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "@babel/core Source Map File Read — arbitrary .map file read via sourceMappingURL comments",
+      "package": "@babel/core@≤7.29.0",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "cvss": 3.2,
+      "workspaces": ["Backend", "Frontend"],
+      "fix": "Upgrade @babel/core to ≥7.29.1 (usually transitive)",
+      "cross_ref": null
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "category": "cve-dos",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "gRPC Server Crash — malformed requests/compressed messages crash orchestrator",
+      "package": "@grpc/grpc-js@1.14.0-1.14.3",
+      "cve": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq",
+      "cvss": 7.5,
+      "workspace": "Orchestrator",
+      "fix": "Upgrade @grpc/grpc-js to ≥1.14.4",
+      "cross_ref": "DEP-003"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "category": "cve-cors",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "esbuild Dev Server CORS Bypass — arbitrary cross-origin requests allowed during development",
+      "package": "esbuild@≤0.24.2",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "cvss": 5.3,
+      "workspace": "Frontend",
+      "fix": "Upgrade vite to ≥8.2.1 (includes esbuild fix)",
+      "cross_ref": "DEP-009"
+    },
+    {
+      "id": "DEP-outdated-1",
+      "severity": "P3",
+      "category": "outdated-dependency",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "status": "NEW",
+      "title": "8 packages 1–2+ major versions behind (pino, uuid, express, react, react-dom, react-router-dom, dockerode, express-orchestrator)",
+      "workspaces": ["Backend", "Frontend", "Orchestrator"],
+      "fix": "Upgrade per remediation plan in dependency-audit-2026-08-07.md",
+      "cross_ref": null
     }
-  ]
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Frontend dev toolchain (vite 5.x / esbuild / postcss) out of date",
+      "affected_findings": ["DEP-002", "DEP-008", "DEP-009", "DEP-015"],
+      "single_fix": "Upgrade vite to ≥8.2.1 (fixes postcss, esbuild, path traversal in one sweep)",
+      "fix_impact": "Resolves 4 findings"
+    },
+    {
+      "root_cause": "Backend/Orchestrator express 4.x + aging dependency chain",
+      "affected_findings": ["DEP-005", "DEP-010", "DEP-011", "DEP-012"],
+      "single_fix": "Upgrade express to ≥5.x and run npm audit fix on Backend",
+      "fix_impact": "Resolves 4 findings"
+    },
+    {
+      "root_cause": "Orchestrator gRPC stack (dockerode 4.x → grpc-js → protobufjs)",
+      "affected_findings": ["DEP-003", "DEP-014"],
+      "single_fix": "Upgrade dockerode to ≥5.0.1",
+      "fix_impact": "Resolves 2 findings (incl. P1 escalation)"
+    },
+    {
+      "root_cause": "Traceability enforcer (traceability-enforcer.py) design flaws",
+      "affected_findings": ["QO-001", "QO-002"],
+      "single_fix": "Restrict ID regex to table column 1; add --all-plans iteration",
+      "fix_impact": "Resolves 2 P1 tooling defects; restores CI gate reliability"
+    },
+    {
+      "root_cause": "Backend route handlers bypass service layer (no input validation / abstraction)",
+      "affected_findings": ["QO-005", "DEP-001"],
+      "single_fix": "Extract business logic into services/workflowActions.ts; sanitize babel template inputs",
+      "fix_impact": "Resolves 1 P1 + 1 P2 with one refactor"
+    }
+  ],
+  "remediation_priority": {
+    "block_deployment": [
+      "DEP-001 (escalated → TheGuardians)",
+      "DEP-002 (escalated → TheGuardians)",
+      "DEP-003 (escalated → TheGuardians)",
+      "QO-001 (CI gate broken — false PASS/FAIL)",
+      "QO-002 (CI gate incomplete — requirements never audited)"
+    ],
+    "this_sprint": [
+      "DEP-004 (uuid buffer overflow — work item integrity)",
+      "DEP-008 + DEP-009 + DEP-015 (vite upgrade resolves 3 in one shot)",
+      "DEP-014 (gRPC crash — orchestrator availability)",
+      "QO-005 (architecture violation — service layer bypass)"
+    ],
+    "next_sprint": [
+      "DEP-007 (react-router open redirect)",
+      "DEP-005 + DEP-010 + DEP-011 (DoS chain — npm audit fix)",
+      "QO-003 (FR-dependency-seed implementation)",
+      "QO-006 (test deduplication)"
+    ],
+    "backlog": [
+      "DEP-006 (form-data CRLF — dev only)",
+      "DEP-012 (body-parser limit — low CVSS)",
+      "DEP-013 (babel source map — low CVSS)",
+      "DEP-015 (esbuild CORS — dev only)",
+      "QO-004 (archive orphaned spec)",
+      "QO-007, QO-008, QO-009 (pattern notes)",
+      "DEP-outdated-1 (major version catch-up)"
+    ]
+  }
 }

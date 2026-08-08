@@ -1,0 +1,351 @@
+{
+  "meta": {
+    "audit_date": "2026-08-08",
+    "run_id": "run-20260808-034603",
+    "branch": "audit/inspector-2026-08-08-676c57",
+    "grade": "D",
+    "grade_rationale": "3 P1 CVEs exceed Grade C ceiling (max_p1=2). Spec coverage 97% (excellent). Fix P1 CVEs to move grade to B.",
+    "specialists": ["quality-oracle (static)", "dependency-auditor (static)"],
+    "specialists_not_run": ["performance-profiler", "chaos-monkey"],
+    "prior_audit": null,
+    "generated_by": "TheInspector team-leader",
+    "report_path": "Teams/TheInspector/findings/audit-2026-08-08-D.html"
+  },
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 5,
+    "p3_total": 14,
+    "p4_total": 4,
+    "escalations_to_guardians": 2,
+    "cross_references": 3,
+    "fixed": 0,
+    "new": 26
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "severity": "P1",
+      "package": "handlebars",
+      "cvss": 9.8,
+      "title": "JavaScript Injection via AST Type Confusion — potential RCE",
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6"],
+      "action_required": "Confirm whether handlebars is used for user-controlled template compilation anywhere in the codebase. If yes, treat as critical RCE and block deployment.",
+      "fix": "npm update handlebars  # Target: >= 4.7.9"
+    },
+    {
+      "id": "DEP-006",
+      "escalate_to": "TheGuardians",
+      "trigger": "memory-safety",
+      "severity": "P2",
+      "package": "uuid",
+      "cvss": 7.5,
+      "title": "Missing buffer bounds check in uuid v3/v5/v6 with explicit buffer",
+      "cve_ids": ["GHSA-w5hq-g745-h8pq"],
+      "action_required": "Run static analysis to verify buffer-passing patterns in Source/Backend/**/*.ts. If uuid is called with caller-provided buffers, memory corruption is possible.",
+      "fix": "cd Source/Backend && npm update uuid  # Major bump to >= 11.1.1 required"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "DEP-001",
+      "status": "NEW",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "handlebars JavaScript Injection via AST Type Confusion (CVSS 9.8)",
+      "package": "handlebars@4.0.0-4.7.8",
+      "cvss": 9.8,
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6"],
+      "file": "Source/Backend/package-lock.json",
+      "transitive": true,
+      "escalation": "TheGuardians",
+      "fix": "npm update handlebars",
+      "priority": "Block deployment — verify with TheGuardians first",
+      "cross_refs": ["XREF-B"]
+    },
+    {
+      "id": "DEP-002",
+      "status": "NEW",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion DoS — 4 CVEs allowing unbounded expansion (CVSS 7.5)",
+      "package": "brace-expansion@<=1.1.17",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895", "GHSA-3jxr-9vmj-r5cp", "GHSA-f886-m6hf-6m8v"],
+      "file": "Source/Backend/package-lock.json",
+      "transitive": true,
+      "escalation": null,
+      "fix": "npm update brace-expansion",
+      "priority": "Block deployment",
+      "cross_refs": ["XREF-B", "XREF-C"]
+    },
+    {
+      "id": "DEP-003",
+      "status": "NEW",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "js-yaml Quadratic-Complexity DoS — 3 CVEs via YAML merge-key chains (CVSS 7.5)",
+      "package": "js-yaml@<=3.15.0",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-52cp-r559-cp3m", "GHSA-5p4m-2wfm-xmqj", "GHSA-h67p-54hq-rp68"],
+      "file": "Source/Backend/package-lock.json",
+      "transitive": true,
+      "escalation": null,
+      "fix": "npm update js-yaml",
+      "priority": "Block deployment",
+      "cross_refs": ["XREF-B", "XREF-C"]
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "status": "NEW",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer never scans portal/ — 70+ FRs invisible to CI gate",
+      "file": "tools/traceability-enforcer.py",
+      "line": 60,
+      "route_to": "TheFixer",
+      "fix": "Add 'portal' to source_dirs list at line 60 in tools/traceability-enforcer.py",
+      "cross_refs": ["XREF-A"]
+    },
+    {
+      "id": "QO-002",
+      "status": "NEW",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Direct DB calls in route handler — service layer bypassed in teamDispatches.ts",
+      "file": "portal/Backend/src/routes/teamDispatches.ts",
+      "lines": [37, 41, 72],
+      "route_to": "TheFixer",
+      "fix": "Extract teamDispatchService.ts with listDispatches() and recordDispatch() functions; route handlers call service only",
+      "cross_refs": ["XREF-A"]
+    },
+    {
+      "id": "DEP-004",
+      "status": "NEW",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "form-data CRLF injection via unescaped multipart field names (CVSS 7.5)",
+      "package": "form-data@4.0.0-4.0.5",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "file": "Source/Backend/package-lock.json",
+      "transitive": true,
+      "route_to": "TheFixer",
+      "fix": "npm update form-data",
+      "cross_refs": ["XREF-B"]
+    },
+    {
+      "id": "DEP-005",
+      "status": "NEW",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "express + qs DoS via null handling in qs.stringify (CVSS 5.3, direct dependency)",
+      "package": "express@4.18.2 + qs@6.11.1-6.15.1",
+      "cvss": 5.3,
+      "cve_ids": ["GHSA-q8mj-m7cp-5q26"],
+      "file": "Source/Backend/package.json",
+      "transitive": false,
+      "route_to": "TheFixer",
+      "fix": "cd Source/Backend && npm update express",
+      "cross_refs": ["XREF-B", "XREF-C"]
+    },
+    {
+      "id": "DEP-006",
+      "status": "NEW",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "uuid missing buffer bounds check in v3/v5/v6 (CVSS 7.5, direct dependency)",
+      "package": "uuid@9.0.0",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-w5hq-g745-h8pq"],
+      "file": "Source/Backend/package.json",
+      "transitive": false,
+      "escalation": "TheGuardians",
+      "route_to": "TheFixer (after TheGuardians confirms buffer-passing patterns)",
+      "fix": "cd Source/Backend && npm update uuid  # Major version bump to >= 11.1.1",
+      "cross_refs": ["XREF-B"]
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-003", "status": "NEW", "severity": "P3", "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "title": "Duplicate WorkItemDetailPage test file — ambiguous canonical location",
+      "file": "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+      "fix": "Delete root-level file; keep Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx as canonical"
+    },
+    {
+      "id": "QO-004", "status": "NEW", "severity": "P3", "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-DUP-06 has no Verifies comment — detail-always-returns behavior untestable",
+      "file": "Plans/duplicate-deprecated-status/requirements.md",
+      "line": 16,
+      "fix": "Add test in portal/Backend/tests/ asserting GET by ID returns duplicate-status items; tag // Verifies: FR-DUP-06"
+    },
+    {
+      "id": "QO-005", "status": "NEW", "severity": "P3", "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-TMP-008 has no Verifies comment — worker container prerequisites untraced",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "fix": "Add # Verifies: FR-TMP-008 comment to platform/Dockerfile.worker (solo-session only)"
+    },
+    {
+      "id": "QO-006", "status": "NEW", "severity": "P3", "category": "simplification",
+      "specialist": "quality-oracle",
+      "title": "5 portal files exceed 500-line threshold (max 550 lines)",
+      "files": [
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx (550)",
+        "portal/Frontend/src/components/bugs/BugDetail.tsx (546)",
+        "portal/Backend/src/services/cycleService.ts (526)",
+        "portal/Frontend/src/api/client.ts (525)",
+        "portal/Backend/src/services/featureRequestService.ts (506)"
+      ],
+      "fix": "Split detail components into sub-components; extract completionService; split featureRequestService at CRUD/voting boundary"
+    },
+    {
+      "id": "DEP-007", "status": "NEW", "severity": "P3", "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "@remix-run/router open redirect via protocol-relative URLs",
+      "package": "react-router-dom@6.26.0",
+      "cve_ids": ["GHSA-2j2x-hqr9-3h42"],
+      "fix": "cd Source/Frontend && npm update react-router-dom  # Target: >= 6.30.4"
+    },
+    {
+      "id": "DEP-008", "status": "NEW", "severity": "P3", "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "@vitest/mocker moderate severity (build-time only)",
+      "package": "vitest@<=3.0.0-beta.4",
+      "fix": "cd Source/Frontend && npm update vitest"
+    },
+    {
+      "id": "DEP-009", "status": "NEW", "severity": "P3", "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "esbuild dev server information disclosure (dev-only, CVSS 5.3)",
+      "package": "esbuild@<=0.24.2",
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "fix": "cd Source/Frontend && npm update vite  # Pulls esbuild >= 0.25.0"
+    },
+    {
+      "id": "DEP-010", "status": "NEW", "severity": "P3", "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "nanoid infinite loop on negative/zero size (CVSS 5.9)",
+      "package": "nanoid@<=3.3.16",
+      "cve_ids": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8"],
+      "fix": "cd Source/Frontend && npm update nanoid"
+    },
+    {
+      "id": "DEP-011", "status": "NEW", "severity": "P3", "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "postcss high-severity vulnerability (build tool)",
+      "package": "postcss (transitive)",
+      "fix": "cd Source/Frontend && npm update postcss"
+    },
+    {
+      "id": "DEP-014", "status": "NEW", "severity": "P3", "category": "outdated",
+      "specialist": "dependency-auditor",
+      "title": "express 2+ major versions behind (4.18.2, latest 5.2.1)",
+      "package": "express@4.18.2",
+      "fix": "Stay on 4.x — update to 4.22.2+ within current major"
+    },
+    {
+      "id": "DEP-015", "status": "NEW", "severity": "P3", "category": "outdated",
+      "specialist": "dependency-auditor",
+      "title": "pino 2+ major versions behind (8.17.0, latest 10.3.1)",
+      "package": "pino@8.17.0",
+      "fix": "Update to 8.21.0+; plan v9+ migration for performance improvements"
+    },
+    {
+      "id": "DEP-016", "status": "NEW", "severity": "P3", "category": "outdated",
+      "specialist": "dependency-auditor",
+      "title": "uuid 5+ major versions behind (9.0.0, latest 14.0.1)",
+      "package": "uuid@9.0.0",
+      "fix": "Migrate to >= 11.1.1 for buffer-bounds fix (see DEP-006)"
+    },
+    {
+      "id": "DEP-017", "status": "NEW", "severity": "P3", "category": "outdated",
+      "specialist": "dependency-auditor",
+      "title": "React 1 major version behind (18.3.1, latest 19.2.8)",
+      "package": "react@18.3.1",
+      "fix": "Currently on latest 18.x — plan v19 migration when stable"
+    },
+    {
+      "id": "DEP-018", "status": "NEW", "severity": "P3", "category": "outdated",
+      "specialist": "dependency-auditor",
+      "title": "react-router-dom 1 major version behind (6.26.0, latest 7.18.2)",
+      "package": "react-router-dom@6.26.0",
+      "fix": "Update to 6.30.4+ first (includes open-redirect fix); plan v7 migration"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007", "status": "NEW", "severity": "P4", "category": "simplification",
+      "specialist": "quality-oracle",
+      "title": "Two logger abstractions in Source/Backend — legacy wrapper unfixed",
+      "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "fix": "Migrate all imports to utils/logger.ts and delete src/logger.ts"
+    },
+    {
+      "id": "QO-008", "status": "NEW", "severity": "P4", "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable-next-line without justification in 2 frontend files",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "fix": "Add inline comment explaining why dependency is intentionally omitted"
+    },
+    {
+      "id": "DEP-012", "status": "NEW", "severity": "P4", "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "@babel/core arbitrary local file read via malicious source map (CVSS 3.2, dev-only)",
+      "package": "@babel/core@<=7.29.0",
+      "cve_ids": ["GHSA-4x5r-pxfx-6jf8"],
+      "fix": "npm update @babel/core"
+    },
+    {
+      "id": "DEP-013", "status": "NEW", "severity": "P4", "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "body-parser DoS via invalid limit config (CVSS 3.7)",
+      "package": "body-parser (transitive)",
+      "cve_ids": ["GHSA-v422-hmwv-36x6"],
+      "fix": "npm update body-parser"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "id": "XREF-A",
+      "root_cause": "portal/ excluded from all automated quality gates",
+      "linked_findings": ["QO-001", "QO-004", "QO-006"],
+      "fix": "Add 'portal' to source_dirs in tools/traceability-enforcer.py:60",
+      "fix_impact": "Restores CI audit coverage for ~70 portal requirements"
+    },
+    {
+      "id": "XREF-B",
+      "root_cause": "Stale transitive npm dependencies across all three workspaces",
+      "linked_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006"],
+      "fix": "npm update handlebars brace-expansion js-yaml form-data express uuid",
+      "fix_impact": "Resolves all 6 CVE-based findings; moves grade from D to B"
+    },
+    {
+      "id": "XREF-C",
+      "root_cause": "No input validation guard at API boundary",
+      "linked_findings": ["DEP-002", "DEP-003", "DEP-005"],
+      "fix": "Add express.json({ limit: '100kb' }) and input sanitization middleware",
+      "fix_impact": "Degrades DoS exploitability from Zero-precondition to Privileged as interim defence"
+    }
+  ],
+  "remediation_timeline": {
+    "block_deployment": ["DEP-001", "DEP-002", "DEP-003"],
+    "this_sprint": ["DEP-004", "DEP-005", "DEP-006", "QO-001", "XREF-C"],
+    "next_sprint": ["QO-002", "QO-003", "QO-004", "QO-005", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011"],
+    "backlog": ["QO-006", "QO-007", "QO-008", "DEP-012", "DEP-013", "DEP-014", "DEP-015", "DEP-016", "DEP-017", "DEP-018"]
+  }
+}

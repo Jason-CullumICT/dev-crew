@@ -1,0 +1,150 @@
+{
+  "audit_date": "2026-08-08",
+  "auditor": "dependency-auditor",
+  "project": "dev-crew",
+  "package_managers": ["npm"],
+  "workspaces": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E"
+  ],
+  "summary": {
+    "total_cves": 22,
+    "critical": 1,
+    "high": 8,
+    "moderate": 9,
+    "low": 4,
+    "direct_dependencies_with_cves": 2,
+    "transitive_dependencies_with_cves": 11,
+    "outdated_major_versions": 6,
+    "license_issues": 0,
+    "abandoned_packages": 0,
+    "supply_chain_risk": "MODERATE",
+    "grade": "C"
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6"],
+      "title": "JavaScript Injection via AST Type Confusion",
+      "affected_versions": "4.0.0–4.7.8",
+      "direct": false,
+      "fix": "npm update handlebars",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-002",
+      "package": "brace-expansion",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "count": 4,
+      "title": "DoS via unbounded expansion (4 CVEs)",
+      "affected_versions": "<=1.1.17",
+      "direct": false,
+      "fix": "npm update brace-expansion",
+      "escalation": "red-teamer"
+    },
+    {
+      "id": "DEP-003",
+      "package": "js-yaml",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "count": 3,
+      "title": "Quadratic-complexity DoS via YAML processing (3 CVEs)",
+      "affected_versions": "<=3.15.0",
+      "direct": false,
+      "fix": "npm update js-yaml",
+      "escalation": "performance-profiler"
+    },
+    {
+      "id": "DEP-004",
+      "package": "form-data",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "title": "CRLF injection via unescaped multipart field names",
+      "affected_versions": "4.0.0–4.0.5",
+      "direct": false,
+      "fix": "npm update form-data"
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-005",
+      "package": "express@4.18.2 (direct) + qs (transitive)",
+      "severity": "MODERATE",
+      "cvss_score": 5.3,
+      "title": "DoS via qs.stringify null handling",
+      "affected_versions": "qs: 6.11.1–6.15.1",
+      "direct": true,
+      "fix": "cd Source/Backend && npm update express"
+    },
+    {
+      "id": "DEP-006",
+      "package": "uuid@9.0.0",
+      "severity": "MODERATE",
+      "cvss_score": 7.5,
+      "title": "Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "affected_versions": "<11.1.1",
+      "direct": true,
+      "fix": "cd Source/Backend && npm update uuid",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "action_items": [
+    {
+      "priority": "P1",
+      "action": "Update handlebars, brace-expansion, js-yaml, form-data",
+      "timeline": "Week 1",
+      "test": "npm audit should show 0 critical"
+    },
+    {
+      "priority": "P2",
+      "action": "Update express, uuid, react-router-dom, vite, vitest, esbuild, nanoid",
+      "timeline": "Week 2",
+      "test": "npm test --workspaces should pass"
+    },
+    {
+      "priority": "P3",
+      "action": "Plan major version migrations (pino, uuid, react-router)",
+      "timeline": "Month 1"
+    },
+    {
+      "priority": "ESCALATION",
+      "action": "TheGuardians: Verify handlebars not used for user-controlled template compilation",
+      "escalation_team": "TheGuardians"
+    },
+    {
+      "priority": "ESCALATION",
+      "action": "red-teamer: Check if /api/work-items accepts file patterns (brace-expansion DoS vector)",
+      "escalation_team": "red-teamer"
+    }
+  ],
+  "dependency_stats": {
+    "source_backend": {
+      "direct_dependencies": 13,
+      "estimated_transitive": 40
+    },
+    "source_frontend": {
+      "direct_dependencies": 13,
+      "estimated_transitive": 50
+    },
+    "source_e2e": {
+      "direct_dependencies": 1,
+      "estimated_transitive": 100
+    },
+    "total_direct": 27,
+    "total_transitive_estimate": 190
+  },
+  "license_compliance": "PASSED",
+  "abandoned_packages": 0,
+  "tools_available": {
+    "npm_audit": true,
+    "npm_outdated": true,
+    "license_checker": false
+  }
+}

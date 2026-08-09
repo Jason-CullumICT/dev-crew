@@ -1,0 +1,305 @@
+{
+  "audit_id": "run-20260809-035558",
+  "audit_date": "2026-08-09",
+  "grade": "D",
+  "branch": "main",
+  "scope": "full-codebase",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "specialists_skipped_reason": "Services unavailable — static mode only; no performance-profiler-report.md or chaos-monkey-report.md produced",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 8,
+    "p3_total": 7,
+    "p4_total": 4,
+    "fixed_total": 0,
+    "regressed_total": 0,
+    "new_total": 23,
+    "prior_audit": null,
+    "first_audit": true
+  },
+  "grading_thresholds": {
+    "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+    "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+    "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+    "D": "anything worse",
+    "F": "exploitable auth bypass + critical domain failure"
+  },
+  "grade_rationale": "4 P1 findings exceed C threshold (max 2). Three P1s are critical CVEs (CVSS 9.8) in production dependencies escalated to TheGuardians; one P1 is a structural tooling blind spot.",
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "title": "Handlebars.js JavaScript Injection (CVSS 9.8)",
+      "file": "Source/Backend/package-lock.json",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "summary": "AST type confusion allows arbitrary JavaScript injection via malformed template data. Fix: npm audit fix or pin handlebars >=4.7.9"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "title": "Vitest UI Arbitrary File Read + RCE (CVSS 9.8)",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "summary": "Vitest UI server (no auth) allows unauthenticated file read and code execution. Fix: upgrade vitest >=4.1.10 (Source/Frontend), >=1.6.0 (portal/Frontend). Workaround: --ui=false in CI."
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "title": "protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "files": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "cvss": 9.8,
+      "cve": "unknown — check npm registry",
+      "summary": "RCE vulnerability in protobufjs transitive dependency. Fix: npm audit fix in platform/orchestrator and portal/Backend."
+    }
+  ],
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer ignores portal/ — primary implementation is invisible",
+      "file": "tools/traceability-enforcer.py:70",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Add 'portal' to source_dirs on line 70 of traceability-enforcer.py. One-line fix.",
+      "cross_ref": "QO-008",
+      "exploit_scenario": "Every dev-workflow-platform enforcer run reports 34 false MISSING requirements; actual portal/ code is never audited for traceability"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-dependency-* ID mismatch — 15 spec IDs untraceable in code",
+      "file": "portal/Shared/types.ts",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Align // Verifies: comments in portal/ code with canonical FR-dependency-* IDs from spec",
+      "cross_ref": "QO-003"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "3 dependency-linking items remain unimplemented (plan delta)",
+      "files": ["portal/Shared/api.ts", "portal/Backend/src/database/", "portal/Frontend/tests/"],
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Dispatch plan exists in Plans/dependency-linking/requirements.md. FR-dependency-api-types (S), FR-dependency-seed (S), FR-dependency-frontend-tests (M)",
+      "cross_ref": "QO-002"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Direct DB calls from teamDispatches route handler — architecture violation",
+      "file": "portal/Backend/src/routes/teamDispatches.ts:7",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Extract DB logic into portal/Backend/src/services/teamDispatchService.ts. Add spec entry + traceability comment."
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Silent error swallowing in RepoSelector.tsx — empty catch block",
+      "file": "portal/Frontend/src/components/common/RepoSelector.tsx:19",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Replace .catch(() => {}) with structured error log or user-visible error state"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion DoS (Source/Backend transitive)",
+      "file": "Source/Backend/package-lock.json",
+      "cve": "GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "npm audit fix or update brace-expansion >=1.1.18"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "form-data CRLF Injection (Source/Backend transitive)",
+      "file": "Source/Backend/package-lock.json",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Upgrade form-data >=4.0.6"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "React Router open redirect (Source/Frontend, portal/Frontend)",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Upgrade react-router-dom to 7.x — also closes feature gap"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "body-parser DoS — invalid limit disables size enforcement (Source/Backend)",
+      "file": "Source/Backend/package-lock.json",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "npm audit fix or update body-parser >=1.20.6"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "RepoSelector, TeamsPage, teamDispatches — unlinked implementations with no spec",
+      "files": [
+        "portal/Frontend/src/components/common/RepoSelector.tsx",
+        "portal/Frontend/src/pages/TeamsPage.tsx",
+        "portal/Backend/src/routes/teamDispatches.ts"
+      ],
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Add FR entry to spec or link to existing FR; document exception if intentionally unspecced"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-TMP-008 has no traceability reference anywhere",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Add // Verifies: FR-TMP-008 comment in platform/Dockerfile.worker"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Inspector config omits portal/ from source.dirs and test_dirs",
+      "file": "Teams/TheInspector/inspector.config.yml:42",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Add portal/Backend/src/, portal/Frontend/src/ to source.dirs; add portal/ test dirs to test_dirs",
+      "cross_ref": "QO-001"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "outdated-dependency",
+      "specialist": "dependency-auditor",
+      "title": "React 18 → 19 available (both frontends)",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Schedule upgrade; no breaking changes expected for basic usage"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "outdated-dependency",
+      "specialist": "dependency-auditor",
+      "title": "React Router 6 → 7 needed for open redirect CVE fix",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Priority upgrade — also fixes DEP-006 open redirect CVE"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "outdated-dependency",
+      "specialist": "dependency-auditor",
+      "title": "pino 8 → 10 in Source/Backend (2 major versions behind)",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Update pino to >=10.x for latest logging features and security patches"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "outdated-dependency",
+      "specialist": "dependency-auditor",
+      "title": "uuid 9 → 14 in Source/Backend (5 major versions behind)",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Check compatibility; UUID 14 may have improved performance"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "cycleService.ts (526 lines) and featureRequestService.ts (506 lines) exceed 500-line threshold",
+      "files": [
+        "portal/Backend/src/services/cycleService.ts",
+        "portal/Backend/src/services/featureRequestService.ts"
+      ],
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Extract cycle completion logic into completionService.ts; split featureRequestService by operation domain"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable comments without explanation (2 occurrences)",
+      "files": [
+        "portal/Frontend/src/hooks/useApi.ts:35",
+        "portal/Backend/src/middleware/errorHandler.ts:21"
+      ],
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Add brief // reason: ... inline comments to justify each suppression"
+    },
+    {
+      "id": "DEP-TREE",
+      "severity": "P4",
+      "category": "dependency-hygiene",
+      "specialist": "dependency-auditor",
+      "title": "portal/Backend has 577 transitive dependencies — highest attack surface",
+      "file": "portal/Backend/package-lock.json",
+      "status": "NEW",
+      "team": "TheFixer",
+      "recommendation": "Monitor dependency count; consider consolidation where feasible"
+    },
+    {
+      "id": "DEP-LICENSE",
+      "severity": "P4",
+      "category": "license-compliance",
+      "specialist": "dependency-auditor",
+      "title": "License audit complete — no GPL/AGPL found (informational)",
+      "status": "NEW",
+      "team": "none",
+      "recommendation": "No action required; all licenses are permissive (MIT, Apache 2.0)"
+    }
+  ]
+}

@@ -1,0 +1,357 @@
+{
+  "audit_date": "2026-08-10",
+  "synthesized_by": "TheInspector / team-leader",
+  "grade": "D",
+  "grade_rationale": "5 P1 findings (QO: 2, DEP: 3) exceeds C threshold of max_p1: 2",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend (port 3001) and Frontend (port 5173) services offline — static mode only",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 15,
+    "p3_total": 26,
+    "p4_total": 14,
+    "escalations_to_guardians": 2,
+    "cross_refs": 4,
+    "specialists_run": 2,
+    "specialists_not_run": 2,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "severity": "P1",
+      "category": "injection / RCE",
+      "title": "Vitest UI Server Arbitrary Code Execution",
+      "package": "vitest <3.2.6",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "files": ["Source/Frontend/package.json"],
+      "exploit_scenario": "Vitest UI server bound to 0.0.0.0 allows any network peer to read and execute arbitrary files via the dev server API — no authentication required.",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "fix": "npm install vitest@>=3.2.6 in Source/Frontend",
+      "owner": "Frontend team",
+      "deadline": "EOW 2026-08-14"
+    },
+    {
+      "finding_id": "DEP-002",
+      "severity": "P1",
+      "category": "injection / RCE",
+      "title": "protobufjs Arbitrary Code Execution via Proto Parsing",
+      "package": "protobufjs <=7.6.4",
+      "cve": "GHSA-3hhx-5wg5-98hq",
+      "cvss": 8.6,
+      "files": ["platform/orchestrator/package-lock.json"],
+      "exploit_scenario": "If an attacker can supply a malicious .proto file to the orchestrator (e.g., via a compromised dependency or an upload path), protobufjs unsafe.parse() executes embedded JavaScript — full RCE on the orchestrator host.",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "fix": "npm install protobufjs@>=8.0.0 in platform/orchestrator (breaking — requires code changes; solo session only per CLAUDE.md)",
+      "owner": "Platform team (solo session)",
+      "deadline": "EOW 2026-08-14"
+    }
+  ],
+  "p1_backlog": [
+    {
+      "finding_id": "QO-001",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer blind to portal/ and platform/ — mandatory gate is a false pass",
+      "source_specialist": "quality-oracle",
+      "files": ["tools/traceability-enforcer.py"],
+      "line": 70,
+      "exploit_scenario": "The CLAUDE.md-mandated gate runs and returns PASS while silently skipping 88% of the codebase (portal/ with 1,073 Verifies: comments; platform/ with FR-TMP-* coverage). Any requirement gap in portal/ or platform/ is permanently invisible to CI.",
+      "recommendation": "Add 'portal' and 'platform/orchestrator' to source_dirs in the enforcer, or read from inspector.config.yml.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "QO-002",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "Nondeterministic plan selection — enforcer checks different plans across CI environments",
+      "source_specialist": "quality-oracle",
+      "files": ["tools/traceability-enforcer.py"],
+      "exploit_scenario": "All 8 Plans/*/requirements.md files have identical mtime. The enforcer's max(req_files, key=os.path.getmtime) is position-dependent on equal keys — different Linux/macOS/CI filesystem orderings select different plans. Compliance claims are environment-dependent.",
+      "recommendation": "Require --plan or --file argument explicitly in CI. Or scan all plans in one pass.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE / DoS",
+      "title": "@grpc/grpc-js Server Crash on Malformed gRPC Requests",
+      "source_specialist": "dependency-auditor",
+      "package": "@grpc/grpc-js 1.14.0–1.14.3",
+      "cve": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq",
+      "cvss": 7.5,
+      "files": ["platform/orchestrator/package-lock.json"],
+      "exploit_scenario": "A single malformed gRPC request or compressed message crashes the gRPC server process in platform/orchestrator. Any peer that can reach the gRPC port (default 50051) can take down the orchestrator — halting all pipeline agents.",
+      "recommendation": "npm install @grpc/grpc-js@>=1.14.4 in platform/orchestrator (solo session only per CLAUDE.md)",
+      "fix_team": "TheFixer (escalate to solo session for platform/)",
+      "cross_ref": "DEP-002 (same file — coordinate into single orchestrator patch)",
+      "status": "NEW"
+    }
+  ],
+  "p2_backlog": [
+    {
+      "finding_id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "blocked_by field missing from UpdateBugInput / UpdateFeatureRequestInput; as any cast active",
+      "source_specialist": "quality-oracle",
+      "files": ["portal/Shared/api.ts", "portal/Frontend/src/components/DependencyPicker.tsx"],
+      "lines": [32, 59, 291],
+      "recommendation": "Add blocked_by?: string[]; to both interfaces. Remove as any casts.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed unimplemented — portal/Backend/src/database/seed.ts does not exist",
+      "source_specialist": "quality-oracle",
+      "files": ["portal/Backend/src/database/"],
+      "recommendation": "Create seed.ts with check-before-insert logic; wire into index.ts startup.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "QO-005",
+      "severity": "P2",
+      "category": "untested",
+      "title": "Missing required test files: DependencySection.test.tsx and BlockedBadge.test.tsx",
+      "source_specialist": "quality-oracle",
+      "files": ["portal/Frontend/src/components/"],
+      "recommendation": "Create both test files with // Verifies: FR-dependency-section and FR-dependency-blocked-badge comments.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "QO-006",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-TMP-006, FR-TMP-008, FR-TMP-010 have no Verifies: comments; platform/ outside enforcer scope",
+      "source_specialist": "quality-oracle",
+      "files": ["platform/orchestrator/lib/workflow-engine.js", "platform/Dockerfile.worker"],
+      "recommendation": "Add traceability comments. NOTE: platform/ requires solo session per CLAUDE.md.",
+      "fix_team": "Solo session (platform/ restriction)",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "brace-expansion DoS via Memory Exhaustion",
+      "source_specialist": "dependency-auditor",
+      "package": "brace-expansion <=1.1.17",
+      "cve": "GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895",
+      "files": ["Source/Backend/package-lock.json"],
+      "recommendation": "Upgrade build dependencies to pull in fixed brace-expansion transitively.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE / Header Injection",
+      "title": "form-data CRLF Injection via Multipart Field Names",
+      "source_specialist": "dependency-auditor",
+      "package": "form-data <4.0.6",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "files": ["Source/Frontend/package-lock.json"],
+      "recommendation": "npm install form-data@>=4.0.6",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE / Code Injection",
+      "title": "handlebars Code Injection in CLI Precompiler",
+      "source_specialist": "dependency-auditor",
+      "package": "handlebars 4.0.0–4.7.8",
+      "cve": "GHSA-xjpj-3mr7-gcpf",
+      "cvss": 8.2,
+      "files": ["Source/Backend/package-lock.json"],
+      "recommendation": "npm install handlebars@>=4.7.9",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "js-yaml Quadratic DoS via YAML Merge Keys",
+      "source_specialist": "dependency-auditor",
+      "package": "js-yaml <=3.15.0",
+      "cve": "GHSA-52cp-r559-cp3m, GHSA-5p4m-2wfm-xmqj",
+      "cvss": 7.5,
+      "files": ["Source/Backend/package-lock.json"],
+      "recommendation": "npm install js-yaml@>=3.15.1",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE / Open Redirect",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "source_specialist": "dependency-auditor",
+      "package": "@remix-run/router 1.3.0–1.23.2",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "files": ["Source/Frontend/package-lock.json", "portal/Frontend/package-lock.json"],
+      "recommendation": "npm install react-router-dom@>=6.30.4 (already at 6.30.4 — verify transitive @remix-run/router version).",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE / Path Traversal",
+      "title": "Vite Path Traversal and fs.deny Bypass",
+      "source_specialist": "dependency-auditor",
+      "package": "vite <=6.4.2 (current: 6.4.1)",
+      "cve": "GHSA-4w7w-66w2-5vf9, GHSA-v6wh-96g9-6wx3, GHSA-fx2h-pf6j-xcff",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "npm install vite@>=8.2.1 (breaking: 6.x → 8.x; test dev server, build pipeline).",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "source_specialist": "dependency-auditor",
+      "package": "ws 8.0.0–8.20.1",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "cvss": 7.5,
+      "files": ["Source/Frontend/package-lock.json"],
+      "recommendation": "npm install ws@>=8.21.0",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-011",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "nanoid Infinite Loop on Negative/Zero Size",
+      "source_specialist": "dependency-auditor",
+      "package": "nanoid <3.3.16",
+      "cve": "GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8",
+      "cvss": 5.9,
+      "files": ["Source/Frontend/package-lock.json"],
+      "recommendation": "npm install nanoid@>=3.3.16",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-012",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "@opentelemetry Prometheus Exporter Crash on Malformed Request",
+      "source_specialist": "dependency-auditor",
+      "package": "@opentelemetry/auto-instrumentations-node <0.75.0",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "files": ["portal/Backend/package.json"],
+      "recommendation": "npm install @opentelemetry/auto-instrumentations-node@>=0.75.0",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-013",
+      "severity": "P2",
+      "category": "CVE / ReDoS",
+      "title": "path-to-regexp ReDoS via Multiple Route Parameters",
+      "source_specialist": "dependency-auditor",
+      "package": "path-to-regexp <0.1.13",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "files": ["platform/orchestrator/package-lock.json"],
+      "recommendation": "npm install path-to-regexp@>=0.1.13 (solo session per CLAUDE.md for platform/)",
+      "fix_team": "Solo session",
+      "cross_ref": "DEP-003 (same package.json — batch with orchestrator patch)",
+      "status": "NEW"
+    },
+    {
+      "finding_id": "DEP-014",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "protobufjs DoS via Unbounded Any Expansion",
+      "source_specialist": "dependency-auditor",
+      "package": "protobufjs <=7.6.4",
+      "cve": "GHSA-wcpc-wj8m-hjx6",
+      "cvss": 7.5,
+      "files": ["platform/orchestrator/package-lock.json"],
+      "recommendation": "Resolved by same fix as DEP-002: npm install protobufjs@>=8.0.0 (solo session)",
+      "fix_team": "Solo session",
+      "cross_ref": "DEP-002 (same package, same fix)",
+      "status": "NEW"
+    }
+  ],
+  "p3_p4_summary": {
+    "p3_count": 26,
+    "p4_count": 14,
+    "p3_highlights": [
+      "QO-007: Two files exceed 500-line split threshold (cycleService.ts: 526 lines, featureRequestService.ts: 506 lines)",
+      "DEP-015 through DEP-034: 20 moderate CVEs (uuid, qs, body-parser, @babel/core, esbuild, @protobufjs/utf8)",
+      "DEP-035: express 4.18.2 is 3 major versions behind (latest: 5.2.1)",
+      "DEP-036: React 18.3.1 is 1 major version behind (latest: 19.2.8)",
+      "DEP-037: react-router-dom 6.30.4 is 1 major version behind (latest: 7.18.2)",
+      "DEP-038: pino 8.17.0 is 2 major versions behind (latest: 10.3.1)",
+      "DEP-039: uuid 9.0.1 is 5 major versions behind (latest: 14.0.1)"
+    ],
+    "p4_highlights": [
+      "QO-008: 4 eslint-disable suppressions active (3 react-hooks/exhaustive-deps, 1 no-unused-vars)",
+      "DEP low-severity: 13 low CVEs across all projects — informational, no immediate action"
+    ]
+  },
+  "cross_reference_map": [
+    {
+      "root_cause": "platform/orchestrator dependency debt",
+      "affected_findings": ["DEP-002", "DEP-003", "DEP-013", "DEP-014"],
+      "single_fix": "Dedicate one solo session to platform/orchestrator: npm install protobufjs@>=8.0.0 @grpc/grpc-js@>=1.14.4 path-to-regexp@>=0.1.13 — resolves 4 findings (2 P1, 2 P2) in one change",
+      "impact": "Eliminates all platform/orchestrator P1/P2 findings"
+    },
+    {
+      "root_cause": "Traceability enforcer scope limitation",
+      "affected_findings": ["QO-001", "QO-006"],
+      "single_fix": "Add 'portal' and 'platform/orchestrator' to source_dirs in tools/traceability-enforcer.py — makes QO-006 visible to CI automatically",
+      "impact": "Compound: fixing QO-001 surfaces and enforces QO-006 (previously invisible)"
+    },
+    {
+      "root_cause": "Source/Frontend dependency sweep needed",
+      "affected_findings": ["DEP-001", "DEP-005", "DEP-009", "DEP-010", "DEP-011"],
+      "single_fix": "Frontend sprint: npm install vitest@>=3.2.6 form-data@>=4.0.6 vite@>=8.2.1 ws@>=8.21.0 nanoid@>=3.3.16 — resolves 5 findings (1 P1-escalated, 4 P2) in one sprint",
+      "impact": "Closes all Frontend P1/P2 dependency vulnerabilities"
+    },
+    {
+      "root_cause": "FR-dependency-* implementation incomplete",
+      "affected_findings": ["QO-003", "QO-004", "QO-005"],
+      "single_fix": "TheFixer sprint: add blocked_by to API types, create seed.ts, create DependencySection.test.tsx + BlockedBadge.test.tsx — all three findings share the same FR-dependency-* feature area",
+      "impact": "Completes the dependency-linking feature and closes 3 P2 spec-drift findings"
+    }
+  ],
+  "remediation_timeline": {
+    "block_deployment": {
+      "description": "Must resolve before next production release",
+      "findings": ["DEP-001", "DEP-002", "DEP-003"]
+    },
+    "this_sprint": {
+      "deadline": "2026-08-14",
+      "findings": ["QO-001", "QO-002", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014"]
+    },
+    "next_sprint": {
+      "deadline": "2026-08-28",
+      "findings": ["QO-003", "QO-004", "QO-005", "QO-006", "DEP-035", "DEP-036", "DEP-037", "DEP-038", "DEP-039"]
+    },
+    "backlog": {
+      "findings": ["QO-007", "QO-008", "DEP-015_through_034"]
+    }
+  }
+}

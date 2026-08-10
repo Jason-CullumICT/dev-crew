@@ -1,0 +1,255 @@
+{
+  "generated": "2026-08-10",
+  "grade": "F",
+  "summary": {
+    "critical": 2,
+    "high": 9,
+    "medium": 7,
+    "low": 5,
+    "compliance_pass_rate_pct": 13,
+    "red_team_objectives_achieved": 4,
+    "red_team_objectives_total": 4,
+    "confirmed_breaches": 6,
+    "theoretical_findings": 17
+  },
+  "findings": [
+    {
+      "id": "MERGED-C01",
+      "title": "No Authentication on Any Endpoint — AI Assessment Pipeline Bypass",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, compliance-auditor, red-teamer",
+      "source_ids": ["SAST-001", "PEN-001", "COMP-001", "RED-001"],
+      "cwe": "CWE-306",
+      "owasp": "A01: Broken Access Control",
+      "file": "Source/Backend/src/app.ts",
+      "exploit_chain": "POST /api/feature-requests → PATCH /:id {status:voting} → POST /:id/force-approve → approved with zero agent votes, zero credentials",
+      "remediation": "Add JWT/API-key authentication middleware in app.ts before all route registrations. Define roles (viewer, operator, admin) and enforce role checks on every state-mutation endpoint."
+    },
+    {
+      "id": "RED-002",
+      "title": "Arbitrary File Upload + Public Exfiltration — /etc/passwd Confirmed Live",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-002"],
+      "cwe": "CWE-434",
+      "owasp": "A08: Software and Data Integrity Failures",
+      "file": "Source/Backend (multer upload handler)",
+      "exploit_chain": "Upload /etc/passwd with Content-Type: image/jpeg → GET /uploads/<uuid>.jpg → /etc/passwd contents returned; PHP shell upload also confirmed",
+      "remediation": "Validate file magic bytes (not MIME header) using the 'file-type' package. Store uploads outside web root. Gate /uploads/ behind authentication. Allowlist valid MIME types."
+    },
+    {
+      "id": "MERGED-H01",
+      "title": "No Pagination Limit Cap — Full Dataset Enumeration in One Request",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, compliance-auditor, red-teamer",
+      "source_ids": ["SAST-004", "PEN-005", "COMP-004", "RED-005"],
+      "cwe": "CWE-400",
+      "owasp": "A05: Security Misconfiguration",
+      "file": "Source/Backend/src/routes/workItems.ts:70, Source/Backend/src/routes/dashboard.ts:17",
+      "remediation": "Clamp limit to Math.min(parsed, 100) in workItems.ts and dashboard.ts. Apply the same cap in dashboardService.getActivity()."
+    },
+    {
+      "id": "MERGED-H02",
+      "title": "Ghost Dependency Permanent DoS — Soft-Delete Orphans Dependents",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "source_ids": ["PEN-009", "RED-003"],
+      "file": "Source/Backend/src/store/workItemStore.ts (softDelete)",
+      "remediation": "On soft-delete of a blocker, automatically resolve or remove the dependency. Filter soft-deleted IDs from unresolved_blockers in API responses."
+    },
+    {
+      "id": "MERGED-H03",
+      "title": "Unauthenticated Deny/Approve Sabotage — Terminal State Manipulation",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "source_ids": ["PEN-007", "RED-004"],
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Resolved by MERGED-C01 (add authentication + operator role). Consider grace-period 'undo deny' window before terminal state is permanent."
+    },
+    {
+      "id": "PEN-002",
+      "title": "Fast-Track Override Bypasses Entire Assessment Pod",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-002"],
+      "owasp": "A01: Broken Access Control",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Remove or gate the overrideRoute parameter behind an admin-only role. Log fast-track usage to audit trail."
+    },
+    {
+      "id": "MERGED-H05",
+      "title": "Webhook Spoofing — No Signature Verification + No Enum Validation on Intake",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "static-analyzer, pen-tester, compliance-auditor",
+      "source_ids": ["SAST-002", "PEN-003", "PEN-004", "COMP-008"],
+      "cwe": "CWE-345",
+      "owasp": "A08: Software and Data Integrity Failures",
+      "file": "Source/Backend/src/routes/intake.ts",
+      "remediation": "Validate X-Zendesk-Webhook-Signature via HMAC-SHA256. Validate type/priority against Object.values(WorkItemType/WorkItemPriority). Require bearer token on automated endpoint."
+    },
+    {
+      "id": "PEN-006",
+      "title": "Cascade Auto-Dispatch on Rejection — State Machine Logic Manipulation",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-006"],
+      "owasp": "A01: Broken Access Control",
+      "remediation": "Require operator-role auth for rejection actions. Add validation that auto-dispatch cannot skip required assessment states."
+    },
+    {
+      "id": "COMP-002",
+      "title": "No TLS / HTTPS Enforcement",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-002"],
+      "framework_control": "OWASP-ASVS 9.1.1, 9.1.2 | SOC2 CC6.1",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Terminate TLS at server or reverse proxy. Set HSTS header. Add HTTP→HTTPS redirect."
+    },
+    {
+      "id": "COMP-005",
+      "title": "Required Audit Events Not Emitted",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-005"],
+      "framework_control": "SOC2 CC7.1",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "remediation": "Implement auditLog(event_type, actor_id, resource_id, outcome, timestamp, source_ip). Emit state_transition on every status change."
+    },
+    {
+      "id": "COMP-004",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-004"],
+      "framework_control": "OWASP-ASVS 4.2.2, 13.1.1 | SOC2 CC6.1",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Apply express-rate-limit globally (100 req/min per IP) with stricter limits on mutation endpoints."
+    },
+    {
+      "id": "MERGED-M01",
+      "title": "Unauthenticated Prometheus /metrics Endpoint",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, compliance-auditor, red-teamer",
+      "source_ids": ["SAST-007", "PEN-008", "COMP-007", "RED-006"],
+      "cwe": "CWE-200",
+      "owasp": "A05: Security Misconfiguration",
+      "file": "Source/Backend/src/app.ts:34-37",
+      "remediation": "Move /metrics to internal-only port (127.0.0.1:9090) or gate with bearer-token check."
+    },
+    {
+      "id": "MERGED-M02",
+      "title": "Internal Error Messages Forwarded to HTTP Clients",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer, compliance-auditor",
+      "source_ids": ["SAST-003", "COMP-012"],
+      "cwe": "CWE-209",
+      "file": "Source/Backend/src/routes/workflow.ts:60,87,140,207,294,350,370",
+      "remediation": "Replace res.status(500).json({ error: message }) with res.status(500).json({ error: 'Internal server error' }) in all catch blocks."
+    },
+    {
+      "id": "MERGED-M03",
+      "title": "Missing HTTP Security Headers (CSP, HSTS, X-Frame-Options, CORS)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer, pen-tester, compliance-auditor",
+      "source_ids": ["SAST-005", "COMP-003", "COMP-006", "PEN-010"],
+      "cwe": "CWE-693",
+      "owasp": "A05: Security Misconfiguration",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "npm install helmet cors. app.use(helmet()) + app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') })) before route registrations."
+    },
+    {
+      "id": "SAST-006",
+      "title": "Unsandboxed <iframe> in DebugPortalPage",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "source_ids": ["SAST-006"],
+      "cwe": "CWE-1021",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:9-15",
+      "remediation": "Add sandbox=\"allow-scripts allow-same-origin allow-forms\" to iframe. Remove allow-same-origin if portal origin differs. Add CSP frame-src directive."
+    },
+    {
+      "id": "COMP-009",
+      "title": "Audit Logs Lack Caller Identity and Request Correlation IDs",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-009"],
+      "framework_control": "SOC2 CC7.1 | OWASP-ASVS 7.1.1, 7.1.2",
+      "remediation": "Generate UUID requestId per request in middleware. Use AsyncLocalStorage to propagate it. Inject actor_id once auth is implemented."
+    },
+    {
+      "id": "COMP-010",
+      "title": "Audit Logs Not Durably Persisted or Tamper-Protected",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-010"],
+      "framework_control": "SOC2 CC7.1 | ISO27001 A.12.4.1, A.12.4.2",
+      "remediation": "Forward logs to CloudWatch Logs, Datadog, or Elasticsearch. Configure 13-month retention. Use append-only/WORM storage."
+    },
+    {
+      "id": "SAST-008",
+      "title": "Unused pino Production Dependency — Phantom Attack Surface",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "source_ids": ["SAST-008"],
+      "file": "Source/Backend/package.json",
+      "remediation": "Remove pino from dependencies and run npm install."
+    },
+    {
+      "id": "COMP-011",
+      "title": "Soft-Delete Only — No GDPR Erasure Capability",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-011"],
+      "framework_control": "GDPR Art. 17",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "remediation": "Implement hardDelete(id) in store and an admin-only DELETE /api/work-items/:id/purge endpoint."
+    },
+    {
+      "id": "PEN-011",
+      "title": "Negative Pagination Parameters Cause Unexpected Slice Behavior",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-011"],
+      "remediation": "Validate page >= 1 and limit >= 1; return 400 on invalid values."
+    },
+    {
+      "id": "PEN-012",
+      "title": "No Length Limits on Free-Text Fields — Memory Inflation Risk",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-012"],
+      "remediation": "Enforce max lengths in validation schemas (title: 200 chars, description: 5000 chars)."
+    },
+    {
+      "id": "PEN-013",
+      "title": "Missing /api/search Endpoint Referenced by Frontend",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-013"],
+      "remediation": "Implement endpoint with auth and input sanitization, or remove the frontend reference."
+    }
+  ]
+}

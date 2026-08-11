@@ -1,0 +1,239 @@
+{
+  "audit_date": "2026-08-11T03:54:51Z",
+  "auditor": "dependency_auditor",
+  "scope": {
+    "package_managers": ["npm"],
+    "projects_scanned": 4,
+    "total_npm_projects_found": 10
+  },
+  "summary": {
+    "total_cves": 35,
+    "critical": 2,
+    "high": 8,
+    "moderate": 18,
+    "low": 7
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server — Arbitrary File Read and Execution",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "package": "vitest",
+      "affected_versions": "<=3.2.5",
+      "affected_projects": ["Source/Frontend"],
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "fix": "npm update vitest@latest (requires major version bump to v4.1.10+)",
+      "escalate_to": "TheGuardians",
+      "reason": "File read/execute in dev environment; impacts CI/CD security"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars — Multiple JavaScript Injection / XSS Vectors",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "package": "handlebars",
+      "affected_versions": ">=4.0.0 <=4.7.8",
+      "affected_projects": ["Source/Backend"],
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "cve_count": 8,
+      "fix": "npm update handlebars@latest (upgrade to 4.7.9+)",
+      "escalate_to": "TheGuardians",
+      "reason": "Code injection risk via template processing; needs usage audit"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-003",
+      "package": "brace-expansion",
+      "severity": "HIGH",
+      "cve_count": 4,
+      "cves": [
+        "GHSA-3jxr-9vmj-r5cp",
+        "GHSA-f886-m6hf-6m8v",
+        "GHSA-mh99-v99m-4gvg",
+        "GHSA-rgw5-rvv9-x895"
+      ],
+      "issue": "DoS via exponential glob expansion",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "platform/orchestrator"],
+      "fix": "npm update brace-expansion@latest (>=1.1.16)"
+    },
+    {
+      "id": "DEP-004",
+      "package": "form-data",
+      "severity": "HIGH",
+      "cvss_score": 8.1,
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "issue": "CRLF injection in multipart form encoding",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "platform/orchestrator"],
+      "fix": "npm update form-data@latest"
+    },
+    {
+      "id": "DEP-005",
+      "package": "js-yaml",
+      "severity": "HIGH",
+      "cve_count": 3,
+      "cves": [
+        "GHSA-h67p-54hq-rp68",
+        "GHSA-52cp-r559-cp3m",
+        "GHSA-5p4m-2wfm-xmqj"
+      ],
+      "issue": "Quadratic DoS via YAML merge key chains",
+      "affected_projects": ["Source/Backend"],
+      "fix": "npm update js-yaml@latest"
+    },
+    {
+      "id": "DEP-006",
+      "package": "@remix-run/router",
+      "severity": "HIGH",
+      "cvss_score": 5.0,
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "issue": "Open redirect via protocol-relative URL",
+      "affected_projects": ["Source/Frontend"],
+      "fix": "npm update react-router-dom@latest"
+    },
+    {
+      "id": "DEP-007",
+      "package": "@grpc/grpc-js",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "cve_count": 2,
+      "cves": [
+        "GHSA-5375-pq7m-f5r2",
+        "GHSA-99f4-grh7-6pcq"
+      ],
+      "issue": "Server crash via malformed gRPC messages",
+      "affected_projects": ["platform/orchestrator"],
+      "fix": "npm update @grpc/grpc-js@latest"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "majors_behind": 2,
+      "project": "Source/Backend",
+      "severity": "P3",
+      "fix": "npm update pino@latest (breaking changes expected)"
+    },
+    {
+      "package": "express",
+      "current": "4.x",
+      "latest": "5.2.1",
+      "majors_behind": 1,
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "severity": "P2",
+      "fix": "npm update express@latest"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.1",
+      "majors_behind": 5,
+      "project": "Source/Backend",
+      "severity": "P3",
+      "fix": "npm update uuid@latest (pure utility, low risk)"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "majors_behind": 1,
+      "project": "Source/Frontend",
+      "severity": "P2",
+      "fix": "npm update react@latest"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.30.4",
+      "latest": "7.18.2",
+      "majors_behind": 1,
+      "project": "Source/Frontend",
+      "severity": "P2",
+      "fix": "npm update react-router-dom@latest"
+    },
+    {
+      "package": "dockerode",
+      "current": "4.0.4",
+      "latest": "5.0.1",
+      "majors_behind": 1,
+      "project": "platform/orchestrator",
+      "severity": "P2",
+      "fix": "npm update dockerode@latest"
+    },
+    {
+      "package": "multer",
+      "current": "1.4.5-lts.1",
+      "latest": "2.2.0",
+      "majors_behind": 1,
+      "project": "platform/orchestrator",
+      "severity": "P2",
+      "fix": "npm update multer@latest"
+    }
+  ],
+  "dependency_tree_health": {
+    "status": "HEALTHY",
+    "total_direct_dependencies": 40,
+    "total_transitive_dependencies": 40,
+    "supply_chain_risk": "LOW",
+    "post_install_scripts": "NONE_DETECTED",
+    "abandoned_packages": "NONE_DETECTED",
+    "license_compliance": "PASS",
+    "notes": "Small dependency tree, permissive licenses only, no GPL/AGPL detected"
+  },
+  "remediation_timeline": {
+    "phase_1_critical": "Immediate (day 1)",
+    "phase_1_items": [
+      "Update vitest (Frontend)",
+      "Update handlebars (Backend)",
+      "Update brace-expansion (all projects)"
+    ],
+    "phase_2_high": "This week",
+    "phase_2_items": [
+      "Update form-data, js-yaml (Backend)",
+      "Update @remix-run/router (Frontend)",
+      "Update @grpc/grpc-js (Orchestrator)"
+    ],
+    "phase_3_major_versions": "Plan for next sprint",
+    "phase_3_items": [
+      "express upgrades (Backend, Orchestrator)",
+      "React upgrades (Frontend)",
+      "pino, uuid upgrades (Backend)",
+      "Compatibility testing required"
+    ]
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "escalate_to": "TheGuardians",
+      "category": "security",
+      "reason": "File read/execute in dev environment; impacts CI/CD security"
+    },
+    {
+      "finding_id": "DEP-002",
+      "escalate_to": "TheGuardians",
+      "category": "security",
+      "reason": "Code injection risk via template processing; needs usage audit"
+    },
+    {
+      "finding_id": "DEP-007",
+      "escalate_to": "TheGuardians",
+      "category": "security",
+      "reason": "Infrastructure availability risk; gRPC exposure audit needed"
+    }
+  ],
+  "verification_commands": [
+    "npm audit --json | jq '.metadata.vulnerabilities | select(.critical > 0)'",
+    "npm test --workspaces",
+    "npm run typecheck --workspaces"
+  ],
+  "report_location": "Teams/TheInspector/findings/dependency-audit-2026-08-11.md",
+  "learnings_updated": "Teams/TheInspector/learnings/dependency-auditor.md"
+}

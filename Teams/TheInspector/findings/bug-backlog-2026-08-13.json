@@ -1,0 +1,149 @@
+{
+  "audit_date": "2026-08-13",
+  "grade": "B",
+  "spec_coverage": {
+    "active_plan": "Plans/self-judging-workflow/requirements.md",
+    "active_plan_coverage_pct": 100,
+    "active_plan_fr_count": 13,
+    "active_plan_fr_traced": 13,
+    "other_plans_failing_traceability": [
+      "Plans/image-upload/requirements.md",
+      "Plans/duplicate-deprecated-status/requirements.md",
+      "Plans/dependency-linking/requirements.md",
+      "Plans/dev-cycle-traceability/requirements.md",
+      "Plans/orchestrated-dev-cycles/requirements.md",
+      "Plans/orchestrator-cycle-dashboard/requirements.md",
+      "Plans/dev-workflow-platform/requirements.md"
+    ],
+    "note": "Specifications/dev-workflow-platform.md (74 FRs) targets the portal/ app, not Source/. Zero of those FRs are referenced in Source/ — this is expected given the two-app architecture, not an implementation gap."
+  },
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "GET /api/search NOT wired into app.ts",
+      "file": "Source/Backend/src/app.ts",
+      "line": 1,
+      "detail": "FR-dependency-search requires a GET /api/search endpoint for cross-entity typeahead. The route was implemented in portal/ but never wired into Source/Backend/src/app.ts. The test file search.test.ts explicitly documents: 'As of this review cycle the GET /api/search endpoint is NOT wired into Source/Backend/src/app.ts. These tests document the expected contract and will FAIL until the route is implemented.' No search.ts or equivalent route file exists in Source/Backend/src/routes/.",
+      "recommendation": "Implement GET /api/search?q= in Source/Backend/src/routes/ that searches work item title/description, and register it in app.ts as app.use('/api/search', searchRouter).",
+      "cross_ref": "Source/Backend/tests/routes/search.test.ts — tests are already written and waiting",
+      "escalate_to": null
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Logger never pretty-prints in development — violates CLAUDE.md architecture rule",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "line": 17,
+      "detail": "CLAUDE.md requires 'structured JSON logging in production, pretty-printing in development'. The logger implementation always calls process.stdout.write(JSON.stringify(entry)) regardless of NODE_ENV. There is no environment check anywhere in logger.ts or its shim (src/logger.ts). In development, log output is machine-readable JSON, making local debugging harder than necessary.",
+      "recommendation": "Add NODE_ENV check: when NODE_ENV !== 'production', emit human-readable format (e.g. `[LEVEL] message {context}`). Only emit raw JSON in production.",
+      "cross_ref": "Source/Backend/src/logger.ts (shim), CLAUDE.md Logging section",
+      "escalate_to": null
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "7 of 8 plan requirements files fail traceability enforcer",
+      "file": "tools/traceability-enforcer.py",
+      "line": 50,
+      "detail": "The traceability enforcer auto-selects the most-recently-modified requirements.md (currently Plans/self-judging-workflow/requirements.md). Running it against all plans reveals 7 failures: image-upload (FR-083–FR-089, FR-XXX), duplicate-deprecated-status (FR-DUP-06–FR-DUP-13), dependency-linking (FR-0002–FR-0007, FR-070, FR-085), dev-cycle-traceability (FR-063–FR-069, FR-XXX), orchestrated-dev-cycles (FR-043–FR-049, FR-XXX), orchestrator-cycle-dashboard (FR-070–FR-076, FR-0XX), dev-workflow-platform (FR-027–FR-032, FR-XXX, FR-XXXX). Most of these target the portal/ app, not Source/, but the enforcer has no awareness of that split.",
+      "recommendation": "Add a --scope flag or config to the enforcer to map plan requirements to their target source directory (portal/ vs Source/). Or create a CI step that runs the enforcer against each plan with the correct --source-dirs argument. Short-term: document which plans target portal/ vs Source/ so the CI gate reflects reality.",
+      "cross_ref": "inspector.config.yml specs.patterns.enforcer",
+      "escalate_to": null
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "test-coverage",
+      "title": "Duplicate test suites for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/",
+      "line": 1,
+      "detail": "Two separate test files exist for the same components: tests/WorkItemDetailPage.test.tsx (368 lines) and tests/pages/WorkItemDetailPage.test.tsx (393 lines); similarly tests/WorkItemListPage.test.tsx (286 lines) and tests/pages/WorkItemListPage.test.tsx (262 lines). Both target the same production components but have slightly different coverage. It is unclear which is authoritative. Duplicate suites risk divergence: one may catch regressions the other misses, and both consume CI time.",
+      "recommendation": "Audit both test files for each component, consolidate into the tests/pages/ location (matching the production src/pages/ structure), and delete the top-level duplicates. Ensure 100% traceability comment coverage is preserved in the surviving file.",
+      "cross_ref": "Source/Frontend/src/pages/WorkItemDetailPage.tsx, Source/Frontend/src/pages/WorkItemListPage.tsx",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "Two logger modules — shim anti-pattern increases maintenance surface",
+      "file": "Source/Backend/src/logger.ts",
+      "line": 1,
+      "detail": "There are two logger files: src/utils/logger.ts (canonical) and src/logger.ts (shim/adapter). The shim was added to bridge different call signatures between coders. This means two import paths exist in production code: workItemStore.ts uses '../utils/logger' while all routes use '../logger' (shim). A change to the canonical logger API requires updating the shim. The comment 'Backend-coder-2's workflow routes import logger as default from this module' reveals this is a workaround for inter-agent coordination, not an architectural decision.",
+      "recommendation": "Unify on a single logger interface. Either update all call sites to use utils/logger directly with a named export, or absorb the normalization logic into utils/logger itself and delete the shim.",
+      "cross_ref": "Source/Backend/src/store/workItemStore.ts (imports utils/logger), Source/Backend/src/routes/*.ts (import logger shim)",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md covers portal/ app — zero Source/ references",
+      "file": "Specifications/dev-workflow-platform.md",
+      "line": 1,
+      "detail": "The main Specifications/ directory contains dev-workflow-platform.md (74 FRs for a SQLite + feature-requests + dev-cycles product) and workflow-engine.md (the actual spec for Source/). The dev-workflow-platform.md FRs (FR-001–FR-069) map entirely to portal/ not Source/. Running the traceability enforcer with Specifications/ as the target against Source/ would show 0% coverage — misleading to any automation or reviewer that scans specs/ without understanding the two-app architecture.",
+      "recommendation": "Add a header comment to Specifications/dev-workflow-platform.md: 'This specification governs portal/ (the SQLite-backed dev workflow platform). Source/ is governed by workflow-engine.md.' Also update inspector.config.yml to document the two-product boundary.",
+      "cross_ref": "Specifications/workflow-engine.md, portal/Backend/, inspector.config.yml",
+      "escalate_to": null
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "getAllItems() called unbounded in dashboard service (3x)",
+      "file": "Source/Backend/src/services/dashboard.ts",
+      "line": 14,
+      "detail": "dashboardService.ts calls getAllItems() three separate times (lines 14, 33, 58) to compute summary, activity, and queue data. getAllItems() returns the full in-memory store with no pagination or limit. With a large number of work items, all three calls iterate the entire store independently. The inspector.config.yml static_checks list explicitly calls out 'Unbounded Map iteration (no slice/limit on work item list)' as a concern.",
+      "recommendation": "Call getAllItems() once per request and reuse the result across all three computations. For long-term scalability, consider adding a maxActivity parameter to the activity computation to cap the returned items (e.g., last 50 events only).",
+      "cross_ref": "Source/Backend/src/store/workItemStore.ts:92, inspector.config.yml performance.static_checks",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable-next-line react-hooks/exhaustive-deps in 2 production files — undocumented suppression",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts",
+      "line": 63,
+      "detail": "Two production frontend files suppress the react-hooks/exhaustive-deps rule without explaining WHY the dependency is intentionally excluded: useWorkItems.ts:63 and DependencyPicker.tsx:82. CLAUDE.md architecture rules prohibit silently suppressing linting. The hook dependency arrays are manually curated (specific filter fields listed) which suggests intentional stable references, but this is not documented.",
+      "recommendation": "Add an inline comment above each eslint-disable explaining the suppression reason (e.g., '// refreshKey is the only trigger we want; listing individual filter fields prevents re-runs on unrelated parent re-renders'). Or refactor to use useCallback/useMemo to satisfy the linter properly.",
+      "cross_ref": "Source/Frontend/src/components/DependencyPicker.tsx:82, CLAUDE.md Architecture Rules",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed never implemented — no seed.ts in Source/Backend",
+      "file": "Source/Backend/src/",
+      "line": 1,
+      "detail": "Plans/dependency-linking/requirements.md Implementation Delta explicitly marks FR-dependency-seed as missing: 'No seed.ts file exists in portal/Backend/src/database/'. For the Source/ in-memory implementation this means there is no idempotent seeding of known dependency relationships (e.g., the 5 BUG-0010 blockers). Manual testing cannot reproduce the documented dependency scenarios without hand-crafting API calls.",
+      "recommendation": "Implement a seed function in Source/Backend/src/store/workItemStore.ts or a new Source/Backend/src/utils/seed.ts that creates known items and their dependency links on startup in development/test mode. Call it from app.ts when NODE_ENV === 'development'.",
+      "cross_ref": "Plans/dependency-linking/requirements.md line 46",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "category": "test-coverage",
+      "title": "Traceability enforcer checks only the most-recently-modified plan — CI gate is incomplete",
+      "file": "tools/traceability-enforcer.py",
+      "line": 45,
+      "detail": "The enforcer's default mode selects the most-recently-modified requirements.md via os.path.getmtime. The CLAUDE.md verification gate (`python3 tools/traceability-enforcer.py`) therefore only validates one plan at a time, providing a false sense of overall traceability. 7 plans currently fail when checked individually.",
+      "recommendation": "Add a --all flag to the enforcer that iterates every requirements.md under Plans/, runs traceability for each, and fails CI if any has untraced FRs. Or create a wrapper script tools/check-all-traceability.sh and add it to the CLAUDE.md verification gates section.",
+      "cross_ref": "CLAUDE.md Testing Rules verification gates, tools/traceability-enforcer.py:45",
+      "escalate_to": null
+    }
+  ],
+  "summary": {
+    "p1": 1,
+    "p2": 3,
+    "p3": 3,
+    "p4": 3,
+    "total": 10
+  }
+}

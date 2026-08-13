@@ -1,0 +1,361 @@
+{
+  "audit_date": "2026-08-13",
+  "audit_type": "npm_dependency_security",
+  "summary": {
+    "total_vulnerabilities": 135,
+    "critical": 6,
+    "high": 42,
+    "moderate": 73,
+    "low": 4,
+    "workspaces_scanned": 10,
+    "clean_workspaces": 1
+  },
+  "workspaces": [
+    {
+      "workspace": "Source/Backend",
+      "path": "Source/Backend",
+      "vulnerabilities": {
+        "total": 9,
+        "critical": 1,
+        "high": 3,
+        "moderate": 4,
+        "low": 1
+      },
+      "dependencies": {
+        "prod": 102,
+        "dev": 310,
+        "total": 412
+      },
+      "critical_findings": [
+        {
+          "id": "DEP-003",
+          "package": "handlebars",
+          "severity": "critical",
+          "cvss": 9.8,
+          "cve": "GHSA-2w6w-674q-4c4q",
+          "title": "JavaScript Injection via AST Type Confusion",
+          "affected_versions": "4.0.0 - 4.7.8",
+          "fix": "npm update handlebars --save (→ 4.7.9+)"
+        }
+      ]
+    },
+    {
+      "workspace": "Source/Frontend",
+      "path": "Source/Frontend",
+      "vulnerabilities": {
+        "total": 13,
+        "critical": 1,
+        "high": 5,
+        "moderate": 6,
+        "low": 1
+      },
+      "dependencies": {
+        "prod": 9,
+        "dev": 222,
+        "total": 231
+      },
+      "critical_findings": [
+        {
+          "id": "DEP-002",
+          "package": "vitest",
+          "severity": "critical",
+          "cvss": 9.8,
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "title": "UI Server Arbitrary File Read and Execution",
+          "affected_versions": "< 3.2.6",
+          "fix": "npm update vitest --save-dev (→ 3.2.6+) OR disable UI server"
+        }
+      ]
+    },
+    {
+      "workspace": "Source/E2E",
+      "path": "Source/E2E",
+      "vulnerabilities": {
+        "total": 0,
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "dependencies": {
+        "prod": 4,
+        "dev": 0,
+        "total": 4
+      },
+      "critical_findings": []
+    },
+    {
+      "workspace": "platform/orchestrator",
+      "path": "platform/orchestrator",
+      "vulnerabilities": {
+        "total": 9,
+        "critical": 1,
+        "high": 2,
+        "moderate": 6
+      },
+      "critical_findings": [
+        {
+          "id": "DEP-002",
+          "package": "vitest",
+          "severity": "critical",
+          "cvss": 9.8,
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "title": "UI Server Arbitrary File Read and Execution",
+          "affected_versions": "< 3.2.6",
+          "fix": "npm update vitest --save-dev (→ 3.2.6+)"
+        }
+      ]
+    },
+    {
+      "workspace": "portal/Backend",
+      "path": "portal/Backend",
+      "vulnerabilities": {
+        "total": 55,
+        "critical": 2,
+        "high": 10,
+        "moderate": 43
+      },
+      "risk_level": "CRITICAL",
+      "critical_findings": [
+        {
+          "id": "DEP-001",
+          "package": "protobufjs",
+          "severity": "critical",
+          "cvss": 9.8,
+          "cve": "GHSA-xq3m-2v4x-88gg",
+          "title": "Arbitrary Code Execution / RCE",
+          "affected_versions": "< 6.11.23",
+          "fix": "npm update protobufjs --save (→ 6.11.23+)",
+          "escalation": "ESCALATE → TheGuardians"
+        },
+        {
+          "id": "DEP-002",
+          "package": "vitest",
+          "severity": "critical",
+          "cvss": 9.8,
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "title": "UI Server Arbitrary File Read and Execution",
+          "affected_versions": "< 3.2.6",
+          "fix": "npm update vitest --save-dev (→ 3.2.6+)"
+        }
+      ]
+    },
+    {
+      "workspace": "portal/Frontend",
+      "path": "portal/Frontend",
+      "vulnerabilities": {
+        "total": 13,
+        "critical": 1,
+        "high": 6,
+        "moderate": 5,
+        "low": 1
+      },
+      "critical_findings": [
+        {
+          "id": "DEP-002",
+          "package": "vitest",
+          "severity": "critical",
+          "cvss": 9.8,
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "title": "UI Server Arbitrary File Read and Execution",
+          "affected_versions": "< 3.2.6",
+          "fix": "npm update vitest --save-dev (→ 3.2.6+)"
+        }
+      ]
+    },
+    {
+      "workspace": "abac-demo",
+      "path": "abac-demo",
+      "vulnerabilities": {
+        "total": 9,
+        "critical": 0,
+        "high": 7,
+        "moderate": 1,
+        "low": 1
+      }
+    },
+    {
+      "workspace": "abac-reimagined",
+      "path": "abac-reimagined",
+      "vulnerabilities": {
+        "total": 9,
+        "critical": 0,
+        "high": 7,
+        "moderate": 1,
+        "low": 1
+      }
+    },
+    {
+      "workspace": "abac-soc-demo-v2",
+      "path": "abac-soc-demo-v2",
+      "vulnerabilities": {
+        "total": 9,
+        "critical": 0,
+        "high": 7,
+        "moderate": 1,
+        "low": 1
+      }
+    },
+    {
+      "workspace": "abac-soc-demo",
+      "path": "abac-soc-demo",
+      "vulnerabilities": {
+        "total": 9,
+        "critical": 0,
+        "high": 7,
+        "moderate": 1,
+        "low": 1
+      }
+    }
+  ],
+  "critical_cves": [
+    {
+      "id": "DEP-001",
+      "package": "protobufjs",
+      "workspace": "portal/Backend",
+      "severity": "P1 - CRITICAL",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "title": "Arbitrary Code Execution",
+      "description": "protobufjs allows arbitrary code execution when processing crafted protobuf messages",
+      "affected_versions": "< 6.11.23",
+      "fix_command": "npm update protobufjs --save",
+      "escalation": "ESCALATE → TheGuardians (exploitable RCE)"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "workspaces": ["Source/Frontend", "portal/Backend", "portal/Frontend", "platform/orchestrator"],
+      "severity": "P1 - CRITICAL",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "UI Server Arbitrary File Read + Execution",
+      "description": "When Vitest UI server is listening, any file on disk can be read/executed",
+      "affected_versions": "< 3.2.6",
+      "fix_command": "npm update vitest --save-dev (or disable UI server)",
+      "notes": "Only affects test environments but test infra has sensitive data access"
+    },
+    {
+      "id": "DEP-003",
+      "package": "handlebars",
+      "workspace": "Source/Backend",
+      "severity": "P1 - CRITICAL",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "description": "Arbitrary JavaScript injection when processing templates with crafted partial names",
+      "affected_versions": "4.0.0 - 4.7.8",
+      "fix_command": "npm update handlebars --save"
+    }
+  ],
+  "high_severity_cves": [
+    {
+      "id": "DEP-004",
+      "package": "brace-expansion",
+      "severity": "P2 - HIGH",
+      "cve": "GHSA-f886-m6hf-6m8v, GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895",
+      "title": "DoS via Unbounded Expansion",
+      "type": "Denial of Service",
+      "affected_versions": "< 1.1.18",
+      "fix_command": "npm update brace-expansion"
+    },
+    {
+      "id": "DEP-005",
+      "package": "form-data",
+      "severity": "P2 - HIGH",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "title": "CRLF Injection in Multipart Handling",
+      "type": "Header Injection",
+      "affected_versions": "4.0.0 - 4.0.5",
+      "fix_command": "npm update form-data"
+    },
+    {
+      "id": "DEP-006",
+      "package": "js-yaml",
+      "severity": "P2 - HIGH",
+      "cve": "GHSA-52cp-r559-cp3m, GHSA-5p4m-2wfm-xmqj",
+      "title": "Quadratic CPU DoS via Merge Keys",
+      "type": "Denial of Service",
+      "affected_versions": "< 3.15.1",
+      "fix_command": "npm update js-yaml"
+    },
+    {
+      "id": "DEP-007",
+      "package": "vite",
+      "severity": "P2 - HIGH",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "title": "Path Traversal + fs.deny Bypass",
+      "type": "Arbitrary File Read",
+      "affected_versions": "<= 6.4.2",
+      "fix_command": "npm update vite"
+    },
+    {
+      "id": "DEP-008",
+      "package": "postcss",
+      "severity": "P2 - HIGH",
+      "cve": "GHSA-6g55-p6wh-862q, GHSA-r28c-9q8g-f849, GHSA-fxqj-rqcc-2cmp",
+      "title": "Arbitrary File Read via sourceMappingURL",
+      "type": "Arbitrary File Read",
+      "affected_versions": "<= 8.5.22",
+      "fix_command": "npm update postcss"
+    },
+    {
+      "id": "DEP-009",
+      "package": "nanoid",
+      "severity": "P2 - HIGH",
+      "cve": "GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8",
+      "title": "Infinite Loop DoS",
+      "type": "Denial of Service",
+      "affected_versions": "< 3.3.17",
+      "fix_command": "npm update nanoid"
+    },
+    {
+      "id": "DEP-010",
+      "package": "react-router-dom",
+      "severity": "P2 - HIGH",
+      "cve": "GHSA-jjmj-jmhj-qwj2, GHSA-2j2x-hqr9-3h42, GHSA-wrjc-x8rr-h8h6",
+      "title": "Open Redirect Leading to XSS",
+      "type": "Open Redirect / XSS",
+      "affected_versions": "6.0.0 - 7.17.0",
+      "fix_command": "npm update react-router-dom"
+    }
+  ],
+  "remediation_plan": {
+    "phase_1_critical_48h": [
+      "npm update protobufjs --save (portal/Backend)",
+      "npm update handlebars --save (Source/Backend)",
+      "npm update vitest --save-dev (all workspaces)"
+    ],
+    "phase_2_high_1w": [
+      "npm update brace-expansion js-yaml form-data",
+      "npm update vite postcss nanoid",
+      "npm update react-router-dom"
+    ],
+    "phase_3_medium_2w": [
+      "Address all moderate CVEs",
+      "npm update uuid (major jump 9->14)",
+      "Audit for abandoned packages"
+    ],
+    "phase_4_ongoing": [
+      "Add 'npm audit --audit-level=high' to CI (block on violations)",
+      "Implement dependency auto-updates (Dependabot)",
+      "Monthly CVE rescans"
+    ]
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "package": "protobufjs",
+      "target_team": "TheGuardians",
+      "reason": "Critical RCE - determine if portal/Backend processes untrusted protobuf data"
+    }
+  ],
+  "notes": {
+    "portal_backend_risk": "CRITICAL - 55 vulnerabilities with 2 critical RCEs. This workspace requires immediate remediation before production use.",
+    "vitest_ui_exposure": "All 4 vitest instances must be updated; UI server must never be exposed beyond localhost.",
+    "build_tool_chain": "Vite/Esbuild/PostCSS have multiple file read vulnerabilities. Isolate dev environments from production.",
+    "react_router_drift": "Multiple recent CVEs in routing library; staying current is critical for SPA security.",
+    "transitive_load": "Frontend has 230+ transitive dependencies; new CVEs discovered regularly. Implement CI audit gates.",
+    "test_infrastructure_gap": "Test tools (vitest, jest) are part of attack surface but often overlooked in security reviews."
+  }
+}

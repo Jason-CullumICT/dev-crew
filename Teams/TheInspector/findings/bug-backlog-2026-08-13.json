@@ -1,0 +1,352 @@
+{
+  "audit_date": "2026-08-13",
+  "branch": "audit/inspector-2026-08-13-bc5571",
+  "grade": "D",
+  "grade_rationale": "4 P1s across all specialists; C-grade requires max 2 P1s. P2 count (10) within C threshold (≤15). Spec coverage 100% (active plan). No exploitable auth bypass — F not triggered.",
+  "grading_config_applied": {
+    "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+    "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+    "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+    "D": "catch-all (4 P1s exceeds C max_p1 of 2)"
+  },
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 10,
+    "p3_total": 4,
+    "p4_total": 2,
+    "grand_total": 20,
+    "fixed": 0,
+    "new": 20,
+    "still_open": 0,
+    "regressed": 0,
+    "first_audit": true,
+    "escalations_to_guardians": 2,
+    "spec_coverage_active_plan_pct": 100
+  },
+  "specialists": {
+    "quality_oracle": { "p1": 1, "p2": 3, "p3": 4, "p4": 2, "total": 10, "mode": "static", "grade": "B" },
+    "dependency_auditor": { "p1": 3, "p2": 7, "p3": 0, "p4": 0, "total": 10, "mode": "static", "grade": "D" },
+    "performance_profiler": { "status": "not_available", "reason": "services_offline", "mode": "static_only" },
+    "chaos_monkey": { "status": "not_available", "reason": "services_offline", "mode": "static_only" }
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "target_team": "TheGuardians",
+      "trigger": "injection / RCE",
+      "package": "protobufjs",
+      "workspace": "portal/Backend",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "summary": "Arbitrary Code Execution via crafted protobuf messages in portal/Backend",
+      "reason": "Critical RCE — determine whether portal/Backend processes untrusted protobuf data from external callers before deployment"
+    },
+    {
+      "finding_id": "DEP-003",
+      "target_team": "TheGuardians",
+      "trigger": "injection",
+      "package": "handlebars",
+      "workspace": "Source/Backend",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "summary": "JavaScript injection via AST type confusion in Handlebars templates in Source/Backend",
+      "reason": "Injection-class vulnerability in production backend — audit whether any template partial names are sourced from user input"
+    }
+  ],
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "GET /api/search not wired into app.ts — route missing despite tests written",
+      "file": "Source/Backend/src/app.ts",
+      "detail": "FR-dependency-search requires GET /api/search. Route file doesn't exist. Test file explicitly documents 'will FAIL until route is implemented'. CI is broken on this today.",
+      "recommendation": "Implement Source/Backend/src/routes/search.ts and register in app.ts.",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "protobufjs RCE — Arbitrary Code Execution (CVSS 9.8)",
+      "file": "portal/Backend/package.json",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "affected_versions": "< 6.11.23",
+      "fix": "npm update protobufjs --save (→ 6.11.23+)",
+      "detail": "Arbitrary code execution when processing crafted protobuf messages.",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "vitest UI Server Arbitrary File Read + Execution (CVSS 9.8)",
+      "file": "multiple workspaces",
+      "workspaces": ["Source/Frontend", "portal/Backend", "portal/Frontend", "platform/orchestrator"],
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "affected_versions": "< 3.2.6",
+      "fix": "npm update vitest --save-dev (→ 3.2.6+) in all 4 workspaces; never expose UI server beyond localhost",
+      "detail": "When Vitest UI server is listening, arbitrary files can be read or executed by any network-accessible user.",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "handlebars JavaScript Injection via AST Type Confusion (CVSS 9.8)",
+      "file": "Source/Backend/package.json",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "affected_versions": "4.0.0 - 4.7.8",
+      "fix": "npm update handlebars --save (→ 4.7.9+)",
+      "detail": "Arbitrary JavaScript injection when rendering templates with crafted partial names. Executes on server-side render.",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Logger never pretty-prints in development — violates CLAUDE.md architecture rule",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "line": 17,
+      "detail": "CLAUDE.md mandates pretty-printing in development. Logger always emits JSON regardless of NODE_ENV.",
+      "recommendation": "Add NODE_ENV check; emit human-readable format in development.",
+      "cross_ref": "Source/Backend/src/logger.ts (shim) — see QO-005",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "7 of 8 plan requirements files fail traceability enforcer — CI gate is a blind spot",
+      "file": "tools/traceability-enforcer.py",
+      "line": 50,
+      "detail": "Enforcer only checks the most-recently-modified plan. 7 plans fail when checked individually. Multi-app architecture not reflected in tooling.",
+      "recommendation": "Add --all flag with per-plan scope awareness (portal/ vs Source/).",
+      "cross_ref": "QO-010",
+      "escalate_to": null
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Duplicate test suites for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/",
+      "detail": "4 test files instead of 2 — top-level and tests/pages/ duplicates for both pages. Authoritative suite ambiguous.",
+      "recommendation": "Consolidate into tests/pages/ structure; delete top-level duplicates.",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "brace-expansion DoS via Unbounded Expansion",
+      "cve": "GHSA-f886-m6hf-6m8v, GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895",
+      "affected_versions": "< 1.1.18",
+      "fix": "npm update brace-expansion",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "form-data CRLF Injection in Multipart Handling",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "affected_versions": "4.0.0 - 4.0.5",
+      "fix": "npm update form-data",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "js-yaml Quadratic CPU DoS via Merge Keys",
+      "cve": "GHSA-52cp-r559-cp3m, GHSA-5p4m-2wfm-xmqj",
+      "affected_versions": "< 3.15.1",
+      "fix": "npm update js-yaml",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "vite Path Traversal + fs.deny Bypass (Arbitrary File Read)",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "affected_versions": "<= 6.4.2",
+      "fix": "npm update vite",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "postcss Arbitrary File Read via sourceMappingURL",
+      "cve": "GHSA-6g55-p6wh-862q, GHSA-r28c-9q8g-f849, GHSA-fxqj-rqcc-2cmp",
+      "affected_versions": "<= 8.5.22",
+      "fix": "npm update postcss",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "nanoid Infinite Loop DoS",
+      "cve": "GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8",
+      "affected_versions": "< 3.3.17",
+      "fix": "npm update nanoid",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "title": "react-router-dom Open Redirect Leading to XSS",
+      "cve": "GHSA-jjmj-jmhj-qwj2, GHSA-2j2x-hqr9-3h42, GHSA-wrjc-x8rr-h8h6",
+      "affected_versions": "6.0.0 - 7.17.0",
+      "fix": "npm update react-router-dom",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Dual logger shim anti-pattern — two import paths in production code",
+      "file": "Source/Backend/src/logger.ts",
+      "detail": "src/utils/logger.ts (canonical) and src/logger.ts (shim) co-exist. Maintenance hazard.",
+      "recommendation": "Unify to single logger with one import path; delete shim.",
+      "cross_ref": "QO-002",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Specifications/dev-workflow-platform.md scope undocumented — creates misleading coverage picture",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "Spec governs portal/ but has no header declaring this. Automated scans against Source/ show 0% — alarming and wrong.",
+      "recommendation": "Add scope header to spec file; document two-app boundary in inspector.config.yml.",
+      "escalate_to": null
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "getAllItems() called 3× unbounded per dashboard GET",
+      "file": "Source/Backend/src/services/dashboard.ts",
+      "line": 14,
+      "detail": "Three full-store scans per request. Dashboard latency scales linearly with work item count.",
+      "recommendation": "Call getAllItems() once; reuse the cached array across all three computations.",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "eslint-disable suppressions undocumented in 2 production frontend files",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts",
+      "line": 63,
+      "detail": "react-hooks/exhaustive-deps suppressed without explanation in useWorkItems.ts:63 and DependencyPicker.tsx:82.",
+      "recommendation": "Add inline comments explaining intentional omission, or refactor to satisfy linter.",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "FR-dependency-seed never implemented — no seed.ts in Source/Backend",
+      "file": "Source/Backend/src/",
+      "detail": "Dependency relationships cannot be reproduced for manual testing without hand-crafting API calls.",
+      "recommendation": "Implement utils/seed.ts with known items and dependency links; call from app.ts in development.",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "title": "Traceability enforcer checks only the most-recently-modified plan — CI gate incomplete",
+      "file": "tools/traceability-enforcer.py",
+      "line": 45,
+      "detail": "CI gate provides false assurance; 7 plans currently fail when checked individually.",
+      "recommendation": "Add --all flag; iterate every Plans/*/requirements.md with per-plan scope mapping.",
+      "cross_ref": "QO-003",
+      "escalate_to": null
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "No CI dependency audit gate",
+      "affected_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010"],
+      "single_fix": "Add npm audit --audit-level=high CI gate; run npm update for critical packages immediately"
+    },
+    {
+      "root_cause": "Logger module fragmentation from multi-agent coordination debt",
+      "affected_findings": ["QO-002", "QO-005"],
+      "single_fix": "Unify to utils/logger.ts with NODE_ENV guard; delete src/logger.ts shim"
+    },
+    {
+      "root_cause": "Traceability enforcer has no multi-plan or multi-app scope awareness",
+      "affected_findings": ["QO-003", "QO-010"],
+      "single_fix": "Add --all flag with portal/ vs Source/ scope mapping to traceability-enforcer.py"
+    },
+    {
+      "root_cause": "Two-app architecture undocumented in tooling and spec headers",
+      "affected_findings": ["QO-003", "QO-006"],
+      "single_fix": "Add scope headers to both spec files; document split in inspector.config.yml"
+    }
+  ],
+  "remediation_plan": {
+    "block_deployment": ["QO-001", "DEP-001", "DEP-003"],
+    "this_sprint_48h": ["DEP-002", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010"],
+    "this_sprint": ["QO-002", "QO-004", "QO-005"],
+    "next_sprint": ["QO-003", "QO-006", "QO-007", "QO-008", "QO-010"],
+    "backlog": ["QO-009"]
+  },
+  "report_files": {
+    "html_report": "Teams/TheInspector/findings/audit-2026-08-13-D.html",
+    "bug_backlog": "Teams/TheInspector/findings/bug-backlog-2026-08-13.json",
+    "dependency_detail": "Teams/TheInspector/findings/dependency-audit-2026-08-13.json",
+    "dependency_human": "Teams/TheInspector/findings/DEPENDENCY-AUDIT-2026-08-13.md"
+  }
+}

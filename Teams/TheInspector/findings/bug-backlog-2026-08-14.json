@@ -1,0 +1,285 @@
+{
+  "generated": "2026-08-14",
+  "audit_id": "inspector-2026-08-14",
+  "branch": "audit/inspector-2026-08-14-ac1ab8",
+  "grade": "D",
+  "grade_rationale": "5 P1 findings exceeds C threshold of max_p1: 2. Spec coverage ~70% (enforcer over-reports 100%).",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 12,
+    "p3_total": 67,
+    "p4_total": 3,
+    "escalations_to_guardians": 5,
+    "fixer_backlog": 12,
+    "spec_coverage_true": "~70%",
+    "spec_coverage_enforcer_reported": "100%",
+    "dynamic_tests_run": 0,
+    "prior_audit": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "category": "cve",
+      "title": "Vitest UI Server Arbitrary File Read/Execute",
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest <3.2.6",
+      "files": ["portal/Backend/package.json", "portal/Frontend/package.json"],
+      "detail": "When Vitest UI server is listening on the network (default port 51204), it allows arbitrary file read and execution. Any file on the system can be read or executed remotely. No privileges required.",
+      "fix": "npm update vitest@^3.2.6 in portal/Backend and portal/Frontend",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "cvss": 8.1,
+      "category": "cve",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "cve_id": "GHSA-3mfm-83xf-c92r",
+      "package": "handlebars >=4.0.0 <=4.7.8",
+      "files": ["Source/Backend/package-lock.json"],
+      "detail": "AST Type Confusion via @partial-block tampering allows JavaScript injection in template rendering.",
+      "fix": "Transitive dependency — update parent package or run npm audit fix in Source/Backend",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "cvss": 9.8,
+      "category": "cve",
+      "title": "Protobufjs Arbitrary Code Execution via Unsafe Deserialization",
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs <7.5.5",
+      "files": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "detail": "Arbitrary code execution via unsafe message deserialization. Can execute arbitrary code during message decoding. No privileges required.",
+      "fix": "Update indirect dependencies that depend on protobufjs; npm audit fix --force in platform/orchestrator and portal/Backend",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "cvss": "0-confirmed",
+      "category": "cve",
+      "title": "Vite Path Traversal in Optimized Deps .map Handling",
+      "cve_id": "GHSA-4w7w-66w2-5vf9",
+      "package": "vite <=6.4.1",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "detail": "Path traversal via .map file handling in optimized dependencies. Allows reading arbitrary files from dev server. Confirmed exploitable despite CVSS 0 scoring.",
+      "fix": "npm update vite@^6.4.2 in Source/Frontend and portal/Frontend",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "cve",
+      "title": "Form-Data CRLF Injection",
+      "cve_id": "GHSA-hmw2-7cc7-3qxx",
+      "package": "form-data 4.0.0-4.0.5",
+      "files": [
+        "Source/Backend/package-lock.json",
+        "Source/Frontend/package-lock.json",
+        "portal/Backend/package-lock.json",
+        "portal/Frontend/package-lock.json"
+      ],
+      "detail": "CRLF injection via unescaped multipart field names and filenames. Affects HTTP request integrity (header injection).",
+      "fix": "Update to form-data >=4.0.6",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "correctness",
+      "title": "GET /api/search Route Not Registered in app.ts",
+      "source": "quality-oracle",
+      "file": "Source/Backend/src/app.ts",
+      "detail": "FR-dependency-search requires GET /api/search?q= for DependencyPicker typeahead. The test file explicitly documents the route is not wired. DependencyPicker search feature is completely non-functional in production.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts and register in app.ts. Add // Verifies: FR-dependency-search comment.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Traceability Enforcer Blind to Specifications/ Directory",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py:49",
+      "detail": "Enforcer only scans Plans/ requirements.md by modification time. Never reads Specifications/. FR-TMP-001–010 in tiered-merge-pipeline.md are completely invisible. Enforcer reports PASSED with false confidence.",
+      "recommendation": "Extend enforcer to scan Specifications/ directory. Add FR-XXX IDs to all Specifications/*.md files.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "QO-003"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "workflow-engine.md Has No Formal FR-XXX Requirement IDs",
+      "source": "quality-oracle",
+      "file": "Specifications/workflow-engine.md",
+      "detail": "All 13 FR-WF-* comments in Source/ point to Plans/ (a design artifact), not to the primary Specification. Breaks spec-first architecture.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "QO-002"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Histogram Missing from metrics.ts",
+      "source": "quality-oracle",
+      "file": "Source/Backend/src/metrics.ts:63",
+      "detail": "FR-dependency-metrics requires 4 Prometheus instruments; only 3 counters implemented. The dependencyCheckDuration histogram is absent, making P95/P99 latency for dependency resolution unobservable.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "pending_dependencies Absent from WorkItemStatus Enum (Undocumented Deviation)",
+      "source": "quality-oracle",
+      "file": "Source/Shared/types/workflow.ts:5",
+      "detail": "FR-dependency-dispatch-gating requires pending_dependencies status. Implementation uses hasUnresolvedBlockers boolean flag instead — valid but undocumented deviation. API consumers may expect status field.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "cvss": 5.9,
+      "category": "cve",
+      "title": "Nanoid Infinite Loop via Non-Secure Generators",
+      "cve_ids": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8"],
+      "package": "nanoid <3.3.18",
+      "source": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "cvss": 6.1,
+      "category": "cve",
+      "title": "PostCSS XSS via Unescaped </style> Tags",
+      "cve_id": "GHSA-qx2v-qp2m-jg93",
+      "package": "postcss <8.5.10",
+      "files": ["portal/Frontend/package.json"],
+      "source": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "cve",
+      "title": "Brace-Expansion Multiple DoS Vulnerabilities (4 CVEs)",
+      "cve_ids": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "package": "brace-expansion <1.1.18",
+      "files": ["Source/Backend/package-lock.json"],
+      "source": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "cve",
+      "title": "gRPC Malformed Compressed Request Server Crash",
+      "cve_id": "GHSA-5375-pq7m-f5r2",
+      "package": "@grpc/grpc-js 1.14.0-1.14.3",
+      "files": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "source": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "DEP-003"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "cvss": 7.5,
+      "category": "cve",
+      "title": "path-to-regexp ReDoS via Multiple Route Parameters",
+      "cve_id": "GHSA-37ch-88jc-xwx2",
+      "package": "path-to-regexp <0.1.13",
+      "files": ["platform/orchestrator/package-lock.json", "portal/Backend/package-lock.json"],
+      "source": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "cross_ref": "DEP-003"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "cvss": 4.4,
+      "category": "cve",
+      "title": "ws Uninitialized Memory Disclosure",
+      "cve_id": "GHSA-58qx-3vcg-4xpx",
+      "package": "ws",
+      "source": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "cvss": 5.3,
+      "category": "cve",
+      "title": "picomatch Method Injection",
+      "cve_id": "GHSA-3v7f-55p6-f55p",
+      "package": "picomatch",
+      "source": "dependency-auditor",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006", "severity": "P3", "title": "eslint-disable Suppressions Hiding Hook Dependency Warnings",
+      "source": "quality-oracle", "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "QO-007", "severity": "P3", "title": "Dual Logger Files — utils/logger.ts Wrapped by logger.ts",
+      "source": "quality-oracle", "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "QO-008", "severity": "P3", "title": "DebugPortalPage Has No Traceability Comment and No Test",
+      "source": "quality-oracle", "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx"],
+      "route_to": "TheFixer", "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD", "severity": "P3", "title": "64 Moderate-Severity CVEs Across All Projects",
+      "source": "dependency-auditor",
+      "detail": "Notable: @babel/core arbitrary file read, body-parser DoS, esbuild CORS bypass, @opentelemetry/* memory exhaustion. See Teams/TheInspector/findings/dependency-audit-2026-08-14.md for full list.",
+      "route_to": "TheFixer", "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-LOW", "severity": "P4", "title": "3 Low-Severity CVEs",
+      "source": "dependency-auditor",
+      "detail": "Low-severity vulnerabilities across Source/Backend, Source/Frontend, portal/Frontend. Monitor only.",
+      "route_to": "monitor", "status": "NEW"
+    }
+  ]
+}

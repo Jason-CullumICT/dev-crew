@@ -1,0 +1,375 @@
+{
+  "audit_id": "run-20260815-030545",
+  "audit_date": "2026-08-15",
+  "grade": "D",
+  "grading_rationale": "5 P1 findings exceeds C threshold (max_p1: 2). Spec coverage 96% (Source-scope) satisfies A, but CVE severity forces grade to D.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend (http://localhost:3001) and Frontend (http://localhost:5173) offline at audit time",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 11,
+    "p3_total": 13,
+    "p4_total": 2,
+    "total_findings": 31,
+    "escalations_count": 3,
+    "spec_coverage_source_pct": 96,
+    "spec_coverage_all_pct": 71,
+    "cve_total": 46,
+    "cve_critical": 4,
+    "cve_high": 12
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve",
+      "trigger": "injection / RCE",
+      "route_to": "TheGuardians",
+      "title": "vitest CRITICAL (protobufjs RCE) — portal/Frontend",
+      "file": "portal/Frontend/package.json",
+      "package": "vitest v1.4.0",
+      "cvss": null,
+      "exploit_scenario": "If CI/CD processes untrusted input through the test runner, the protobufjs vulnerability in vitest's transitive chain enables Remote Code Execution on the build agent.",
+      "fix": "cd portal/Frontend && npm update vitest (to v2.0.5+)",
+      "status": "open"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve",
+      "trigger": "injection / RCE",
+      "route_to": "TheGuardians",
+      "title": "vitest CRITICAL (protobufjs RCE) — portal/Backend",
+      "file": "portal/Backend/package.json",
+      "package": "vitest v1.2.2",
+      "cvss": null,
+      "exploit_scenario": "Same protobufjs RCE chain as DEP-001 — affects portal/Backend test infrastructure.",
+      "fix": "cd portal/Backend && npm update vitest (to v2.0.0+)",
+      "status": "open"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "cve",
+      "trigger": "injection",
+      "route_to": "TheGuardians",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion (RCE) — Source/Backend",
+      "file": "Source/Backend/package.json (transitive)",
+      "package": "handlebars <=4.7.8",
+      "cve": "GHSA-xvch-5gqp-9qc3",
+      "cvss": 8.1,
+      "exploit_scenario": "Tamper with @partial-block in a Handlebars template that receives user-supplied input → arbitrary JavaScript execution on the server. Even if templates are static today, the dependency is unsafe and must be patched before any new template usage is introduced.",
+      "fix": "Run npm ls handlebars in Source/Backend to identify the parent dep. Update to handlebars@4.7.9+.",
+      "status": "open"
+    }
+  ],
+
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "title": "Missing GET /api/search route — 5 tests will fail",
+      "file": "Source/Backend/src/app.ts",
+      "test_file": "Source/Backend/tests/routes/search.test.ts:1",
+      "fr_ref": "FR-dependency-search",
+      "exploit_scenario": "DependencyPicker typeahead in the frontend calls GET /api/search. The route is never registered in app.ts. All 5 test cases will fail and the feature is broken in production.",
+      "recommendation": "Add Source/Backend/src/routes/search.ts with handler filtering non-deleted items by ?q= on title/description. Register in app.ts. Remove the warning comment once tests pass. Wire through service layer per architecture rules.",
+      "status": "open"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "@opentelemetry/auto-instrumentations-node CRITICAL crash chain — portal/Backend",
+      "file": "portal/Backend/package.json",
+      "package": "@opentelemetry/auto-instrumentations-node v0.40.0",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "exploit_scenario": "Malformed HTTP request to portal/Backend crashes the Prometheus exporter process. Combined with @opentelemetry/sdk-node crash on malformed compressed messages, any client can silence the telemetry pipeline via DoS.",
+      "fix": "cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node (to v0.79.0+) && npm update @opentelemetry/sdk-node (to v0.50.0+)",
+      "status": "open"
+    }
+  ],
+
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer (solo-session for platform/)",
+      "title": "FR-TMP-001 through FR-TMP-010: 0% source coverage",
+      "file": "Specifications/tiered-merge-pipeline.md:17",
+      "recommendation": "Add // Verifies: FR-TMP-NNN annotations to Source/E2E/playwright.config.ts and platform scripts (solo-session required for platform/). Alternatively create Plans/tiered-merge-pipeline/requirements.md.",
+      "status": "open"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "title": "Route handlers call store directly — 12+ call sites bypass service layer",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:44",
+        "Source/Backend/src/routes/workflow.ts:44",
+        "Source/Backend/src/routes/intake.ts:19"
+      ],
+      "recommendation": "Introduce workItemService.ts and workflowService.ts. Route all store.* calls through service functions. Move inline state-mutation blocks (workflow.ts lines 119-140, 175-200, 269-290) into service layer.",
+      "status": "open"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "tooling",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "title": "spec-drift-audit.py scans Specifications/ only — misses Plans/ FRs, gives false alarms",
+      "file": "tools/spec-drift-audit.py:36",
+      "recommendation": "Extend spec-drift-audit.py to also scan Plans/*/requirements.md as source of canonical FRs, or populate tools/fr-aliases.json to map FR-WF-* and FR-dependency-* IDs.",
+      "status": "open"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "Vite fs.deny bypass on Windows (CVSS 7.5)",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "packages": ["vite v5.4.0 (Source/Frontend)", "vite v5.2.0 (portal/Frontend)"],
+      "recommendation": "npm update vite to v6.4.3+ in both Source/Frontend and portal/Frontend",
+      "status": "open"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "@opentelemetry/sdk-node — crash on malformed compressed messages",
+      "file": "portal/Backend/package.json",
+      "package": "@opentelemetry/sdk-node v0.47.0",
+      "recommendation": "npm update @opentelemetry/sdk-node to v0.50.0+",
+      "status": "open"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "PostCSS XSS via unescaped </style> tags",
+      "cve": "GHSA-dcpm-hchj-mh72",
+      "file": "portal/Frontend/package.json",
+      "package": "postcss v8.4.38",
+      "recommendation": "npm update postcss to v8.4.39+",
+      "status": "open"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "form-data CRLF Injection in multipart field names/filenames",
+      "cve": "GHSA-9hh3-j6h3-6g98",
+      "packages": ["Source/Backend (transitive)", "Source/Frontend (transitive)"],
+      "recommendation": "Update the direct dependency that pulls in form-data (likely axios or similar). Run npm audit fix with review.",
+      "status": "open"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "brace-expansion DoS — exponential {} expansion hangs process",
+      "cve": "GHSA-3jxr-9vmj-r5cp",
+      "file": "Source/Backend (transitive)",
+      "recommendation": "Update glob/npm internals. npm audit fix in Source/Backend.",
+      "status": "open"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "js-yaml DoS via repeated merge-key aliases (quadratic CPU spike)",
+      "cve": "GHSA-46qr-hhch-3v92",
+      "file": "Source/Backend (transitive)",
+      "recommendation": "Update js-yaml to v3.14.1+ or v4.x. Identify direct dep pulling it in.",
+      "status": "open"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "@grpc/grpc-js server crash on malformed requests",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "packages": ["platform/orchestrator", "portal/Backend"],
+      "recommendation": "npm update @grpc/grpc-js to v1.14.4+",
+      "status": "open"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "path-to-regexp ReDoS via multiple route parameters",
+      "file": "platform/orchestrator (via express routing)",
+      "recommendation": "Update express to v4.22.3+ or latest minor in platform/orchestrator.",
+      "status": "open"
+    }
+  ],
+
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "title": "2 eslint-disable comments suppressing react-hooks/exhaustive-deps warnings",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "status": "open"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "doc-stale",
+      "specialist": "quality-oracle",
+      "route_to": "solo-session",
+      "title": "Specifications/dev-workflow-platform.md scope ambiguity — portal/ vs Source/",
+      "file": "Specifications/dev-workflow-platform.md:337",
+      "status": "open"
+    },
+    {
+      "id": "DEP-013-020",
+      "severity": "P3",
+      "category": "cve-moderate",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "8 moderate transitive CVEs (babel, body-parser, remix-router, protobufjs, esbuild, nanoid, ws, uuid)",
+      "count": 8,
+      "recommendation": "npm audit fix with review in each project directory",
+      "status": "open"
+    },
+    {
+      "id": "DEP-021",
+      "severity": "P3",
+      "category": "outdated-major",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "React 18→19 and react-router-dom 6→7 major version lag",
+      "packages": ["react 18.3.1→19.2.8", "react-dom 18.3.1→19.2.8", "react-router-dom 6.30.4→7.18.2"],
+      "projects": ["Source/Frontend", "portal/Frontend"],
+      "status": "open"
+    },
+    {
+      "id": "DEP-022",
+      "severity": "P3",
+      "category": "outdated-major",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "Express 4→5 and multer 1→2 major version lag",
+      "packages": ["express 4.22.2→5.2.1", "multer 1.4.5-lts.1→2.2.0"],
+      "projects": ["Source/Backend", "portal/Backend", "platform/orchestrator"],
+      "status": "open"
+    },
+    {
+      "id": "DEP-023",
+      "severity": "P3",
+      "category": "outdated-major",
+      "specialist": "dependency-auditor",
+      "route_to": "TheFixer",
+      "title": "dockerode 4→5 major version lag",
+      "package": "dockerode 4.0.12→5.0.1",
+      "project": "platform/orchestrator",
+      "status": "open"
+    }
+  ],
+
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "title": "4 frontend UI components without dedicated tests",
+      "files": [
+        "Source/Frontend/src/components/Layout.tsx",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "route_to": "TheFixer",
+      "title": "DebugPortalPage untested; invalid FR reference comment",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "status": "open"
+    }
+  ],
+
+  "cross_reference_map": [
+    {
+      "root_cause": "Stale portal/* dependencies (no regular npm audit fix)",
+      "affected_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-006", "DEP-007"],
+      "specialists": ["dependency-auditor"],
+      "single_fix": "npm update pass in portal/Frontend and portal/Backend",
+      "fix_impact": "Resolves 5 P1/P2 CVEs"
+    },
+    {
+      "root_cause": "Traceability tooling gap (spec-drift-audit.py scans wrong dirs)",
+      "affected_findings": ["QO-002", "QO-004"],
+      "specialists": ["quality-oracle"],
+      "single_fix": "Extend tools/spec-drift-audit.py to also scan Plans/*/requirements.md",
+      "fix_impact": "Resolves 2 P2s; makes CI traceability gate accurate for all active FRs"
+    },
+    {
+      "root_cause": "Missing service layer / route-handler-does-everything pattern",
+      "affected_findings": ["QO-001", "QO-003"],
+      "specialists": ["quality-oracle"],
+      "single_fix": "Introduce workItemService.ts and implement GET /api/search through it",
+      "fix_impact": "Resolves 1 P1 + 1 P2; unblocks 5 failing tests; fixes DependencyPicker"
+    }
+  ],
+
+  "license_compliance": "PASS",
+  "supply_chain_risk": "LOW",
+  "dynamic_tests_run": 0,
+  "prior_audit": null,
+  "report_html": "Teams/TheInspector/findings/audit-2026-08-15-D.html"
+}

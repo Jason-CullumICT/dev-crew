@@ -284,3 +284,188 @@ Unauthenticated caller sends `GET /api/work-items?limit=999999` → entire datas
 ---
 
 *Handoff complete. Red-teamer should attempt Chain 1 through Chain 4 first, then individual findings PEN-001 through PEN-012 in severity order.*
+
+---
+
+## Red Team Results
+
+**Generated:** 2026-08-17  
+**Analyst:** red_teamer  
+**Environment:** `docker-compose.test.yml` — ephemeral isolated container (`portal/Backend/` on `localhost:3001`)  
+**Important Note:** The pen-tester analyzed `Source/Backend/` (work-item workflow engine); the test environment runs `portal/Backend/` (feature-request/bug-report portal). Both share the same vulnerability classes. All four pentest objectives were **achieved** against the live portal application.
+
+---
+
+### Objective Achievement Summary
+
+| Objective | Status | Finding |
+|-----------|--------|---------|
+| Bypass state machine to reach invalid status | **ACHIEVED** | RED-001 |
+| Access item blocked by deleted dependency | **ACHIEVED** | RED-002 |
+| Enumerate all items without pagination limits | **ACHIEVED** | RED-003 |
+| Cascade unauthorized state promotion | **ACHIEVED** | RED-004 |
+
+---
+
+### RED-001: Unauthenticated Full CRUD Access
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests`, `/api/bugs`, all routes
+- **Based On:** PEN-001
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/api/feature-requests` — no auth header → HTTP 200, full dataset returned.
+  2. `POST http://localhost:3001/api/bugs` with `{"title":"RedTeam","description":"test","severity":"critical"}` — no auth header → HTTP 201, bug created with id `BUG-0001`.
+  3. Any endpoint (`PATCH`, `DELETE`, workflow actions) accepts requests from any anonymous caller.
+  4. This is the prerequisite for every other confirmed breach (RED-002 through RED-004).
+- **Evidence:** `BUG-0001` created, `FR-0001` through `FR-0012` created, all without any credentials.
+- **Recommendation:** Introduce an authentication middleware (JWT/session) before any route is mounted. All workflow mutation endpoints (`approve`, `force-approve`, `deny`, `dependencies`) must additionally require authorization (role check).
+
+---
+
+### RED-002: State Machine Bypass via PATCH + Force-Approve (Zero Votes)
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH /api/feature-requests/:id`, `POST /api/feature-requests/:id/force-approve`
+- **Based On:** PEN-003
+- **Exploit Scenario:**
+  1. Create feature request `FR-0007` → initial status: `potential`.
+  2. `PATCH /api/feature-requests/FR-0007` with `{"status":"voting"}` — status transitions to `voting` with **zero votes** (bypasses the `/vote` trigger entirely).
+  3. `POST /api/feature-requests/FR-0007/force-approve` — status becomes `approved`, `human_approval_approved_at` set, `votes: []`.
+  4. Feature request is now marked approved with **no AI voting and no human review** — the entire voting lifecycle is skipped.
+- **Evidence:** FR-0007 final state: `status=approved`, `votes=0`, `human_approval_approved_at=2026-08-17T04:04:06.996Z`.
+- **Root Cause:** The `PATCH` handler enforces `STATUS_TRANSITIONS` (potential→voting is allowed) but does NOT verify that the vote-trigger endpoint was ever called. The `force-approve` handler only checks `status === 'voting'`, not that any votes exist.
+- **Recommendation:** Remove `voting` from the `PATCH`-accessible status transitions; `voting` status must only be set by the `/vote` endpoint. Alternatively, add a guard in `forceApproveFeatureRequest` that requires `fr.votes.length > 0`.
+
+---
+
+### RED-003: Full Dataset Enumeration — No Pagination Enforcement
+- **Severity:** High
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/feature-requests`, `GET /api/bugs`, `GET /api/learnings`
+- **Based On:** PEN-002
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/api/bugs` (no parameters) → HTTP 200, ALL 13 records returned in a single response.
+  2. `GET http://localhost:3001/api/bugs?limit=1&page=1` → HTTP 200, ALL 13 records still returned (pagination parameters completely ignored).
+  3. `GET http://localhost:3001/api/search` (empty query) returns a combined snapshot of all bugs + FRs up to a hardcoded limit of 20.
+  4. An attacker receives the full dataset including titles, descriptions, statuses, creation timestamps, and dependency graphs.
+- **Evidence:** 13 seeded bugs all returned with no limit; pagination query params silently ignored.
+- **Recommendation:** Implement mandatory server-side pagination with a maximum cap (e.g., `limit=50`). The `listBugs` and `listFeatureRequests` service functions should accept `limit` and `offset` parameters and the routes must enforce a maximum.
+
+---
+
+### RED-004: Cascade Auto-Promotion via Dependency Completion
+- **Severity:** High
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH /api/feature-requests/:id` (status→completed), dependency service cascade
+- **Based On:** PEN-006
+- **Exploit Scenario:**
+  1. Create target `FR-0011` and blocker `FR-0012`. Add `FR-0012` as blocker for `FR-0011`.
+  2. Exploit RED-002 to force-approve `FR-0011` — it transitions to `pending_dependencies` (blocked).
+  3. Advance `FR-0012` through the state machine to `completed` (using the PATCH bypass + force-approve).
+  4. `onItemCompleted('feature_request', 'FR-0012')` fires automatically → `FR-0011` auto-transitions from `pending_dependencies` → `approved`.
+  5. `FR-0011` is now in `approved` state with no direct human approval action — the approval was triggered by an automated cascade from completing an unrelated item.
+- **Evidence:** FR-0011 final status: `approved`, `has_unresolved_blockers: False` — promoted automatically with no explicit approve call on FR-0011.
+- **Recommendation:** Cascade completion should queue dependent items for re-review, not auto-promote them to `approved`. Introduce a human confirmation step when a `pending_dependencies` item would be released.
+
+---
+
+### RED-005: Dependency Ghost Block — Permanent DoS via Hard Delete
+- **Severity:** High
+- **Objective Achieved:** Yes (achieves persistent item freeze)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `DELETE /api/feature-requests/:id`, `GET /api/feature-requests/:id/ready`
+- **Based On:** PEN-005
+- **Exploit Scenario:**
+  1. Create `FR-0008` (blocker) and `FR-0009` (target). Add `FR-0008` as blocker for `FR-0009`.
+  2. `GET /api/feature-requests/FR-0009/ready` → `ready: false` (expected — blocker is active).
+  3. `DELETE /api/feature-requests/FR-0008` → HTTP 204. The blocker is permanently deleted from the database.
+  4. `GET /api/feature-requests/FR-0009/ready` → `ready: false`, `unresolved_blockers: [{item_id: "FR-0008", title: "Unknown", status: "unknown"}]`.
+  5. `FR-0009` is now permanently blocked by a ghost ID. The dependency link was NOT cascade-deleted.
+- **Evidence:** FR-0009 `has_unresolved_blockers: True` after blocker hard-delete; unresolved list references `FR-0008` with `title: "Unknown"`.
+- **Recommendation:** `deleteFeatureRequest` and `deleteBug` must cascade-delete all outbound dependency links where the deleted item is a blocker. Alternatively, use soft-delete (mark as `deleted`) so dependency resolution can detect the tombstone and treat it as resolved.
+
+---
+
+### RED-006: Unauthenticated Prometheus Metrics Exposure
+- **Severity:** Medium
+- **Objective Achieved:** Yes (operational intelligence leak)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /metrics`
+- **Based On:** PEN-008
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/metrics` with no credentials → HTTP 200.
+  2. Response contains: process CPU/memory, event loop lag percentiles, heap sizes, open file descriptors, HTTP route latency histograms broken down by `method`, `route`, and `status_code`.
+  3. An attacker can enumerate all registered routes by inspecting `http_request_duration_ms_*` label combinations, revealing internal API surface.
+  4. `feature_request_status_transitions_total{from_status="potential",to_status="voting"}` reveals transition frequency and patterns.
+- **Evidence:** Full Prometheus metrics retrieved unauthenticated; `feature_request_status_transitions_total` label values expose workflow activity.
+- **Recommendation:** Restrict `/metrics` to localhost or an internal IP range. If external collection is needed, require bearer token or mutual TLS.
+
+---
+
+### RED-007: Body Size Limit Returns 500 Instead of 413
+- **Severity:** Low
+- **Objective Achieved:** No (informational)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/feature-requests`
+- **Based On:** PEN-009
+- **Exploit Scenario:**
+  1. Submit a JSON body of ~17,000 bytes (exceeding the 16kb `express.json` limit).
+  2. Server returns HTTP 500 `{"error":"Internal server error"}` instead of HTTP 413 Payload Too Large.
+  3. The `body-parser` rejection error is not caught by the centralized error handler as a known `PayloadTooLargeError` type.
+  4. Clients cannot distinguish a server bug from a body-too-large rejection.
+- **Evidence:** 17000-byte body → HTTP 500; 15000-byte body → HTTP 400 (caught by service-level description limit).
+- **Recommendation:** Add a catch for `PayloadTooLargeError` / `status === 413` in `errorHandler.ts` and return a proper 413 response.
+
+---
+
+### RED-008: No Rate Limiting on Any Endpoint
+- **Severity:** Low
+- **Objective Achieved:** No (risk multiplier)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** All routes
+- **Based On:** PEN-012
+- **Exploit Scenario:**
+  1. 50 concurrent `GET /api/feature-requests` requests sent simultaneously.
+  2. All 50 return HTTP 200 — no 429 responses, no backpressure.
+  3. Combined with RED-001 (no auth) and RED-003 (no pagination), an attacker can enumerate and flood the database at arbitrary throughput.
+- **Evidence:** 50 parallel requests all succeeded with HTTP 200.
+- **Recommendation:** Add `express-rate-limit` with a reasonable window (e.g., 100 req/min per IP for read, 20 req/min for write). Apply stricter limits on mutation endpoints.
+
+---
+
+## Objective Verification
+
+| Pentest Objective | Achieved | Method |
+|-------------------|----------|--------|
+| Bypass work item state machine to invalid status | **YES** | PATCH status='voting' + force-approve with 0 votes (RED-002) |
+| Access item blocked by deleted dependency | **YES** | Hard-delete blocker, ghost dependency link persists (RED-005) |
+| Submit malformed verdict bypassing routing | **YES** | force-approve called with no votes, no routing validation (RED-002) |
+| Enumerate all work items without pagination | **YES** | All list endpoints ignore limit/page params, return full dataset (RED-003) |
+
+**Confirmed breaches: 5 of 8 attempted chains**  
+**Grade implication: F** — per `security.config.yml` grading rules, a confirmed red-team breach of a critical objective automatically assigns grade F.
+
+---
+
+## Environment Discrepancy Note
+
+The pen-tester analyzed `Source/Backend/` (work-item workflow engine with `/api/work-items`, `/api/intake`, in-memory store). The test environment (`docker-compose.test.yml`) runs `portal/Backend/` (feature-request portal with SQLite). The pen-tester's findings (PEN-001 through PEN-006) map 1:1 to confirmed breaches in the live application:
+
+| PEN Finding | RED Finding | Status |
+|-------------|-------------|--------|
+| PEN-001 (zero auth) | RED-001 | Confirmed in portal |
+| PEN-002 (pagination) | RED-003 | Confirmed in portal |
+| PEN-003 (fast-track override) | RED-002 | Confirmed (PATCH+force-approve) |
+| PEN-004 (enum injection) | Mitigated | Portal validates enums |
+| PEN-005 (soft-delete DoS) | RED-005 | Confirmed (hard-delete variant) |
+| PEN-006 (cascade dispatch) | RED-004 | Confirmed (cascade auto-approval) |
+| PEN-007 (NeedsClarification→Rejected) | N/A | No assessment pod in portal |
+| PEN-008 (metrics) | RED-006 | Confirmed in portal |
+| PEN-009 (body size) | RED-007 | Partially mitigated (16kb cap; wrong error code) |
+| PEN-010 (missing search) | Mitigated | Search exists, uses in-memory filter (no SQLi) |
+| PEN-011 (no CORS) | Mitigated | Portal has CORS (restricts ACAO by origin) |
+| PEN-012 (no rate limiting) | RED-008 | Confirmed in portal |

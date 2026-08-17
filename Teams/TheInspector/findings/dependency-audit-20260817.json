@@ -1,0 +1,240 @@
+{
+  "metadata": {
+    "date": "2026-08-17",
+    "agent": "dependency_auditor",
+    "grade": "D",
+    "status": "FAILED"
+  },
+  "summary": {
+    "total_cves": 100,
+    "critical": 4,
+    "high": 28,
+    "moderate": 64,
+    "low": 4,
+    "total_dependencies": 2159,
+    "projects_scanned": 6
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "critical",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2"
+      ],
+      "affected_versions": "4.0.0 - 4.7.8",
+      "type": "Code Execution - JavaScript Injection",
+      "location": "Source/Backend",
+      "fix": "Update to handlebars >= 4.7.9",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "critical",
+      "cvss": 9.8,
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "affected_versions": "<= 3.2.5",
+      "type": "Information Disclosure + Code Execution - Arbitrary File Read/Execute",
+      "location": "portal/Frontend, Source/Frontend",
+      "fix": "Update to vitest >= 3.2.6 or >= 4.1.10",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "severity": "critical",
+      "cves": ["protobufjs-rce"],
+      "type": "Code Execution",
+      "location": "portal/Backend",
+      "fix": "Update to latest patched version",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "package": "@grpc/grpc-js",
+      "severity": "high",
+      "cvss": 7.5,
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "affected_versions": "1.14.0 - 1.14.3",
+      "type": "Denial of Service - Server Crash",
+      "location": "portal/Backend",
+      "fix": "Update to @grpc/grpc-js >= 1.14.4"
+    }
+  ],
+  "high_severity": [
+    {
+      "id": "DEP-005",
+      "package": "brace-expansion",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp"],
+      "type": "Denial of Service"
+    },
+    {
+      "id": "DEP-006",
+      "package": "form-data",
+      "cves": ["GHSA-hqgw-9hg6-jgp5"],
+      "type": "CRLF Injection - HTTP Header Injection"
+    },
+    {
+      "id": "DEP-007",
+      "package": "js-yaml",
+      "cves": ["GHSA-q6x5-8v7m-xcrf"],
+      "type": "Denial of Service"
+    },
+    {
+      "id": "DEP-008",
+      "package": "nanoid",
+      "cves": ["GHSA-4x8b-jcbw-v4mf"],
+      "type": "Predictable ID Generation"
+    },
+    {
+      "id": "DEP-009",
+      "package": "postcss",
+      "cves": ["GHSA-6x4b-c4h4-fmm6"],
+      "type": "Cross-Site Scripting (XSS)"
+    },
+    {
+      "id": "DEP-010",
+      "package": "vite",
+      "cves": ["GHSA-76q5-v39p-9v8x"],
+      "type": "Path Traversal - Source Map Leakage"
+    },
+    {
+      "id": "DEP-011",
+      "package": "ws",
+      "type": "Information Disclosure - Uninitialized Memory"
+    }
+  ],
+  "projects": {
+    "Source/Backend": {
+      "dependencies": 411,
+      "critical": 1,
+      "high": 3,
+      "moderate": 4,
+      "low": 1,
+      "risk": "P2"
+    },
+    "Source/Frontend": {
+      "dependencies": 230,
+      "critical": 1,
+      "high": 5,
+      "moderate": 6,
+      "low": 1,
+      "risk": "P2"
+    },
+    "Source/E2E": {
+      "dependencies": 4,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "risk": "P4"
+    },
+    "platform/orchestrator": {
+      "dependencies": 230,
+      "critical": 0,
+      "high": 3,
+      "moderate": 6,
+      "low": 1,
+      "risk": "P2"
+    },
+    "portal/Backend": {
+      "dependencies": 577,
+      "prod_dependencies": 397,
+      "critical": 2,
+      "high": 10,
+      "moderate": 43,
+      "low": 0,
+      "risk": "P1"
+    },
+    "portal/Frontend": {
+      "dependencies": 424,
+      "critical": 1,
+      "high": 7,
+      "moderate": 5,
+      "low": 1,
+      "risk": "P1"
+    }
+  },
+  "compliance": {
+    "license_violations": 0,
+    "gpl_packages": 0,
+    "unknown_licenses": 0,
+    "status": "PASS"
+  },
+  "supply_chain": {
+    "total_transitive": 1826,
+    "largest_project": "portal/Backend",
+    "largest_project_deps": 577,
+    "risk_level": "high"
+  },
+  "outdated_versions": [
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "majors_behind": 1,
+      "risk": "Medium"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "majors_behind": 1,
+      "risk": "Medium"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.2",
+      "majors_behind": 1,
+      "risk": "Medium"
+    },
+    {
+      "package": "pino",
+      "current": "8.x",
+      "latest": "10.3.1",
+      "majors_behind": 2,
+      "risk": "Low"
+    },
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "majors_behind": 1,
+      "risk": "Low"
+    }
+  ],
+  "remediation": {
+    "immediate": [
+      "Update handlebars to 4.7.9+",
+      "Update vitest to 4.1.10+",
+      "Patch protobufjs immediately",
+      "Update @grpc/grpc-js to 1.14.4+"
+    ],
+    "this_week": [
+      "Run npm audit fix --workspaces",
+      "Test all projects post-update"
+    ],
+    "this_month": [
+      "Plan React 19 migration",
+      "Implement SCA tooling (Snyk/Dependabot)"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "handlebars - Code execution via SSTI",
+      "vitest - Arbitrary file read/execute",
+      "protobufjs - RCE in message parsing",
+      "form-data - HTTP header injection",
+      "postcss - XSS in CSS output",
+      "nanoid - Token predictability (verify usage)"
+    ]
+  }
+}

@@ -1,0 +1,293 @@
+{
+  "audit_id": "audit-20260817-D",
+  "audit_date": "2026-08-17",
+  "grade": "D",
+  "branch": "audit/inspector-2026-08-17-a1d927",
+  "generated_by": "TheInspector / team-leader",
+  "specialists_ran": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 31,
+    "p3_total": 67,
+    "p4_total": 0,
+    "escalation_count": 6,
+    "fixer_count": 9,
+    "requirements_reviewer_count": 1,
+    "spec_coverage_real_pct": 99,
+    "spec_coverage_enforcer_pct": 12,
+    "total_requirements": 108,
+    "unimplemented_requirements": ["FR-dependency-search"]
+  },
+  "escalations": [
+    {
+      "id": "ESC-001",
+      "source_finding": "DA-001",
+      "team": "TheGuardians",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "handlebars — Server-Side Template Injection / Remote Code Execution",
+      "description": "GHSA-2w6w-674q-4c4q. Crafted template strings can execute arbitrary JavaScript on the server. An attacker who can influence template input can achieve full RCE.",
+      "package": "handlebars",
+      "ghsa": "GHSA-2w6w-674q-4c4q",
+      "affected_projects": ["Source/Backend"],
+      "category": "injection",
+      "exploit_scenario": "User-controlled input reaches a handlebars.compile() call. Attacker injects JS prototype pollution or function execution payload. Server executes attacker code.",
+      "remediation": "Update handlebars to >=4.7.9 in Source/Backend. Audit all template compile calls for user-controlled input. Consider migrating to a safer templating library (mustache, nunjucks).",
+      "status": "NEW"
+    },
+    {
+      "id": "ESC-002",
+      "source_finding": "DA-002",
+      "team": "TheGuardians",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "vitest — Arbitrary File Read / Code Execution via UI Server",
+      "description": "GHSA-5xrq-8626-4rwp. When vitest --ui is running, any user reachable to the UI server port can read arbitrary filesystem files or execute code.",
+      "package": "vitest",
+      "ghsa": "GHSA-5xrq-8626-4rwp",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "category": "sensitive data exposed",
+      "exploit_scenario": "CI runner or shared dev machine exposes vitest --ui on a network interface. Attacker requests arbitrary file paths through the UI server API, retrieving .env files, SSH keys, source code.",
+      "remediation": "Update vitest to >=4.1.10 in Source/Frontend and portal/Frontend. Audit CI jobs for vitest --ui usage. Ensure UI server never binds to non-loopback interfaces.",
+      "status": "NEW"
+    },
+    {
+      "id": "ESC-003",
+      "source_finding": "DA-003",
+      "team": "TheGuardians",
+      "severity": "P1",
+      "cvss": "Critical (CVSS not published at audit time)",
+      "title": "protobufjs — Arbitrary Code Execution in Message Parsing",
+      "description": "Crafted protobuf messages can trigger code execution during deserialization in protobufjs. Any service deserializing gRPC messages from untrusted sources is vulnerable.",
+      "package": "protobufjs",
+      "ghsa": null,
+      "affected_projects": ["portal/Backend"],
+      "category": "injection",
+      "exploit_scenario": "Attacker sends a crafted gRPC message to portal/Backend. The protobufjs parser executes attacker-controlled code during message deserialization, achieving RCE on the portal backend.",
+      "remediation": "Run: cd portal/Backend && npm audit | grep protobufjs to confirm transitive path and available patches. Apply patch immediately upon availability. As interim: validate all gRPC message origins; consider wrapping deserialization in try/catch with strict schema validation.",
+      "status": "NEW"
+    },
+    {
+      "id": "ESC-004",
+      "source_finding": "DA-P2-form-data",
+      "team": "TheGuardians",
+      "severity": "P2",
+      "cvss": "High",
+      "title": "form-data — HTTP Header Injection via CRLF in Multipart Boundaries",
+      "description": "CRLF characters in multipart form field names can inject arbitrary HTTP headers, enabling response splitting, cache poisoning, or session fixation attacks.",
+      "package": "form-data",
+      "ghsa": null,
+      "affected_projects": ["portal/Backend", "Source/Backend"],
+      "category": "injection",
+      "exploit_scenario": "Attacker submits a multipart form field with a name containing CRLF sequences. The form-data library includes these characters in the Content-Disposition header, injecting arbitrary headers into the response.",
+      "remediation": "Update form-data to a patched version. Run npm audit fix in affected projects.",
+      "status": "NEW"
+    },
+    {
+      "id": "ESC-005",
+      "source_finding": "DA-P2-postcss",
+      "team": "TheGuardians",
+      "severity": "P2",
+      "cvss": "High",
+      "title": "postcss — Cross-Site Scripting via Unescaped </style> Tags in CSS Output",
+      "description": "postcss fails to escape </style> tags in generated CSS, allowing XSS if user-controlled CSS content is rendered in a browser <style> block.",
+      "package": "postcss",
+      "ghsa": null,
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "category": "injection",
+      "exploit_scenario": "Application renders user-controlled CSS in a <style> block. Attacker injects </style><script>alert(1)</script> into a CSS value. postcss does not escape this; the browser closes the <style> block and executes the script.",
+      "remediation": "Update postcss to a patched version. Ensure user-controlled content is never rendered in <style> blocks without sanitisation.",
+      "status": "NEW"
+    },
+    {
+      "id": "ESC-006",
+      "source_finding": "DA-P2-nanoid",
+      "team": "TheGuardians",
+      "severity": "P2",
+      "cvss": "Medium",
+      "title": "nanoid — Non-Cryptographically-Secure ID Generation — Verify Not Used for Security Tokens",
+      "description": "nanoid uses a non-CSPRNG source in some configurations, making generated IDs predictable. If nanoid is used to generate session tokens, CSRF tokens, or password reset tokens, those can be guessed.",
+      "package": "nanoid",
+      "ghsa": null,
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "category": "cryptographic failure",
+      "exploit_scenario": "Application uses nanoid to generate a password reset token or CSRF token. Due to weak randomness, an attacker can enumerate or predict valid token values, bypassing the security control.",
+      "remediation": "Audit all nanoid usage. If used for security-sensitive tokens, replace with crypto.randomUUID() or crypto.randomBytes(). Update nanoid package if a patched version is available.",
+      "status": "NEW"
+    }
+  ],
+  "findings": {
+    "TheFixer": [
+      {
+        "id": "DA-004",
+        "source_specialist": "dependency-auditor",
+        "severity": "P1",
+        "cvss": 7.5,
+        "title": "@grpc/grpc-js — Server Crash via Malformed gRPC Requests",
+        "description": "GHSA-5375-pq7m-f5r2. Malformed gRPC requests crash the portal/Backend server. Repeated requests cause sustained availability loss.",
+        "package": "@grpc/grpc-js",
+        "ghsa": "GHSA-5375-pq7m-f5r2",
+        "affected_projects": ["portal/Backend"],
+        "category": "availability",
+        "remediation": "Update @grpc/grpc-js to >=1.14.4 in portal/Backend.",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-001",
+        "source_specialist": "quality-oracle",
+        "severity": "P1",
+        "title": "GET /api/search endpoint not wired — DependencyPicker typeahead broken",
+        "description": "FR-dependency-search requires GET /api/search?q= for cross-entity typeahead. Route handler does not exist in Source/Backend/src/app.ts. DependencyPicker.tsx calls this endpoint; every query returns 404.",
+        "category": "spec-drift / correctness",
+        "files": [
+          "Source/Backend/src/app.ts",
+          "Source/Backend/tests/routes/search.test.ts",
+          "Source/Frontend/src/components/DependencyPicker.tsx"
+        ],
+        "remediation": "Create Source/Backend/src/routes/search.ts with a handler filtering the in-memory store by title/description. Register in app.ts as app.use('/api', searchRouter). Add // Verifies: FR-dependency-search. Sanitise the ?q= query parameter.",
+        "security_note": "Input sanitisation required when implementing — flagged for TheGuardians review (ESC-001 cross-ref: injection risk if user input flows into template engine).",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-002",
+        "source_specialist": "quality-oracle",
+        "severity": "P1",
+        "title": "Traceability enforcer scans only 12% of total requirements",
+        "description": "tools/traceability-enforcer.py:70 hard-codes source_dirs=['Source','E2E']. 95 of 108 requirements in portal/ and platform/ are excluded. CI gate reports TRACEABILITY PASSED while these directories are never verified.",
+        "category": "architecture-violation / spec-drift",
+        "files": [
+          "tools/traceability-enforcer.py"
+        ],
+        "remediation": "Extend source_dirs to ['Source', 'E2E', 'portal', 'platform']. Add a second scan pass targeting Specifications/ requirement IDs. Update spec-drift-report.json generator to scan the same extended dirs.",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-003",
+        "source_specialist": "quality-oracle",
+        "severity": "P2",
+        "title": "3 silent catch blocks swallow errors — CLAUDE.md violation",
+        "description": "portal/Frontend/src/components/common/RepoSelector.tsx:20, BugDetail.tsx:82, and FeatureRequestDetail.tsx:80 all use .catch(() => {}) with no log, re-throw, or documentation.",
+        "category": "architecture-violation / pattern-violation",
+        "files": [
+          "portal/Frontend/src/components/common/RepoSelector.tsx",
+          "portal/Frontend/src/components/bugs/BugDetail.tsx",
+          "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx"
+        ],
+        "remediation": "Add // repo list is non-critical UI enhancement — fail silently comment on each .catch(() => {}) block, or preferably log: .catch((err) => logger.warn('repo list failed', { err })).",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-005",
+        "source_specialist": "quality-oracle",
+        "severity": "P2",
+        "title": "FR-TMP-001 missing source tag; FR-TMP-008 has wrong tag",
+        "description": "platform/orchestrator/lib/workflow-engine.js implements FR-TMP-001 (risk classification) at ~line 1096 but has no // Verifies: FR-TMP-001 comment. platform/Dockerfile.worker:3 has // Verifies: dev-crew unified repo — Task 3 Step 2 instead of // Verifies: FR-TMP-008.",
+        "category": "spec-drift",
+        "files": [
+          "platform/orchestrator/lib/workflow-engine.js",
+          "platform/Dockerfile.worker"
+        ],
+        "remediation": "Add // Verifies: FR-TMP-001 — extract riskLevel from leader output at ~line 1096 in workflow-engine.js. Update Dockerfile.worker:3 to // Verifies: FR-TMP-008 — gh CLI and Playwright installed.",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-006",
+        "source_specialist": "quality-oracle",
+        "severity": "P3",
+        "title": "113 console.log calls in platform orchestrator — production code should use structured logger",
+        "description": "platform/orchestrator/lib/workflow-engine.js contains 113 raw console.log calls. CLAUDE.md mandates structured JSON logging; console.log bypasses OTel trace correlation and Prometheus metrics.",
+        "category": "pattern-violation",
+        "files": [
+          "platform/orchestrator/lib/workflow-engine.js"
+        ],
+        "remediation": "Replace console.log calls with the project logger (logger.info, logger.debug, etc.) to ensure trace IDs propagate and log output is structured JSON in production.",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-007",
+        "source_specialist": "quality-oracle",
+        "severity": "P3",
+        "title": "eslint-disable-next-line suppressing hook dependency warnings without explanation",
+        "description": "Source/Frontend/src/hooks/useWorkItems.ts:63 and DependencyPicker.tsx:82 suppress react-hooks/exhaustive-deps with no inline comment explaining the intentional omission.",
+        "category": "pattern-violation",
+        "files": [
+          "Source/Frontend/src/hooks/useWorkItems.ts",
+          "Source/Frontend/src/components/DependencyPicker.tsx"
+        ],
+        "remediation": "Add inline comment explaining why the dependency is excluded (e.g. // intentionally omit X — would cause infinite loop), or restructure the effect to avoid suppression.",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-008",
+        "source_specialist": "quality-oracle",
+        "severity": "P3",
+        "title": "Hardcoded http://localhost:${port} URL in CycleCard component",
+        "description": "portal/Frontend/src/components/orchestrator/CycleCard.tsx:112 hardcodes the scheme and host. In any non-localhost deployment (staging, CI preview, Docker network), this link will be wrong.",
+        "category": "pattern-violation",
+        "files": [
+          "portal/Frontend/src/components/orchestrator/CycleCard.tsx"
+        ],
+        "remediation": "Derive the URL from a shared config/env var (e.g. VITE_APP_BASE_URL or a getAppUrl(port) helper).",
+        "status": "NEW"
+      }
+    ],
+    "requirements-reviewer": [
+      {
+        "id": "QO-004",
+        "source_specialist": "quality-oracle",
+        "severity": "P2",
+        "title": "3 recently-modified portal files have no FR traceability",
+        "description": "portal/Backend/src/routes/teamDispatches.ts, portal/Frontend/src/pages/TeamsPage.tsx, and portal/Frontend/src/components/common/RepoSelector.tsx were modified within the last 14 days. None carry // Verifies: comments and none map to any FR in Specifications/.",
+        "category": "spec-drift",
+        "files": [
+          "portal/Backend/src/routes/teamDispatches.ts",
+          "portal/Frontend/src/pages/TeamsPage.tsx",
+          "portal/Frontend/src/components/common/RepoSelector.tsx"
+        ],
+        "remediation": "Add corresponding FRs to Specifications/dev-workflow-platform.md (e.g. FR-096: Team Dispatch History tracking) and backfill // Verifies: tags, or document explicitly why these are infrastructure/operational code exempt from traceability.",
+        "status": "NEW"
+      }
+    ],
+    "dependency-batch": {
+      "note": "28+ high-severity and 64+ moderate-severity CVEs are catalogued in full at Teams/TheInspector/findings/dependency-audit-20260817.md and Teams/TheInspector/findings/dependency-audit-20260817.json. Run npm audit fix --workspaces to resolve automatable findings.",
+      "p2_high_count": 28,
+      "p3_moderate_count": 64,
+      "representative_p2_packages": [
+        "brace-expansion", "form-data", "js-yaml", "nanoid",
+        "postcss", "vite", "ws", "and 21+ others"
+      ],
+      "representative_p3_packages": [
+        "@babel/core", "@remix-run/router", "picomatch",
+        "esbuild", "qs", "and 59+ others"
+      ],
+      "remediation": "cd <project> && npm audit fix for each of: Source/Backend, Source/Frontend, platform/orchestrator, portal/Backend, portal/Frontend. Then run full test suite."
+    }
+  },
+  "grading_detail": {
+    "thresholds_applied": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": {"max_p1": 999}
+    },
+    "actual": {"p1_count": 6, "p2_count": 31, "spec_coverage_real_pct": 99},
+    "grade": "D",
+    "reason": "6 P1 findings exceed the C-grade maximum of 2. Note: real spec coverage is 99% (implementation quality is high) — the D grade is driven entirely by dependency vulnerabilities and the missing search route, not by poor architecture."
+  },
+  "next_audit_targets": {
+    "dynamic_mode_prerequisites": [
+      "Backend service healthy at http://localhost:3001/",
+      "Frontend service healthy at http://localhost:5173"
+    ],
+    "expected_p1_if_remediated": 0,
+    "expected_grade_if_remediated": "B",
+    "focus_areas": [
+      "Verify DA-001 through DA-004 patched (npm audit --json in each project)",
+      "Verify QO-001 implemented (GET /api/search returns results)",
+      "Verify QO-002 resolved (enforcer now scans portal/ and platform/)",
+      "Run dynamic performance-profiler: latency baselines for /api/work-items and /api/dashboard",
+      "Run dynamic chaos-monkey: concurrent state transitions, malformed request body"
+    ]
+  }
+}

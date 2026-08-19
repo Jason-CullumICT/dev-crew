@@ -1,0 +1,421 @@
+{
+  "audit": {
+    "id": "inspector-2026-08-19",
+    "date": "2026-08-19",
+    "grade": "D",
+    "branch": "audit/inspector-2026-08-19-7f6328",
+    "scope": "full-codebase-static",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_not_run": ["performance-profiler", "chaos-monkey"],
+    "prior_audit": null,
+    "totals": {
+      "p1": 4,
+      "p2": 13,
+      "p3": 19,
+      "p4": 2,
+      "escalations": 3,
+      "spec_coverage_pct": 31
+    },
+    "report_html": "Teams/TheInspector/findings/audit-2026-08-19-D.html"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE / RCE",
+      "title": "Handlebars.js JavaScript Injection — Arbitrary Code Execution",
+      "escalate_to": "TheGuardians",
+      "package": "handlebars",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cwe": ["CWE-94", "CWE-843"],
+      "file": "Source/Backend/package-lock.json",
+      "remediation": "npm install handlebars@latest in Source/Backend; verify npm audit clean",
+      "status": "NEW",
+      "action_required": "TheGuardians to verify exploit path — confirm no user-controlled input reaches handlebars templates"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE / Info Disclosure + RCE",
+      "title": "Vitest UI Server Arbitrary File Read / Code Execution",
+      "escalate_to": "TheGuardians",
+      "package": "vitest",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cwe": ["CWE-22", "CWE-862"],
+      "file": "Source/Frontend/package.json",
+      "current_version": "2.0.5",
+      "fixed_version": ">=3.2.6",
+      "remediation": "npm install vitest@latest in Source/Frontend (major version bump required)",
+      "status": "NEW",
+      "action_required": "TheGuardians to assess CI runner network exposure; interim: disable Vitest UI server"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE / RCE",
+      "title": "Protobufjs Arbitrary Code Execution in Orchestrator",
+      "escalate_to": "TheGuardians",
+      "package": "protobufjs",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cwe": ["CWE-94"],
+      "file": "platform/orchestrator/package-lock.json",
+      "dependency_chain": "platform/orchestrator → @grpc/grpc-js → protobufjs",
+      "remediation": "npm install @grpc/grpc-js@latest in platform/orchestrator (pulls protobufjs >=7.6.5)",
+      "status": "NEW",
+      "action_required": "TheGuardians to verify whether gRPC endpoint accepts external untrusted proto definitions"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Primary spec dev-workflow-platform.md has 0% source coverage",
+      "file": "Specifications/dev-workflow-platform.md",
+      "route_to": "requirements-reviewer",
+      "description": "69 FRs (FR-001..069) in the 'most critical' spec have zero source implementation or traceability comments. Either the wrong system was built or the spec is aspirational.",
+      "recommendation": "Requirements-reviewer to decide: (A) spec is aspirational → update CLAUDE.md; (B) wrong system built → align implementation. Decision required before next sprint planning.",
+      "status": "NEW",
+      "cross_refs": ["QO-004"]
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "tiered-merge-pipeline.md (FR-TMP-001..010) fully unimplemented",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "route_to": "TheFixer / TheATeam",
+      "description": "All 10 tiered merge pipeline requirements have zero source references. FR-TMP-001 through FR-TMP-010 cover risk classification, E2E generation, auto-PR, AI review, auto-merge.",
+      "recommendation": "Route to TheATeam or TheFixer as a new pipeline task. Mark spec as 'planned/not started' in the meantime.",
+      "status": "NEW",
+      "cross_refs": ["QO-004"]
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Missing dependencyCheckDuration histogram (FR-dependency-metrics)",
+      "file": "Source/Backend/src/metrics.ts",
+      "route_to": "TheFixer",
+      "description": "FR-dependency-metrics requires 4 Prometheus metrics. Three counters present; dependencyCheckDuration histogram (dependency_check_duration_seconds) is absent. Test also does not check for it.",
+      "recommendation": "Add histogram to metrics.ts, instrument in dependency.ts, add test case in metrics.test.ts.",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer only checks 13/96 spec requirements",
+      "file": "tools/traceability-enforcer.py",
+      "route_to": "Solo Session",
+      "description": "Enforcer reads Plans/self-judging-workflow/requirements.md (13 FRs only). Reports PASSED while 79 FRs in Specifications/ are completely untraced. CLAUDE.md verification gate gives false confidence.",
+      "recommendation": "Extend enforcer to scan all Specifications/ for FR-XXX pattern IDs. Solo session, no pipeline required.",
+      "status": "NEW",
+      "cross_refs": ["QO-001", "QO-002"]
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion exponential DoS",
+      "package": "brace-expansion",
+      "cve": "GHSA-3jxr-9vmj-r5cp",
+      "file": "Source/Backend/package-lock.json",
+      "route_to": "TheFixer",
+      "remediation": "npm install brace-expansion@>=1.1.16",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE / Open Redirect",
+      "specialist": "dependency-auditor",
+      "title": "@remix-run/router open redirect (react-router-dom)",
+      "package": "@remix-run/router",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "cwe": "CWE-601",
+      "file": "Source/Frontend/package-lock.json",
+      "route_to": "TheFixer",
+      "remediation": "npm install react-router-dom@>=7.0.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE / Header Injection",
+      "specialist": "dependency-auditor",
+      "title": "form-data CRLF injection",
+      "package": "form-data",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cwe": "CWE-173",
+      "file": "Source/Frontend/package-lock.json",
+      "route_to": "TheFixer",
+      "remediation": "npm install form-data@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE / XSS",
+      "specialist": "dependency-auditor",
+      "title": "postcss unescaped </style> XSS",
+      "package": "postcss",
+      "file": "Source/Frontend/package-lock.json",
+      "route_to": "TheFixer",
+      "remediation": "npm install postcss@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "nanoid infinite loop on negative size",
+      "package": "nanoid",
+      "file": "Source/Frontend/package-lock.json",
+      "route_to": "TheFixer",
+      "remediation": "npm install nanoid@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE / Path Traversal",
+      "specialist": "dependency-auditor",
+      "title": "vite path traversal in .map file handling",
+      "package": "vite",
+      "file": "Source/Frontend/package.json",
+      "route_to": "TheFixer",
+      "remediation": "npm install vite@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "@grpc/grpc-js server crash from malformed request",
+      "package": "@grpc/grpc-js",
+      "cvss": 7.5,
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "file": "platform/orchestrator/package-lock.json",
+      "route_to": "Solo Session (platform/)",
+      "remediation": "npm install @grpc/grpc-js@>=1.14.4 in platform/orchestrator",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "CVE / ReDoS",
+      "specialist": "dependency-auditor",
+      "title": "path-to-regexp ReDoS via multiple route parameters",
+      "package": "path-to-regexp",
+      "file": "platform/orchestrator/package-lock.json",
+      "route_to": "Solo Session (platform/)",
+      "remediation": "npm install express@latest (pulls updated path-to-regexp) in platform/orchestrator",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-027",
+      "severity": "P2",
+      "category": "Outdated Major Version",
+      "specialist": "dependency-auditor",
+      "title": "Orchestrator: dockerode, express, multer 1+ major behind",
+      "packages": ["dockerode@4 → 5", "express@4 → 5", "multer@1 → 2"],
+      "file": "platform/orchestrator/package.json",
+      "route_to": "Solo Session (platform/)",
+      "remediation": "Coordinate major version upgrades; test all Docker integration and endpoints",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-028",
+      "severity": "P2",
+      "category": "Outdated Major Version",
+      "specialist": "dependency-auditor",
+      "title": "Frontend: react 18→19, react-router-dom 6→7",
+      "packages": ["react@18 → 19", "react-dom@18 → 19", "react-router-dom@6 → 7"],
+      "file": "Source/Frontend/package.json",
+      "route_to": "TheFixer",
+      "remediation": "Upgrade React ecosystem; test all components thoroughly for breaking changes",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "title": "Duplicate test files for WorkItemListPage and WorkItemDetailPage",
+      "files": [
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx"
+      ],
+      "route_to": "TheFixer",
+      "recommendation": "Consolidate to tests/pages/ structure; delete root-level duplicates",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable suppresses react-hooks/exhaustive-deps in 2 files",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "route_to": "TheFixer",
+      "recommendation": "Fix hook dependency arrays; remove eslint-disable comments",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Hardcoded localhost:4200 fallback in DebugPortalPage.tsx",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "line": 5,
+      "route_to": "TheFixer",
+      "recommendation": "Remove inline fallback; add VITE_PORTAL_URL to .env.example and .env.development",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "body-parser invalid limit disables size enforcement",
+      "package": "body-parser",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "file": "Source/Backend/package-lock.json",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "CVE / Injection",
+      "specialist": "dependency-auditor",
+      "title": "Handlebars prototype pollution (additional vector)",
+      "package": "handlebars",
+      "cve": "GHSA-2qvq-rjwj-gvw9",
+      "file": "Source/Backend/package-lock.json",
+      "route_to": "TheFixer",
+      "note": "Resolved by DEP-001 fix (upgrade handlebars to >=4.7.9)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "CVE / Info Disclosure",
+      "specialist": "dependency-auditor",
+      "title": "@babel/core arbitrary file read via sourceMappingURL",
+      "package": "@babel/core",
+      "file": "Source/Backend, Source/Frontend package-lock.json",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015-026",
+      "severity": "P3",
+      "category": "CVE / Various",
+      "specialist": "dependency-auditor",
+      "title": "12x moderate CVEs: @vitest/mocker, @protobufjs/utf8, and various transitive deps",
+      "count": 12,
+      "route_to": "TheFixer",
+      "recommendation": "Include in bulk npm audit fix cycle",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-027-P3-ref",
+      "note": "See DEP-027 in P2 — major version gaps also carry moderate risk"
+    },
+    {
+      "id": "DEP-028-P3-ref",
+      "note": "See DEP-028 in P2 — React major version gap also carries moderate risk"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-029",
+      "severity": "P4",
+      "category": "Supply Chain",
+      "specialist": "dependency-auditor",
+      "title": "622 total transitive packages — large attack surface",
+      "route_to": "Backlog",
+      "recommendation": "Quarterly dependency audit; consider reducing dev dependencies",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-030",
+      "severity": "P4",
+      "category": "Supply Chain",
+      "specialist": "dependency-auditor",
+      "title": "Handlebars in build toolchain watch list",
+      "route_to": "Backlog",
+      "recommendation": "Evaluate whether handlebars is needed in build toolchain; consider alternatives",
+      "status": "NEW"
+    }
+  ],
+  "clean_checks": [
+    "No console.log in production source — structured logger used throughout",
+    "Service layer intact — no direct store calls from route handlers",
+    "Shared types single-source-of-truth — Source/Shared/types/workflow.ts",
+    "All catch blocks log or re-throw — no silent swallowing",
+    "All list endpoints return {data:[]} wrappers",
+    "New routes have observability — metrics and logger present",
+    "Business logic has no framework imports — services are pure",
+    "Source/E2E is dependency-clean — 0 CVEs"
+  ],
+  "remediation_sequence": [
+    {
+      "step": 1,
+      "priority": "Block deployment",
+      "description": "Engage TheGuardians for CVE triage (DEP-001, DEP-002, DEP-003)",
+      "effort": "2-4h triage"
+    },
+    {
+      "step": 2,
+      "priority": "This week",
+      "description": "Upgrade vitest (Frontend) and @grpc/grpc-js (orchestrator) — urgent network-accessible CVEs",
+      "commands": [
+        "cd Source/Frontend && npm install vitest@latest",
+        "cd platform/orchestrator && npm install @grpc/grpc-js@latest"
+      ]
+    },
+    {
+      "step": 3,
+      "priority": "This sprint",
+      "description": "Bulk npm audit fix for Backend and Frontend; fix traceability enforcer; add missing histogram",
+      "commands": [
+        "cd Source/Backend && npm audit fix && npm install handlebars@latest",
+        "cd Source/Frontend && npm audit fix",
+        "python3 tools/traceability-enforcer.py (after extension)"
+      ]
+    },
+    {
+      "step": 4,
+      "priority": "Next sprint",
+      "description": "Major version upgrades (React 19, react-router v7, dockerode v5, express v5, multer v2); implement FR-TMP-* tiered merge pipeline"
+    },
+    {
+      "step": 5,
+      "priority": "Backlog",
+      "description": "Duplicate test cleanup, frontend ESLint fixes, hardcoded URL removal, supply chain monitoring"
+    }
+  ]
+}

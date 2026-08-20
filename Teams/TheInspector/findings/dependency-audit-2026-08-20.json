@@ -1,0 +1,168 @@
+{
+  "audit_id": "dep-audit-2026-08-20-001",
+  "timestamp": "2026-08-20T00:00:00Z",
+  "auditor": "dependency-auditor",
+  "team": "TheInspector",
+  "status": "completed",
+  "scope": {
+    "package_managers": ["npm"],
+    "projects_audited": 6,
+    "projects": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E",
+      "platform/orchestrator",
+      "portal/Backend",
+      "portal/Frontend"
+    ]
+  },
+  "summary": {
+    "total_cves": 99,
+    "critical": 6,
+    "high": 26,
+    "moderate": 64,
+    "low": 3,
+    "outdated_major_versions": 11,
+    "license_issues": 0,
+    "abandoned_packages": 0,
+    "supply_chain_red_flags": 0,
+    "projects_clean": 1
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "affected_versions": ">=4.0.0 <=4.7.8",
+      "affected_projects": [
+        "Source/Backend",
+        "Source/Frontend"
+      ],
+      "category": "cve",
+      "cwe": ["CWE-94", "CWE-843"],
+      "description": "Handlebars.js is vulnerable to JavaScript injection attacks through AST type confusion. Attackers can craft malicious templates that execute arbitrary JavaScript code.",
+      "recommended_action": "Update to handlebars@latest using `npm update handlebars --depth=999`",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "P1",
+      "cvss_score": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "Arbitrary File Read and Execution via UI Server",
+      "affected_versions": "multiple (check per project)",
+      "affected_projects": [
+        "platform/orchestrator",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "category": "cve",
+      "cwe": ["CWE-22"],
+      "description": "When Vitest UI server is running, attackers can read and execute arbitrary files from the system via HTTP requests.",
+      "recommended_action": "Update vitest to latest version; NEVER expose Vitest UI server in production",
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "package": "form-data",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "title": "CRLF Injection in Multipart Fields",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "category": "cve"
+    },
+    {
+      "id": "DEP-004",
+      "package": "brace-expansion",
+      "severity": "P2",
+      "cvss_score": 7.5,
+      "cve": "GHSA-mh99-v99m-4gvg",
+      "title": "DoS via Unbounded Expansion",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "category": "cve"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "project": "Source/Backend",
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "gap": "2 major",
+      "severity": "P2",
+      "reason": "Likely missing security patches from 2 major versions"
+    },
+    {
+      "project": "Source/Backend",
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "gap": "1 major",
+      "severity": "P3"
+    },
+    {
+      "project": "Source/Frontend",
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "gap": "1 major",
+      "severity": "P3"
+    },
+    {
+      "project": "Source/Frontend",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.2",
+      "gap": "1 major",
+      "severity": "P2",
+      "reason": "Contains security fix for open redirect vulnerability"
+    }
+  ],
+  "metrics": {
+    "cves_critical": 6,
+    "cves_high": 26,
+    "cves_moderate": 64,
+    "cves_low": 3,
+    "critical_projects": 5,
+    "clean_projects": 1,
+    "outdated_major_versions": 11,
+    "license_compliance_issues": 0,
+    "abandoned_packages": 0,
+    "supply_chain_red_flags": 0,
+    "avg_dependencies_per_project": 351,
+    "max_cves_in_project": 55,
+    "min_cves_in_project": 0
+  },
+  "recommendations": {
+    "immediate": [
+      "Update handlebars in Source/Backend and Source/Frontend",
+      "Update vitest in platform/orchestrator, portal/Backend, portal/Frontend",
+      "Run full test suite after updates"
+    ],
+    "urgent": [
+      "Update form-data, brace-expansion, body-parser",
+      "Update react-router-dom (open redirect fix)",
+      "Update esbuild/Vite stack"
+    ],
+    "scheduled": [
+      "Plan React 18→19 upgrade (synchronized)",
+      "Plan pino 8→10 major version upgrade",
+      "Plan express 4→5 migration"
+    ]
+  },
+  "next_audit_date": "2026-09-20",
+  "audit_duration_minutes": 15,
+  "tools_used": [
+    "npm audit --json",
+    "npm outdated --json",
+    "npx license-checker",
+    "package-lock.json analysis"
+  ]
+}

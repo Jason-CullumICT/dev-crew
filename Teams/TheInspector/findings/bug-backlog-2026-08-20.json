@@ -1,0 +1,343 @@
+{
+  "audit_meta": {
+    "audit_date": "2026-08-20",
+    "run_id": "run-20260820-030930",
+    "project": "dev-crew Source App",
+    "grade": "D",
+    "grade_rationale": "4 P1 findings, 31 P2 findings, 21.4% aggregate spec coverage — all exceed C-grade thresholds (max_p1:2, max_p2:15, min_spec_coverage:40%)",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend and frontend services offline — dynamic-mode specialists require live services",
+    "next_audit": "2026-09-20",
+    "report_html": "Teams/TheInspector/findings/audit-2026-08-20-D.html"
+  },
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 31,
+    "p3_total": 67,
+    "p4_total": 3,
+    "fixed_total": 0,
+    "escalations_total": 3
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "title": "Handlebars.js RCE via AST Type Confusion",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "affected": ["Source/Backend", "Source/Frontend"],
+      "description": "JavaScript injection via AST type confusion allows remote code execution when user-supplied Handlebars templates are compiled.",
+      "remediation": "npm update handlebars --depth=999 in Source/Backend and Source/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "trigger": "sensitive data exposed",
+      "title": "Vitest Arbitrary File Read/Execution via UI Server",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "affected": ["platform/orchestrator", "portal/Backend", "portal/Frontend"],
+      "description": "Vitest UI server allows arbitrary file reads and potential code execution if accessible beyond localhost.",
+      "remediation": "Update Vitest to latest in all 3 projects. Disable --ui flag in CI/production. Bind to 127.0.0.1 only.",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-003",
+      "severity": "P2",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "title": "form-data CRLF Injection (HTTP Response Splitting)",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": null,
+      "specialist": "dependency-auditor",
+      "affected": ["Multiple projects"],
+      "description": "CRLF injection in form-data package enables HTTP response splitting attacks.",
+      "remediation": "npm update form-data",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Handlebars.js RCE via AST Type Confusion",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "file": "Source/Backend/node_modules/handlebars, Source/Frontend/node_modules/handlebars",
+      "remediation": "npm update handlebars --depth=999",
+      "escalated": true,
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Vitest Arbitrary File Read/Execution via UI Server",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "file": "platform/orchestrator, portal/Backend, portal/Frontend",
+      "remediation": "Update Vitest, disable --ui in CI/prod",
+      "escalated": true,
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Traceability Enforcer Has Single-Plan Blind Spot",
+      "file": "tools/traceability-enforcer.py",
+      "description": "CI gate passes while checking only 1 of 7 approved plans. 103 of 131 FRs are invisible to the gate.",
+      "remediation": "Update traceability-enforcer.py to scan all Plans/*/requirements.md by default",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "dev-workflow-platform Plan Fully Unimplemented (32 FRs)",
+      "file": "Plans/dev-workflow-platform/requirements.md",
+      "description": "Approved plan with 32 FRs has zero traces in Source/. Status ambiguous — may be superseded or an unstarted build target.",
+      "remediation": "Mark plan as [SUPERSEDED] or [PENDING] with build estimate. Product decision required first.",
+      "escalated": false,
+      "route_to": "requirements-reviewer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "DA-003",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "form-data CRLF Injection",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "remediation": "npm update form-data",
+      "escalated": true,
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-004",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion Unbounded Expansion DoS",
+      "cve": "GHSA-mh99-v99m-4gvg",
+      "remediation": "npm update brace-expansion",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-005",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "react-router-dom Open Redirect",
+      "file": "Source/Frontend",
+      "remediation": "Update react-router-dom to 7.x",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-006",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "esbuild CORS Header Bypass",
+      "file": "Source/Frontend, portal/Frontend",
+      "remediation": "Update esbuild/Vite",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-007",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "nanoid Infinite Loop",
+      "remediation": "npm update nanoid",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-008-028",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "21 Additional High-Severity CVEs (portal/Backend bulk)",
+      "file": "portal/Backend (55 CVE backlog)",
+      "description": "21 additional High-severity CVEs concentrated in portal/Backend. See dependency-audit-2026-08-20.json for full enumeration.",
+      "remediation": "Dedicated portal/Backend dependency refresh sprint",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "GET /api/search Route Unimplemented (FR-dependency-search)",
+      "file": "Source/Backend/src/app.ts, Source/Backend/tests/routes/search.test.ts",
+      "description": "Search route not wired — every test in search.test.ts will fail at runtime.",
+      "remediation": "Implement GET /api/search route or mark FR-dependency-search as [DEFERRED]",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "title": "Duplicate Frontend Test Files for WorkItemDetailPage + WorkItemListPage",
+      "file": "Source/Frontend/tests/",
+      "description": "Root-level and pages/ subdirectory both contain test files for same components with diverging content.",
+      "remediation": "Delete root-level tests/WorkItemDetailPage.test.tsx and tests/WorkItemListPage.test.tsx after confirming pages/ versions are canonical",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-048, FR-049 (Pipeline Backend/Frontend Tests) Untraced",
+      "file": "Plans/orchestrated-dev-cycles/requirements.md",
+      "remediation": "Add // Verifies: FR-048 / FR-049 comments to pipeline test files, or implement missing tests",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-068, FR-069 (BugDetail, Frontend Tests) Untraced",
+      "file": "Plans/dev-cycle-traceability/requirements.md",
+      "remediation": "Implement or trace FR-068 and FR-069 (18/20 FRs already done in this plan)",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "FR-DUP-11 through FR-DUP-13 Untraced",
+      "file": "Plans/duplicate-deprecated-status/requirements.md",
+      "remediation": "Add traceability comments or implement the 3 remaining FRs (12/15 already traced)",
+      "escalated": false,
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable on react-hooks/exhaustive-deps in 2 Production Files",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "category": "implementation-hygiene",
+      "specialist": "quality-oracle",
+      "title": "GET /health Route Has No Traceability Comment",
+      "file": "Source/Backend/src/app.ts:42",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-010",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "orchestrator-cycle-dashboard Plan 0% Traced (Possibly Superseded)",
+      "file": "Plans/orchestrator-cycle-dashboard/requirements.md",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-001",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "64 Moderate CVEs Across Build Toolchain and Transitive Dependencies",
+      "description": "See dependency-audit-2026-08-20.json for full enumeration",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-002",
+      "severity": "P3",
+      "category": "outdated-major",
+      "specialist": "dependency-auditor",
+      "title": "pino 8.17.0 → 10.3.1 (2 Major Versions Behind)",
+      "file": "Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-003",
+      "severity": "P3",
+      "category": "outdated-major",
+      "specialist": "dependency-auditor",
+      "title": "react/react-dom 18.3.1 → 19.2.8 (1 Major Version)",
+      "file": "Source/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-004",
+      "severity": "P3",
+      "category": "outdated-major",
+      "specialist": "dependency-auditor",
+      "title": "express 4.18.2 → 5.2.1 (1 Major Version)",
+      "file": "Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P3-005",
+      "severity": "P3",
+      "category": "outdated-major",
+      "specialist": "dependency-auditor",
+      "title": "uuid 9.x → 14.x (5 Major Versions Behind)",
+      "file": "Source/Backend",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DA-P4-001",
+      "severity": "P4",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "3 Low-Severity CVEs Across Dependency Tree",
+      "description": "See dependency-audit-2026-08-20.json for full enumeration",
+      "status": "NEW"
+    }
+  ]
+}

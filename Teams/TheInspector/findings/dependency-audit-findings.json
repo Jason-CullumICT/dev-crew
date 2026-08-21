@@ -1,0 +1,271 @@
+{
+  "audit_date": "2026-08-21",
+  "auditor": "dependency_auditor",
+  "project": "dev-crew",
+  "modules_audited": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E",
+    "platform/orchestrator"
+  ],
+  "summary": {
+    "package_manager": "npm",
+    "total_modules": 4,
+    "total_vulnerabilities": 28,
+    "critical": 3,
+    "high": 9,
+    "moderate": 12,
+    "low": 4,
+    "license_compliance": "PASSED",
+    "escalation_required": true
+  },
+  "vulnerability_breakdown": {
+    "backend": {
+      "module": "Source/Backend",
+      "critical": 1,
+      "high": 3,
+      "moderate": 4,
+      "low": 1,
+      "direct_dependencies": 4,
+      "transitive_dependencies": 50
+    },
+    "frontend": {
+      "module": "Source/Frontend",
+      "critical": 1,
+      "high": 5,
+      "moderate": 6,
+      "low": 1,
+      "direct_dependencies": 3,
+      "transitive_dependencies": 200
+    },
+    "e2e": {
+      "module": "Source/E2E",
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "direct_dependencies": 1,
+      "transitive_dependencies": 50
+    },
+    "orchestrator": {
+      "module": "platform/orchestrator",
+      "critical": 1,
+      "high": 2,
+      "moderate": 1,
+      "low": 0,
+      "direct_dependencies": 3,
+      "transitive_dependencies": 155
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "P1",
+      "type": "RCE / Code Injection",
+      "cvss": 9.8,
+      "affected_versions": "<4.7.8",
+      "module": "Source/Backend",
+      "direct": false,
+      "description": "Arbitrary code execution through template injection via AST Type Confusion",
+      "fix": "Update handlebars to >=4.7.8"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "P1",
+      "type": "Code Execution",
+      "cvss": 9.8,
+      "affected_versions": "2.0.5",
+      "module": "Source/Frontend",
+      "direct": true,
+      "description": "Multiple critical vulnerabilities in bundler dependencies (esbuild, vite)",
+      "fix": "Update vitest to latest (>=4.1.0)"
+    },
+    {
+      "id": "DEP-003",
+      "package": "vite",
+      "severity": "P1",
+      "type": "Info Disclosure / Dev Server Escape",
+      "cvss": 7.5,
+      "affected_versions": "5.4.0",
+      "module": "Source/Frontend",
+      "direct": true,
+      "description": "Dev server vulnerabilities in esbuild and transitive dependencies",
+      "fix": "Update vite to latest (>=8.2.2)"
+    },
+    {
+      "id": "DEP-004",
+      "package": "protobufjs",
+      "severity": "P1",
+      "type": "RCE / Prototype Pollution",
+      "cvss": 9.8,
+      "affected_versions": "<7.4.0",
+      "module": "platform/orchestrator",
+      "direct": false,
+      "description": "Arbitrary code execution, code injection, prototype pollution (12 CVEs total)",
+      "fix": "Upgrade @grpc/grpc-js or migrate from protobufjs"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-005",
+      "package": "brace-expansion",
+      "severity": "P2",
+      "type": "DoS",
+      "cvss": 7.5,
+      "affected_versions": "<1.1.18",
+      "module": "Source/Backend",
+      "issues_count": 4
+    },
+    {
+      "id": "DEP-006",
+      "package": "form-data",
+      "severity": "P2",
+      "type": "CRLF Injection",
+      "cvss": 7.5,
+      "affected_versions": "<4.0.6"
+    },
+    {
+      "id": "DEP-007",
+      "package": "js-yaml",
+      "severity": "P2",
+      "type": "Code Injection",
+      "issues_count": 3
+    },
+    {
+      "id": "DEP-008",
+      "package": "nanoid",
+      "severity": "P2",
+      "type": "DoS / Infinite Loop",
+      "cvss": 5.9,
+      "affected_versions": "<3.3.16",
+      "module": "Source/Frontend"
+    },
+    {
+      "id": "DEP-009",
+      "package": "postcss",
+      "severity": "P2",
+      "type": "Multiple (DoS, Template Injection)",
+      "module": "Source/Frontend",
+      "issues_count": 4
+    },
+    {
+      "id": "DEP-010",
+      "package": "ws",
+      "severity": "P2",
+      "type": "Info Disclosure",
+      "module": "Source/Frontend",
+      "issues_count": 2
+    },
+    {
+      "id": "DEP-011",
+      "package": "@grpc/grpc-js",
+      "severity": "P2",
+      "type": "DoS / Server Crash",
+      "cvss": 7.5,
+      "affected_versions": "1.14.0-1.14.3",
+      "module": "platform/orchestrator"
+    },
+    {
+      "id": "DEP-012",
+      "package": "path-to-regexp",
+      "severity": "P2",
+      "type": "ReDoS",
+      "cvss": 7.5,
+      "affected_versions": "<0.1.13",
+      "module": "platform/orchestrator"
+    }
+  ],
+  "outdated_packages": {
+    "backend": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "wanted": "4.22.2",
+        "latest": "5.2.1",
+        "behind_major": 1
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "wanted": "8.21.0",
+        "latest": "10.3.1",
+        "behind_major": 2
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "wanted": "9.0.1",
+        "latest": "14.0.2",
+        "behind_major": 5
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.2.8",
+        "behind_major": 1
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.2.8",
+        "behind_major": 1
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "wanted": "6.30.6",
+        "latest": "7.18.2",
+        "behind_major": 1
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "PASSED",
+    "gpl_found": false,
+    "agpl_found": false,
+    "unlicensed_found": false,
+    "notes": "All direct dependencies have compatible licenses"
+  },
+  "supply_chain_risk": {
+    "backend_transitive": 50,
+    "frontend_transitive": 200,
+    "orchestrator_transitive": 155,
+    "e2e_transitive": 50,
+    "risk_level": "HIGH",
+    "notes": "Frontend has highest transitive dependency count (200+). Multiple package managers (vite, vitest) with known vulnerabilities."
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "finding_ids": ["DEP-001", "DEP-002", "DEP-003", "DEP-004"],
+      "reason": "Code injection and RCE severity - requires security team review",
+      "urgency": "CRITICAL"
+    }
+  ],
+  "recommendations": {
+    "p1_critical": [
+      "Update handlebars to >=4.7.8",
+      "Update vitest to latest (>=4.1.0)",
+      "Resolve protobufjs in Orchestrator"
+    ],
+    "p2_high": [
+      "Update brace-expansion to >=1.1.18",
+      "Update form-data to >=4.0.6",
+      "Update nanoid to >=3.3.16",
+      "Update postcss to latest",
+      "Update ws to latest"
+    ],
+    "p3_medium": [
+      "Update express to 4.22.2",
+      "Update React ecosystem",
+      "Update uuid to 9.0.1",
+      "Update pino to 8.21.0"
+    ]
+  }
+}

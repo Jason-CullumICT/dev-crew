@@ -1,0 +1,271 @@
+{
+  "audit_id": "inspector-2026-08-21-158bdf",
+  "audit_date": "2026-08-21",
+  "branch": "audit/inspector-2026-08-21-158bdf",
+  "grade": "D",
+  "overall_score": {
+    "p1_total": 6,
+    "p2_total": 11,
+    "p3_total": 8,
+    "p4_total": 0,
+    "spec_coverage_pct": 58,
+    "dynamic_tests_run": 0,
+    "fixed_since_prior": 0,
+    "prior_audit": null
+  },
+  "specialists_run": [
+    { "name": "quality-oracle",       "mode": "static",  "verdict": "fail", "p1": 2, "p2": 3, "p3": 2 },
+    { "name": "dependency-auditor",   "mode": "static",  "verdict": "fail", "p1": 4, "p2": 8, "p3": 6 },
+    { "name": "performance-profiler", "mode": "absent",  "verdict": "skip", "p1": 0, "p2": 0, "p3": 0 },
+    { "name": "chaos-monkey",         "mode": "absent",  "verdict": "skip", "p1": 0, "p2": 0, "p3": 0 }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "unimplemented-requirement",
+      "title": "GET /api/search endpoint not registered in app.ts",
+      "file": "Source/Backend/src/app.ts",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "escalate": false,
+      "route_to": "TheFixer",
+      "recommendation": "Create Source/Backend/src/routes/search.ts, implement handler, wire into app.ts with app.use('/api/search', searchRouter).",
+      "impact": "DependencyPicker typeahead returns 404 — feature is broken in production"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "FR-WF-* requirements live in Plans/ not Specifications/",
+      "file": "Plans/self-judging-workflow/requirements.md",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "escalate": false,
+      "route_to": "requirements-reviewer",
+      "recommendation": "Add numbered FR-WF-* table to Specifications/workflow-engine.md and retire Plan version as authoritative source.",
+      "impact": "Traceability chain is source → plan → (no spec). Architecture rule structurally unenforceable for workflow engine."
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Handlebars RCE via template injection (CVSS 9.8)",
+      "package": "handlebars",
+      "module": "Source/Backend",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "route_to": "TheFixer",
+      "recommendation": "npm update handlebars@>=4.7.8 in Source/Backend",
+      "impact": "Arbitrary code execution via AST type confusion in template rendering"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Vitest bundler RCE via esbuild/postcss chain (CVSS 9.8)",
+      "package": "vitest@2.0.5",
+      "module": "Source/Frontend",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "route_to": "TheFixer",
+      "recommendation": "npm update vitest@latest (>=4.1.0) in Source/Frontend",
+      "impact": "Code execution during test runs and CI/CD pipelines"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Vite dev server file-read escape via esbuild (CVSS 7.5)",
+      "package": "vite@5.4.0",
+      "module": "Source/Frontend",
+      "cvss": 7.5,
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "route_to": "TheFixer",
+      "recommendation": "npm update vite@latest (>=8.2.2) in Source/Frontend",
+      "impact": "Arbitrary file reads from dev server; affects developer machines and CI"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Protobufjs RCE + prototype pollution in Orchestrator (CVSS 9.8, 12 CVEs)",
+      "package": "protobufjs (via @grpc/grpc-js)",
+      "module": "platform/orchestrator",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "route_to": "platform-engineer (solo session)",
+      "recommendation": "Upgrade @grpc/grpc-js to latest OR migrate from protobufjs. Platform-only change (solo session required).",
+      "impact": "Arbitrary code execution and prototype pollution in orchestrator gRPC layer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003", "severity": "P2", "category": "spec-drift",
+      "title": "Stale portal specs (FR-001–069) pollute Specifications/",
+      "file": "Specifications/dev-workflow-platform.md",
+      "specialist": "quality-oracle", "status": "NEW",
+      "route_to": "requirements-reviewer",
+      "recommendation": "Add 'Portal Subsystem (legacy)' header or move content to docs/portal-specs.md"
+    },
+    {
+      "id": "QO-004", "severity": "P2", "category": "unimplemented-requirement",
+      "title": "FR-TMP-001–010 (tiered-merge-pipeline) have zero source traces",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "specialist": "quality-oracle", "status": "NEW",
+      "route_to": "platform-engineer (solo session)",
+      "recommendation": "Add Status column to spec table: not-started / implemented-in-platform / deferred"
+    },
+    {
+      "id": "QO-005", "severity": "P2", "category": "pattern-violation",
+      "title": "Traceability enforcer scans only 13 of 96 spec FRs (false-passing)",
+      "file": "tools/traceability-enforcer.py",
+      "specialist": "quality-oracle", "status": "NEW",
+      "route_to": "TheFixer",
+      "recommendation": "Extend enforcer to scan Specifications/ FR-dependency-* and FR-TMP-* IDs"
+    },
+    {
+      "id": "DEP-005", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "brace-expansion DoS via unbounded expansion (CVSS 7.5)",
+      "package": "brace-expansion <1.1.18", "module": "Source/Backend",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "TheFixer", "recommendation": "npm update brace-expansion"
+    },
+    {
+      "id": "DEP-006", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "form-data CRLF injection in multipart fields (CVSS 7.5)",
+      "package": "form-data <4.0.6", "module": "Source/Backend",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "TheFixer", "recommendation": "npm update form-data"
+    },
+    {
+      "id": "DEP-007", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "js-yaml code injection via unsafe YAML parsing (CVSS 7.5)",
+      "package": "js-yaml", "module": "Source/Backend",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "TheFixer", "recommendation": "npm update js-yaml to latest"
+    },
+    {
+      "id": "DEP-008", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "nanoid infinite loop / DoS (CVSS 5.9)",
+      "package": "nanoid <3.3.16", "module": "Source/Frontend",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "TheFixer", "recommendation": "npm update nanoid"
+    },
+    {
+      "id": "DEP-009", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "postcss DoS + template injection (multiple CVEs)",
+      "package": "postcss", "module": "Source/Frontend",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "TheFixer", "recommendation": "npm update postcss to latest"
+    },
+    {
+      "id": "DEP-010", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "ws WebSocket info disclosure",
+      "package": "ws", "module": "Source/Frontend",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "TheFixer", "recommendation": "npm update ws to latest"
+    },
+    {
+      "id": "DEP-011", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "@grpc/grpc-js server crash on malformed requests (CVSS 7.5)",
+      "package": "@grpc/grpc-js 1.14.0–1.14.3", "module": "platform/orchestrator",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "platform-engineer (solo session)",
+      "recommendation": "Upgrade @grpc/grpc-js to >=1.14.4"
+    },
+    {
+      "id": "DEP-012", "severity": "P2", "category": "dependency-vulnerability",
+      "title": "path-to-regexp ReDoS via route parameters (CVSS 7.5)",
+      "package": "path-to-regexp <0.1.13", "module": "platform/orchestrator",
+      "specialist": "dependency-auditor", "status": "NEW",
+      "route_to": "platform-engineer (solo session)",
+      "recommendation": "npm update path-to-regexp in platform/orchestrator"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006", "severity": "P3", "category": "pattern-violation",
+      "title": "eslint-disable suppressing react-hooks/exhaustive-deps without rationale",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "specialist": "quality-oracle", "status": "NEW", "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-007", "severity": "P3", "category": "architecture-violation",
+      "title": "workflow-engine.md has no numbered FR-* requirements",
+      "file": "Specifications/workflow-engine.md",
+      "specialist": "quality-oracle", "status": "NEW", "route_to": "requirements-reviewer"
+    },
+    {
+      "id": "DEP-P3-01", "severity": "P3", "category": "outdated-dependency",
+      "title": "express 4.18.2 → 4.22.2 (3 minor versions behind, latest 5.2.1)",
+      "module": "Source/Backend", "specialist": "dependency-auditor", "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-02", "severity": "P3", "category": "outdated-dependency",
+      "title": "pino 8.17.0 → 8.21.0 (latest 10.3.1, 2 majors behind)",
+      "module": "Source/Backend", "specialist": "dependency-auditor", "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-03", "severity": "P3", "category": "outdated-dependency",
+      "title": "uuid 9.0.0 → latest 14.0.2 (5 major versions behind)",
+      "module": "Source/Backend", "specialist": "dependency-auditor", "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-04", "severity": "P3", "category": "outdated-dependency",
+      "title": "react + react-dom 18.3.1, latest 19.2.8 (1 major behind)",
+      "module": "Source/Frontend", "specialist": "dependency-auditor", "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-05", "severity": "P3", "category": "outdated-dependency",
+      "title": "react-router-dom 6.26.0, latest 7.18.2 (1 major behind)",
+      "module": "Source/Frontend", "specialist": "dependency-auditor", "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-06", "severity": "P3", "category": "supply-chain",
+      "title": "200+ transitive deps in Source/Frontend (highest surface area)",
+      "module": "Source/Frontend", "specialist": "dependency-auditor", "route_to": "TheFixer"
+    }
+  ],
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "finding_ids": ["DEP-001", "DEP-002", "DEP-003", "DEP-004"],
+      "reason": "RCE and code injection vulnerabilities require security team review and exploitability confirmation",
+      "urgency": "CRITICAL",
+      "summary": "4 critical CVEs: Handlebars RCE (Backend), Vitest RCE (Frontend), Vite dev-server escape (Frontend), Protobufjs RCE (Orchestrator)"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Outdated direct dependencies not enforcing minimum transitive versions",
+      "affects": ["DEP-005","DEP-006","DEP-007","DEP-008","DEP-009","DEP-010","DEP-011","DEP-012"],
+      "single_fix": "Systematic npm update with lockfile enforcement and Dependabot/Renovate automation",
+      "fix_impact": "Resolves 8 P2 findings in one batch update operation"
+    },
+    {
+      "root_cause": "Spec files in wrong locations — narrative only, no FR-* IDs in Specifications/",
+      "affects": ["QO-002","QO-007"],
+      "single_fix": "Add numbered FR-WF-* requirements table to Specifications/workflow-engine.md; retire Plans version as authoritative",
+      "fix_impact": "Resolves 2 findings; unblocks formal traceability for all workflow engine code"
+    },
+    {
+      "root_cause": "Traceability enforcer scope too narrow — Specifications/ not scanned",
+      "affects": ["QO-004","QO-005"],
+      "single_fix": "Extend tools/traceability-enforcer.py to read Specifications/ alongside Plans/",
+      "fix_impact": "Resolves 2 findings; changes enforcer from false-passing to accurate gate"
+    }
+  ]
+}

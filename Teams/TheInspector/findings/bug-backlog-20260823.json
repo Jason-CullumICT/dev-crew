@@ -1,0 +1,371 @@
+{
+  "audit": {
+    "date": "2026-08-23",
+    "grade": "D",
+    "project": "dev-crew Source App",
+    "branch": "main",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend and frontend services offline at audit time",
+    "totals": {
+      "p1": 5,
+      "p2": 12,
+      "p3": 7,
+      "p4": 4,
+      "escalations": 3,
+      "cves_total": 99,
+      "cves_critical": 7,
+      "cves_high": 27,
+      "spec_coverage_pct": 29
+    },
+    "first_audit": true,
+    "prior_grade": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection (RCE)",
+      "severity": "P1",
+      "cve": "GHSA-f5hj-r3wr-xwvh",
+      "cvss": null,
+      "category": "Remote Code Execution",
+      "file": "Source/Backend/package.json",
+      "package": "handlebars",
+      "description": "AST type confusion allows JavaScript injection via tampering @part values in Handlebars templates. Remote code execution if templates process untrusted input.",
+      "fix": "Update handlebars to patched version. Verify template input sanitization.",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "injection — RCE via template input",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "severity": "P1",
+      "cve": "GHSA (protobufjs)",
+      "cvss": 9.8,
+      "category": "Remote Code Execution",
+      "file": "platform/orchestrator/package.json",
+      "package": "protobufjs",
+      "description": "Arbitrary code execution when parsing malicious .proto files or network responses. Network, Low Complexity, No Privileges Required.",
+      "fix": "Update protobufjs >= 7.4.0.",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "injection — RCE via protobuf parsing",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest UI Server Arbitrary File Read + Code Execution (CVSS 9.1)",
+      "severity": "P1",
+      "cve": "GHSA (vitest)",
+      "cvss": 9.1,
+      "category": "Information Disclosure + Remote Code Execution",
+      "files": ["portal/Backend/package.json", "portal/Frontend/package.json"],
+      "package": "vitest",
+      "description": "When Vitest UI server is listening, any network attacker can read arbitrary files and execute arbitrary JavaScript in the test runner context.",
+      "fix": "Disable --ui flag in production. Update vitest >= 2.1.0.",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "missing access control — UI server exposed on network without auth",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Traceability enforcer blind spot — false-pass CI gate",
+      "severity": "P1",
+      "category": "Quality / Process Integrity",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Enforcer covers only 13 of ~98 known requirements. Specifications/ and Plans/dependency-linking/ entirely outside scan scope. CI gate gives false confidence.",
+      "recommendation": "Expand enforcer scope to include Specifications/ and Plans/dependency-linking/, or explicitly document exclusions.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "title": "Spec–implementation mismatch — 69 FRs in dev-workflow-platform.md unimplemented",
+      "severity": "P1",
+      "category": "Specification Integrity / Implementation Debt",
+      "source": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "69 functional requirements for SQLite/Feature-Requests/Dev-Cycles system defined but have zero implementation. Root cause of 29% coverage figure.",
+      "recommendation": "Archive spec as superseded (add SUPERSEDED banner) OR create formal implementation plan for the 69 FRs.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "title": "GET /api/search not wired in app.ts — DependencyPicker typeahead broken at runtime",
+      "severity": "P2",
+      "category": "Quality / Runtime",
+      "source": "quality-oracle",
+      "file": "Source/Backend/app.ts",
+      "description": "Search route not registered. search.test.ts self-documents this as intentionally failing. DependencyPicker is broken for end users.",
+      "recommendation": "Register route in app.ts or mark feature as intentionally deferred and remove broken test assertion.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "title": "Plans/dependency-linking FRs outside enforcer scope (incl. FR-dependency-api-types missing)",
+      "severity": "P2",
+      "category": "Quality / Process",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "description": "16 FR-dependency-* IDs are outside enforcer scope. FR-dependency-api-types is marked as ❌ Missing in the plan's own tracking.",
+      "recommendation": "Add Plans/dependency-linking/ to enforcer scope.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "brace-expansion exponential DoS",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "source": "dependency-auditor",
+      "cves": ["GHSA-3jxr-9vmj-r5cp", "GHSA-f886-m6hf-6m8v"],
+      "affected": ["Source/Backend", "Source/Frontend"],
+      "package": "brace-expansion",
+      "fix": "Update brace-expansion >= 1.1.16",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data CRLF injection — HTTP response splitting",
+      "severity": "P2",
+      "category": "CVE / HTTP Injection",
+      "source": "dependency-auditor",
+      "cvss": 5.3,
+      "affected": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "package": "form-data",
+      "fix": "Update form-data >= 4.0.0",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "js-yaml quadratic-complexity DoS via alias merge keys",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "source": "dependency-auditor",
+      "cvss": 5.3,
+      "affected": ["Source/Backend (indirect)"],
+      "package": "js-yaml",
+      "fix": "Update js-yaml >= 4.1.0",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "@grpc/grpc-js server crash on malformed gRPC messages",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "source": "dependency-auditor",
+      "cvss": 7.5,
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "package": "@grpc/grpc-js",
+      "fix": "Update @grpc/grpc-js >= 1.14.4",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "title": "nanoid non-secure random generator on negative size input",
+      "severity": "P2",
+      "category": "CVE / Cryptography",
+      "source": "dependency-auditor",
+      "affected": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "package": "nanoid",
+      "fix": "Update nanoid to latest",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "title": "PostCSS unescaped </style> tag allows XSS in CSS-in-JS",
+      "severity": "P2",
+      "category": "CVE / Cross-Site Scripting",
+      "source": "dependency-auditor",
+      "affected": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "package": "postcss",
+      "fix": "Update postcss >= 8.4.40",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "title": "Vite path traversal in optimized deps .map file handling",
+      "severity": "P2",
+      "category": "CVE / Path Traversal",
+      "source": "dependency-auditor",
+      "affected": ["Source/Frontend", "portal/Frontend"],
+      "package": "vite",
+      "fix": "Update vite >= 5.4.1",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "title": "ws (WebSocket) uninitialized memory disclosure",
+      "severity": "P2",
+      "category": "CVE / Information Disclosure",
+      "source": "dependency-auditor",
+      "affected": ["Source/Frontend", "portal/Frontend"],
+      "package": "ws",
+      "fix": "Update ws to latest",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "title": "path-to-regexp catastrophic backtracking — ReDoS",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "source": "dependency-auditor",
+      "cvss": 5.3,
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "package": "path-to-regexp",
+      "fix": "Update path-to-regexp >= 7.2.1",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "title": "picomatch method injection via POSIX character class parsing",
+      "severity": "P2",
+      "category": "CVE / Potential Code Execution",
+      "source": "dependency-auditor",
+      "affected": ["portal/Frontend"],
+      "package": "picomatch",
+      "fix": "Update picomatch >= 4.2.0",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "title": "Silent JSON parse suppression in api/client.ts:26",
+      "severity": "P3",
+      "category": "Code Quality",
+      "source": "quality-oracle",
+      "file": "api/client.ts:26",
+      "description": ".catch(() => ({})) suppresses parse errors. Violates 'never swallow errors silently' rule.",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "title": "Undocumented eslint-disable-next-line (react-hooks/exhaustive-deps)",
+      "severity": "P3",
+      "category": "Code Quality",
+      "source": "quality-oracle",
+      "files": ["useWorkItems.ts", "DependencyPicker.tsx"],
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "title": "DebugPortalPage uses prose traceability ID instead of formal FR-*",
+      "severity": "P3",
+      "category": "Traceability",
+      "source": "quality-oracle",
+      "file": "DebugPortalPage.tsx",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "title": "HTTP status via message substring matching (brittle)",
+      "severity": "P3",
+      "category": "Code Quality",
+      "source": "quality-oracle",
+      "file": "workflow.ts:330",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "title": "Outdated major versions: express, pino, uuid in Source/Backend",
+      "severity": "P3",
+      "category": "Outdated Dependencies",
+      "source": "dependency-auditor",
+      "affected": ["Source/Backend"],
+      "fix": "npm update express pino uuid && npm audit fix",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "title": "portal/Backend — 577 transitive deps, highest supply chain attack surface",
+      "severity": "P3",
+      "category": "Supply Chain Risk",
+      "source": "dependency-auditor",
+      "affected": ["portal/Backend"],
+      "fix": "Audit package-lock.json; enable lockfile verification in CI; use --save-exact",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "title": "@opentelemetry Prometheus exporter crashes on malformed HTTP (CVSS 7.5)",
+      "severity": "P3",
+      "category": "CVE / Denial of Service",
+      "source": "dependency-auditor",
+      "affected": ["portal/Backend"],
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "fix": "Update >= 0.79.0",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-017",
+      "title": "@babel/core arbitrary file read via sourceMappingURL (local only)",
+      "severity": "P4",
+      "cvss": 3.2,
+      "category": "CVE / Information Disclosure",
+      "source": "dependency-auditor",
+      "fix": "Update @babel/core >= 7.30.0",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-018",
+      "title": "body-parser unbounded request body DoS on invalid limit config",
+      "severity": "P4",
+      "cvss": 3.7,
+      "category": "CVE / Denial of Service",
+      "source": "dependency-auditor",
+      "fix": "Verify body-parser limit config; update >= 1.20.6",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-019",
+      "title": "react-router-dom open redirect via protocol-relative URL",
+      "severity": "P4",
+      "category": "CVE / Open Redirect",
+      "source": "dependency-auditor",
+      "fix": "Update react-router-dom >= 6.23.3; validate redirect URLs",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-020",
+      "title": "@protobufjs/utf8 overlong UTF-8 encoding bypass",
+      "severity": "P4",
+      "cvss": 5.3,
+      "category": "CVE / Encoding",
+      "source": "dependency-auditor",
+      "fix": "Update protobufjs >= 7.4.0 (fixes transitively)",
+      "fix_team": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

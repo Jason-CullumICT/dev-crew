@@ -1,0 +1,308 @@
+{
+  "audit_date": "2026-08-23",
+  "auditor": "dependency_auditor",
+  "status": "completed",
+  "summary": {
+    "total_cves": 99,
+    "critical": 7,
+    "high": 27,
+    "moderate": 57,
+    "low": 8,
+    "projects_audited": 5,
+    "package_managers": ["npm"]
+  },
+  "projects": {
+    "Source/Backend": {
+      "direct_deps": 13,
+      "transitive_deps": 411,
+      "cves": 9,
+      "critical": 1,
+      "high": 3,
+      "moderate": 4,
+      "low": 1
+    },
+    "Source/Frontend": {
+      "direct_deps": 13,
+      "transitive_deps": 230,
+      "cves": 13,
+      "critical": 1,
+      "high": 5,
+      "moderate": 6,
+      "low": 1
+    },
+    "Source/E2E": {
+      "direct_deps": 4,
+      "transitive_deps": 20,
+      "cves": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0
+    },
+    "platform/orchestrator": {
+      "direct_deps": 3,
+      "transitive_deps": 155,
+      "cves": 9,
+      "critical": 1,
+      "high": 2,
+      "moderate": 6,
+      "low": 0
+    },
+    "portal/Backend": {
+      "direct_deps": 22,
+      "transitive_deps": 577,
+      "cves": 55,
+      "critical": 2,
+      "high": 10,
+      "moderate": 43,
+      "low": 0
+    },
+    "portal/Frontend": {
+      "direct_deps": 17,
+      "transitive_deps": 424,
+      "cves": 13,
+      "critical": 1,
+      "high": 6,
+      "moderate": 5,
+      "low": 1
+    }
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection",
+      "severity": "critical",
+      "package": "handlebars",
+      "category": "cve-rce",
+      "affected_projects": ["Source/Backend"],
+      "description": "AST Type Confusion allows JavaScript injection via tampering @part values",
+      "cvss_score": 9.0,
+      "recommendation": "Update handlebars to patched version",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs Arbitrary Code Execution",
+      "severity": "critical",
+      "package": "protobufjs",
+      "category": "cve-rce",
+      "affected_projects": ["platform/orchestrator"],
+      "description": "Arbitrary code execution in protobufjs during parsing",
+      "cvss_score": 9.8,
+      "recommendation": "Update protobufjs to >= 7.4.0",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest UI Server Arbitrary File Access",
+      "severity": "critical",
+      "package": "vitest",
+      "category": "cve-disclosure-rce",
+      "affected_projects": ["portal/Backend", "portal/Frontend"],
+      "description": "UI server allows reading arbitrary files and executing code",
+      "cvss_score": 9.1,
+      "recommendation": "Disable UI server in production; update vitest",
+      "escalation": "red-teamer"
+    },
+    {
+      "id": "DEP-004",
+      "title": "brace-expansion DoS",
+      "severity": "high",
+      "package": "brace-expansion",
+      "category": "cve-dos",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "description": "Exponential-time expansion of {} groups or zero-step sequence",
+      "cvss_score": 6.5,
+      "recommendation": "Update to >= 1.1.16"
+    },
+    {
+      "id": "DEP-005",
+      "title": "form-data CRLF Injection",
+      "severity": "high",
+      "package": "form-data",
+      "category": "cve-injection",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "description": "CRLF injection in multipart field names allows HTTP response splitting",
+      "cvss_score": 5.3,
+      "recommendation": "Update to >= 4.0.0"
+    },
+    {
+      "id": "DEP-006",
+      "title": "JS-YAML Quadratic-Complexity DoS",
+      "severity": "high",
+      "package": "js-yaml",
+      "category": "cve-dos",
+      "affected_projects": ["Source/Backend"],
+      "description": "Repeated aliases in YAML merge keys cause quadratic-time parsing",
+      "cvss_score": 5.3,
+      "recommendation": "Update to >= 4.1.0"
+    },
+    {
+      "id": "DEP-007",
+      "title": "@grpc/grpc-js Server Crash",
+      "severity": "high",
+      "package": "@grpc/grpc-js",
+      "category": "cve-dos",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "description": "Malformed gRPC requests or compressed messages crash server",
+      "cvss_score": 7.5,
+      "recommendation": "Update to >= 1.14.4",
+      "escalation": "red-teamer"
+    },
+    {
+      "id": "DEP-008",
+      "title": "nanoid Non-Secure RNG",
+      "severity": "high",
+      "package": "nanoid",
+      "category": "cve-crypto",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "description": "Non-secure generators loop indefinitely with negative size",
+      "recommendation": "Update to latest version"
+    },
+    {
+      "id": "DEP-009",
+      "title": "PostCSS XSS",
+      "severity": "high",
+      "package": "postcss",
+      "category": "cve-xss",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "description": "Unescaped </style> in CSS output leads to XSS",
+      "recommendation": "Update to >= 8.4.40"
+    },
+    {
+      "id": "DEP-010",
+      "title": "Vite Path Traversal",
+      "severity": "high",
+      "package": "vite",
+      "category": "cve-path-traversal",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "description": "Path traversal in optimized deps .map handling",
+      "recommendation": "Update to >= 5.4.1"
+    },
+    {
+      "id": "DEP-011",
+      "title": "ws Uninitialized Memory Disclosure",
+      "severity": "high",
+      "package": "ws",
+      "category": "cve-disclosure",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "description": "Uninitialized memory disclosed in error conditions",
+      "recommendation": "Update to latest version"
+    },
+    {
+      "id": "DEP-012",
+      "title": "path-to-regexp ReDoS",
+      "severity": "high",
+      "package": "path-to-regexp",
+      "category": "cve-dos",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "description": "Regular expression DoS via multiple slashes/wildcards",
+      "recommendation": "Update to >= 7.2.1"
+    },
+    {
+      "id": "DEP-013",
+      "title": "picomatch Method Injection",
+      "severity": "high",
+      "package": "picomatch",
+      "category": "cve-injection",
+      "affected_projects": ["portal/Frontend"],
+      "description": "Method injection in POSIX character classes",
+      "recommendation": "Update to >= 4.2.0"
+    },
+    {
+      "id": "DEP-014",
+      "title": "Outdated Major Versions",
+      "severity": "moderate",
+      "package": "express, pino, uuid",
+      "category": "outdated",
+      "affected_projects": ["Source/Backend"],
+      "description": "Missing security patches from major version updates",
+      "recommendation": "Run npm update and test"
+    },
+    {
+      "id": "DEP-015",
+      "title": "Large Transitive Dependency Tree",
+      "severity": "moderate",
+      "package": "portal/Backend (all)",
+      "category": "supply-chain",
+      "affected_projects": ["portal/Backend"],
+      "description": "577 transitive dependencies create large attack surface",
+      "recommendation": "Implement lock file integrity checks"
+    },
+    {
+      "id": "DEP-016",
+      "title": "@opentelemetry Prometheus Exporter Crash",
+      "severity": "moderate",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "category": "cve-dos",
+      "affected_projects": ["portal/Backend"],
+      "description": "Prometheus exporter crashes on malformed HTTP requests",
+      "recommendation": "Update to >= 0.79.0"
+    },
+    {
+      "id": "DEP-017",
+      "title": "@babel/core File Read",
+      "severity": "low",
+      "package": "@babel/core",
+      "category": "cve-disclosure",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend"],
+      "description": "Local arbitrary file read via sourceMappingURL (high prerequisites)",
+      "cvss_score": 3.2,
+      "recommendation": "Update to >= 7.30.0"
+    },
+    {
+      "id": "DEP-018",
+      "title": "body-parser Unbounded Body DoS",
+      "severity": "low",
+      "package": "body-parser",
+      "category": "cve-dos",
+      "affected_projects": ["Source/Backend", "platform/orchestrator"],
+      "description": "Invalid limit values disable size enforcement",
+      "cvss_score": 3.7,
+      "recommendation": "Verify config is valid; update to >= 1.20.6"
+    },
+    {
+      "id": "DEP-019",
+      "title": "@remix-run/router Open Redirect",
+      "severity": "moderate",
+      "package": "@remix-run/router",
+      "category": "cve-open-redirect",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "description": "Same-origin redirect with // is protocol-relative",
+      "recommendation": "Update react-router-dom to >= 6.23.3"
+    },
+    {
+      "id": "DEP-020",
+      "title": "@protobufjs/utf8 Overlong Decoding",
+      "severity": "moderate",
+      "package": "@protobufjs/utf8",
+      "category": "cve-encoding",
+      "affected_projects": ["platform/orchestrator"],
+      "description": "Overlong UTF-8 sequences bypass validation",
+      "recommendation": "Update protobufjs to >= 7.4.0"
+    }
+  ],
+  "license_compliance": {
+    "status": "pass",
+    "details": "No GPL/AGPL licenses detected in direct dependencies"
+  },
+  "recommendations": {
+    "immediate": [
+      "Update vitest in portal/Backend and portal/Frontend",
+      "Verify Vitest UI is disabled in production",
+      "Update protobufjs in platform/orchestrator",
+      "Update handlebars in Source/Backend"
+    ],
+    "priority_2weeks": [
+      "Update form-data, nanoid, postcss, vite, ws, @grpc/grpc-js, path-to-regexp",
+      "Run npm audit fix in all directories",
+      "Update express, pino, uuid in Source/Backend"
+    ],
+    "ongoing": [
+      "Add npm audit --audit-level=high to CI/CD",
+      "Schedule monthly dependency audits",
+      "Implement lock file integrity checks"
+    ]
+  },
+  "next_audit": "2026-09-23"
+}

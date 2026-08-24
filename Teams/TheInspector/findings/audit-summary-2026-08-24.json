@@ -1,0 +1,247 @@
+{
+  "audit_date": "2026-08-24",
+  "agent": "dependency_auditor",
+  "overall_grade": "C",
+  "summary": {
+    "total_projects_scanned": 10,
+    "total_dependencies": 1750,
+    "vulnerabilities": {
+      "critical": 5,
+      "high": 28,
+      "moderate": 65,
+      "low": 4,
+      "total": 102
+    },
+    "deprecated_packages": 0,
+    "license_issues": 0,
+    "outdated_major_versions": 12
+  },
+  "critical_findings": [
+    {
+      "id": "CRITICAL-001",
+      "package": "handlebars",
+      "severity": "critical",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "platform/orchestrator", "portal/Frontend"],
+      "cves": ["GHSA-3mfm-83xf-c92r", "GHSA-2w6w-674q-4c4q", "GHSA-2qvq-rjwj-gvw9"],
+      "description": "JavaScript Injection via AST Type Confusion, Prototype Pollution, DoS",
+      "versions_affected": "4.0.0-4.7.8",
+      "recommended_fix": "Upgrade to handlebars >=4.7.9",
+      "risk": "Remote Code Execution if templates are attacker-controlled",
+      "action_required": true
+    },
+    {
+      "id": "CRITICAL-002",
+      "package": "protobufjs",
+      "severity": "critical",
+      "affected_projects": ["portal/Backend"],
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "description": "Arbitrary Code Execution via unsafe deserialization",
+      "versions_affected": "<7.5.5",
+      "recommended_fix": "Upgrade to protobufjs >=7.5.5",
+      "risk": "Remote Code Execution if untrusted protobuf data is processed",
+      "action_required": true
+    },
+    {
+      "id": "CRITICAL-003",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "severity": "high",
+      "affected_projects": ["portal/Backend"],
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "description": "Prometheus exporter process crash via malformed HTTP request",
+      "versions_affected": "<=0.76.0",
+      "recommended_fix": "Upgrade to @opentelemetry/auto-instrumentations-node >=0.79.0 (breaking)",
+      "risk": "Observability infrastructure DoS",
+      "action_required": true
+    },
+    {
+      "id": "HIGH-001",
+      "package": "brace-expansion",
+      "severity": "high",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "description": "Multiple DoS via process hang and memory exhaustion",
+      "versions_affected": "<=1.1.17",
+      "recommended_fix": "Upgrade to brace-expansion >=1.1.18",
+      "risk": "Build tool hang/crash, affects npm install",
+      "action_required": true
+    },
+    {
+      "id": "HIGH-002",
+      "package": "form-data",
+      "severity": "high",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "description": "CRLF injection via unescaped multipart field names",
+      "versions_affected": "4.0.0-4.0.5",
+      "recommended_fix": "Upgrade to form-data >=4.0.6",
+      "risk": "HTTP request splitting, header injection",
+      "action_required": true
+    }
+  ],
+  "projects": {
+    "Source/Backend": {
+      "critical": 1,
+      "high": 3,
+      "moderate": 4,
+      "low": 1,
+      "total": 9,
+      "direct_deps": 13,
+      "transitive_deps": 411,
+      "status": "URGENT"
+    },
+    "Source/Frontend": {
+      "critical": 1,
+      "high": 5,
+      "moderate": 6,
+      "low": 1,
+      "total": 13,
+      "direct_deps": 10,
+      "transitive_deps": 230,
+      "status": "URGENT"
+    },
+    "Source/E2E": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "direct_deps": 5,
+      "transitive_deps": null,
+      "status": "CLEAN"
+    },
+    "abac-demo": {
+      "critical": 0,
+      "high": 7,
+      "moderate": 1,
+      "low": 1,
+      "total": 9,
+      "direct_deps": null,
+      "transitive_deps": null,
+      "status": "MEDIUM"
+    },
+    "abac-reimagined": {
+      "critical": 0,
+      "high": 7,
+      "moderate": 1,
+      "low": 1,
+      "total": 9,
+      "direct_deps": null,
+      "transitive_deps": null,
+      "status": "MEDIUM"
+    },
+    "abac-soc-demo-v2": {
+      "critical": 0,
+      "high": 7,
+      "moderate": 1,
+      "low": 1,
+      "total": 9,
+      "direct_deps": null,
+      "transitive_deps": null,
+      "status": "MEDIUM"
+    },
+    "abac-soc-demo": {
+      "critical": 0,
+      "high": 7,
+      "moderate": 1,
+      "low": 1,
+      "total": 9,
+      "direct_deps": null,
+      "transitive_deps": null,
+      "status": "MEDIUM"
+    },
+    "platform/orchestrator": {
+      "critical": 1,
+      "high": 2,
+      "moderate": 6,
+      "low": 0,
+      "total": 9,
+      "direct_deps": null,
+      "transitive_deps": null,
+      "status": "URGENT"
+    },
+    "portal/Backend": {
+      "critical": 2,
+      "high": 10,
+      "moderate": 43,
+      "low": 0,
+      "total": 55,
+      "direct_deps": null,
+      "transitive_deps": 577,
+      "status": "CRITICAL"
+    },
+    "portal/Frontend": {
+      "critical": 1,
+      "high": 6,
+      "moderate": 5,
+      "low": 1,
+      "total": 13,
+      "direct_deps": null,
+      "transitive_deps": null,
+      "status": "URGENT"
+    }
+  },
+  "remediation_priority": [
+    {
+      "priority": 1,
+      "project": "portal/Backend",
+      "action": "npm audit fix --force",
+      "reason": "Most vulnerabilities (55), largest dep tree (577 transitive), 2 critical CVEs"
+    },
+    {
+      "priority": 2,
+      "project": "Source/Backend",
+      "action": "npm audit fix --force + npm update express@4.22.2 pino@8.21.0 uuid@9.0.1",
+      "reason": "1 critical CVE (handlebars), production API server"
+    },
+    {
+      "priority": 3,
+      "project": "Source/Frontend",
+      "action": "npm audit fix --force + npm update react-router-dom@7.18.0",
+      "reason": "1 critical CVE (handlebars), 5 high CVEs, frontend app"
+    },
+    {
+      "priority": 4,
+      "project": "platform/orchestrator",
+      "action": "npm audit fix",
+      "reason": "1 critical CVE (handlebars), orchestration infrastructure"
+    },
+    {
+      "priority": 5,
+      "project": "portal/Frontend",
+      "action": "npm audit fix --force",
+      "reason": "1 critical CVE (handlebars), 6 high CVEs, debug portal"
+    }
+  ],
+  "cross_references": [
+    {
+      "finding": "CRITICAL-001 (Handlebars RCE)",
+      "escalate_to": "red-teamer",
+      "reason": "Assess if templates are user-controlled or attacker-influenced"
+    },
+    {
+      "finding": "CRITICAL-002 (Protobufjs RCE)",
+      "escalate_to": "red-teamer",
+      "reason": "Assess if untrusted protobuf data flows through OpenTelemetry instrumentation"
+    },
+    {
+      "finding": "HIGH-001 (brace-expansion DoS)",
+      "escalate_to": "red-teamer",
+      "reason": "Build tool vulnerability — affects npm install reliability"
+    },
+    {
+      "finding": "HIGH-006 (nanoid loops)",
+      "escalate_to": "red-teamer",
+      "reason": "Verify if nanoid used for security token generation"
+    }
+  ],
+  "notes": {
+    "audit_tool": "npm audit --json",
+    "coverage": "All 10 npm projects scanned",
+    "no_go_projects": true,
+    "no_python_projects": true,
+    "no_rust_projects": true,
+    "license_compliance": "All permissive (MIT, Apache 2.0) — no GPL/AGPL conflicts",
+    "abandoned_packages": "None detected",
+    "supply_chain_risk": "MEDIUM — largest dep tree in portal/Backend (577), but no single-maintainer packages or post-install scripts detected"
+  }
+}

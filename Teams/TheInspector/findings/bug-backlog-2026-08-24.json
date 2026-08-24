@@ -1,0 +1,298 @@
+{
+  "audit_date": "2026-08-24",
+  "audit_id": "inspector-audit-2026-08-24",
+  "overall_grade": "D",
+  "grade_rationale": "3 P1 findings (exceeds C threshold of 2) and ~14% full-scope spec coverage (below C threshold of 40%). Active Plans-level traceability is 100%; the gap is structural — the primary Specifications/ files are not covered by the traceability enforcer.",
+  "summary": {
+    "p1": 3,
+    "p2": 13,
+    "p3": 4,
+    "p4": 2,
+    "total": 22,
+    "escalations_to_guardians": 2,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEP-P1-001",
+      "severity": "P1",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "Handlebars JavaScript Injection / Prototype Pollution / RCE",
+      "package": "handlebars",
+      "versions_affected": "4.0.0 – 4.7.8",
+      "affected_projects": [
+        "Source/Backend",
+        "Source/Frontend",
+        "platform/orchestrator",
+        "portal/Frontend"
+      ],
+      "cves": [
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-2qvq-rjwj-gvw9"
+      ],
+      "risk": "Remote Code Execution if templates are attacker-controlled; Prototype Pollution affecting all JS objects",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "recommendation": "Upgrade handlebars to >=4.7.9 immediately across all 4 projects. TheGuardians to assess whether any template inputs are user-controlled."
+    },
+    {
+      "id": "DEP-P1-002",
+      "severity": "P1",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "Protobufjs Arbitrary Code Execution via Unsafe Deserialization",
+      "package": "protobufjs",
+      "versions_affected": "<7.5.5",
+      "affected_projects": ["portal/Backend"],
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "risk": "Remote Code Execution if untrusted protobuf data flows through OTel instrumentation in portal/Backend",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "recommendation": "Upgrade protobufjs to >=7.5.5. TheGuardians to trace all protobuf data ingestion points in portal/Backend."
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Specifications/dev-workflow-platform.md — 69 formal FRs with 0% implementation coverage",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "This file contains FR-001 through FR-069 describing a SQLite-backed platform. The project pivoted to a Self-Judging Workflow Engine. Zero source files reference these FRs. The traceability enforcer never scans Specifications/, so this gap is invisible to CI.",
+      "recommendation": "(a) Archive as _archived/dev-workflow-platform.md, or (b) add [DEFERRED] header and exclude from traceability gate. Update inspector.config.yml specs.dir to reflect active spec set.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer scoped to Plans/ only — Specifications/ is a CI blind spot",
+      "file": "tools/traceability-enforcer.py:48",
+      "detail": "The enforcer auto-selects the most recent requirements.md under Plans/. It never reads Specifications/. inspector.config.yml sets specs.dir: Specifications/ but the enforcer ignores it — making any FR in Specifications/ structurally exempt from enforcement.",
+      "recommendation": "Add --specs-dir flag to enforcer to scan Specifications/. Or formally deprecate Specifications/dev-workflow-platform.md and document the policy.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "doc-stale",
+      "specialist": "quality-oracle",
+      "title": "Plans/dependency-linking/requirements.md delta table incorrectly shows 3 items as unimplemented",
+      "file": "Plans/dependency-linking/requirements.md:39",
+      "detail": "FR-dependency-api-types, FR-dependency-seed, and FR-dependency-frontend-tests are marked ❌ Missing but corresponding test files with proper traceability comments exist.",
+      "recommendation": "Update delta table to ✅ Done for implemented items. Confirm FR-dependency-seed applicability to current domain model.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-001",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "@opentelemetry/auto-instrumentations-node — Prometheus exporter process crash",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "affected_projects": ["portal/Backend"],
+      "recommendation": "Upgrade to >=0.79.0 (breaking change — test OTel instrumentation after upgrade).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-002",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion — 4 DoS vectors (process hang + memory exhaustion)",
+      "package": "brace-expansion",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "recommendation": "Upgrade to brace-expansion >=1.1.18 via npm audit fix.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-003",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "form-data — CRLF injection via unescaped multipart field names",
+      "package": "form-data",
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "recommendation": "Upgrade to form-data >=4.0.6.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-004",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "js-yaml — DoS via YAML merge keys (3 CVEs)",
+      "package": "js-yaml",
+      "cve_count": 3,
+      "recommendation": "Upgrade js-yaml to latest stable.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-005",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "PostCSS — XSS + path traversal (4 CVEs)",
+      "package": "postcss",
+      "cve_count": 4,
+      "recommendation": "Upgrade PostCSS via npm audit fix in frontend projects.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-006",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "ws — Memory exhaustion & information disclosure (2 CVEs)",
+      "package": "ws",
+      "cve_count": 2,
+      "recommendation": "Upgrade ws to latest stable.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-007",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "nanoid — Infinite loop in generator (2 CVEs)",
+      "package": "nanoid",
+      "cve_count": 2,
+      "note": "Red-teamer to verify if nanoid is used for security token generation.",
+      "recommendation": "Upgrade nanoid to latest stable.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-008",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "Vite — Dev server path traversal",
+      "package": "vite",
+      "note": "Dev-time only if vite is not bundled in production. Confirm scope.",
+      "recommendation": "Upgrade Vite to latest stable in all frontend projects.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-009",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "@remix-run/router — Open redirect",
+      "package": "@remix-run/router",
+      "recommendation": "Upgrade react-router-dom to >=7.18.0 (pulls in fixed router).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-010",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "@grpc/grpc-js — Server crash (2 CVEs)",
+      "package": "@grpc/grpc-js",
+      "cve_count": 2,
+      "affected_projects": ["portal/Backend"],
+      "recommendation": "Upgrade @grpc/grpc-js to >=1.14.4.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-011",
+      "severity": "P2",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "path-to-regexp — ReDoS",
+      "package": "path-to-regexp",
+      "recommendation": "Upgrade path-to-regexp to latest stable.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "workItemStore.ts imports raw utils/logger instead of the ../logger compat wrapper",
+      "file": "Source/Backend/src/store/workItemStore.ts:10",
+      "recommendation": "Change import to '../logger' for consistency. Treat utils/logger as an internal implementation detail.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable-next-line react-hooks/exhaustive-deps without justification comment (2 locations)",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "recommendation": "Add '// Safe: <reason>' comment on each suppression line.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Specifications/workflow-engine.md has no formal FR-XXX identifiers — untraceable",
+      "file": "Specifications/workflow-engine.md",
+      "recommendation": "Add FR-WF-XXX anchors to spec sections, or add explicit Spec-ref headers in Plan requirements files.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-001",
+      "severity": "P3",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "65 moderate CVEs across 9 projects (grouped)",
+      "note": "Addressed by running 'npm audit fix' in each affected project. See audit-summary-2026-08-24.json for project-level breakdown.",
+      "recommendation": "Run 'npm audit fix' across all projects as part of next maintenance sprint.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Source/Backend/src/routes/workflow.ts approaching 500-line soft limit (374 lines, 75%)",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "recommendation": "Monitor. If dependency-management endpoints expand, split into dependencies.ts route file.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P4-001",
+      "severity": "P4",
+      "category": "dependency-security",
+      "specialist": "dependency-auditor",
+      "title": "4 low-severity CVEs across multiple projects",
+      "note": "Addressed by 'npm audit fix'. See audit-summary-2026-08-24.json for details.",
+      "recommendation": "Include in next maintenance window npm audit fix pass.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

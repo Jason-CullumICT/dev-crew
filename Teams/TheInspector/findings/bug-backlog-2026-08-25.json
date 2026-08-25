@@ -1,0 +1,301 @@
+{
+  "audit": {
+    "id": "inspector-2026-08-25",
+    "date": "2026-08-25",
+    "grade": "D",
+    "branch": "main",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "No specialist reports present — services not verified or not run this cycle",
+    "p1_total": 6,
+    "p2_total": 12,
+    "p3_total": 19,
+    "p4_total": 2,
+    "spec_coverage_primary": 0,
+    "spec_coverage_wf": 100
+  },
+  "escalations": [
+    {
+      "id": "DA-P1-001",
+      "specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "RCE / Injection",
+      "title": "Handlebars 4.7.8 — Remote Code Execution via AST Injection",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "cvss": 9.8,
+      "workspace": "Source/Backend",
+      "description": "Handlebars is vulnerable to Prototype Pollution and AST injection that can lead to RCE when user-controlled input reaches a Handlebars template. CVSS 9.8 Critical.",
+      "recommendation": "Identify usage — if used for email/templates, upgrade or remove. Pin to patched version. Do not allow user input into template compilation.",
+      "escalate_to": "TheGuardians",
+      "escalation_tag": "[ESCALATE → TheGuardians]",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P1-002",
+      "specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "RCE / Arbitrary File Read",
+      "title": "Vitest 3.2.5 — Arbitrary File Read / RCE when UI exposed",
+      "package": "vitest",
+      "version": "3.2.5",
+      "cvss": 9.8,
+      "workspace": "Source/Frontend (dev)",
+      "description": "Vitest browser UI exposes an endpoint that allows arbitrary file reads from the test runner host when the UI is accessible. In CI/CD or misconfigured dev environments this can escalate to RCE. CVSS 9.8 Critical.",
+      "recommendation": "Upgrade to vitest 3.2.6+ (or 4.x). Never expose the Vitest UI port outside localhost. Verify CI build images do not expose the port externally.",
+      "escalate_to": "TheGuardians",
+      "escalation_tag": "[ESCALATE → TheGuardians]",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P1-003",
+      "specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "RCE / Arbitrary Code Execution",
+      "title": "Protobufjs 7.6.4 — Arbitrary Code Execution",
+      "package": "protobufjs",
+      "version": "7.6.4",
+      "cvss": 9.8,
+      "workspace": "platform/orchestrator",
+      "description": "Protobufjs has a prototype pollution vulnerability exploitable through malformed .proto definitions or message data, enabling arbitrary code execution. CVSS 9.8 Critical. This is on the gRPC critical path.",
+      "recommendation": "Upgrade protobufjs to 7.7.0+. Validate all .proto sources are trusted. Run gRPC integration tests after upgrade.",
+      "escalate_to": "TheGuardians",
+      "escalation_tag": "[ESCALATE → TheGuardians]",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Primary spec entirely untraced — dev-workflow-platform.md (FR-001–069)",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "The implementation is a Work Item routing/assessment engine (FR-WF-XXX) but the governing spec defines a completely different product (Feature Requests, Bug Reports, Dev Cycles). Not one '// Verifies: FR-0XX' comment exists in Source/. Either the spec must be archived or 69 FRs are abandoned work.",
+      "recommendation": "requirements-reviewer must reconcile: archive dev-workflow-platform.md or write a migration plan aligning source to it.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Traceability enforcer blind to Specifications/ — false PASSED signal",
+      "file": "tools/traceability-enforcer.py",
+      "description": "The enforcer only scans the most-recently-modified Plans/*/requirements.md. The entire Specifications/ directory is excluded. Running the gate produces TRACEABILITY PASSED while 69 primary-spec FRs are completely untraced.",
+      "recommendation": "Extend enforcer to also scan against Specifications/workflow-engine.md (or the canonical primary spec). Add a second gate or update the enforcer's scan targets.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "unimplemented-tested-route",
+      "title": "GET /api/search — tested but not implemented, causes known CI failures",
+      "file": "Source/Backend/tests/routes/search.test.ts",
+      "description": "Test file explicitly states the route is NOT wired into app.ts and will FAIL until implemented. The test suite has known-failing tests in CI. Agents using 'zero new failures' baseline see a pre-broken baseline and may mask real regressions.",
+      "recommendation": "Implement the route OR move tests to pending/ with skip annotations. Do not leave known-failing tests in active CI paths.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "code-quality",
+      "title": "eslint-disable suppresses hook rules without rationale",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "description": "eslint-disable comments suppress exhaustive-deps / rules-of-hooks with no explanation. Stale-closure risk present.",
+      "recommendation": "Document why the suppression is intentional or fix the underlying hook dependency issue.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "test-coverage",
+      "title": "4 recently-modified frontend files have no tests",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx", "Source/Frontend/src/components/TypeBadge.tsx", "Source/Frontend/src/components/StatusBadge.tsx", "Source/Frontend/src/components/PriorityBadge.tsx"],
+      "description": "Recently-modified files with zero test coverage. Violates CLAUDE.md architecture rule: every FR needs a test.",
+      "recommendation": "Add unit/integration tests for all four components before next release.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-001",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "brace-expansion — HIGH severity CVE",
+      "package": "brace-expansion",
+      "recommendation": "Upgrade via transitive parent package. Run npm audit fix.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-002",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "js-yaml — HIGH severity CVE",
+      "package": "js-yaml",
+      "recommendation": "Upgrade to latest patched version.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-003",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "form-data — HIGH severity CVE",
+      "package": "form-data",
+      "recommendation": "Upgrade to patched version. Run npm audit fix.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-004",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "vite — HIGH severity CVE",
+      "package": "vite",
+      "workspace": "Source/Frontend",
+      "recommendation": "Upgrade vite to latest stable. Check release notes for breaking changes.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-005",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "postcss — HIGH severity CVE",
+      "package": "postcss",
+      "recommendation": "Upgrade postcss. Often a transitive of build tooling.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-006",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "nanoid — HIGH severity CVE",
+      "package": "nanoid",
+      "recommendation": "Upgrade to patched nanoid version.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-007",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "ws (WebSocket) — HIGH severity CVE",
+      "package": "ws",
+      "recommendation": "Upgrade ws. Commonly transitive from express or socket.io.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-008",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "gRPC — HIGH severity CVE",
+      "package": "@grpc/grpc-js",
+      "workspace": "platform/orchestrator",
+      "recommendation": "Upgrade gRPC package. Coordinate with protobufjs upgrade (DA-P1-003).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-009",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "react-router-dom — multiple open redirect CVEs",
+      "package": "react-router-dom",
+      "version": "6.30",
+      "latest": "7.18",
+      "workspace": "Source/Frontend",
+      "description": "Multiple open redirect CVEs. Also 1 major version behind (6.x → 7.x).",
+      "recommendation": "Upgrade to react-router-dom 7.x. Review breaking changes. Add redirect-handling tests.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-010",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE-HIGH",
+      "title": "path-to-regexp — HIGH severity CVE",
+      "package": "path-to-regexp",
+      "recommendation": "Upgrade to patched version. Common transitive of express.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "traceability",
+      "title": "Non-standard traceability ID in DebugPortalPage.tsx",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "description": "// Verifies: dev-crew debug portal — not matchable by the traceability enforcer regex FR-\\d+.",
+      "recommendation": "Replace with a proper FR-XXX reference or add to enforcer's allowlist.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "maintainability",
+      "title": "3 files approaching 500-line threshold",
+      "files": ["Source/Frontend/src/pages/WorkItemDetailPage.tsx (426 lines)", "Source/Frontend/src/components/DependencyPicker.tsx (376 lines)", "Source/Backend/src/services/workflow.ts (374 lines)"],
+      "recommendation": "Plan decomposition before these exceed 500 lines.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "traceability",
+      "title": "NFRs in tiered-merge-pipeline.md never enforced",
+      "file": "Plans/tiered-merge-pipeline/requirements.md",
+      "description": "3 NFRs with no traceability checks and no enforcement gate.",
+      "recommendation": "Add NFR enforcement to traceability-enforcer.py or document them as accepted gaps.",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DA-P4-001",
+      "specialist": "dependency-auditor",
+      "severity": "P4",
+      "category": "outdated",
+      "title": "@babel/core source maps — LOW CVE",
+      "package": "@babel/core",
+      "recommendation": "Upgrade opportunistically."
+    },
+    {
+      "id": "DA-P4-002",
+      "specialist": "dependency-auditor",
+      "severity": "P4",
+      "category": "outdated",
+      "title": "@babel/core (second instance) — LOW CVE",
+      "package": "@babel/core",
+      "recommendation": "Upgrade opportunistically."
+    }
+  ]
+}

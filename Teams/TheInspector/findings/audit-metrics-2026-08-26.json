@@ -1,0 +1,250 @@
+{
+  "audit_date": "2026-08-26",
+  "report_file": "dependency-audit-2026-08-26.md",
+  "grade": "C",
+  "scoped_workspaces": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E",
+    "portal/Backend",
+    "portal/Frontend"
+  ],
+  "summary": {
+    "cves_total": 90,
+    "cves_critical": 5,
+    "cves_high": 24,
+    "cves_moderate": 58,
+    "cves_low": 3,
+    "p1_findings": 3,
+    "p2_findings": 20,
+    "p3_findings": 30,
+    "p4_findings": 2
+  },
+  "by_workspace": {
+    "Source/Backend": {
+      "cves_total": 9,
+      "cves_critical": 1,
+      "cves_high": 3,
+      "cves_moderate": 4,
+      "cves_low": 1,
+      "dependencies_total": 411,
+      "dependencies_prod": 102,
+      "dependencies_dev": 310,
+      "status": "VULNERABLE",
+      "primary_issues": [
+        "uuid buffer overflow (P1)",
+        "brace-expansion DoS (P2)",
+        "body-parser DoS (P3)"
+      ]
+    },
+    "Source/Frontend": {
+      "cves_total": 13,
+      "cves_critical": 1,
+      "cves_high": 5,
+      "cves_moderate": 6,
+      "cves_low": 1,
+      "dependencies_total": 230,
+      "dependencies_prod": 9,
+      "dependencies_dev": 222,
+      "status": "VULNERABLE",
+      "primary_issues": [
+        "vitest RCE (P1)",
+        "form-data CRLF injection (P2)",
+        "nanoid infinite loop (P2)",
+        "react-router open redirect (P2)"
+      ]
+    },
+    "Source/E2E": {
+      "cves_total": 0,
+      "cves_critical": 0,
+      "cves_high": 0,
+      "cves_moderate": 0,
+      "cves_low": 0,
+      "dependencies_total": 4,
+      "dependencies_prod": 4,
+      "dependencies_dev": 0,
+      "status": "CLEAN",
+      "primary_issues": []
+    },
+    "portal/Backend": {
+      "cves_total": 55,
+      "cves_critical": 2,
+      "cves_high": 10,
+      "cves_moderate": 43,
+      "cves_low": 0,
+      "dependencies_total": 577,
+      "dependencies_prod": 397,
+      "dependencies_dev": 181,
+      "status": "CRITICAL",
+      "primary_issues": [
+        "opentelemetry SDK DoS (P1)",
+        "gRPC message crash (P2)",
+        "@opentelemetry ecosystem severely outdated (P2)"
+      ]
+    },
+    "portal/Frontend": {
+      "cves_total": 13,
+      "cves_critical": 1,
+      "cves_high": 6,
+      "cves_moderate": 5,
+      "cves_low": 1,
+      "dependencies_total": 424,
+      "dependencies_prod": 9,
+      "dependencies_dev": 416,
+      "status": "VULNERABLE",
+      "primary_issues": [
+        "vitest RCE (P1)",
+        "ws memory exhaustion (P2)",
+        "vite path traversal bypass (P2)"
+      ]
+    }
+  },
+  "critical_packages": [
+    {
+      "name": "vitest",
+      "current_version": "3.2.5",
+      "latest_version": "4.1.11",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "description": "Arbitrary file read and execution via UI server",
+      "affected_workspaces": [
+        "Source/Frontend",
+        "portal/Frontend"
+      ],
+      "type": "direct"
+    },
+    {
+      "name": "@opentelemetry/auto-instrumentations-node",
+      "current_version": "0.40.3",
+      "latest_version": "0.79.0",
+      "severity": "CRITICAL",
+      "cvss": 7.5,
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "description": "Prometheus exporter process crash via malformed HTTP request",
+      "affected_workspaces": [
+        "portal/Backend"
+      ],
+      "type": "direct"
+    },
+    {
+      "name": "uuid",
+      "current_version": "9.0.0",
+      "latest_version": "14.0.2",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "description": "Missing buffer bounds check in UUID generation",
+      "affected_workspaces": [
+        "Source/Backend"
+      ],
+      "type": "direct"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.2",
+      "gap_major": 5,
+      "severity": "P1",
+      "workspace": "Source/Backend"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "gap_major": 2,
+      "severity": "P2",
+      "workspace": "Source/Backend"
+    },
+    {
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "current": "0.40.3",
+      "latest": "0.79.0",
+      "gap_major": 2,
+      "severity": "P2",
+      "workspace": "portal/Backend"
+    },
+    {
+      "package": "@opentelemetry/sdk-node",
+      "current": "0.47.0",
+      "latest": "0.221.0",
+      "gap_major": 1,
+      "gap_total_versions": 174,
+      "severity": "P2",
+      "workspace": "portal/Backend",
+      "note": "174 version jump"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "gap_major": 1,
+      "severity": "P3",
+      "workspace": "Source/Frontend, portal/Frontend"
+    }
+  ],
+  "supply_chain_risks": {
+    "excessive_dependencies": [
+      {
+        "workspace": "portal/Backend",
+        "total": 577,
+        "risk_level": "HIGH",
+        "recommendation": "Audit transitive tree, consider dependency bundling"
+      },
+      {
+        "workspace": "portal/Frontend",
+        "total": 424,
+        "risk_level": "MEDIUM",
+        "recommendation": "Monitor dev dependency bloat"
+      }
+    ],
+    "post_install_scripts": "CLEAN",
+    "abandoned_dependencies": [
+      {
+        "project": "abac-* (demo scaffolds)",
+        "status": "Not maintained",
+        "impact": "LOW - isolated from main app"
+      }
+    ]
+  },
+  "remediation_phases": [
+    {
+      "phase": 1,
+      "timeline": "Week 1",
+      "priority": "CRITICAL",
+      "items": [
+        "vitest upgrade Source/Frontend + portal/Frontend to 4.1.11",
+        "uuid upgrade Source/Backend to 14.0.2",
+        "OpenTelemetry upgrade portal/Backend to 0.79.0+"
+      ]
+    },
+    {
+      "phase": 2,
+      "timeline": "Week 2-3",
+      "priority": "HIGH",
+      "items": [
+        "Build toolchain CVEs (brace-expansion, nanoid)",
+        "React Router 6→7",
+        "Vite 6→8"
+      ]
+    },
+    {
+      "phase": 3,
+      "timeline": "Month 2",
+      "priority": "MODERATE",
+      "items": [
+        "React 18→19 migration",
+        "Express 4→5 API audit",
+        "Dependency tree optimization"
+      ]
+    }
+  ],
+  "license_compliance": {
+    "status": "CLEAR",
+    "gpl_violations": 0,
+    "unknown_licenses": 0,
+    "notes": "All detected licenses permissive (MIT, Apache-2.0, BSD, ISC)"
+  }
+}

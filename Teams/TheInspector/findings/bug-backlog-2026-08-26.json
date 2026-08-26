@@ -1,0 +1,247 @@
+{
+  "audit_id": "inspector-2026-08-26-ec4914",
+  "audit_date": "2026-08-26",
+  "branch": "audit/inspector-2026-08-26-ec4914",
+  "grade": "D",
+  "generated_by": "TheInspector team-leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — static-only audit run",
+  "totals": {
+    "p1": 4,
+    "p2": 22,
+    "p3": 34,
+    "p4": 2,
+    "spec_coverage_pct": 15.1
+  },
+
+  "escalations": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "category": "rce",
+      "title": "Vitest RCE — Arbitrary File Execution via UI Server",
+      "detail": "vitest ≤3.2.5 allows an attacker to read/execute arbitrary files when the Vitest UI server is running. Affects Source/Frontend and portal/Frontend.",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fix": "npm install vitest@4.1.11",
+      "exploitability": "zero-precondition",
+      "timeline": "Week 1 — immediate"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "cvss": 7.5,
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "category": "dos",
+      "title": "OpenTelemetry DoS — Production Service Crash via Metrics Endpoint",
+      "detail": "@opentelemetry/auto-instrumentations-node@0.40.3 in portal/Backend crashes the process on malformed HTTP to /metrics. High production availability risk.",
+      "affected_workspaces": ["portal/Backend"],
+      "fix": "npm install @opentelemetry/auto-instrumentations-node@0.79.0",
+      "exploitability": "zero-precondition",
+      "timeline": "Week 1 — HIGH priority (production)"
+    },
+    {
+      "id": "DA-003",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "cvss": 7.5,
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "category": "memory-safety",
+      "title": "UUID Buffer Overflow — Out-of-Bounds Write in ID Generation",
+      "detail": "uuid@9.0.0 in Source/Backend has an out-of-bounds write in UUID v3/v5/v6 generation. If uuid is used for work item IDs, this could cause memory corruption.",
+      "affected_workspaces": ["Source/Backend"],
+      "fix": "npm install uuid@14.0.2",
+      "exploitability": "authenticated",
+      "timeline": "Week 1"
+    }
+  ],
+
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "category": "spec-drift",
+      "title": "dev-workflow-platform.md — 70 Requirements with Zero Implementation",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "70 FR-001..069 + FR-dependency-seed requirements in the primary domain spec have zero implementation references. The actual codebase only implements FR-WF-001..013 from workflow-engine.md. This generates false negatives in coverage metrics and will mislead future agents that read Specifications/ as authoritative.",
+      "recommendation": "Determine intent: (a) archive to docs/archive/ if superseded, (b) move to Plans/ if planned future product, or (c) create an implementation pipeline if it should be built.",
+      "exploitability": "n/a — process risk, not runtime",
+      "cross_ref": "Compounds QO-002 (enforcer targeting wrong dir)"
+    }
+  ],
+
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "category": "spec-drift",
+      "title": "Traceability Enforcer Scans Plans/ Not Specifications/ — False Assurance",
+      "file": "tools/traceability-enforcer.py:30-50",
+      "detail": "The enforcer always reports PASSED by scanning Plans/self-judging-workflow/requirements.md (13 FRs). It ignores the 73 unimplemented requirements in Specifications/. Config at inspector.config.yml:36-37 also has a mismatched regex (FR-\\d+ vs actual FR-WF-\\d+ format).",
+      "recommendation": "Either extend enforcer to scan Specifications/ via --specs flag, OR update inspector.config.yml to reflect actual enforcer behaviour."
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "category": "architecture-violation",
+      "title": "Route Handlers Directly Access Data Store — Service Layer Bypassed",
+      "file": "Source/Backend/src/routes/workItems.ts:12, intake.ts:4, workflow.ts:15",
+      "detail": "All three route files import directly from workItemStore, calling store.createWorkItem(), findById(), softDelete() in request handlers. CLAUDE.md explicitly prohibits direct DB/store calls from routes.",
+      "recommendation": "Introduce workItemService.ts wrapping the store for CRUD + validation. Routes call service, handle only HTTP concerns."
+    },
+    {
+      "id": "DA-P2-001",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "category": "vulnerable-dependency",
+      "title": "brace-expansion — 4 DoS CVEs (transitive via build tools)",
+      "affected_workspaces": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "recommendation": "Run npm audit fix; update transitive via lockfile resolution"
+    },
+    {
+      "id": "DA-P2-002",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "category": "vulnerable-dependency",
+      "title": "form-data — CRLF Injection (transitive)",
+      "affected_workspaces": ["portal/Backend"],
+      "recommendation": "Update transitive form-data to patched version via npm audit fix"
+    },
+    {
+      "id": "DA-P2-003",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "category": "vulnerable-dependency",
+      "title": "nanoid — 2 Infinite Loop CVEs (transitive)",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "recommendation": "Update nanoid via vite upgrade or forced resolution"
+    },
+    {
+      "id": "DA-P2-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "category": "vulnerable-dependency",
+      "title": "react-router-dom — Open Redirect (transitive)",
+      "affected_workspaces": ["Source/Frontend"],
+      "recommendation": "Upgrade react-router-dom 6.30.6 → 7.18.2 (breaking change — audit route definitions)"
+    },
+    {
+      "id": "DA-P2-005",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "category": "vulnerable-dependency",
+      "title": "vite — Path Traversal Bypass (Windows)",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "recommendation": "Upgrade vite 6.4.2 → 8.2.2"
+    },
+    {
+      "id": "DA-P2-006",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "category": "vulnerable-dependency",
+      "title": "ws — Memory Exhaustion DoS (transitive)",
+      "affected_workspaces": ["portal/Backend", "Source/Backend"],
+      "recommendation": "Update ws via npm audit fix --force if needed"
+    },
+    {
+      "id": "DA-P2-007",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "category": "vulnerable-dependency",
+      "title": "@opentelemetry/* — 10 HIGH CVEs in portal/Backend",
+      "detail": "OpenTelemetry SDK at 0.47.0 is 174 versions behind (current 0.221.0). Multiple HIGH severity CVEs across the telemetry stack.",
+      "affected_workspaces": ["portal/Backend"],
+      "recommendation": "Batch upgrade OpenTelemetry ecosystem in portal/Backend. Coordinate with DA-002 escalation."
+    }
+  ],
+
+  "p3_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "metrics.test.ts Uses FR-dependency-metrics Instead of FR-WF-013",
+      "file": "Source/Backend/tests/routes/metrics.test.ts:1",
+      "recommendation": "Add // Verifies: FR-WF-013 to metrics.test.ts"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Silent catch() in api/client.ts Not Documented",
+      "file": "Source/Frontend/src/api/client.ts:26",
+      "recommendation": "Add explanatory comment explaining JSON parse fallback intent"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable in useWorkItems.ts Without Justification",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "recommendation": "Fix dependency array or add comment explaining deliberate omission"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "DebugPortalPage.tsx Uses Non-Enforceable Verifies Format",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "recommendation": "Replace prose Verifies comment with formal FR-WF-XXX spec ID"
+    }
+  ],
+
+  "p4_findings": [
+    {
+      "id": "DA-P4-001",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "category": "supply-chain",
+      "title": "portal/Backend Dependency Bloat — 577 Direct/Transitive Dependencies",
+      "recommendation": "Audit portal/Backend dependency tree; consider bundling or removing unused packages"
+    },
+    {
+      "id": "DA-P4-002",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "category": "supply-chain",
+      "title": "Abandoned abac-* Demo Dependencies Still Present",
+      "recommendation": "Audit and remove abac-* packages if no longer needed"
+    }
+  ],
+
+  "positive_signals": [
+    "FR-WF-001..013 all 100% traced to source — workflow-engine spec is clean",
+    "123 Verifies comments across backend tests",
+    "No console.log in production source — logger abstraction in use",
+    "No hardcoded secrets detected",
+    "No skipped or todo tests",
+    "License compliance clear — no GPL/AGPL violations",
+    "No post-install scripts detected",
+    "Source/E2E workspace is clean (0 CVEs)",
+    "API response shape (data wrapper + PaginatedResponse) consistently applied"
+  ]
+}

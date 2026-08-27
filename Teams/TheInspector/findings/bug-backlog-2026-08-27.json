@@ -1,0 +1,299 @@
+{
+  "audit": {
+    "date": "2026-08-27",
+    "grade": "D",
+    "run_id": "run-20260827-124652",
+    "branch": "audit/inspector-2026-08-27-442d63",
+    "project": "dev-crew Source App",
+    "specialists": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "reason_skipped": "Services offline (localhost:3001, localhost:5173 unreachable at audit time)",
+    "p1_total": 5,
+    "p2_total": 11,
+    "p3_total": 0,
+    "p4_total": 1,
+    "spec_coverage_pct": 16,
+    "fixed_count": 0,
+    "is_first_audit": true
+  },
+
+  "escalations": [
+    {
+      "id": "BACKEND-001",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "category": "CVE-RCE",
+      "title": "handlebars (transitive) — 8 CVEs: template injection, XSS, prototype pollution",
+      "specialist": "dependency-auditor",
+      "package": "handlebars",
+      "location": "Source/Backend (transitive dependency)",
+      "cve_count": 8,
+      "cve_severity": "Critical",
+      "exploit_scenario": "If any route passes user-controlled data through a handlebars template, an attacker can inject template expressions triggering arbitrary JavaScript execution on the server (prototype pollution → RCE) or reflected XSS in the response.",
+      "impact": "Remote code execution, reflected XSS, prototype pollution of Node.js runtime.",
+      "remediation": "Run `npm audit --fix` in Source/Backend. Verify upgraded version resolves all 8 CVEs. TheGuardians to audit all handlebars usage paths.",
+      "status": "NEW",
+      "exploitability": "zero-precondition"
+    },
+    {
+      "id": "FRONTEND-001",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "category": "CVE-RCE",
+      "title": "vitest (direct) — arbitrary file read + code execution in dev/CI server",
+      "specialist": "dependency-auditor",
+      "package": "vitest",
+      "location": "Source/Frontend (direct dependency)",
+      "cve_count": 1,
+      "cve_severity": "Critical",
+      "exploit_scenario": "When the vitest UI server is running in dev or CI bound to 0.0.0.0, an unauthenticated attacker on the network can read arbitrary files and execute code in the server process.",
+      "impact": "Arbitrary file read exposes secrets and source. Code execution = full server compromise. Risk elevated for CI runners with broad network access.",
+      "remediation": "Run `npm update vitest` in Source/Frontend immediately. Never run vitest UI server bound to 0.0.0.0 in CI. TheGuardians to verify CI configuration and secret exposure.",
+      "status": "NEW",
+      "exploitability": "authenticated"
+    }
+  ],
+
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer scans Plans/ only — Specifications/ entirely bypassed",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "exploit_scenario": "CI reports TRACEABILITY PASSED even though zero source comments reference Specifications/. Any engineer can ship code with no linkage to domain requirements without triggering a gate failure.",
+      "impact": "Entire spec-first development discipline is structurally unenforced. PRs cannot be verified for traceability to domain requirements.",
+      "remediation": "Extend traceability-enforcer.py to scan Specifications/*.md files. Add FR-ID tables to domain specs. Redirect // Verifies: comments to spec-based IDs.",
+      "route_to": "TheFixer + requirements-reviewer",
+      "status": "NEW",
+      "exploitability": "admin"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "All source FR comments trace to Plans/self-judging-workflow, not Specifications/ documents",
+      "specialist": "quality-oracle",
+      "file": "Source/ (all files with // Verifies: FR-WF-*)",
+      "exploit_scenario": "Engineers assume Plans/ traceability satisfies the architecture rule. Specifications/workflow-engine.md has no FR-ID table. Specs and source operate in disconnected universes.",
+      "impact": "Domain specifications do not govern what gets built. Plans govern instead.",
+      "remediation": "Add FR-ID tables to Specifications/workflow-engine.md. Migrate // Verifies: comments to reference spec-IDs. Run requirements-reviewer against both documents.",
+      "route_to": "requirements-reviewer",
+      "status": "NEW",
+      "exploitability": "admin"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "69 domain requirements (FR-001→FR-069) have zero source coverage",
+      "specialist": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "orphaned_requirements": "FR-001 through FR-069",
+      "exploit_scenario": "Stakeholders reading Specifications/dev-workflow-platform.md believe 69 features exist. None do. Source/ builds a different product entirely.",
+      "impact": "100% spec gap on this document. Planning decisions based on these specs are invalid.",
+      "remediation": "Hold spec review: deprecate Specifications/dev-workflow-platform.md (mark DRAFT/ABANDONED) or create implementation tickets for all 69 requirements.",
+      "route_to": "requirements-reviewer",
+      "status": "NEW",
+      "exploitability": "admin"
+    }
+  ],
+
+  "p2_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "10 FR-TMP-* requirements unimplemented (tiered merge pipeline)",
+      "specialist": "quality-oracle",
+      "file": "Specifications/",
+      "unimplemented_requirements": "FR-TMP-001 through FR-TMP-010",
+      "details": "Auto-PR, AI review, risk classification, auto-merge — all specified, none built.",
+      "remediation": "Add to feature backlog with a priority decision. Requirements-reviewer to confirm scope.",
+      "route_to": "TheFixer backlog",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "correctness",
+      "title": "pending_dependencies status missing from WorkItemStatus enum — returns HTTP 400 instead of state transition",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend",
+      "spec_reference": "FR-dependency-dispatch-gating",
+      "details": "Spec requires transitioning to pending_dependencies status on blocked dispatch. Code returns HTTP 400. The pending_dependencies value is missing from the WorkItemStatus enum entirely.",
+      "remediation": "Add `pending_dependencies` to WorkItemStatus enum. Implement state transition in dispatch handler per spec.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "2 eslint-disable suppressions with no rationale comment",
+      "specialist": "quality-oracle",
+      "files": ["Source/Frontend/DependencyPicker.tsx:82", "Source/Frontend/useWorkItems.ts:63"],
+      "rule": "react-hooks/exhaustive-deps",
+      "details": "Violates the never swallow silently architecture rule. Each suppression needs an inline comment explaining why the lint rule is disabled.",
+      "remediation": "Add rationale comments to each eslint-disable-next-line suppression.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-001",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "title": "brace-expansion — 4 DoS CVEs via glob patterns",
+      "specialist": "dependency-auditor",
+      "package": "brace-expansion",
+      "location": "Source/Backend (transitive)",
+      "remediation": "npm audit --fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-002",
+      "severity": "P2",
+      "category": "CVE-path-traversal",
+      "title": "vite — path traversal in .map file handling",
+      "specialist": "dependency-auditor",
+      "package": "vite",
+      "location": "Source/Frontend (direct)",
+      "remediation": "npm update vite in Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-003",
+      "severity": "P2",
+      "category": "CVE-XSS",
+      "title": "postcss — XSS + path traversal in source map",
+      "specialist": "dependency-auditor",
+      "package": "postcss",
+      "location": "Source/Frontend (direct)",
+      "remediation": "npm update postcss in Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-004",
+      "severity": "P2",
+      "category": "CVE-injection",
+      "title": "form-data — CRLF injection in multipart fields",
+      "specialist": "dependency-auditor",
+      "package": "form-data",
+      "location": "Source/Backend + Frontend (transitive)",
+      "remediation": "npm audit --fix in both Source/Backend and Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-005",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "title": "ws — memory exhaustion + info disclosure",
+      "specialist": "dependency-auditor",
+      "package": "ws",
+      "location": "Source/Frontend (transitive)",
+      "remediation": "npm update ws in Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-006",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "title": "nanoid — infinite loop DoS",
+      "specialist": "dependency-auditor",
+      "package": "nanoid",
+      "location": "Source/Frontend (transitive)",
+      "remediation": "npm update nanoid in Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-007",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "title": "js-yaml — quadratic-time DoS in YAML parsing",
+      "specialist": "dependency-auditor",
+      "package": "js-yaml",
+      "location": "Source/Backend (transitive)",
+      "remediation": "npm audit --fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-P2-008",
+      "severity": "P2",
+      "category": "CVE-redirect",
+      "title": "react-router-dom — open redirect vulnerability",
+      "specialist": "dependency-auditor",
+      "package": "react-router-dom",
+      "location": "Source/Frontend (direct)",
+      "remediation": "npm update react-router-dom in Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "p3_findings": [],
+
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "category": "hygiene",
+      "title": "vite-env.d.ts (boilerplate) missing // Verifies: comment",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/vite-env.d.ts",
+      "remediation": "Add a // Verifies: comment or exempt file from traceability checks with documented rationale.",
+      "route_to": "TheFixer backlog",
+      "status": "NEW"
+    }
+  ],
+
+  "cross_references": [
+    {
+      "root_cause": "A — Traceability architecture scans the wrong directory",
+      "affected_findings": ["QO-001", "QO-002", "QO-003"],
+      "single_fix": "Update tools/traceability-enforcer.py to scan Specifications/; add FR-ID tables to domain specs; migrate source // Verifies: comments to spec-based IDs."
+    },
+    {
+      "root_cause": "B — Dependency hygiene neglect (Backend)",
+      "affected_findings": ["BACKEND-001", "DA-P2-001", "DA-P2-007", "DA-P2-004"],
+      "single_fix": "npm audit --fix && npm update in Source/Backend"
+    },
+    {
+      "root_cause": "C — Dependency hygiene neglect (Frontend)",
+      "affected_findings": ["FRONTEND-001", "DA-P2-002", "DA-P2-003", "DA-P2-005", "DA-P2-006", "DA-P2-008"],
+      "single_fix": "npm update vitest vite postcss nanoid ws react-router-dom in Source/Frontend"
+    },
+    {
+      "root_cause": "D — Incomplete WorkItemStatus state machine",
+      "affected_findings": ["QO-005"],
+      "single_fix": "Add pending_dependencies to WorkItemStatus enum and implement the state transition"
+    },
+    {
+      "root_cause": "E — Specs written ahead of any implementation plan",
+      "affected_findings": ["QO-003", "QO-004"],
+      "single_fix": "Spec review session: deprecate or raise implementation tickets"
+    }
+  ],
+
+  "recommendations_priority": [
+    { "priority": "block-deployment", "id": "REC-01", "title": "Trigger TheGuardians security audit for BACKEND-001 + FRONTEND-001", "findings": ["BACKEND-001", "FRONTEND-001"] },
+    { "priority": "block-deployment", "id": "REC-02", "title": "Fix traceability enforcer to scan Specifications/", "findings": ["QO-001"] },
+    { "priority": "this-sprint",      "id": "REC-03", "title": "Patch all high-severity CVEs (npm audit --fix + npm update)", "findings": ["DA-P2-001","DA-P2-002","DA-P2-003","DA-P2-004","DA-P2-005","DA-P2-006","DA-P2-007","DA-P2-008"] },
+    { "priority": "this-sprint",      "id": "REC-04", "title": "Add FR-ID tables to Specifications/ documents", "findings": ["QO-002"] },
+    { "priority": "this-sprint",      "id": "REC-05", "title": "Implement pending_dependencies WorkItemStatus", "findings": ["QO-005"] },
+    { "priority": "this-sprint",      "id": "REC-06", "title": "Add rationale to eslint-disable suppressions", "findings": ["QO-006"] },
+    { "priority": "next-sprint",      "id": "REC-07", "title": "Spec review — deprecate or ticket Specifications/dev-workflow-platform.md FR-001–069", "findings": ["QO-003"] },
+    { "priority": "next-sprint",      "id": "REC-08", "title": "Re-run TheInspector with live services for dynamic coverage", "findings": [] },
+    { "priority": "backlog",          "id": "REC-09", "title": "Plan FR-TMP-001–010 tiered merge pipeline", "findings": ["QO-004"] },
+    { "priority": "backlog",          "id": "REC-10", "title": "Add license fields to package.json", "findings": [] },
+    { "priority": "backlog",          "id": "REC-11", "title": "Prune Source/Backend transitive dependency tree (412 deps, 31:1 ratio)", "findings": [] },
+    { "priority": "backlog",          "id": "REC-12", "title": "Add // Verifies: comment to vite-env.d.ts", "findings": ["QO-007"] }
+  ]
+}

@@ -1,0 +1,355 @@
+{
+  "audit_date": "2026-08-28",
+  "audit_id": "inspector-2026-08-28-8b48ac",
+  "branch": "audit/inspector-2026-08-28-8b48ac",
+  "grade": "D",
+  "grade_rationale": "3 P1 findings (exceeds C threshold of max_p1=2). Active-plan spec coverage 100%, canonical spec ~8% traced.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services not running; static-analysis mode only for this audit.",
+
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 12,
+    "p3_total": 10,
+    "p4_total": 6,
+    "escalations_count": 2,
+    "fixed_count": 0,
+    "first_audit": true
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "priority": "ESCALATE → TheGuardians",
+      "category": "remote-code-execution",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "package": "vitest",
+      "title": "Vitest UI Arbitrary File Read / Remote Code Execution",
+      "affected_projects": ["Source/Frontend@2.0.5", "portal/Backend@1.2.2", "portal/Frontend@3.2.5"],
+      "failure_scenario": "Attacker reaches exposed Vitest UI server (localhost:51204+); crafted request reads /etc/passwd or ../secrets; follow-up executes arbitrary code in test-runner process.",
+      "impact": "Full filesystem read and potential code execution on any machine running vitest --ui on an accessible network interface.",
+      "fix": "Upgrade vitest ≥3.2.6 in all three projects; enforce `vitest run` (no --ui) in CI.",
+      "fix_commands": [
+        "cd Source/Frontend && npm install --save-dev vitest@latest",
+        "cd portal/Backend && npm install --save-dev vitest@latest",
+        "cd portal/Frontend && npm install --save-dev vitest@latest"
+      ],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "priority": "ESCALATE → TheGuardians",
+      "category": "arbitrary-code-execution",
+      "cve": "GHSA-gx4f-cqfv-7h5q",
+      "cvss": 9.8,
+      "package": "protobufjs",
+      "title": "Protobufjs Arbitrary Code Execution via Malicious .proto Files",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "failure_scenario": "Attacker provides a crafted .proto option value to orchestrator's loadSync()/load(); protobufjs deserialization executes attacker-controlled code in the orchestrator process.",
+      "impact": "Arbitrary code execution in the pipeline orchestrator — the infrastructure that runs all agent pipelines. Full process compromise.",
+      "fix": "Upgrade protobufjs ≥7.6.5; vendor all .proto files; never load .proto from untrusted sources.",
+      "fix_commands": [
+        "npm install protobufjs@latest  # in platform/orchestrator",
+        "grep -r 'loadSync\\|load' platform/orchestrator/ # audit all .proto load sites"
+      ],
+      "status": "NEW"
+    }
+  ],
+
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "priority": "TheFixer — this sprint",
+      "category": "spec-drift",
+      "title": "Stale Canonical Spec — 77+ Requirements Describe a Deprecated Platform",
+      "file": "Specifications/dev-workflow-platform.md",
+      "failure_scenario": "Future agent reads Specifications/dev-workflow-platform.md, treats FR-001–FR-069 as active requirements, implements features for a system that no longer exists, or wrongly fails traceability audits.",
+      "impact": "Misleads all future agents and solo sessions; CLAUDE.md rule 'specs are source of truth' enforced on a zombie document.",
+      "recommendation": "Add DEPRECATED banner to Specifications/dev-workflow-platform.md OR write Specifications/self-judging-workflow.md and retire the old spec.",
+      "cross_refs": ["QO-003"],
+      "status": "NEW"
+    }
+  ],
+
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "architecture-violation",
+      "title": "Route Handlers Directly Import workItemStore — Service Layer Bypassed",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/intake.ts:4",
+        "Source/Backend/src/routes/workflow.ts:15"
+      ],
+      "failure_scenario": "Swapping the in-memory store for a real DB requires editing every route file; route unit tests cannot isolate store behavior.",
+      "recommendation": "Extract WorkItemService wrapping all store CRUD. Route handlers import the service only.",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "pattern-violation",
+      "title": "Traceability Enforcer Never Checks Specifications/ — Emits False Green",
+      "file": "tools/traceability-enforcer.py",
+      "failure_scenario": "Enforcer reports PASSED while 93 canonical spec FRs are completely untraced. Agents trust the green signal.",
+      "recommendation": "Add Specifications/ scan mode; at minimum add warning comment to enforcer script.",
+      "cross_refs": ["QO-001"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "spec-drift",
+      "title": "FR-dependency-search: /api/search Endpoint Not Wired in app.ts",
+      "file": "Source/Backend/tests/routes/search.test.ts",
+      "failure_scenario": "DependencyPicker component sends GET /api/search?q=; server returns 404; dependency typeahead search is broken in the UI.",
+      "recommendation": "Implement search handler (filter workItemStore by title/description) and register in app.ts.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "dependency-vulnerability",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "title": "OpenTelemetry Prometheus Exporter Crash on Malformed Request",
+      "affected_projects": ["portal/Backend"],
+      "failure_scenario": "Malformed HTTP request to /metrics endpoint crashes the portal/Backend process; observability lost.",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node ≥0.75.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "dependency-vulnerability",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "cvss": 7.5,
+      "package": "vite",
+      "title": "Vite fs.deny Bypass — Path Traversal on Windows Dev Environments",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "failure_scenario": "On Windows dev machines, crafted request bypasses Vite fs.deny and reads files outside project root (e.g., .env, private configs).",
+      "fix": "Upgrade vite ≥5.5.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "dependency-vulnerability",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "cvss": 7.5,
+      "package": "brace-expansion",
+      "title": "Brace-Expansion DoS via Exponential Pattern Expansion (4 CVEs)",
+      "affected_projects": ["Source/Backend"],
+      "failure_scenario": "Pathological glob pattern passed to jest internals causes CPU exhaustion and infinite loop in test runner or any code using this transitive dep.",
+      "fix": "Upgrade jest and ts-jest to pull brace-expansion ≥1.1.18",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "dependency-vulnerability",
+      "cves": ["GHSA-h67p-54hq-rp68", "GHSA-52cp-r559-cp3m", "GHSA-5p4m-2wfm-xmqj"],
+      "cvss": 7.5,
+      "package": "js-yaml",
+      "title": "js-yaml CPU Exhaustion via Merge Keys (3 CVEs)",
+      "affected_projects": ["Source/Backend"],
+      "failure_scenario": "Malicious YAML with deeply nested merge keys causes quadratic CPU consumption in any code path that parses untrusted YAML.",
+      "fix": "Upgrade js-yaml ≥3.15.1",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — this sprint",
+      "category": "dependency-vulnerability",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "cvss": 7.5,
+      "package": "@grpc/grpc-js",
+      "title": "gRPC-JS Process Crash via Malformed Message (2 CVEs)",
+      "affected_projects": ["platform/orchestrator (transitive via OpenTelemetry)"],
+      "failure_scenario": "Malformed gRPC message crashes the orchestrator process; pipeline management unavailable.",
+      "fix": "Upgrade @grpc/grpc-js ≥1.14.4",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — next sprint",
+      "category": "dependency-vulnerability",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "package": "form-data",
+      "title": "Form-Data CRLF Injection via Unescaped Field Names",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "failure_scenario": "Attacker-controlled field name containing \\r\\n injects arbitrary HTTP headers into multipart form submissions.",
+      "fix": "Upgrade form-data ≥4.0.6",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — next sprint",
+      "category": "dependency-vulnerability",
+      "cves": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8"],
+      "package": "nanoid",
+      "title": "Nanoid Infinite Loop via Negative/Zero Size (2 CVEs)",
+      "affected_projects": ["portal/Frontend"],
+      "failure_scenario": "Passing zero or negative size to nanoid generator causes an infinite loop, hanging the process.",
+      "fix": "Upgrade nanoid ≥3.3.18",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — next sprint",
+      "category": "dependency-vulnerability",
+      "cves": ["GHSA-58qx-3vcg-4xpx", "GHSA-96hv-2xvq-fx4p"],
+      "cvss": 7.5,
+      "package": "ws",
+      "title": "WebSocket Memory/CPU Exhaustion via Tiny Fragmented Messages (2 CVEs)",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "failure_scenario": "Attacker sends many tiny fragmented WS messages; server accumulates them in memory until OOM or CPU saturation.",
+      "fix": "Upgrade ws ≥8.21.0; set maxPayload limit on all WebSocket connections.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "priority": "TheFixer — next sprint",
+      "category": "dependency-vulnerability",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "package": "path-to-regexp",
+      "title": "path-to-regexp ReDoS via Multiple Route Parameters",
+      "affected_projects": ["platform/orchestrator (via express)"],
+      "failure_scenario": "Route with multiple optional parameters triggers exponential regex backtracking on pathological input, blocking the event loop.",
+      "fix": "Upgrade express to 4.22.2+ or 5.x to pull patched path-to-regexp.",
+      "status": "NEW"
+    }
+  ],
+
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "test-coverage",
+      "title": "Duplicate Test Files — Root tests/ vs tests/pages/ Without Verifies Comments",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Delete root-level duplicates; treat tests/pages/ as canonical.",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed Not Implemented — Store Always Starts Empty",
+      "file": "Specifications/dev-workflow-platform.md:475",
+      "recommendation": "Add store/seed.ts called from app.ts startup (guarded by NODE_ENV !== 'test').",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Two eslint-disable-next-line react-hooks/exhaustive-deps in Production Source",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "recommendation": "Fix dependency arrays or add documented reason comments.",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "WorkItemDetailPage.tsx at 426 Lines — Approaching 500-Line Split Threshold",
+      "file": "Source/Frontend/src/pages/WorkItemDetailPage.tsx",
+      "recommendation": "Extract ActionButtons, AssessmentCard, HistoryEntry into Source/Frontend/src/components/.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD-GROUP",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "dependency-vulnerability",
+      "title": "31 Moderate-Severity Dependency Vulnerabilities (grouped)",
+      "note": "See Teams/TheInspector/findings/AUDIT_REPORT_2026-08-28.md for full list. Includes qs DoS, body-parser, and build-tooling transitive chain.",
+      "recommendation": "Run npm audit and address per remediation timeline in dep audit report.",
+      "status": "NEW"
+    }
+  ],
+
+  "p4_findings": [
+    {
+      "id": "DEP-LOW-GROUP",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "dependency-vulnerability",
+      "title": "6 Low-Severity Dependency Vulnerabilities (grouped)",
+      "note": "See Teams/TheInspector/findings/AUDIT_REPORT_2026-08-28.md for full list.",
+      "recommendation": "Monitor; fix opportunistically during routine dependency updates.",
+      "status": "NEW"
+    }
+  ],
+
+  "cross_references": [
+    {
+      "root_cause": "Canonical spec never updated when platform was redesigned",
+      "findings": ["QO-001", "QO-003", "QO-004", "QO-006"],
+      "single_fix": "Write Specifications/self-judging-workflow.md as canonical replacement; add DEPRECATED banner to dev-workflow-platform.md; extend traceability enforcer to cover Specifications/.",
+      "fix_impact": "Resolves QO-001 (stale spec), QO-003 (enforcer scope), unblocks proper traceability for QO-004 and QO-006"
+    },
+    {
+      "root_cause": "Route layer directly accesses persistence without service abstraction",
+      "findings": ["QO-002", "QO-004"],
+      "single_fix": "Create WorkItemService with findAll, findById, create, update, softDelete, and search methods. Wire /api/search via the service.",
+      "fix_impact": "Resolves QO-002 (architecture violation) and provides the abstraction needed to cleanly implement QO-004 (/api/search)"
+    }
+  ],
+
+  "not_raised": [
+    {"check": "Hardcoded secrets / credentials", "result": "CLEAN — none found"},
+    {"check": "Empty catch blocks", "result": "CLEAN — none found"},
+    {"check": "Skipped / todo tests", "result": "CLEAN — none found"},
+    {"check": "console.log in production source", "result": "CLEAN — none found"},
+    {"check": "Missing Verifies comments in production source", "result": "CLEAN — all production files carry // Verifies:"},
+    {"check": "License compliance", "result": "PASSED — no GPL/AGPL, all OSS"},
+    {"check": "Supply chain / abandoned packages", "result": "CLEAN — no abandoned or ownership-transferred packages"}
+  ]
+}

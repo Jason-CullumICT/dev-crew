@@ -1,0 +1,152 @@
+{
+  "audit_date": "2026-08-28",
+  "audit_type": "dependency_audit",
+  "status": "complete",
+  "summary": {
+    "total_vulnerabilities": 63,
+    "by_severity": {
+      "critical": 4,
+      "high": 22,
+      "moderate": 31,
+      "low": 6
+    },
+    "projects_analyzed": 6,
+    "total_dependencies": {
+      "direct": 34,
+      "transitive": 1400
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "Vitest UI Arbitrary File Read/Execution",
+      "severity": "critical",
+      "affected_projects": [
+        "Source/Frontend@2.0.5",
+        "portal/Backend@1.2.2",
+        "portal/Frontend@3.2.5"
+      ],
+      "fix": "Upgrade to ≥3.2.6",
+      "cvss_score": 9.8,
+      "action_required": true
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "cve": "GHSA-gx4f-cqfv-7h5q",
+      "title": "Arbitrary Code Execution",
+      "severity": "critical",
+      "affected_projects": [
+        "platform/orchestrator",
+        "portal/Backend"
+      ],
+      "fix": "Upgrade to latest stable",
+      "cvss_score": 9.8,
+      "action_required": true
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-003",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "title": "Prometheus Exporter Process Crash",
+      "severity": "high",
+      "affected_projects": ["portal/Backend"],
+      "fix": "Upgrade to ≥0.75.0"
+    },
+    {
+      "id": "DEP-004",
+      "package": "vite",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "title": "fs.deny Bypass on Windows",
+      "severity": "high",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "fix": "Upgrade to ≥5.5.0"
+    },
+    {
+      "id": "DEP-005",
+      "package": "brace-expansion",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "title": "Denial of Service via Exponential Expansion",
+      "severity": "high",
+      "affected_projects": ["Source/Backend"],
+      "fix": "Update jest/ts-jest",
+      "count": 4
+    },
+    {
+      "id": "DEP-006",
+      "package": "js-yaml",
+      "cves": ["GHSA-h67p-54hq-rp68", "GHSA-52cp-r559-cp3m", "GHSA-5p4m-2wfm-xmqj"],
+      "title": "Denial of Service via CPU Exhaustion",
+      "severity": "high",
+      "affected_projects": ["Source/Backend"],
+      "fix": "Upgrade to ≥3.15.1",
+      "count": 3
+    }
+  ],
+  "outdated_major_versions": {
+    "Source/Backend": [
+      "express@4.18.2 (wanted: 4.22.2, latest: 5.2.1)",
+      "uuid@9.0.0 (wanted: 9.0.1, latest: 14.0.2)"
+    ],
+    "Source/Frontend": [
+      "react@18.3.1 (wanted: 18.3.1, latest: 19.2.8)",
+      "react-dom@18.3.1 (wanted: 18.3.1, latest: 19.2.8)",
+      "react-router-dom@6.26.0 (wanted: 6.30.6, latest: 7.18.2)"
+    ],
+    "platform/orchestrator": [
+      "dockerode@4.0.4 (wanted: 4.0.12, latest: 5.0.1)",
+      "express@4.21.0 (wanted: 4.22.2, latest: 5.2.1)"
+    ]
+  },
+  "recommendations": [
+    {
+      "priority": "immediate",
+      "action": "Upgrade vitest to ≥3.2.6",
+      "projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "risk": "Remote code execution if UI server exposed"
+    },
+    {
+      "priority": "immediate",
+      "action": "Verify protobufjs usage in orchestrator",
+      "projects": ["platform/orchestrator"],
+      "risk": "Arbitrary code execution via malicious .proto files"
+    },
+    {
+      "priority": "high",
+      "action": "Upgrade vite to ≥5.5.0",
+      "projects": ["Source/Frontend", "portal/Frontend"],
+      "risk": "Path traversal on Windows dev environments"
+    },
+    {
+      "priority": "high",
+      "action": "Coordinate express/body-parser updates across all backend projects",
+      "projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "risk": "Query string DoS (qs library vulnerability)"
+    },
+    {
+      "priority": "medium",
+      "action": "Plan React 19 upgrade",
+      "projects": ["Source/Frontend", "portal/Frontend"],
+      "timeline": "next sprint"
+    }
+  ],
+  "compliance": {
+    "license_check": "passed",
+    "gpl_agpl_detected": false,
+    "unlicensed_direct_deps": false,
+    "notes": "All direct dependencies use standard OSS licenses"
+  },
+  "supply_chain": {
+    "largest_trees": [
+      {"project": "portal/Frontend", "total": 424},
+      {"project": "Source/Backend", "total": 411},
+      {"project": "portal/Backend", "total": 281}
+    ],
+    "risk_assessment": "Moderate - high dev tooling dependencies typical for frontend projects",
+    "single_maintainer_packages": "uuid, nanoid (accepted industry standard)"
+  }
+}

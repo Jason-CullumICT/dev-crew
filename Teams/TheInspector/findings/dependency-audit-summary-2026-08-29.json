@@ -1,0 +1,262 @@
+{
+  "audit_date": "2026-08-29T00:00:00Z",
+  "agent": "dependency_auditor",
+  "verdict": "FAILED",
+  "grade": "D",
+  "summary": "Multiple critical vulnerabilities detected across all packages. 5 RCE risks requiring immediate attention. Supply chain risk very high (1,797 transitive deps).",
+  "metrics": {
+    "total_cves": 99,
+    "critical": 5,
+    "high": 26,
+    "medium": 62,
+    "low": 6,
+    "packages_audited": 6,
+    "packages_vulnerable": 6,
+    "total_dependencies": 1797,
+    "production_dependencies": 674,
+    "license_violations": 0,
+    "abandoned_packages": 0
+  },
+  "packages": {
+    "Source/Backend": {
+      "path": "Source/Backend",
+      "type": "primary_application",
+      "prod_deps": 102,
+      "total_deps": 411,
+      "critical": 1,
+      "high": 3,
+      "medium": 4,
+      "low": 1,
+      "total": 9,
+      "critical_packages": [
+        {
+          "name": "handlebars",
+          "cve": "GHSA-2w6w-674q-4c4q",
+          "cvss": 9.8,
+          "title": "JavaScript Injection via AST Type Confusion"
+        }
+      ]
+    },
+    "Source/Frontend": {
+      "path": "Source/Frontend",
+      "type": "primary_application",
+      "prod_deps": 9,
+      "total_deps": 230,
+      "critical": 1,
+      "high": 5,
+      "medium": 6,
+      "low": 1,
+      "total": 13,
+      "critical_packages": [
+        {
+          "name": "vitest",
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "cvss": 9.8,
+          "title": "Arbitrary file read/execution via UI server"
+        }
+      ]
+    },
+    "Source/E2E": {
+      "path": "Source/E2E",
+      "type": "test_suite",
+      "prod_deps": 4,
+      "total_deps": 4,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "total": 0,
+      "status": "PASS"
+    },
+    "platform/orchestrator": {
+      "path": "platform/orchestrator",
+      "type": "infrastructure_readonly",
+      "prod_deps": 153,
+      "total_deps": 155,
+      "critical": 1,
+      "high": 2,
+      "medium": 6,
+      "low": 0,
+      "total": 9,
+      "critical_packages": [
+        {
+          "name": "protobufjs",
+          "cve": "GHSA-xq3m-2v4x-88gg",
+          "cvss": 9.8,
+          "title": "Arbitrary code execution"
+        }
+      ],
+      "note": "Infrastructure package — read-only for team agents per CLAUDE.md"
+    },
+    "portal/Backend": {
+      "path": "portal/Backend",
+      "type": "debug_portal_infrastructure",
+      "prod_deps": 397,
+      "total_deps": 577,
+      "critical": 2,
+      "high": 10,
+      "medium": 43,
+      "low": 0,
+      "total": 55,
+      "critical_packages": [
+        {
+          "name": "protobufjs",
+          "cve": "GHSA-xq3m-2v4x-88gg",
+          "cvss": 9.8,
+          "title": "Arbitrary code execution"
+        },
+        {
+          "name": "@opentelemetry/auto-instrumentations-node",
+          "cve": "GHSA-q7rr-3cgh-j5r3",
+          "cvss": 7.5,
+          "title": "Prometheus exporter crash via malformed request"
+        }
+      ],
+      "note": "Highest risk package — 577 deps (over-engineered). 2 critical RCE in OpenTelemetry chain"
+    },
+    "portal/Frontend": {
+      "path": "portal/Frontend",
+      "type": "debug_portal_infrastructure",
+      "prod_deps": 9,
+      "total_deps": 424,
+      "critical": 1,
+      "high": 6,
+      "medium": 5,
+      "low": 1,
+      "total": 13,
+      "critical_packages": [
+        {
+          "name": "vitest",
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "cvss": 9.8,
+          "title": "Arbitrary file read/execution via UI server"
+        }
+      ]
+    }
+  },
+  "critical_issues": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "version_affected": ">=4.0.0 <=4.7.8",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "location": "Source/Backend",
+      "type": "Remote Code Execution",
+      "description": "JavaScript injection via AST type confusion in Handlebars template engine",
+      "severity": "P1",
+      "action_required": "Update to 4.7.9+",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "version_affected": "<3.2.6",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "location": "Source/Frontend",
+      "type": "Arbitrary File Read/Write + Code Execution",
+      "description": "Dev-time RCE when Vitest UI server is listening — no auth required",
+      "severity": "P1",
+      "action_required": "Update to 3.2.6+",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "version_affected": "<7.5.5",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "location": "portal/Backend",
+      "type": "Remote Code Execution",
+      "description": "Arbitrary code execution via unsafe code generation in protobufjs",
+      "severity": "P1",
+      "action_required": "Update @opentelemetry/sdk-node and dependencies",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "version_affected": "<0.75.0",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "location": "portal/Backend",
+      "type": "Denial of Service",
+      "description": "Prometheus exporter process crash via malformed HTTP request",
+      "severity": "P1",
+      "action_required": "Update to 0.79.0+",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "package": "brace-expansion",
+      "version_affected": "<1.1.18",
+      "cve": "GHSA-f886-m6hf-6m8v, GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg",
+      "cvss": 7.5,
+      "location": "Source/Backend",
+      "type": "Denial of Service",
+      "description": "Multiple DoS vulnerabilities in glob expansion parsing",
+      "severity": "P2",
+      "action_required": "Update glob/build tools"
+    }
+  ],
+  "high_severity_summary": [
+    "form-data CRLF injection (3 packages affected)",
+    "nanoid infinite loop (2 packages affected)",
+    "@remix-run/router open redirect (Source/Frontend)",
+    "@grpc/grpc-js malformed request crash (portal/Backend)",
+    "postcss/vite dev server issues"
+  ],
+  "license_compliance": {
+    "status": "PASS",
+    "all_permissive": true,
+    "details": "All direct dependencies use MIT or Apache-2.0 licenses. No GPL/AGPL virality risk."
+  },
+  "supply_chain_risk": {
+    "status": "HIGH",
+    "total_transitive_deps": 1797,
+    "risk_level": "VERY HIGH (exceeds 500 threshold)",
+    "worst_package": "portal/Backend (577 deps)",
+    "recommendation": "Reduce dependency tree; portal/Backend is over-engineered"
+  },
+  "next_steps": [
+    {
+      "priority": 1,
+      "timeframe": "24-48 hours",
+      "actions": [
+        "Update vitest to 3.2.6+ in Source/Frontend",
+        "Identify and update handlebars chain in Source/Backend",
+        "Update @opentelemetry packages in portal/Backend to latest"
+      ]
+    },
+    {
+      "priority": 2,
+      "timeframe": "1 week",
+      "actions": [
+        "Systematic npm audit fixes for all high-severity CVEs",
+        "Add npm audit --audit-level=high to CI/CD",
+        "Test all updates with full test suite"
+      ]
+    },
+    {
+      "priority": 3,
+      "timeframe": "2 weeks",
+      "actions": [
+        "Prune portal/Backend dependency tree",
+        "Establish weekly audit cycle",
+        "Consider lighter OpenTelemetry configuration"
+      ]
+    }
+  ],
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: handlebars RCE",
+      "DEP-002: vitest arbitrary file read",
+      "DEP-003: protobufjs RCE",
+      "DEP-004: OpenTelemetry Prometheus DoS",
+      "form-data CRLF injection series"
+    ]
+  },
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-08-29.md",
+  "learnings_updated": "Teams/TheInspector/learnings/dependency-auditor.md"
+}

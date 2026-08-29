@@ -1,0 +1,275 @@
+{
+  "audit": {
+    "id": "run-20260829-090129",
+    "date": "2026-08-29",
+    "branch": "audit/inspector-2026-08-29-b01dd7",
+    "grade": "D",
+    "prior_grade": null,
+    "prior_audit_date": null,
+    "baseline": true,
+    "report_html": "Teams/TheInspector/findings/audit-2026-08-29-D.html",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "All services offline at audit time"
+  },
+  "summary": {
+    "p1_total": 7,
+    "p2_total": 30,
+    "p3_total": 64,
+    "p4_total": 6,
+    "total_cves": 99,
+    "spec_coverage_pct": 20,
+    "escalations_to_guardians": 3,
+    "license_violations": 0,
+    "fixed_since_prior": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "title": "Handlebars.js RCE via AST type confusion",
+      "package": "handlebars <=4.7.8",
+      "location": "Source/Backend",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "vector": "Network/Low-Complexity/No-Privileges/No-Interaction",
+      "impact": "Remote Code Execution",
+      "fix": "cd Source/Backend && npm update handlebars  # target >=4.7.9",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "title": "Vitest arbitrary file read + code execution via UI server",
+      "package": "vitest <3.2.6",
+      "location": "Source/Frontend",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "vector": "Network/Low-Complexity/No-Privileges/No-Interaction",
+      "impact": "Arbitrary file read + code execution in dev/CI",
+      "fix": "cd Source/Frontend && npm update vitest  # target >=3.2.6",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "route": "TheGuardians",
+      "title": "protobufjs RCE via malicious .proto schema",
+      "package": "protobufjs (transitive via @opentelemetry/sdk-node)",
+      "location": "portal/Backend",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "vector": "Network/Low-Complexity/No-Privileges/No-Interaction",
+      "impact": "Remote Code Execution via prototype pollution",
+      "fix": "cd portal/Backend && npm update @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "tooling",
+      "route": "TheFixer",
+      "title": "Traceability config regex FR-\\d+ matches no source IDs",
+      "file": "Teams/TheInspector/inspector.config.yml",
+      "line": 37,
+      "impact": "CI traceability gate passes vacuously — 89 requirements untraced with no enforcement",
+      "fix": "Change traceability pattern to FR-(?:WF|TMP|dependency)-[\\w-]+",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "route": "TheFixer",
+      "title": "Primary domain spec FR-001..069 is 0% implemented in Source/",
+      "file": "Specifications/dev-workflow-platform.md",
+      "line": null,
+      "impact": "Spec and implementation describe different products — 74 FRs untraced",
+      "fix": "Add 'Status: Superseded' frontmatter or create reconciliation Plan",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve",
+      "route": "TheFixer",
+      "title": "OpenTelemetry auto-instrumentations Prometheus crash (CVSS 7.5)",
+      "package": "@opentelemetry/auto-instrumentations-node <0.79.0",
+      "location": "portal/Backend",
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "cvss": 7.5,
+      "impact": "DoS — portal/Backend process crash via crafted request to /metrics",
+      "fix": "cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node  # target >=0.79.0",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve",
+      "route": "TheFixer",
+      "title": "brace-expansion DoS via crafted glob pattern (CVSS 7.5)",
+      "package": "brace-expansion (transitive via Source/Backend)",
+      "location": "Source/Backend",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "cvss": 7.5,
+      "impact": "DoS — backend process becomes unresponsive under crafted glob input",
+      "fix": "cd Source/Backend && npm update",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "route": "TheFixer",
+      "title": "Tiered-merge-pipeline spec (FR-TMP-001..010) unimplemented",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "fix": "Add 'Status: Planned / Not Started' frontmatter, or create a Plan directory",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture",
+      "route": "TheFixer",
+      "title": "Route handlers import store directly — service layer bypassed",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/intake.ts:4",
+        "Source/Backend/src/routes/workflow.ts:15"
+      ],
+      "fix": "Extract WorkItemService; routes call service only",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "test-health",
+      "route": "TheFixer",
+      "title": "GET /api/search not wired; search.test.ts produces guaranteed CI failures",
+      "file": "Source/Backend/tests/routes/search.test.ts",
+      "fix": "Wire route or wrap tests in describe.skip with ticket reference",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "tooling",
+      "route": "TheFixer",
+      "title": "FR-dependency-* (15 requirements) invisible to traceability enforcer",
+      "file": "Specifications/dev-workflow-platform.md",
+      "line_range": "461-482",
+      "fix": "Fix enforcer regex and scan scope to include Specifications/ requirements",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "DEP-H01-H26",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve",
+      "route": "TheFixer",
+      "title": "26 high-severity CVEs across production dependencies",
+      "count": 26,
+      "detail_file": "Teams/TheInspector/findings/dependency-audit-2026-08-29.md",
+      "packages_affected": ["form-data", "nanoid", "@grpc/grpc-js", "react (portal)", "opentelemetry-core"],
+      "fix": "Enable Dependabot/Renovate; run npm update across all packages",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "code-quality",
+      "route": "TheFixer",
+      "title": "eslint-disable suppressions without rationale comments",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "fix": "Add inline comment explaining why react-hooks/exhaustive-deps omission is safe",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "tooling",
+      "route": "TheFixer",
+      "title": "Traceability enforcer auto-selects most-recent plan only (18 plans silently skipped)",
+      "file": "tools/traceability-enforcer.py",
+      "line_range": "38-55",
+      "fix": "Iterate all Plans/ directories that contain requirements.md",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    },
+    {
+      "id": "DEP-M01-M62",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve",
+      "route": "TheFixer",
+      "count": 62,
+      "title": "62 medium CVEs across packages",
+      "detail_file": "Teams/TheInspector/findings/dependency-audit-2026-08-29.md",
+      "fix": "Addressed by Dependabot/Renovate automation (see P2 rec)",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-L01-L06",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "category": "cve",
+      "route": "TheFixer",
+      "count": 6,
+      "title": "6 low-severity CVEs (informational)",
+      "detail_file": "Teams/TheInspector/findings/dependency-audit-2026-08-29.md",
+      "fix": "Monitor; addressed by automated dependency updates",
+      "status": "OPEN",
+      "first_seen": "2026-08-29"
+    }
+  ],
+  "grading_rationale": {
+    "grade": "D",
+    "thresholds_applied": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": {"max_p1": 999},
+      "F": "reserved for exploitable auth bypass + critical domain failure"
+    },
+    "why_not_C": "7 P1 findings exceed C threshold of max_p1=2",
+    "why_not_F": "No exploitable auth bypass found (no-auth is by design per inspector.config.yml); domain state machine is intact",
+    "spec_coverage": "~20% — below all thresholds except D"
+  }
+}

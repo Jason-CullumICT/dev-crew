@@ -1,0 +1,263 @@
+{
+  "audit_date": "2026-08-31",
+  "audit_agent": "dependency_auditor",
+  "projects_analyzed": {
+    "backend": {
+      "path": "Source/Backend",
+      "direct_deps": 4,
+      "total_deps": 411,
+      "cve_critical": 1,
+      "cve_high": 3,
+      "cve_moderate": 4,
+      "cve_low": 1
+    },
+    "frontend": {
+      "path": "Source/Frontend",
+      "direct_deps": 3,
+      "total_deps": 230,
+      "cve_critical": 1,
+      "cve_high": 5,
+      "cve_moderate": 6,
+      "cve_low": 1
+    },
+    "e2e": {
+      "path": "Source/E2E",
+      "direct_deps": 4,
+      "total_deps": 10,
+      "cve_critical": 0,
+      "cve_high": 0,
+      "cve_moderate": 0,
+      "cve_low": 0
+    },
+    "orchestrator": {
+      "path": "platform/orchestrator",
+      "direct_deps": 3,
+      "total_deps": 155,
+      "cve_critical": 1,
+      "cve_high": 2,
+      "cve_moderate": 6,
+      "cve_low": 0
+    }
+  },
+  "summary": {
+    "total_projects": 4,
+    "total_direct_dependencies": 114,
+    "total_transitive_dependencies": 806,
+    "cve_critical": 3,
+    "cve_high": 10,
+    "cve_moderate": 16,
+    "cve_low": 2,
+    "total_cves": 31,
+    "outdated_major_versions": 6,
+    "license_issues": 0,
+    "abandoned_packages": 0
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars RCE via JavaScript Injection",
+      "package": "handlebars",
+      "version": "4.7.8",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "affected_project": "backend",
+      "vulnerability_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "impact": "Arbitrary JavaScript execution in template rendering context",
+      "fix": "npm update handlebars to >=4.7.9",
+      "timeline": "IMMEDIATE"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read/Execution",
+      "package": "vitest",
+      "version": "3.2.5",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "affected_project": "frontend",
+      "vulnerability_ids": ["GHSA-5xrq-8626-4rwp"],
+      "impact": "Unauthenticated arbitrary file read and code execution when UI server is running",
+      "fix": "npm update vitest to >=3.2.6",
+      "timeline": "IMMEDIATE",
+      "escalation_team": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "version": "7.6.4",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "affected_project": "orchestrator",
+      "vulnerability_ids": ["GHSA-xq3m-2v4x-88gg"],
+      "impact": "Code execution from malformed protobuf messages; affects orchestrator infrastructure",
+      "fix": "npm update protobufjs to latest stable",
+      "timeline": "IMMEDIATE",
+      "escalation_team": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "brace-expansion",
+      "severity": "HIGH",
+      "vulnerability_ids": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "impact": "DoS via exponential expansion",
+      "affected_project": "backend"
+    },
+    {
+      "id": "DEP-005",
+      "package": "form-data",
+      "severity": "HIGH",
+      "vulnerability_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "impact": "CRLF injection in multipart form data",
+      "affected_project": "backend/frontend"
+    },
+    {
+      "id": "DEP-006",
+      "package": "js-yaml",
+      "severity": "HIGH",
+      "vulnerability_ids": ["GHSA-52cp-r559-cp3m", "GHSA-h67p-54hq-rp68", "GHSA-5p4m-2wfm-xmqj"],
+      "impact": "Quadratic complexity DoS via YAML merge-key chains",
+      "affected_project": "backend"
+    },
+    {
+      "id": "DEP-007",
+      "package": "react-router-dom",
+      "severity": "HIGH",
+      "vulnerability_ids": ["GHSA-2j2x-hqr9-3h42", "GHSA-wrjc-x8rr-h8h6", "GHSA-jjmj-jmhj-qwj2", "GHSA-337j-9hxr-rhxg"],
+      "impact": "Open redirect and XSS vulnerabilities",
+      "affected_project": "frontend"
+    },
+    {
+      "id": "DEP-008",
+      "package": "vite",
+      "severity": "HIGH",
+      "vulnerability_ids": ["GHSA-fx2h-pf6j-xcff", "GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3"],
+      "impact": "Path traversal and fs.deny bypass",
+      "affected_project": "frontend"
+    },
+    {
+      "id": "DEP-009",
+      "package": "postcss",
+      "severity": "HIGH",
+      "vulnerability_ids": ["GHSA-6g55-p6wh-862q", "GHSA-r28c-9q8g-f849", "GHSA-fxqj-rqcc-2cmp", "GHSA-qx2v-qp2m-jg93"],
+      "impact": "Arbitrary file read via sourceMappingURL",
+      "affected_project": "frontend"
+    },
+    {
+      "id": "DEP-010",
+      "package": "path-to-regexp",
+      "severity": "HIGH",
+      "vulnerability_ids": ["GHSA-37ch-88jc-xwx2"],
+      "impact": "ReDoS via multiple route parameters",
+      "affected_project": "orchestrator"
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "uuid",
+      "current": "9.0.1",
+      "latest": "14.0.2",
+      "major_version_gap": 5,
+      "affected_projects": ["backend", "orchestrator"],
+      "recommendation": "Update to fix buffer bounds check vulnerability"
+    },
+    {
+      "package": "pino",
+      "current": "8.21.0",
+      "latest": "10.3.1",
+      "major_version_gap": 2,
+      "affected_projects": ["backend"],
+      "recommendation": "Major version upgrade; test for breaking changes"
+    },
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "major_version_gap": 2,
+      "affected_projects": ["backend", "orchestrator"],
+      "recommendation": "Major version upgrade; test for breaking changes"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "major_version_gap": 1,
+      "affected_projects": ["frontend"],
+      "recommendation": "React 19 has significant changes; test thoroughly"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "major_version_gap": 1,
+      "affected_projects": ["frontend"],
+      "recommendation": "Update with react"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.30.6",
+      "latest": "7.18.3",
+      "major_version_gap": 1,
+      "affected_projects": ["frontend"],
+      "recommendation": "Major version upgrade; fixes multiple CVEs"
+    }
+  ],
+  "license_compliance": {
+    "gpl_agpl_detected": false,
+    "unknown_licenses": false,
+    "verdict": "PASS - All dependencies use permissive licenses (MIT, Apache 2.0, ISC, BSD)"
+  },
+  "supply_chain_risk": {
+    "backend": {
+      "rating": "MEDIUM",
+      "rationale": "411 transitive dependencies; mostly dev/types; production footprint small"
+    },
+    "frontend": {
+      "rating": "HIGH",
+      "rationale": "230+ transitive deps; vitest/vite ecosystem with concurrent vulnerabilities"
+    },
+    "orchestrator": {
+      "rating": "HIGH",
+      "rationale": "All 155 deps are production; zero dev deps; infrastructure component"
+    },
+    "e2e": {
+      "rating": "LOW",
+      "rationale": "Only 10 dependencies; zero CVEs"
+    }
+  },
+  "remediation_timeline": {
+    "immediate": {
+      "items": 3,
+      "packages": ["handlebars", "vitest", "protobufjs"],
+      "deadline": "This week"
+    },
+    "current_sprint": {
+      "items": 7,
+      "packages": ["react-router-dom", "vite", "brace-expansion", "form-data", "js-yaml", "uuid"],
+      "deadline": "1 week"
+    },
+    "next_sprint": {
+      "items": 4,
+      "packages": ["express", "pino", "react", "dependabot setup"],
+      "deadline": "2-3 weeks"
+    }
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-002",
+      "team": "TheGuardians",
+      "reason": "Development environment security; Vitest UI server exposure assessment required"
+    },
+    {
+      "finding_id": "DEP-003",
+      "team": "TheGuardians",
+      "reason": "Infrastructure security; protobufjs in orchestrator affects all agent teams"
+    }
+  ]
+}

@@ -311,3 +311,179 @@ The following chain combines findings to achieve all four red-team objectives:
 - **State machine is enforced per-endpoint** but can be bypassed via `overrideRoute` (PEN-003) and manual approve/reject (PEN-001 + unauthenticated access)
 - **Intake endpoints** (`/api/intake/*`) have weaker validation than `/api/work-items`
 - **No persistent side effects** — in-memory store means all data is lost on server restart; test against a running instance with `npm start` in `Source/Backend/`
+
+---
+
+## Red Team Results
+
+**Agent:** red_teamer  
+**Date:** 2026-08-31  
+**Environment:** Ephemeral Docker (`docker-compose.test.yml`) — `portal/Backend` on `:3001`  
+**Target Correction:** The pen-tester mapped `Source/Backend/` (work-items app), but `docker-compose.test.yml` runs `portal/Backend/` (feature-request/bug portal). Red team adapted to the **actual running service** and executed all chains against real endpoints.
+
+### Objective Results
+
+| Objective | Status | Chain |
+|-----------|--------|-------|
+| Bypass work item state machine | ✅ ACHIEVED | RED-001 + RED-003 |
+| Access/modify soft-deleted item via ID | ✅ ACHIEVED | RED-005 |
+| Submit malformed assessment verdict | ⚠️ PARTIAL | RED-008 |
+| Enumerate all items without pagination limit | ✅ ACHIEVED | RED-006 |
+
+---
+
+### RED-001: Complete Absence of Authentication — All Endpoints Public
+
+- **Severity:** Critical
+- **Objective Achieved:** Yes (prerequisite for all other chains)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests`, `/api/bugs`, `/api/cycles`, all routes
+- **Based On:** PEN-001 (adapted to portal service)
+- **Exploit Scenario:**
+  1. `curl -s http://localhost:3001/api/feature-requests` — returns 200 with full dataset. No `Authorization` header, no challenge.
+  2. `POST /api/feature-requests` without credentials → `201 Created` with `FR-0001`. Item created with attacker-controlled title, description, source, priority.
+  3. `DELETE /api/feature-requests/FR-0005` without credentials → `204 No Content`. Soft-deletion of any arbitrary item.
+  4. Every subsequent RED finding exploits this as its foundation.
+- **Evidence:** `FR-0001` created with `source:"zendesk"` — indistinguishable from legitimate Zendesk submissions.
+- **Recommendation:** Implement authentication middleware (JWT or session) applied globally before all `/api/*` routes. The `force-approve` and `deny` actions especially must be gated behind role-based access (admin/operator only).
+
+---
+
+### RED-002: State Machine Bypass via Unauthenticated Force-Approve
+
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/force-approve`
+- **Based On:** PEN-001, PEN-003 (adapted)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` (no auth) → creates `FR-0001` in `potential` status.
+  2. `PATCH /api/feature-requests/FR-0001` `{"status":"voting"}` (no auth) → transitions to `voting`.
+  3. `POST /api/feature-requests/FR-0001/force-approve` (no auth, no votes, no human review) → status jumps to `approved` with `human_approval_approved_at` set.
+  4. Item is now `approved` having received zero AI votes and zero human review. `votes: []` confirms bypass.
+- **Evidence:**
+  ```json
+  {"id":"FR-0001","status":"approved","votes":[],"human_approval_approved_at":"2026-08-31T09:38:55.093Z","human_approval_comment":null}
+  ```
+- **Recommendation:** `force-approve` must require an authenticated admin role. The `PATCH status` endpoint must enforce the same state machine transitions as dedicated action endpoints — currently `PATCH` accepts arbitrary status values that action-endpoints would reject.
+
+---
+
+### RED-003: Dependency Gating Bypass — Clear Blockers Then Advance State
+
+- **Severity:** High
+- **Objective Achieved:** Yes — "Bypass dispatch gating by clearing blockedBy"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH http://localhost:3001/api/feature-requests/:id` + state transition
+- **Based On:** PEN-005 (adapted)
+- **Exploit Scenario:**
+  1. Create `FR-0028` and `FR-0029`; link FR-0028 blocked by FR-0029.
+  2. `PATCH /api/feature-requests/FR-0028 {"status":"voting"}` → voting. `POST /force-approve` → `pending_dependencies` (has active blocker).
+  3. `PATCH /api/feature-requests/FR-0028 {"blocked_by":[]}` → clears all blockers. `has_unresolved_blockers` flips to `false`.
+  4. `PATCH /api/feature-requests/FR-0028 {"status":"approved"}` → item advances to `approved` despite its dependency `FR-0029` never being resolved.
+- **Evidence:**
+  ```
+  FR-0028: pending_dependencies (blocker active) → PATCH blocked_by:[] → approved
+  FR-0029: still in 'potential' status (unresolved)
+  ```
+- **Recommendation:** `PATCH blocked_by` should require the same authorization as dependency resolution. Clearing blockers must only be permitted via the `/dependencies` endpoint (with proper resolution semantics), not freely via a field patch. State transitions away from `pending_dependencies` must re-validate that `has_unresolved_blockers` is actually false in the DB, not trust the cached field.
+
+---
+
+### RED-004: Soft-Deleted Item ID Leaks via Dependency Response (IDOR)
+
+- **Severity:** Medium
+- **Objective Achieved:** Yes — "Access or modify a soft-deleted work item via direct ID reference"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/feature-requests/:id`
+- **Based On:** PEN-011 (adapted)
+- **Exploit Scenario:**
+  1. Create `FR-0005` (blocker) and `FR-0006` (dependent); link FR-0006 blocked by FR-0005.
+  2. `DELETE /api/feature-requests/FR-0005` → soft-deleted, returns 204.
+  3. `GET /api/feature-requests/FR-0005` → `404 Feature request FR-0005 not found` (correctly gated).
+  4. `GET /api/feature-requests/FR-0006` → `blocked_by: [{"item_type":"feature_request","item_id":"FR-0005","title":"Unknown","status":"unknown"}]`.
+  5. FR-0005's internal ID leaks via FR-0006's dependency list. `has_unresolved_blockers: true` persists indefinitely on FR-0006 (can never be automatically resolved since blocker is deleted).
+- **Evidence:**
+  ```json
+  {"blocked_by":[{"item_type":"feature_request","item_id":"FR-0005","title":"Unknown","status":"unknown"}],"has_unresolved_blockers":true}
+  ```
+- **Recommendation:** When a blocker is soft-deleted, cascade-resolve or cascade-remove its dependency links. The dependency read path must filter out soft-deleted blockers from the `blocked_by` response array.
+
+---
+
+### RED-005: Unlimited Pagination — Full Dataset Enumeration
+
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/feature-requests?limit=999999`
+- **Based On:** PEN-004 (adapted)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests?limit=999999` → returns all 79 items in a single unauthenticated response.
+  2. `GET /api/feature-requests?page=-1&limit=5` → negative page returns all items (no lower bound guard).
+  3. `GET /api/feature-requests?limit=abc` → NaN limit falls back to full dataset dump rather than empty array.
+  4. Same behavior confirmed on `/api/bugs` and other list endpoints.
+- **Evidence:** 79 items returned from single request with no auth and `limit=999999`.
+- **Recommendation:** Enforce a maximum `limit` (e.g., 100) server-side. Reject or clamp negative/NaN page values. Return `400 Bad Request` for non-numeric pagination parameters.
+
+---
+
+### RED-006: No Rate Limiting — Unbounded Write Flooding
+
+- **Severity:** Medium
+- **Objective Achieved:** Yes (supporting objective)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests`
+- **Based On:** PEN-009 (adapted)
+- **Exploit Scenario:**
+  1. 50 sequential `POST /api/feature-requests` requests completed in 373ms — all returned 201.
+  2. No HTTP 429 or backoff encountered at any point.
+  3. Work queue can be flooded with attacker-controlled items, poisoning prioritization and pipeline assignment.
+- **Evidence:** `50 succeeded, 0 failed in 373ms`.
+- **Recommendation:** Apply `express-rate-limit` middleware with per-IP limits on write operations (suggest: 10 req/min per IP for POST). Consider a global request body size cap already set to 16kb — correct, but insufficient alone.
+
+---
+
+### RED-007: Metrics Endpoint Unauthenticated — Operational Intelligence Disclosure
+
+- **Severity:** Medium
+- **Objective Achieved:** Yes (supporting)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/metrics`
+- **Based On:** PEN-008 (adapted)
+- **Exploit Scenario:**
+  1. `curl http://localhost:3001/metrics` → 200, full Prometheus metrics page.
+  2. Metrics reveal: `feature_request_status_transitions_total`, `bug_status_transitions_total`, `pipeline_stage_completions_total`, `http_request_duration_ms` broken down by route and status code.
+  3. Route-level counters reveal which state machine transitions have been attempted (e.g., `force-approve` with 409 and 200 counts) — exposes prior attack attempts.
+- **Recommendation:** Gate `/metrics` behind IP allowlist or scraper authentication (Basic Auth or bearer token). Never expose operational metrics to the public internet.
+
+---
+
+### RED-008: Orchestrator Proxy — Internal URL Disclosure
+
+- **Severity:** Low
+- **Objective Achieved:** No (proxy target is fixed, not attacker-controlled)
+- **Status:** Confirmed (Limited)
+- **Target URL:** `GET http://localhost:3001/api/orchestrator/`
+- **Based On:** New finding
+- **Exploit Scenario:**
+  1. Any unauthenticated `GET /api/orchestrator/` returns: `{"error":"Orchestrator unreachable at http://localhost:8080"}`.
+  2. Internal orchestrator URL and port are disclosed to any caller.
+  3. Path traversal attempts (`/../etc/passwd`) return Express 404 (not exploited).
+  4. Proxy target URL is hard-coded in `ORCHESTRATOR_URL` env var — not attacker-controllable.
+- **Recommendation:** Replace verbose error `"Orchestrator unreachable at <url>"` with a generic `"Service temporarily unavailable"`. Remove internal URL from client-visible error responses.
+
+---
+
+### RED-009: Error Message ID Enumeration
+
+- **Severity:** Low
+- **Objective Achieved:** Yes (supports IDOR)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/dependencies`
+- **Based On:** PEN-012 (adapted)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests/FR-0001/dependencies {"action":"add","blocker_id":"FR-0001"}` → `"An item cannot depend on itself"` (400) — confirms FR-0001 exists.
+  2. `POST /api/feature-requests/FR-0001/dependencies {"action":"add","blocker_id":"FR-9999"}` → `"Item not found: FR-9999"` (404) — confirms FR-9999 does not exist.
+  3. Different error messages for existing vs. non-existing IDs allow sequential enumeration of the entire ID space (FR-0001 through FR-XXXX).
+- **Recommendation:** Return uniform `404 Not Found` for both self-reference and non-existent blocker when the target ID does not exist in the caller's authorized scope. Avoid verbatim internal ID format in error messages.

@@ -1,0 +1,389 @@
+{
+  "audit_id": "inspector-2026-09-01",
+  "date": "2026-09-01",
+  "branch": "audit/inspector-2026-09-01-26906e",
+  "grade": "D",
+  "synthesized_by": "team-leader",
+  "specialists": ["quality-oracle", "dependency-auditor"],
+  "not_dispatched": ["performance-profiler", "chaos-monkey"],
+  "reason_not_dispatched": "Services offline (backend localhost:3001, frontend localhost:5173 unreachable at audit time)",
+  "totals": {
+    "p1": 8,
+    "p2": 30,
+    "p3": 67,
+    "p4": 3,
+    "total": 108,
+    "spec_coverage_pct": 24,
+    "escalations_to_guardians": 3,
+    "to_fixer": 105
+  },
+  "grading_thresholds_applied": {
+    "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+    "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+    "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+    "D": { "reason": "p1=8 > max_p1=2 for C; p2=30 > max_p2=15 for C; spec_coverage=24% < 40% for C" }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cve_ids": ["GHSA-xq3m-2v4x-88gg"],
+      "exploit_type": "RCE (Remote Code Execution)",
+      "package": "protobufjs",
+      "affected_version": "< 7.5.5",
+      "affected_projects": ["platform/orchestrator"],
+      "route_to": "TheGuardians",
+      "trigger": "injection / supply-chain attack vector",
+      "fix": "cd platform/orchestrator && npm update protobufjs",
+      "fix_effort_minutes": 30,
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars JavaScript Injection / AST Type Confusion",
+      "severity": "P1",
+      "cvss": 8.8,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "cve_ids": ["GHSA-3mfm-83xf-c92r"],
+      "exploit_type": "Code Injection",
+      "package": "handlebars",
+      "affected_version": "4.0.0 - 4.7.8",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "fix": "cd Source/Backend && npm ls handlebars && npm uninstall handlebars || npm update handlebars@^4.7.9",
+      "fix_effort_minutes": 60,
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "title": "form-data CRLF / HTTP Header Injection",
+      "severity": "P1",
+      "cvss": 7.5,
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "cve_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "exploit_type": "Header Injection / CRLF Injection",
+      "package": "form-data",
+      "affected_version": "4.0.0 - 4.0.5",
+      "affected_projects": ["Source/Frontend", "Source/Backend", "portal/Frontend"],
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "fix": "npm update form-data@>=4.0.6 in each affected project",
+      "fix_effort_minutes": 45,
+      "source": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search — Route Not Wired in app.ts",
+      "severity": "P1",
+      "category": "spec-drift/untested",
+      "file": "Source/Backend/src/app.ts",
+      "also_see": "Source/Backend/tests/routes/search.test.ts",
+      "spec_ref": "FR-dependency-search",
+      "description": "The search route has a full 5-test suite and Verifies comments but is never registered in app.ts. Tests are silently failing in CI without surfacing as build-breaking.",
+      "fix": "Implement GET /api/search?q= handler (filter work item store, return {data:[...]}) and register in app.ts. Alternatively add test.skip with tracking comment.",
+      "fix_effort_minutes": 30,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "title": "Traceability Enforcer Blind to 100 of 113 Requirements",
+      "severity": "P1",
+      "category": "pattern-violation/spec-drift",
+      "file": "tools/traceability-enforcer.py",
+      "line": 45,
+      "description": "The enforcer only checks the most-recently-modified Plans/*/requirements.md (13 requirements). Specifications/ (74+10 FRs) and older plans are never verified. Gate reports PASS while 88% of requirements are unchecked.",
+      "fix": "Extend get_active_requirements() to iterate all Plans/*/requirements.md files. Add --specs flag for Specifications/*.md scanning.",
+      "fix_effort_minutes": 180,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-005",
+      "title": "@grpc/grpc-js Server Crash on Malformed Messages",
+      "severity": "P1",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "exploit_type": "DoS (Server Crash)",
+      "package": "@grpc/grpc-js",
+      "affected_version": "1.14.0 - 1.14.3",
+      "affected_projects": ["platform/orchestrator"],
+      "fix": "npm update @grpc/grpc-js@>=1.14.4",
+      "fix_effort_minutes": 30,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "title": "path-to-regexp Regular Expression DoS",
+      "severity": "P1",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-37ch-88jc-xwx2"],
+      "exploit_type": "ReDoS",
+      "package": "path-to-regexp",
+      "affected_version": "< 0.1.13",
+      "affected_projects": ["platform/orchestrator"],
+      "fix": "npm update path-to-regexp@>=0.1.13",
+      "fix_effort_minutes": 15,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "title": "protobufjs Code Injection + DoS (co-vulnerability with DEP-001)",
+      "severity": "P1",
+      "cvss": 8.5,
+      "cve_ids": ["GHSA-66ff-xgx4-vchm", "GHSA-2c67-j7vx-xmcx"],
+      "exploit_type": "Code Injection + DoS",
+      "package": "protobufjs",
+      "affected_version": "< 7.5.5",
+      "affected_projects": ["platform/orchestrator"],
+      "fix": "Covered by DEP-001 fix: npm update protobufjs@>=7.5.5",
+      "fix_effort_minutes": 0,
+      "route_to": "TheFixer",
+      "note": "No additional effort — resolved by DEP-001 patch",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "title": "Specifications/dev-workflow-platform.md — 74 FRs with 0% Implementation",
+      "severity": "P2",
+      "category": "spec-drift",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "74 requirements (FR-001 to FR-074) with zero implementation. Either obsolete (archive it) or represents massive unrealized scope (needs a tracking plan).",
+      "fix": "Add Status: ARCHIVED header to the file, OR create Plans/dev-workflow-platform/ with implementation status tracking.",
+      "fix_effort_minutes": 30,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "title": "Plans/dependency-linking References Stale portal/ Path Structure",
+      "severity": "P2",
+      "category": "doc-stale",
+      "file": "Plans/dependency-linking/requirements.md",
+      "lines": "15-30",
+      "description": "All 16 requirements reference portal/Backend and portal/Frontend paths. Implementation lives in Source/Backend and Source/Frontend.",
+      "fix": "Bulk-replace portal/Backend -> Source/Backend and portal/Frontend -> Source/Frontend throughout the plan.",
+      "fix_effort_minutes": 15,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-005",
+      "title": "Duplicate Test Files for WorkItemDetailPage and WorkItemListPage",
+      "severity": "P2",
+      "category": "test-coverage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "fix": "Merge into tests/pages/ (canonical). Delete root-level duplicates.",
+      "fix_effort_minutes": 60,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "title": "DebugPortalPage.tsx — Production Page with No Test",
+      "severity": "P2",
+      "category": "untested",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "fix": "Create Source/Frontend/tests/pages/DebugPortalPage.test.tsx with iframe presence render test.",
+      "fix_effort_minutes": 30,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "title": "brace-expansion Denial of Service",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve_ids": ["GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "exploit_type": "DoS (Unbounded Expansion)",
+      "package": "brace-expansion",
+      "affected_version": "< 1.1.18",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "fix": "npm update brace-expansion@>=1.1.18",
+      "fix_effort_minutes": 15,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "title": "js-yaml CPU Consumption DoS",
+      "severity": "P2",
+      "cvss": 7.5,
+      "exploit_type": "DoS (CPU Exhaustion via YAML merge-key)",
+      "package": "js-yaml",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "fix": "npm update js-yaml@latest",
+      "fix_effort_minutes": 15,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "title": "nanoid Infinite Loop / Hang",
+      "severity": "P2",
+      "cvss": 5.9,
+      "cve_ids": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8"],
+      "exploit_type": "DoS (Infinite Loop)",
+      "package": "nanoid",
+      "affected_version": "< 3.3.18",
+      "affected_projects": ["Source/Frontend"],
+      "fix": "npm update nanoid@>=3.3.18",
+      "fix_effort_minutes": 15,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-P2-portal",
+      "title": "23 additional high-severity CVEs in portal/Backend and portal/Frontend",
+      "severity": "P2",
+      "count": 23,
+      "affected_projects": ["portal/Backend", "portal/Frontend"],
+      "fix": "Run npm audit fix in portal/Backend and portal/Frontend. See dependency-audit-2026-09-01.json for full list.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "detail_file": "Teams/TheInspector/findings/dependency-audit-2026-09-01.json"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "title": "Silent JSON Parse Error Swallowed in client.ts",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "file": "Source/Frontend/src/api/client.ts",
+      "line": 26,
+      "fix": "Add inline comment documenting why the parse failure is intentionally suppressed.",
+      "fix_effort_minutes": 5,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-008",
+      "title": "eslint-disable Without Rationale Comment (×2)",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "fix": "Add one-line comment per suppression explaining why react-hooks/exhaustive-deps is intentionally disabled.",
+      "fix_effort_minutes": 15,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-009",
+      "title": "Hardcoded localhost:5105 in E2E Config",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "file": "Source/E2E/playwright.pipeline.config.ts",
+      "line": 7,
+      "fix": "Replace with: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5105'",
+      "fix_effort_minutes": 5,
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-moderate",
+      "title": "64 Moderate-Severity CVEs Across All Projects",
+      "severity": "P3",
+      "count": 64,
+      "breakdown": {
+        "portal/Backend": 43,
+        "Source/Frontend": 6,
+        "portal/Frontend": 5,
+        "platform/orchestrator": 6,
+        "Source/Backend": 4
+      },
+      "fix": "Run npm audit fix in each project. Schedule for next quarter dependency sweep.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor",
+      "detail_file": "Teams/TheInspector/findings/dependency-audit-2026-09-01.json"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-low",
+      "title": "3 Low-Severity CVEs",
+      "severity": "P4",
+      "count": 3,
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend"],
+      "fix": "Informational — address in next quarterly dependency sweep.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Traceability gate covers only active plan",
+      "findings": ["QO-002", "QO-003"],
+      "single_fix": "Extend traceability-enforcer.py to scan all plans and specs",
+      "fix_impact": "Closes QO-002 (P1); exposes full extent of QO-003 spec drift"
+    },
+    {
+      "root_cause": "protobufjs below minimum safe version",
+      "findings": ["DEP-001", "DEP-007"],
+      "single_fix": "npm update protobufjs@>=7.5.5 in platform/orchestrator",
+      "fix_impact": "Single update closes RCE (9.8) AND code injection + DoS (8.5) simultaneously"
+    },
+    {
+      "root_cause": "form-data vulnerable version across frontend and backend",
+      "findings": ["DEP-004-frontend", "DEP-004-backend"],
+      "single_fix": "npm update form-data@>=4.0.6 in each project",
+      "fix_impact": "Closes CRLF injection risk across both HTTP surfaces"
+    },
+    {
+      "root_cause": "No npm audit CI/CD gate",
+      "findings": ["all 99 DEP-* CVEs"],
+      "single_fix": "Add npm audit --audit-level=critical as mandatory CI step for all 6 projects",
+      "fix_impact": "Prevents future accumulation; would have blocked all current critical CVEs at introduction"
+    }
+  ],
+  "next_audit_recommendations": [
+    "Run with services online to enable performance-profiler and chaos-monkey",
+    "Verify DEP-001/DEP-002/DEP-004 patches before re-audit",
+    "Confirm traceability-enforcer.py fix (QO-002) reduced blind spot",
+    "Check whether Specifications/dev-workflow-platform.md has been archived or planned (QO-003)",
+    "Schedule monthly: npm audit CI gate as ongoing monitoring"
+  ],
+  "metadata": {
+    "report_file": "Teams/TheInspector/findings/audit-2026-09-01-D.html",
+    "backlog_file": "Teams/TheInspector/findings/bug-backlog-2026-09-01.json",
+    "dependency_json": "Teams/TheInspector/findings/dependency-audit-2026-09-01.json",
+    "generated_at": "2026-09-01T00:00:00Z",
+    "generated_by": "team-leader (TheInspector)"
+  }
+}

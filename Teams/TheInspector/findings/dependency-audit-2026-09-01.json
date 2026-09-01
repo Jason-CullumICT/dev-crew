@@ -1,0 +1,281 @@
+{
+  "audit_metadata": {
+    "date": "2026-09-01",
+    "auditor": "dependency_auditor",
+    "model": "haiku",
+    "run_id": "audit-001",
+    "status": "completed"
+  },
+  "summary": {
+    "total_vulnerabilities": 99,
+    "critical": 6,
+    "high": 26,
+    "moderate": 64,
+    "low": 3,
+    "projects_scanned": 6,
+    "package_managers": ["npm"],
+    "grade": "C"
+  },
+  "by_project": {
+    "Source/Backend": {
+      "critical": 1,
+      "high": 3,
+      "moderate": 4,
+      "low": 1,
+      "total": 9,
+      "direct_deps": 102,
+      "transitive_deps": 312,
+      "key_issues": ["handlebars RCE", "brace-expansion DoS", "js-yaml DoS"]
+    },
+    "Source/Frontend": {
+      "critical": 1,
+      "high": 5,
+      "moderate": 6,
+      "low": 1,
+      "total": 13,
+      "direct_deps": "N/A",
+      "transitive_deps": "N/A",
+      "key_issues": ["form-data CRLF", "nanoid hang", "postcss"]
+    },
+    "Source/E2E": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "direct_deps": 4,
+      "transitive_deps": 5,
+      "key_issues": []
+    },
+    "platform/orchestrator": {
+      "critical": 1,
+      "high": 2,
+      "moderate": 6,
+      "low": 0,
+      "total": 9,
+      "direct_deps": 153,
+      "transitive_deps": 3,
+      "key_issues": ["protobufjs RCE", "@grpc/grpc-js crash", "path-to-regexp ReDoS"]
+    },
+    "portal/Backend": {
+      "critical": 2,
+      "high": 10,
+      "moderate": 43,
+      "low": 0,
+      "total": 55,
+      "key_issues": ["uuid predictability", "multiple moderate deps out of date"]
+    },
+    "portal/Frontend": {
+      "critical": 1,
+      "high": 6,
+      "moderate": 5,
+      "low": 1,
+      "total": 13,
+      "key_issues": ["form-data CRLF", "esbuild CORS bypass", "vite deps"]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "severity": "critical",
+      "cvss_score": 9.8,
+      "affected_projects": ["platform/orchestrator"],
+      "cve_ids": ["GHSA-xq3m-2v4x-88gg"],
+      "affected_versions": "< 7.5.5",
+      "exploit_type": "RCE",
+      "fix": "npm update protobufjs@>=7.5.5",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars JavaScript Injection / AST Type Confusion",
+      "package": "handlebars",
+      "severity": "critical",
+      "cvss_score": 8.8,
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cve_ids": ["GHSA-3mfm-83xf-c92r"],
+      "affected_versions": "4.0.0 - 4.7.8",
+      "exploit_type": "Code Injection",
+      "fix": "Remove handlebars or update to ^4.7.9",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "brace-expansion Denial of Service",
+      "package": "brace-expansion",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cve_ids": ["GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "affected_versions": "< 1.1.18",
+      "exploit_type": "DoS (Unbounded Expansion)",
+      "fix": "npm update brace-expansion@>=1.1.18"
+    },
+    {
+      "id": "DEP-004",
+      "title": "form-data CRLF Injection",
+      "package": "form-data",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "affected_projects": ["Source/Frontend", "Source/Backend", "portal/Frontend"],
+      "cve_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "affected_versions": "4.0.0 - 4.0.5",
+      "exploit_type": "Header Injection",
+      "fix": "npm update form-data@>=4.0.6"
+    },
+    {
+      "id": "DEP-005",
+      "title": "@grpc/grpc-js Server Crash on Malformed Messages",
+      "package": "@grpc/grpc-js",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "affected_projects": ["platform/orchestrator"],
+      "cve_ids": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "affected_versions": "1.14.0 - 1.14.3",
+      "exploit_type": "DoS (Server Crash)",
+      "fix": "npm update @grpc/grpc-js@>=1.14.4"
+    },
+    {
+      "id": "DEP-006",
+      "title": "path-to-regexp Regular Expression DoS",
+      "package": "path-to-regexp",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "affected_projects": ["platform/orchestrator"],
+      "cve_ids": ["GHSA-37ch-88jc-xwx2"],
+      "affected_versions": "< 0.1.13",
+      "exploit_type": "ReDoS",
+      "fix": "npm update path-to-regexp@>=0.1.13"
+    },
+    {
+      "id": "DEP-007",
+      "title": "protobufjs Multiple High-Severity Issues (Code Injection, DoS)",
+      "package": "protobufjs",
+      "severity": "high",
+      "cvss_score": 8.5,
+      "affected_projects": ["platform/orchestrator"],
+      "cve_ids": ["GHSA-66ff-xgx4-vchm", "GHSA-2c67-j7vx-xmcx"],
+      "affected_versions": "< 7.5.5",
+      "exploit_type": "Code Injection, DoS",
+      "fix": "npm update protobufjs@>=7.5.5"
+    },
+    {
+      "id": "DEP-008",
+      "title": "js-yaml CPU Consumption DoS",
+      "package": "js-yaml",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cve_ids": ["(multiple YAML merge-key CVEs)"],
+      "affected_versions": "multiple",
+      "exploit_type": "DoS (CPU Exhaustion)",
+      "fix": "npm update js-yaml@latest"
+    },
+    {
+      "id": "DEP-009",
+      "title": "nanoid Infinite Loop / Hang",
+      "package": "nanoid",
+      "severity": "high",
+      "cvss_score": 5.9,
+      "affected_projects": ["Source/Frontend"],
+      "cve_ids": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8"],
+      "affected_versions": "< 3.3.18",
+      "exploit_type": "DoS (Infinite Loop)",
+      "fix": "npm update nanoid@>=3.3.18"
+    }
+  ],
+  "recommendations": {
+    "priority_1_immediate": [
+      {
+        "step": 1,
+        "action": "Update protobufjs to >= 7.5.5 in platform/orchestrator",
+        "effort_minutes": 30,
+        "risk": "Critical RCE in orchestrator infrastructure",
+        "commands": ["cd platform/orchestrator", "npm update protobufjs", "npm ci", "npm test"]
+      },
+      {
+        "step": 2,
+        "action": "Audit and eliminate handlebars dependency in Source/Backend",
+        "effort_minutes": 60,
+        "risk": "Critical injection vulnerability",
+        "commands": ["cd Source/Backend", "npm ls handlebars", "grep -r handlebars package.json"]
+      },
+      {
+        "step": 3,
+        "action": "Update form-data to >= 4.0.6 in all projects",
+        "effort_minutes": 15,
+        "risk": "CRLF injection in file uploads",
+        "commands": ["cd Source/Frontend && npm update form-data", "cd Source/Backend && npm update form-data"]
+      }
+    ],
+    "priority_2_this_sprint": [
+      {
+        "step": 4,
+        "action": "Update brace-expansion to >= 1.1.18",
+        "effort_minutes": 15
+      },
+      {
+        "step": 5,
+        "action": "Update @grpc/grpc-js to >= 1.14.4",
+        "effort_minutes": 30
+      },
+      {
+        "step": 6,
+        "action": "Update path-to-regexp to >= 0.1.13",
+        "effort_minutes": 15
+      },
+      {
+        "step": 7,
+        "action": "Update nanoid to >= 3.3.18",
+        "effort_minutes": 15
+      }
+    ],
+    "priority_3_next_quarter": [
+      "Update all moderate-severity dependencies",
+      "Add npm audit CI/CD gate (fail on P1/P2)",
+      "Generate Software Bill of Materials (SBOM) for all projects",
+      "Implement automated daily CVE checks"
+    ]
+  },
+  "license_compliance": {
+    "status": "clean",
+    "verified_projects": ["Source/Backend", "Source/Frontend", "platform/orchestrator"],
+    "issues": "none",
+    "licenses_found": ["MIT", "ISC", "Apache-2.0"],
+    "gpl_agpl_detected": false
+  },
+  "supply_chain_risks": {
+    "postinstall_scripts": "none detected",
+    "single_maintainers": "possible but normal for utilities",
+    "recent_ownership_transfers": "none detected",
+    "low_download_count_packages": "none detected"
+  },
+  "cross_team_escalations": {
+    "TheGuardians": [
+      "DEP-001: protobufjs RCE",
+      "DEP-002: handlebars injection",
+      "DEP-004: form-data CRLF injection",
+      "DEP-005: @grpc/grpc-js crash",
+      "DEP-006: path-to-regexp ReDoS"
+    ],
+    "red_teamer": [
+      "Test form-data CRLF injection on file upload endpoints",
+      "Test path-to-regexp ReDoS with crafted route patterns"
+    ],
+    "chaos_monkey": [
+      "Test malformed gRPC message handling",
+      "Test brace-expansion DoS with nested {} patterns",
+      "Test YAML merge-key CPU DoS"
+    ]
+  },
+  "audit_completion": {
+    "timestamp": "2026-09-01T00:00:00Z",
+    "verdict": "completed_with_critical_findings",
+    "next_review_date": "2026-10-01",
+    "follow_up_required": true
+  }
+}

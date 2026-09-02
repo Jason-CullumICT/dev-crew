@@ -1,0 +1,233 @@
+{
+  "audit_date": "2026-09-02",
+  "auditor": "dependency_auditor",
+  "scope": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E",
+    "portal/Backend",
+    "portal/Frontend",
+    "platform/orchestrator"
+  ],
+  "overall_grade": "D",
+  "summary": {
+    "critical_p1": 1,
+    "high_p2": 8,
+    "moderate_p3": 7,
+    "low_p4": 5,
+    "outdated_major_versions": 15,
+    "total_cve_packages": 40,
+    "license_issues": 0,
+    "postinstall_scripts": 0,
+    "abandoned_dependencies": 0
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "protobufjs",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "CVE-2024-6249",
+      "affected_projects": ["portal/Backend"],
+      "vulnerability_type": "Arbitrary Code Execution",
+      "fix": "Upgrade @opentelemetry/auto-instrumentations-node to ≥0.80.0"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-002",
+      "package": "brace-expansion",
+      "severity": "P2",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "vulnerability_count": 4,
+      "vulnerability_type": "Denial of Service"
+    },
+    {
+      "id": "DEP-003",
+      "package": "browserslist",
+      "severity": "P2",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend"],
+      "vulnerability_count": 2,
+      "vulnerability_type": "Memory Exhaustion / Crash"
+    },
+    {
+      "id": "DEP-004",
+      "package": "path-to-regexp",
+      "severity": "P2",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "vulnerability_type": "Regular Expression Denial of Service"
+    },
+    {
+      "id": "DEP-005",
+      "package": "form-data",
+      "severity": "P2",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "vulnerability_type": "CRLF Injection"
+    },
+    {
+      "id": "DEP-006",
+      "package": "nanoid",
+      "severity": "P2",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "vulnerability_type": "Infinite Loop / DoS"
+    },
+    {
+      "id": "DEP-007",
+      "package": "@grpc/grpc-js",
+      "severity": "P2",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "vulnerability_count": 2,
+      "vulnerability_type": "Server Crash / DoS"
+    },
+    {
+      "id": "DEP-008",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "severity": "P2",
+      "affected_projects": ["portal/Backend"],
+      "vulnerability_type": "Prometheus Exporter Crash"
+    },
+    {
+      "id": "DEP-009",
+      "package": "@opentelemetry/sdk-node",
+      "severity": "P2",
+      "affected_projects": ["portal/Backend"],
+      "vulnerability_type": "Prometheus Exporter Crash (upstream)"
+    }
+  ],
+  "outdated_packages": {
+    "Source/Backend": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "majors_behind": 1
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.3.1",
+        "majors_behind": 2
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "14.0.2",
+        "majors_behind": 5
+      }
+    ],
+    "Source/Frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.2.8",
+        "majors_behind": 1
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "latest": "19.2.8",
+        "majors_behind": 1
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "latest": "7.18.3",
+        "majors_behind": 1
+      }
+    ],
+    "portal/Backend": [
+      {
+        "package": "@opentelemetry/auto-instrumentations-node",
+        "current": "0.40.0",
+        "latest": "0.80.0",
+        "majors_behind": 2,
+        "note": "Contains critical CVEs"
+      },
+      {
+        "package": "@opentelemetry/sdk-node",
+        "current": "0.47.0",
+        "latest": "0.222.0",
+        "majors_behind": 2,
+        "note": "Contains CVEs"
+      },
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "majors_behind": 1
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "14.0.2",
+        "majors_behind": 5
+      }
+    ]
+  },
+  "dependency_tree": {
+    "Source/Backend": {
+      "lock_file_lines": 5353,
+      "estimated_packages": "80-120"
+    },
+    "Source/Frontend": {
+      "lock_file_lines": 2901,
+      "estimated_packages": "50-80"
+    },
+    "portal/Backend": {
+      "lock_file_lines": 7578,
+      "estimated_packages": "120-180",
+      "note": "Largest dependency tree - high supply chain risk"
+    },
+    "portal/Frontend": {
+      "lock_file_lines": 5777,
+      "estimated_packages": "100-150"
+    }
+  },
+  "supply_chain_analysis": {
+    "postinstall_scripts": "None detected",
+    "high_volatility_packages": ["@opentelemetry/*"],
+    "recurring_cve_packages": ["brace-expansion", "browserslist"],
+    "license_compliance": "All standard licenses (MIT, ISC, Apache 2.0) - no GPL/AGPL"
+  },
+  "recommendations": [
+    {
+      "priority": "IMMEDIATE",
+      "action": "Upgrade portal/Backend @opentelemetry/auto-instrumentations-node to ≥0.80.0",
+      "justification": "Fixes P1 RCE vulnerability (CVE-2024-6249)",
+      "effort": "HIGH - Major version bump requires testing"
+    },
+    {
+      "priority": "IMMEDIATE",
+      "action": "Run 'npm audit fix' on all projects",
+      "justification": "Auto-fixes 8+ high-severity vulnerabilities",
+      "effort": "LOW"
+    },
+    {
+      "priority": "SHORT-TERM",
+      "action": "Upgrade OpenTelemetry stack in portal/Backend",
+      "justification": "Updates 0.47.0 → 0.222.0+; fixes multiple CVEs and outdated packages",
+      "effort": "HIGH - Major API changes expected"
+    },
+    {
+      "priority": "SHORT-TERM",
+      "action": "Upgrade React ecosystem",
+      "justification": "React 18→19; fixes P3 vulnerabilities, plan for breaking changes",
+      "effort": "MEDIUM"
+    },
+    {
+      "priority": "MEDIUM-TERM",
+      "action": "Audit gRPC message validation",
+      "justification": "If untrusted gRPC messages are processed, protobufjs RCE is exploitable",
+      "effort": "MEDIUM - Security review needed"
+    }
+  ],
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: protobufjs RCE - Confirm gRPC usage",
+      "DEP-004: path-to-regexp ReDoS - Red-team validation needed",
+      "DEP-007: @grpc/grpc-js crash - Assess gRPC attack surface"
+    ]
+  },
+  "next_audit_date": "2026-12-02",
+  "audit_notes": "portal/Backend is the most vulnerable project due to outdated OpenTelemetry stack. Priority: fix P1 RCE and upgrade OpenTelemetry packages. Source/E2E is clean. Recommend implementing real-time dependency monitoring (Dependabot, Snyk)."
+}

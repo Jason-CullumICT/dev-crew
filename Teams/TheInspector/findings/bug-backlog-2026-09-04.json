@@ -1,0 +1,304 @@
+{
+  "audit_id": "run-20260904-075309",
+  "audit_date": "2026-09-04",
+  "branch": "audit/inspector-2026-09-04-5d6082",
+  "grade": "D",
+  "generated_by": "TheInspector team-leader",
+  "prior_audit": null,
+  "summary": {
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline — backend and frontend not reachable on localhost:3001 / localhost:5173",
+    "p1_total": 3,
+    "p2_total": 26,
+    "p3_total": 18,
+    "p4_total": 7,
+    "escalations_total": 3,
+    "spec_coverage_source_pct": 100,
+    "spec_coverage_portal_pct": 24
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "severity": "P1-CRITICAL",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary Code Execution in protobufjs (CVSS 9.8)",
+      "file": "platform/orchestrator/package-lock.json",
+      "escalate_to": "TheGuardians",
+      "trigger": "security — critical RCE in orchestrator infrastructure",
+      "recommendation": "Upgrade protobufjs to >=7.5.5 and @grpc/grpc-js to >=1.14.4 immediately. Isolate orchestrator from untrusted input until patched."
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P1-CRITICAL",
+      "package": "handlebars",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "cvss": null,
+      "title": "JavaScript Injection via AST Type Confusion in handlebars",
+      "file": "Source/Backend/package-lock.json",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection — matches escalation security_trigger 'injection'",
+      "recommendation": "Audit all handlebars template usage in Source/Backend. Upgrade to latest handlebars or remove if not needed. Block deployment until resolved."
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P1-CRITICAL",
+      "package": "UNKNOWN",
+      "cve": "PENDING_IDENTIFICATION",
+      "cvss": null,
+      "title": "Unidentified Critical CVE in Source/Frontend dependencies",
+      "file": "Source/Frontend/package-lock.json",
+      "escalate_to": "TheGuardians",
+      "trigger": "security — critical severity, unidentified, requires immediate triage",
+      "recommendation": "Rerun 'npm audit --json' in Source/Frontend with extended timeout. Identify package and CVE before next deployment."
+    }
+  ],
+  "findings": [
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "package": "path-to-regexp",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "title": "ReDoS via multiple route parameters in path-to-regexp",
+      "file": "platform/orchestrator/package-lock.json",
+      "status": "NEW",
+      "recommendation": "Upgrade Express, which will pull in a fixed path-to-regexp. Pin >=0.1.13.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "package": "@grpc/grpc-js",
+      "cve": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq",
+      "cvss": 7.5,
+      "title": "Server crash via malformed/compressed requests in @grpc/grpc-js",
+      "file": "platform/orchestrator/package-lock.json",
+      "status": "NEW",
+      "recommendation": "Upgrade @grpc/grpc-js to >=1.14.4.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "package": "brace-expansion",
+      "cve": "multiple",
+      "title": "Multiple DoS vulnerabilities in brace-expansion",
+      "file": "Source/Frontend/package-lock.json",
+      "status": "NEW",
+      "recommendation": "Upgrade brace-expansion to >=1.1.18 via npm update.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "package": "browserslist",
+      "cve": null,
+      "title": "Unbounded memory growth leading to OOM in browserslist",
+      "file": "Source/Frontend/package-lock.json",
+      "status": "NEW",
+      "recommendation": "Upgrade browserslist to latest.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-008-021",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "17 additional High-severity CVEs across Source/Backend, Source/Frontend, platform/orchestrator",
+      "note": "See dependency-audit-2026-09-04.json and dependency-backlog-2026-09-04.csv for full list (DEP-008 through DEP-021)",
+      "status": "NEW",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers import store directly — bypasses service layer",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/intake.ts:4",
+        "Source/Backend/src/routes/workflow.ts:15"
+      ],
+      "status": "NEW",
+      "recommendation": "Create workItemService.ts wrapping store calls. Route handlers import only from services/.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Missing dependencyCheckDuration histogram — FR-dependency-metrics incomplete",
+      "file": "Source/Backend/src/metrics.ts",
+      "status": "NEW",
+      "recommendation": "Add Histogram named dependency_check_duration_seconds. Instrument detectCycle() and isReady().",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer blind to portal/ — 85 FRs unguarded by automated gate",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW",
+      "recommendation": "Create Plans/dev-workflow-platform/requirements.md for portal FRs or add second enforcer invocation.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "doc-stale",
+      "title": "spec-drift-report.json stale — shows 0% coverage with phantom FR-TMP-* IDs",
+      "file": "spec-drift-report.json",
+      "status": "NEW",
+      "recommendation": "Delete or regenerate spec-drift-report.json using the current traceability enforcer.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Fast-track heuristic (complexity) deviates from spec (< 3 files) without documentation",
+      "file": "Source/Backend/src/services/router.ts:24-32",
+      "status": "NEW",
+      "recommendation": "Update workflow-engine.md to document complexity heuristic, or implement estimatedFiles field.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Duplicate logger: logger.ts compat shim + utils/logger.ts implementation",
+      "files": [
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "status": "NEW",
+      "recommendation": "Canonicalize on utils/logger.ts, add default export, delete logger.ts shim.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppresses react-hooks/exhaustive-deps in 2 hooks without explanation",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "status": "NEW",
+      "recommendation": "Add inline comment explaining why dependency is safely omitted, or fix the hook.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "workflow-engine.md has no FR IDs — domain spec cannot be machine-enforced",
+      "file": "Specifications/workflow-engine.md",
+      "status": "NEW",
+      "recommendation": "Add FR-WF-XXX anchors to workflow-engine.md requirements tables or formally document Plans/ as sole enforced contract.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-001",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "dependency-outdated",
+      "title": "react 18.3.1 is 1 major version behind (19.2.8 available, ~15 months behind)",
+      "file": "Source/Frontend/package.json",
+      "status": "NEW",
+      "recommendation": "Plan React 18 → 19 migration sprint.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-002",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "dependency-outdated",
+      "title": "react-router-dom 6.26.0 is 1 major version behind (7.18.3 available)",
+      "file": "Source/Frontend/package.json",
+      "status": "NEW",
+      "recommendation": "Plan React Router 6 → 7 migration sprint.",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-003",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "dependency-vulnerability",
+      "title": "15 moderate-severity CVEs across projects (protobufjs, uuid, qs, body-parser, @protobufjs/utf8)",
+      "note": "See dependency-backlog-2026-09-04.csv for full list",
+      "status": "NEW",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-P4-001",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "dependency-vulnerability",
+      "title": "4 low-severity CVEs across projects",
+      "note": "See dependency-backlog-2026-09-04.csv for full list",
+      "status": "NEW",
+      "team": "TheFixer"
+    },
+    {
+      "id": "DEP-P4-002",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "audit-gap",
+      "title": "portal/Backend and portal/Frontend dependency audits incomplete (timed out)",
+      "status": "NEW",
+      "recommendation": "Rerun npm audit on portal projects with 300s+ timeout. Portal CVE count unknown.",
+      "team": "TheFixer"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "portal/ is systematically under-governed",
+      "findings": ["QO-003", "DEP-P4-002"],
+      "description": "The traceability enforcer does not cover portal/ FRs (QO-003), and the dependency audit timed out on portal projects (DEP-P4-002). Both reflect that portal receives less governance than Source/.",
+      "single_fix": "Onboard portal/ into CI gates: add enforcer coverage (Plans/dev-workflow-platform/requirements.md) and add npm audit to portal CI jobs with adequate timeout."
+    },
+    {
+      "root_cause": "Absent CI/CD dependency scanning pipeline",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007"],
+      "description": "All 3 P1 CVEs and all P2 dependency findings would be caught automatically with continuous dependency scanning. Their presence indicates no automated gate exists.",
+      "single_fix": "Add npm audit --audit-level=high to CI. Enable Dependabot or Snyk. Establish P1 SLA of 72 hours and P2 SLA of 2 weeks."
+    }
+  ],
+  "metrics": {
+    "p1_total": 3,
+    "p2_total": 26,
+    "p3_total": 18,
+    "p4_total": 7,
+    "fixed_total": 0,
+    "escalations": 3,
+    "spec_coverage_source_pct": 100,
+    "spec_coverage_portal_pct": 24,
+    "grade": "D",
+    "prior_grade": null,
+    "trend": "FIRST_AUDIT"
+  }
+}

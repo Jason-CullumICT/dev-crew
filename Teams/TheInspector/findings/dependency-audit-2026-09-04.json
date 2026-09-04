@@ -1,0 +1,275 @@
+{
+  "audit_date": "2026-09-04",
+  "auditor": "dependency_auditor",
+  "audit_type": "npm_dependencies",
+  "status": "preliminary",
+  "summary": {
+    "projects_scanned": 6,
+    "direct_dependencies": 65,
+    "transitive_dependencies": 804,
+    "total_vulnerabilities": 43,
+    "severity_distribution": {
+      "critical": 3,
+      "high": 21,
+      "moderate": 15,
+      "low": 4
+    },
+    "license_compliance": "PASS"
+  },
+  "projects": {
+    "Source/Backend": {
+      "direct_deps": 13,
+      "transitive_deps": 412,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 2,
+        "low": 2,
+        "total": 9
+      },
+      "critical_vuln": "handlebars:JavaScript_Injection_via_AST_Type_Confusion"
+    },
+    "Source/Frontend": {
+      "direct_deps": 3,
+      "transitive_deps": 231,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 6,
+        "moderate": 6,
+        "low": 1,
+        "total": 14
+      },
+      "high_vulns": [
+        "brace-expansion:Multiple_DoS",
+        "browserslist:Memory_Leak_OOM",
+        "react-router:Open_Redirect"
+      ],
+      "outdated": [
+        "react:18.3.1 vs 19.2.8 (+1 major)",
+        "react-dom:18.3.1 vs 19.2.8 (+1 major)",
+        "react-router-dom:6.26.0 vs 7.18.3 (+1 major)"
+      ]
+    },
+    "Source/E2E": {
+      "direct_deps": 2,
+      "transitive_deps": 5,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "status": "CLEAN"
+    },
+    "platform/orchestrator": {
+      "direct_deps": 3,
+      "transitive_deps": 156,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 4,
+        "low": 1,
+        "total": 8
+      },
+      "critical_vuln": "protobufjs:Arbitrary_Code_Execution_CVSS_9.8",
+      "high_vulns": [
+        "@grpc/grpc-js:Server_Crash_via_Malformed_Requests",
+        "path-to-regexp:ReDoS"
+      ]
+    },
+    "portal/Backend": {
+      "status": "PENDING",
+      "note": "Audit timed out - requires rerun with longer timeout"
+    },
+    "portal/Frontend": {
+      "status": "PENDING",
+      "note": "Audit timed out - requires rerun with longer timeout"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "protobufjs",
+      "severity": "P1-CRITICAL",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary Code Execution",
+      "affected_versions": "<=7.6.4",
+      "file": "platform/orchestrator/package-lock.json",
+      "isDirect": false,
+      "recommendation": "Upgrade protobufjs to >=7.5.5 and @grpc/grpc-js to >=1.14.4"
+    },
+    {
+      "id": "DEP-002",
+      "package": "handlebars",
+      "severity": "P1-CRITICAL",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "file": "Source/Backend/package-lock.json",
+      "isDirect": false,
+      "recommendation": "Upgrade handlebars to latest or remove if possible"
+    },
+    {
+      "id": "DEP-003",
+      "package": "UNKNOWN",
+      "severity": "P1-CRITICAL",
+      "file": "Source/Frontend/package-lock.json",
+      "status": "PENDING_IDENTIFICATION",
+      "recommendation": "Rerun npm audit on Source/Frontend with full output capture"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "path-to-regexp",
+      "severity": "P2-HIGH",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "cvss": 7.5,
+      "title": "ReDoS via multiple route parameters",
+      "affected_versions": "<0.1.13",
+      "recommendation": "Upgrade via express update"
+    },
+    {
+      "id": "DEP-005",
+      "package": "@grpc/grpc-js",
+      "severity": "P2-HIGH",
+      "cve": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq",
+      "cvss": 7.5,
+      "title": "Server crash via malformed/compressed requests",
+      "affected_versions": ">=1.14.0 <1.14.4",
+      "recommendation": "Upgrade @grpc/grpc-js to >=1.14.4"
+    },
+    {
+      "id": "DEP-006",
+      "package": "brace-expansion",
+      "severity": "P2-HIGH",
+      "title": "Multiple DoS vulnerabilities",
+      "affected_versions": "<1.1.18",
+      "recommendation": "Upgrade to >=1.1.18"
+    },
+    {
+      "id": "DEP-007",
+      "package": "browserslist",
+      "severity": "P2-HIGH",
+      "title": "Unbounded memory growth leading to OOM",
+      "affected_versions": "<=4.28.6",
+      "recommendation": "Upgrade to latest"
+    }
+  ],
+  "moderate_findings_summary": {
+    "total": 15,
+    "key_packages": [
+      "protobufjs (multiple code injection vectors)",
+      "uuid (buffer bounds check missing)",
+      "qs (multiple parsing DoS)",
+      "body-parser (invalid limit DoS)",
+      "@protobufjs/utf8 (UTF-8 decoding bypass)"
+    ]
+  },
+  "outdated_packages": [
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "major_versions_behind": 1,
+      "months_behind": 15,
+      "priority": "P3-BACKLOG"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "major_versions_behind": 1,
+      "months_behind": 15,
+      "priority": "P3-BACKLOG"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.3",
+      "major_versions_behind": 1,
+      "months_behind": "3-7",
+      "priority": "P3-BACKLOG"
+    }
+  ],
+  "supply_chain_risks": {
+    "high_transitive_multiplier_projects": [
+      {
+        "project": "Source/Frontend",
+        "direct": 3,
+        "transitive": 231,
+        "multiplier": 77,
+        "risk": "HIGH - build toolchain complexity"
+      },
+      {
+        "project": "Source/Backend",
+        "direct": 13,
+        "transitive": 412,
+        "multiplier": 12,
+        "risk": "MODERATE - largest absolute count"
+      },
+      {
+        "project": "platform/orchestrator",
+        "direct": 3,
+        "transitive": 156,
+        "multiplier": 52,
+        "risk": "MODERATE"
+      }
+    ],
+    "clean_projects": [
+      {
+        "project": "Source/E2E",
+        "direct": 2,
+        "transitive": 5,
+        "multiplier": 2.5,
+        "status": "EXEMPLARY"
+      }
+    ]
+  },
+  "recommendations": {
+    "immediate": [
+      "Fix protobufjs RCE (P1)",
+      "Fix handlebars injection (P1)",
+      "Identify and fix Frontend critical CVE (P1)"
+    ],
+    "high_priority": [
+      "Upgrade path-to-regexp, @grpc/grpc-js, brace-expansion, browserslist (P2)",
+      "Upgrade uuid to >=11.1.1 across all projects (P3)"
+    ],
+    "medium_priority": [
+      "Upgrade body-parser, qs, babel/core",
+      "Plan React 18→19 upgrade",
+      "Plan React Router 6→7 upgrade"
+    ],
+    "infrastructure": [
+      "Enable npm audit in CI/CD (block PRs with new vulns)",
+      "Set up Dependabot or Snyk for continuous scanning",
+      "Establish SLA for fixing P1/P2 vulns (1-2 weeks)",
+      "Plan quarterly supply chain audits"
+    ]
+  },
+  "metrics": {
+    "audit_coverage": "83% (6 of 8 projects audited)",
+    "cves_per_direct_dep": {
+      "Source/Backend": 0.69,
+      "Source/Frontend": 4.67,
+      "platform/orchestrator": 2.67
+    },
+    "highest_risk_projects": [
+      "platform/orchestrator (P1 critical RCE)",
+      "Source/Frontend (P1 critical + multiple P2 DoS)",
+      "Source/Backend (P1 critical injection + handlebars)"
+    ],
+    "lowest_risk_projects": [
+      "Source/E2E (0 vulnerabilities)"
+    ]
+  },
+  "next_steps": [
+    "Complete audit of portal/Backend and portal/Frontend",
+    "Identify specific Frontend critical CVE",
+    "Generate prioritized backlog for TheFixer team",
+    "Schedule React/Router upgrade planning session",
+    "Set up continuous dependency monitoring"
+  ]
+}

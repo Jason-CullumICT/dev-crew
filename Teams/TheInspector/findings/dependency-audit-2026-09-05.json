@@ -1,0 +1,323 @@
+{
+  "audit_metadata": {
+    "date": "2026-09-05",
+    "auditor": "dependency_auditor",
+    "scope": "npm projects: Backend, Frontend, E2E, Orchestrator",
+    "database": "GitHub Security Advisory (GHSA) + NVD"
+  },
+  "summary": {
+    "total_cves": 33,
+    "critical": 3,
+    "high": 14,
+    "moderate": 12,
+    "low": 4,
+    "outdated_major_versions": 5,
+    "projects_at_risk": 3,
+    "projects_clean": 1,
+    "estimated_remediation_hours": 7
+  },
+  "projects": {
+    "backend": {
+      "path": "Source/Backend",
+      "package_manager": "npm",
+      "direct_dependencies": 102,
+      "transitive_dependencies": 309,
+      "total_dependencies": 411,
+      "cves": 9,
+      "critical": 1,
+      "high": 4,
+      "moderate": 2,
+      "low": 2,
+      "key_vulnerabilities": [
+        {
+          "id": "DEP-001",
+          "package": "handlebars",
+          "severity": "critical",
+          "type": "cve",
+          "cvss": 9.8,
+          "description": "JavaScript Injection via AST Type Confusion"
+        },
+        {
+          "id": "DEP-010",
+          "package": "uuid",
+          "severity": "high",
+          "type": "cve",
+          "cvss": 7.5,
+          "description": "Buffer bounds check missing in v3/v5/v6"
+        },
+        {
+          "id": "DEP-005",
+          "package": "brace-expansion",
+          "severity": "high",
+          "type": "cve",
+          "cvss": 7.5,
+          "description": "DoS via unbounded pattern expansion"
+        }
+      ]
+    },
+    "frontend": {
+      "path": "Source/Frontend",
+      "package_manager": "npm",
+      "direct_dependencies": 9,
+      "transitive_dependencies": 221,
+      "total_dependencies": 230,
+      "cves": 14,
+      "critical": 1,
+      "high": 6,
+      "moderate": 6,
+      "low": 1,
+      "key_vulnerabilities": [
+        {
+          "id": "DEP-002",
+          "package": "vitest",
+          "severity": "critical",
+          "type": "cve",
+          "cvss": 9.8,
+          "description": "Arbitrary file read & execution via UI server"
+        },
+        {
+          "id": "DEP-004",
+          "package": "vite",
+          "severity": "high",
+          "type": "cve",
+          "cvss": 7.5,
+          "description": "Path traversal in dev server"
+        },
+        {
+          "id": "DEP-013",
+          "package": "react-router-dom",
+          "severity": "high",
+          "type": "cve",
+          "cvss": 6.9,
+          "description": "Open redirect leading to XSS"
+        }
+      ]
+    },
+    "e2e": {
+      "path": "Source/E2E",
+      "package_manager": "npm",
+      "direct_dependencies": 4,
+      "transitive_dependencies": 0,
+      "total_dependencies": 4,
+      "cves": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "status": "CLEAN"
+    },
+    "orchestrator": {
+      "path": "platform/orchestrator",
+      "package_manager": "npm",
+      "direct_dependencies": 153,
+      "transitive_dependencies": 2,
+      "total_dependencies": 155,
+      "cves": 8,
+      "critical": 1,
+      "high": 2,
+      "moderate": 4,
+      "low": 1,
+      "key_vulnerabilities": [
+        {
+          "id": "DEP-003",
+          "package": "protobufjs",
+          "severity": "critical",
+          "type": "cve",
+          "description": "Multiple critical vulnerabilities (arbitrary code execution, prototype pollution, unbounded recursion DoS)"
+        },
+        {
+          "id": "DEP-011",
+          "package": "@grpc/grpc-js",
+          "severity": "high",
+          "type": "cve",
+          "cvss": 7.5,
+          "description": "Server crash on malformed requests"
+        }
+      ]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "P1",
+      "type": "cve",
+      "location": "Source/Backend/package-lock.json (transitive)",
+      "cvss": 9.8,
+      "title": "JavaScript Injection via AST Type Confusion",
+      "fix": "Update to >=4.7.9 or remove if unused"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "P1",
+      "type": "cve",
+      "location": "Source/Frontend/package-lock.json (direct, dev)",
+      "cvss": 9.8,
+      "title": "Arbitrary File Read & Execution via UI Server",
+      "fix": "Upgrade to >=3.2.6 or 5.0.0; disable UI server in CI"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "severity": "P1",
+      "type": "cve",
+      "location": "platform/orchestrator/package-lock.json (transitive)",
+      "cvss": 9.8,
+      "title": "Multiple Critical Vulnerabilities (Code Execution, Prototype Pollution, DoS)",
+      "fix": "Update @grpc/grpc-js to >=1.14.4, protobufjs to latest"
+    }
+  ],
+  "high_priority_fixes": [
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "target": ">=11.1.1",
+      "locations": ["Source/Backend/package.json", "platform/orchestrator (transitive)"],
+      "reason": "Buffer overflow vulnerability (CWE-787)"
+    },
+    {
+      "package": "vite",
+      "current": "5.4.0",
+      "target": ">=8.2.2",
+      "locations": ["Source/Frontend/package.json"],
+      "reason": "Path traversal vulnerabilities in dev server"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "target": ">=7.18.3",
+      "locations": ["Source/Frontend/package.json"],
+      "reason": "Open redirect vulnerabilities (multiple CVEs)"
+    },
+    {
+      "package": "@grpc/grpc-js",
+      "current": "1.14.0-1.14.3",
+      "target": ">=1.14.4",
+      "locations": ["platform/orchestrator/package.json"],
+      "reason": "Server crash on malformed requests (DoS)"
+    },
+    {
+      "package": "js-yaml",
+      "current": "<=3.15.0",
+      "target": ">=3.15.1",
+      "locations": ["Backend/Frontend (transitive)"],
+      "reason": "Quadratic CPU consumption in YAML parsing (DoS)"
+    }
+  ],
+  "supply_chain_analysis": {
+    "total_transitive_dependencies": 532,
+    "largest_dep_tree": {
+      "project": "Backend",
+      "total": 411,
+      "risk_level": "P4 (>300 dependencies)"
+    },
+    "no_problematic_licenses": true,
+    "license_note": "All permissive licenses (MIT, Apache, BSD, ISC); no GPL/AGPL risk",
+    "postinstall_scripts": 0,
+    "postinstall_note": "No post-install scripts detected; low supply chain build-time risk"
+  },
+  "outdated_packages": [
+    {
+      "id": "DEP-023",
+      "package": "express",
+      "current": "4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "location": "Source/Backend",
+      "severity": "P3"
+    },
+    {
+      "id": "DEP-024",
+      "package": "pino",
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "location": "Source/Backend",
+      "severity": "P3"
+    },
+    {
+      "id": "DEP-025",
+      "package": "uuid",
+      "current": "9.0.0",
+      "wanted": "9.0.1",
+      "latest": "14.0.2",
+      "location": "Source/Backend",
+      "severity": "P3"
+    },
+    {
+      "id": "DEP-026",
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.2.8",
+      "location": "Source/Frontend",
+      "severity": "P3",
+      "note": "1 major version behind"
+    },
+    {
+      "id": "DEP-027",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.3",
+      "location": "Source/Frontend",
+      "severity": "P3",
+      "note": "1 major version behind; also has open redirect CVEs"
+    }
+  ],
+  "remediation_roadmap": {
+    "immediate": {
+      "priority": "P1 - Critical",
+      "timeline": "Do Now",
+      "items": [
+        "Update protobufjs/grpc-js in orchestrator",
+        "Upgrade vitest to >=3.2.6 (Frontend)",
+        "Update handlebars to >=4.7.9 or remove (Backend)"
+      ]
+    },
+    "short_term": {
+      "priority": "P2 - High",
+      "timeline": "This Sprint (1-2 weeks)",
+      "items": [
+        "Upgrade uuid to >=11.1.1 (Backend)",
+        "Upgrade vite to >=8.2.2 (Frontend)",
+        "Update js-yaml to >=3.15.1",
+        "Upgrade react-router-dom to >=7.18.3 (Frontend, requires testing)",
+        "Update @grpc/grpc-js to >=1.14.4 (Orchestrator)"
+      ]
+    },
+    "medium_term": {
+      "priority": "P3 - Moderate",
+      "timeline": "Next Sprint (2-4 weeks)",
+      "items": [
+        "Plan React 18→19 migration (Frontend)",
+        "Plan react-router 6→7 migration (Frontend)",
+        "Update express, pino, and other minor versions",
+        "Evaluate dependency consolidation (reduce 400+ transitive deps)"
+      ]
+    }
+  },
+  "cross_references": {
+    "red_teamer": [
+      "DEP-001 (handlebars)",
+      "DEP-002 (vitest UI server)",
+      "DEP-004 (vite path traversal)",
+      "DEP-013 (react-router open redirect)"
+    ],
+    "static_analyzer": "N/A (no hardcoded secrets or app-level CWEs in this audit)",
+    "escalation": "TheGuardians (security team)"
+  },
+  "audit_tools_used": [
+    "npm audit (npm audit --json)",
+    "npm outdated",
+    "package.json inspection",
+    "npm ci for environment setup"
+  ],
+  "verification": {
+    "backend_audit_complete": true,
+    "frontend_audit_complete": true,
+    "e2e_audit_complete": true,
+    "orchestrator_audit_complete": true,
+    "license_check_complete": true,
+    "supply_chain_check_complete": true
+  }
+}

@@ -1,0 +1,298 @@
+{
+  "audit_id": "run-20260906-070820",
+  "audit_date": "2026-09-06",
+  "grade": "D",
+  "grade_rationale": "5 P1 findings (C threshold: max_p1=2; D threshold: max_p1=999). Dep auditor graded D independently; quality-oracle graded B. Combined: D.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "All services offline at scan time; dynamic modes require live services",
+  "spec_coverage_pct": 94,
+  "totals": {
+    "p1": 5,
+    "p2": 8,
+    "p3": 4,
+    "p4": 5,
+    "escalations": 5,
+    "fixed": 0,
+    "new": 22
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "title": "Vitest < 3.2.6 — Arbitrary file read/code execution via UI server",
+      "severity": "P1",
+      "cvss": null,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Arbitrary file read and code execution risk in CI/CD environments",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "fix": "Update vitest to >= 3.2.6 in Source/Frontend and portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-002",
+      "title": "Handlebars 4.0.0–4.7.8 — JavaScript injection via AST type confusion",
+      "severity": "P1",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "CVSS 9.8 injection vulnerability; potential RCE if any backend route passes user-controlled data to Handlebars templates",
+      "files": ["Source/Backend"],
+      "fix": "Update Handlebars to >= 4.7.9 in Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-003",
+      "title": "Protobufjs <= 7.6.4 — Arbitrary code execution + 11 additional CVEs",
+      "severity": "P1",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "CVSS 9.8 RCE in orchestrator transitive dep; orchestrator controls all pipeline agents — compromise is catastrophic",
+      "files": ["platform/orchestrator"],
+      "fix": "Update @opentelemetry/sdk-node to >= 0.222.0 in platform/orchestrator (solo-session required per module ownership)",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-004",
+      "title": "@opentelemetry/auto-instrumentations-node <= 0.76.0 — Prometheus crash + 50+ CVEs",
+      "severity": "P1",
+      "cvss": null,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "50+ CVEs and Prometheus crash risk; assess exploitable paths in portal/Backend attack surface",
+      "files": ["portal/Backend/package.json"],
+      "fix": "Update @opentelemetry/auto-instrumentations-node to >= 0.80.0 in portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "title": "Traceability enforcer false-positive: test-file references satisfy implementation check",
+      "severity": "P2",
+      "cvss": null,
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "escalation_reason": "Tooling gap creates false assurance that implemented FRs are met; allowed QO-001 (missing route) to pass CI checks",
+      "files": ["tools/traceability-enforcer.py"],
+      "fix": "Extend enforcer: (a) require src/ reference for backend FRs; (b) add --plan all mode",
+      "status": "NEW"
+    }
+  ],
+  "findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search route not registered in app.ts",
+      "severity": "P1",
+      "category": "spec-drift / unimplemented",
+      "specialist": "quality-oracle",
+      "files": ["Source/Backend/src/app.ts", "Source/Backend/tests/routes/search.test.ts"],
+      "requirement": "FR-dependency-search",
+      "recommendation": "Implement search route, register in app.ts, wire searchItems client function",
+      "cross_ref": ["QO-005"],
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "title": "dependencyCheckDuration histogram missing from metrics.ts",
+      "severity": "P2",
+      "category": "spec-drift / observability",
+      "specialist": "quality-oracle",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "requirement": "FR-dependency-metrics",
+      "recommendation": "Add Histogram named dependency_check_duration_seconds with label operation; instrument hasUnresolvedBlockers and detectCycle",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "severity": "P2",
+      "category": "test-quality / maintenance-debt",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Delete root-level stale duplicates; tests/pages/ versions are canonical",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "title": "eslint-disable react-hooks/exhaustive-deps without rationale comments",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "recommendation": "Add one-line comment before each suppression explaining why dependency list is intentionally narrowed",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "title": "Traceability enforcer false-positive: test-file refs satisfy implementation check",
+      "severity": "P2",
+      "category": "architecture-violation / tooling-gap",
+      "specialist": "quality-oracle",
+      "files": ["tools/traceability-enforcer.py"],
+      "recommendation": "(a) Require src/ reference for backend FRs; (b) add --plan all mode; (c) run with Plans/dependency-linking/requirements.md as second gate",
+      "cross_ref": ["QO-001"],
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-005",
+      "title": "React Router 6.26.0 — 3 open-redirect CVEs (fix: >= 6.30.5)",
+      "severity": "P2",
+      "category": "CVE / open-redirect",
+      "specialist": "dependency-auditor",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Update react-router-dom to >= 6.30.5",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-006",
+      "title": "PostCSS / Vite path traversal in source-map handling",
+      "severity": "P2",
+      "category": "CVE / path-traversal",
+      "specialist": "dependency-auditor",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Run npm audit fix in Source/Frontend; pin PostCSS and Vite to patched versions",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-007",
+      "title": "Algorithmic complexity DoS: brace-expansion, browserslist, js-yaml, nanoid, picomatch, ws",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "files": ["multiple package.json files across projects"],
+      "recommendation": "Run npm audit fix --force in each project; review ws and js-yaml usage in production code paths",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-008",
+      "title": "gRPC server crash — @grpc/grpc-js malformed frames",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "files": ["platform/orchestrator"],
+      "recommendation": "Update @grpc/grpc-js to patched version in platform/orchestrator (solo-session required)",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "title": "Frontend badge components and hooks lack dedicated unit tests",
+      "severity": "P3",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx",
+        "Source/Frontend/src/hooks/useDashboard.ts",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "recommendation": "Add StatusBadge.test.tsx, PriorityBadge.test.tsx, TypeBadge.test.tsx; test hooks with renderHook from @testing-library/react",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "title": "workflow.ts (374 lines) mixes workflow and dependency domains",
+      "severity": "P3",
+      "category": "architecture-violation (boundary)",
+      "specialist": "quality-oracle",
+      "files": ["Source/Backend/src/routes/workflow.ts"],
+      "recommendation": "Extract dependency-specific endpoints into Source/Backend/src/routes/dependencies.ts; register under /api/work-items in app.ts",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-009",
+      "title": "20+ moderate CVEs across misc transitive dependencies",
+      "severity": "P3",
+      "category": "CVE / supply-chain",
+      "specialist": "dependency-auditor",
+      "files": ["multiple package.json files"],
+      "recommendation": "Run npm audit fix across all 6 projects after P1/P2 patches applied; review remaining moderate findings",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-010",
+      "title": "React 18 → 19 (1 major version behind)",
+      "severity": "P4",
+      "category": "upgrade-debt",
+      "specialist": "dependency-auditor",
+      "files": ["Source/Frontend/package.json"],
+      "recommendation": "Plan migration to React 19; check breaking changes especially in concurrent features",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-011",
+      "title": "Express 4 → 5 (1 major version behind)",
+      "severity": "P4",
+      "category": "upgrade-debt",
+      "specialist": "dependency-auditor",
+      "files": ["Source/Backend/package.json"],
+      "recommendation": "Plan Express 5 migration; review async error handling changes (express 5 propagates promise rejections)",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-012",
+      "title": "UUID 9 → 14 (5 major versions behind — highest gap)",
+      "severity": "P4",
+      "category": "upgrade-debt",
+      "specialist": "dependency-auditor",
+      "files": ["multiple package.json files"],
+      "recommendation": "Update uuid to v14; review API breaking changes across major versions",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-013",
+      "title": "Pino 8 → 10 (2 major versions behind)",
+      "severity": "P4",
+      "category": "upgrade-debt",
+      "specialist": "dependency-auditor",
+      "files": ["Source/Backend/package.json", "portal/Backend/package.json"],
+      "recommendation": "Update pino to v10; review breaking changes in transport API",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DA-014",
+      "title": "OpenTelemetry SDK 0.47 → 0.222 (175+ minor versions — extreme version debt)",
+      "severity": "P4",
+      "category": "upgrade-debt",
+      "specialist": "dependency-auditor",
+      "files": ["platform/orchestrator"],
+      "recommendation": "Coordinate full OpenTelemetry stack upgrade with Platform Team; test observability pipeline end-to-end after update (solo-session required)",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "enforcement_gaps": [
+    "Plans/dependency-linking/requirements.md not scanned by enforcer (only self-judging-workflow scanned)",
+    "Plans/tiered-merge-pipeline has no requirements.md (Phase 2 — out of scope)",
+    "Test-file FR references satisfy enforcer check even when implementation is absent"
+  ],
+  "prior_audit": null,
+  "next_audit_recommendations": [
+    "Run with all services live to enable performance-profiler and chaos-monkey dynamic modes",
+    "Re-run after P1/P2 CVE patches applied to confirm grade improvement",
+    "Add performance-profiler latency baseline measurements for /api/work-items and /api/dashboard",
+    "Run chaos-monkey static scenarios: concurrent state transitions, malformed request body"
+  ]
+}

@@ -1,0 +1,283 @@
+{
+  "audit": {
+    "date": "2026-09-07",
+    "branch": "audit/inspector-2026-09-07-79f4b1",
+    "grade": "D",
+    "run_id": "run-20260907-072045",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_static_only": ["performance-profiler", "chaos-monkey"],
+    "prior_audit": null,
+    "note": "First audit — no baseline for trend comparison"
+  },
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 23,
+    "p3_total": 20,
+    "p4_total": 15,
+    "total_findings": 64,
+    "spec_coverage_pct": 93,
+    "fixed_count": 0,
+    "new_count": 64,
+    "still_open_count": 0,
+    "regressed_count": 0
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "vitest <=3.2.5 — Arbitrary file read / code execution via UI server",
+      "package": "vitest",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "cwe": ["CWE-22", "CWE-862"],
+      "cve": "GHSA (vitest <3.2.6)",
+      "route": "[ESCALATE → TheGuardians]",
+      "trigger": "missing access control",
+      "fix": "npm update vitest to >=3.2.6 in Source/Frontend and portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "cvss": 9.8,
+      "title": "protobufjs <=7.6.4 — Arbitrary code execution via malicious .proto parsing",
+      "package": "protobufjs",
+      "affected_workspaces": ["platform/orchestrator"],
+      "cwe": ["CWE-94"],
+      "route": "[ESCALATE → TheGuardians]",
+      "trigger": "injection",
+      "fix": "Upgrade @grpc/grpc-js and protobufjs to latest in platform/orchestrator",
+      "status": "NEW"
+    }
+  ],
+  "p1": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "category": "untested",
+      "title": "GET /api/search not registered in app.ts — DependencyPicker broken at runtime",
+      "file": "Source/Backend/src/app.ts",
+      "test_file": "Source/Backend/tests/routes/search.test.ts",
+      "impact": "DependencyPicker typeahead hits 404. 5 tests self-annotated as failing. Feature completely non-functional.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts with case-insensitive title+description filter, {data:[]} wrapper, exclude soft-deleted. Register as app.use('/api', searchRouter) in app.ts.",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-001",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "vitest <=3.2.5 — Arbitrary file read / code execution via UI server",
+      "package": "vitest",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "cvss": 9.8,
+      "cwe": ["CWE-22", "CWE-862"],
+      "exploit_scenario": "Attacker accesses vitest UI server (default :51204) and reads arbitrary files or triggers code execution without authentication",
+      "route": "[ESCALATE → TheGuardians]",
+      "fix": "npm update vitest to >=3.2.6",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-002",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "protobufjs <=7.6.4 — Arbitrary code execution via proto parsing",
+      "package": "protobufjs",
+      "affected_workspaces": ["platform/orchestrator"],
+      "cvss": 9.8,
+      "cwe": ["CWE-94"],
+      "exploit_scenario": "Attacker supplies a crafted .proto file to the orchestrator's gRPC stack, triggering arbitrary code execution on the server",
+      "route": "[ESCALATE → TheGuardians]",
+      "fix": "Upgrade @grpc/grpc-js and protobufjs to latest versions",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-003",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "@opentelemetry/auto-instrumentations-node <=0.76.0 — DoS via malformed metrics request",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "affected_workspaces": ["portal/Backend"],
+      "cvss": 7.5,
+      "cwe": ["CWE-755"],
+      "exploit_scenario": "Attacker sends malformed HTTP request to GET /metrics; Prometheus exporter crashes, taking down portal/Backend observability and potentially the process",
+      "route": "TheFixer",
+      "fix": "npm update @opentelemetry/auto-instrumentations-node to >=0.80.0 in portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-004",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "@opentelemetry/sdk-node <=0.218.0 — Same Prometheus crash vector as DA-003",
+      "package": "@opentelemetry/sdk-node",
+      "affected_workspaces": ["portal/Backend"],
+      "cvss": 7.5,
+      "cwe": ["CWE-755"],
+      "exploit_scenario": "Same as DA-003 — co-located in portal/Backend, same Prometheus exporter crash path",
+      "cross_ref": "DA-003",
+      "route": "TheFixer",
+      "fix": "npm update @opentelemetry/sdk-node to >=0.222.0 in portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-005",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "uuid <11.1.1 — Buffer bounds check missing in v3/v5/v6 UUID generation",
+      "package": "uuid",
+      "affected_workspaces": ["Source/Backend", "platform/orchestrator"],
+      "cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "exploit_scenario": "If caller supplies a buf parameter to uuid.v3/v5/v6, missing bounds check allows write outside buffer, risking memory/data corruption",
+      "route": "TheFixer",
+      "fix": "npm update uuid to >=11.1.1 in Source/Backend",
+      "status": "NEW"
+    }
+  ],
+  "p2": [
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Histogram missing from metrics.ts — FR-dependency-metrics gap",
+      "file": "Source/Backend/src/metrics.ts",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer blind to FR-dependency-* — gate gives false confidence",
+      "file": "Plans/self-judging-workflow/requirements.md",
+      "route": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-HIGH-001",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "brace-expansion <=1.1.17 — DoS via exponential expansion (3 CVEs)",
+      "affected_workspaces": ["Source/Backend"],
+      "fix": "Update to >=1.1.18",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-HIGH-002",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "browserslist <=4.28.6 — Unbounded memory growth + crash (2 CVEs)",
+      "affected_workspaces": ["Source/Backend"],
+      "cross_ref": "[CROSS-REF: performance-profiler] — OOM risk",
+      "fix": "Update to >=4.28.7",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-HIGH-003",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "form-data >=4.0.0 <4.0.6 — CRLF injection",
+      "affected_workspaces": ["Source/Backend"],
+      "cwe": ["CWE-93"],
+      "fix": "Update to >=4.0.6",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-HIGH-004",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "js-yaml <=3.15.0 — Quadratic CPU consumption in merge-key chains (3 CVEs)",
+      "affected_workspaces": ["Source/Backend"],
+      "fix": "Update to >=3.15.1",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-HIGH-005",
+      "specialist": "dependency-auditor",
+      "category": "vulnerable-dependency",
+      "title": "vite <=6.4.2 — Path traversal (HIGH CVE)",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fix": "Update to >=6.4.3",
+      "status": "NEW"
+    }
+  ],
+  "p2_note": "21 HIGH CVEs from dependency-auditor consolidated above into representative items. Full list in Teams/TheInspector/findings/dependency-audit-2026-09-07.md",
+  "p3": [
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry tracing not implemented in Source/Backend — CLAUDE.md rule violated",
+      "file": "Source/Backend/src/app.ts",
+      "cross_ref": "[CROSS-REF: dependency-auditor] — OTel packages missing from Source/Backend but vulnerable in portal/Backend",
+      "route": "TheATeam / TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "specialist": "quality-oracle",
+      "category": "test-coverage",
+      "title": "Duplicate test files — WorkItemDetailPage and WorkItemListPage have diverged copies",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx"
+      ],
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "specialist": "quality-oracle",
+      "category": "untested",
+      "title": "Source/E2E/package.json has broken test command — verification gate exits non-zero",
+      "file": "Source/E2E/package.json",
+      "route": "solo-session",
+      "status": "NEW"
+    }
+  ],
+  "p3_note": "17 MODERATE CVEs from dependency-auditor included in Teams/TheInspector/findings/dependency-audit-2026-09-07.md",
+  "p4": [
+    {
+      "id": "QO-007a",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable react-hooks/exhaustive-deps without rationale — DependencyPicker.tsx:82",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx",
+      "line": 82,
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007b",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable react-hooks/exhaustive-deps without rationale — useWorkItems.ts:63",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts",
+      "line": 63,
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_note": "13 LOW CVEs from dependency-auditor included in Teams/TheInspector/findings/dependency-audit-2026-09-07.md",
+  "cross_reference_map": [
+    {
+      "root_cause": "OTel ecosystem not consistently managed across workspaces",
+      "findings": ["QO-004", "DA-003", "DA-004"],
+      "single_fix": "Add @opentelemetry/sdk-node + @opentelemetry/auto-instrumentations-node to Source/Backend; simultaneously update OTel packages in portal/Backend to >=0.222.0",
+      "fix_impact": "Closes 3 findings: adds missing tracing pillar (QO-004) + resolves 2 DoS CVEs (DA-003, DA-004)"
+    },
+    {
+      "root_cause": "Frontend build tooling (vite/vitest) pinned to vulnerable versions in both Frontend workspaces",
+      "findings": ["DA-001", "DA-HIGH-005"],
+      "single_fix": "Update vitest >=3.2.6 and vite >=6.4.3 in both Source/Frontend and portal/Frontend in a single PR",
+      "fix_impact": "Closes 2 findings with one change, removes P1 escalation trigger"
+    },
+    {
+      "root_cause": "Traceability enforcer gap allows FR-dependency-* to remain untested by gate",
+      "findings": ["QO-001", "QO-003"],
+      "single_fix": "Add FR-dependency-search and remaining FR-dependency-* IDs to Plans/self-judging-workflow/requirements.md; gate will then catch the missing search route automatically",
+      "fix_impact": "Closes QO-003 and makes QO-001 automatically enforced going forward"
+    }
+  ]
+}

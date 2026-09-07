@@ -1,0 +1,206 @@
+{
+  "audit_date": "2026-09-07T00:00:00Z",
+  "audit_type": "dependency",
+  "project": "dev-crew",
+  "summary": {
+    "workspaces_scanned": 10,
+    "workspaces_vulnerable": 9,
+    "workspaces_clean": 1,
+    "total_cves": 56,
+    "cves_critical": 5,
+    "cves_high": 21,
+    "cves_moderate": 17,
+    "cves_low": 13
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "version_affected": "<3.2.6",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cwe": ["CWE-22", "CWE-862"],
+      "title": "Arbitrary file read and execute via UI server",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"],
+      "is_direct_dep": true,
+      "fix": "npm update vitest@^3.2.6"
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "version_affected": "<=7.6.4",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cwe": ["CWE-94"],
+      "title": "Arbitrary code execution in proto parsing",
+      "affected_workspaces": ["platform/orchestrator"],
+      "is_direct_dep": false,
+      "fix": "Update @grpc/grpc-js and protobufjs to latest"
+    },
+    {
+      "id": "DEP-003",
+      "package": "uuid",
+      "version_affected": "<11.1.1",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cwe": ["CWE-787", "CWE-1285"],
+      "title": "Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "affected_workspaces": ["Source/Backend", "platform/orchestrator"],
+      "is_direct_dep": true,
+      "fix": "npm update uuid@^11.1.1"
+    },
+    {
+      "id": "DEP-004",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "version_affected": "<=0.76.0",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cwe": ["CWE-755"],
+      "title": "Prometheus exporter process crash via malformed HTTP request",
+      "affected_workspaces": ["portal/Backend"],
+      "is_direct_dep": true,
+      "fix": "npm update @opentelemetry/auto-instrumentations-node@^0.80.0"
+    },
+    {
+      "id": "DEP-005",
+      "package": "@opentelemetry/sdk-node",
+      "version_affected": "<=0.218.0",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cwe": ["CWE-755"],
+      "title": "Prometheus exporter process crash via malformed HTTP request",
+      "affected_workspaces": ["portal/Backend"],
+      "is_direct_dep": true,
+      "fix": "npm update @opentelemetry/sdk-node@^0.222.0"
+    }
+  ],
+  "workspace_details": {
+    "Source/Backend": {
+      "status": "vulnerable",
+      "cve_count": 9,
+      "cves_critical": 0,
+      "cves_high": 4,
+      "cves_moderate": 2,
+      "cves_low": 2,
+      "prod_deps": 102,
+      "dev_deps": 310,
+      "total_deps": 412,
+      "direct_deps_vulnerable": ["uuid"],
+      "outdated_major_versions": ["pino", "uuid"],
+      "recommendation": "Update uuid immediately (buffer overflow in direct dep); schedule pino upgrade"
+    },
+    "Source/Frontend": {
+      "status": "critical",
+      "cve_count": 14,
+      "cves_critical": 1,
+      "cves_high": 6,
+      "cves_moderate": 6,
+      "cves_low": 1,
+      "prod_deps": 9,
+      "dev_deps": 222,
+      "total_deps": 231,
+      "direct_deps_vulnerable": ["vitest", "vite"],
+      "outdated_major_versions": ["react", "react-dom", "react-router-dom", "vite", "vitest"],
+      "recommendation": "URGENT: Update vitest and vite to fix CRITICAL RCE vulnerability"
+    },
+    "Source/E2E": {
+      "status": "clean",
+      "cve_count": 0,
+      "cves_critical": 0,
+      "cves_high": 0,
+      "cves_moderate": 0,
+      "cves_low": 0,
+      "prod_deps": 4,
+      "dev_deps": 0,
+      "total_deps": 4,
+      "direct_deps_vulnerable": [],
+      "outdated_major_versions": [],
+      "recommendation": "Excellent posture; continue monitoring"
+    },
+    "platform/orchestrator": {
+      "status": "critical",
+      "cve_count": 8,
+      "cves_critical": 1,
+      "cves_high": 2,
+      "cves_moderate": 4,
+      "cves_low": 1,
+      "prod_deps": 153,
+      "dev_deps": 0,
+      "total_deps": 153,
+      "direct_deps_vulnerable": ["dockerode"],
+      "outdated_major_versions": ["dockerode"],
+      "recommendation": "URGENT: Update protobufjs ecosystem for arbitrary code execution fix"
+    },
+    "portal/Backend": {
+      "status": "critical",
+      "cve_count": 8,
+      "cves_critical": 1,
+      "cves_high": 2,
+      "cves_moderate": 4,
+      "cves_low": 1,
+      "prod_deps": 153,
+      "dev_deps": 0,
+      "total_deps": 153,
+      "direct_deps_vulnerable": ["@opentelemetry/auto-instrumentations-node", "@opentelemetry/sdk-node"],
+      "outdated_major_versions": [],
+      "recommendation": "URGENT: Update OpenTelemetry packages to fix Prometheus exporter DoS"
+    },
+    "portal/Frontend": {
+      "status": "critical",
+      "cve_count": 15,
+      "cves_critical": 1,
+      "cves_high": 7,
+      "cves_moderate": 5,
+      "cves_low": 2,
+      "prod_deps": 9,
+      "dev_deps": 416,
+      "total_deps": 425,
+      "direct_deps_vulnerable": ["vitest", "vite"],
+      "outdated_major_versions": ["vitest", "vite"],
+      "recommendation": "Same as Source/Frontend; coordinate updates"
+    }
+  },
+  "remediation_plan": {
+    "immediate": [
+      "Update vitest@^3.2.6 in Source/Frontend and portal/Frontend (CRITICAL RCE)",
+      "Update vite@^6.4.3+ in Source/Frontend and portal/Frontend (HIGH path traversal)",
+      "Update uuid@^11.1.1 in Source/Backend (MODERATE buffer overflow, direct dep)",
+      "Update protobufjs@latest in platform/orchestrator (CRITICAL code execution)",
+      "Update @opentelemetry/auto-instrumentations-node@^0.80.0 in portal/Backend",
+      "Update @opentelemetry/sdk-node@^0.222.0 in portal/Backend"
+    ],
+    "this_quarter": [
+      "Upgrade express@^5 in Source/Backend (1 major behind)",
+      "Upgrade pino@^10 in Source/Backend (2 majors behind)",
+      "Upgrade react@^19 in Source/Frontend (1 major behind)",
+      "Upgrade react-router-dom@^7 in Source/Frontend (1 major behind)",
+      "Upgrade dockerode@^5 in platform/orchestrator (1 major behind)"
+    ]
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "severity": "CRITICAL",
+      "issue": "vitest UI server RCE — confirm server is never exposed outside development",
+      "action": "Add firewall rules to block vitest UI server from non-local access"
+    },
+    {
+      "team": "TheGuardians",
+      "severity": "CRITICAL",
+      "issue": "protobufjs arbitrary code execution — audit gRPC service exposure",
+      "action": "Confirm untrusted .proto files are never parsed; consider feature removal if not needed"
+    },
+    {
+      "team": "performance-profiler",
+      "severity": "HIGH",
+      "issue": "browserslist unbounded memory growth — can cause OOM",
+      "action": "Monitor metrics endpoint for memory usage spikes after browserslist updates"
+    }
+  ],
+  "notes": [
+    "Source/E2E is the only clean workspace — excellent posture",
+    "9/10 workspaces have vulnerabilities; coordinate updates across monorepo",
+    "Most CVEs are in transitive dependencies; npm audit fix may resolve many automatically",
+    "vitest and vite are development-only tools but have CRITICAL/HIGH severity; update priority is high due to dev environment exposure in CI/CD"
+  ]
+}

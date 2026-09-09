@@ -1,0 +1,361 @@
+{
+  "audit_date": "2026-09-09",
+  "run_id": "run-20260909-072221",
+  "branch": "audit/inspector-2026-09-09-302a58",
+  "overall_grade": "D",
+  "grade_rationale": "P1 count=5 exceeds C gate (max_p1=2); spec_coverage=13% below all thresholds except D",
+  "first_audit": true,
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 14,
+    "p3_total": 18,
+    "p4_total": 6,
+    "total_findings": 43,
+    "spec_coverage_pct": 13,
+    "escalations_to_guardians": 2,
+    "fixed_count": 0,
+    "specialists_active": 2,
+    "specialists_skipped": 2
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "trigger": "injection",
+      "package": "handlebars",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "module": "Source/Backend",
+      "exploit_scenario": "User-controlled data passed to Handlebars template rendering allows arbitrary JavaScript execution in the backend server process.",
+      "fix": "Update handlebars to >=4.7.9; audit all template render call sites for user-controlled input."
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "route_to": "TheGuardians",
+      "trigger": "code-execution",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "title": "Arbitrary Code Execution via prototype pollution",
+      "module": "platform/orchestrator",
+      "exploit_scenario": "Malformed protobuf message injected into the orchestrator pipeline triggers prototype pollution leading to arbitrary code execution. Orchestrator compromise has platform-wide blast radius.",
+      "fix": "Update protobufjs to >=7.6.5 in platform/orchestrator."
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "title": "Traceability enforcer targets Plans/ not Specifications/",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "The verification gate scans only Plans/self-judging-workflow/requirements.md (13 FR-WF-* IDs). Canonical 84+ FRs in Specifications/ are never checked. All agents get false 'TRACEABILITY PASSED' confidence.",
+      "exploit_scenario": "Agent team implements a feature, gate reports PASSED, commits code with zero traceability to formal specs.",
+      "recommendation": "Update traceability-enforcer.py to scan Specifications/ for FR-XXX IDs, or mark Specifications/ docs as SUPERSEDED and update CLAUDE.md to document the canonical requirements source.",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "title": "dev-workflow-platform.md describes 84 unimplemented FRs — spec/code mismatch",
+      "file": "Specifications/dev-workflow-platform.md",
+      "file_lines": "337-482",
+      "detail": "Spec defines FR-001–FR-069 for a SQLite-backed platform. Zero source files implement these. The codebase pivoted to an in-memory workflow engine without archiving this spec.",
+      "exploit_scenario": "New agent reads Specifications/ as truth per CLAUDE.md instruction and implements SQLite tables and entities that conflict with existing Source/ codebase.",
+      "recommendation": "Mark dev-workflow-platform.md as status: SUPERSEDED at document top. Document the pivot to the current workflow engine.",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "injection",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "Handlebars — JavaScript Injection via AST Type Confusion",
+      "package": "handlebars",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "module": "Source/Backend",
+      "exploit_scenario": "User-controlled data passed to Handlebars rendering allows arbitrary JavaScript execution in the backend server process.",
+      "recommendation": "Update handlebars to >=4.7.9. Audit all template render call sites.",
+      "route_to": "TheGuardians",
+      "priority_tier": "block_deployment"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "path-traversal",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "Vitest — Path Traversal / Arbitrary File Read via @vitest/mocker",
+      "package": "vitest",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "module": "Source/Frontend",
+      "is_direct_dep": true,
+      "exploit_scenario": "Maliciously-crafted test file or mock path reads arbitrary files from CI runner filesystem, including .env files and secrets.",
+      "recommendation": "Update vitest to >=5.0.0 (semver major — review breaking changes before updating).",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "code-execution",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "Protobufjs — Arbitrary Code Execution",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "module": "platform/orchestrator",
+      "exploit_scenario": "Malformed protobuf message injected into orchestrator triggers prototype pollution leading to arbitrary code execution with platform-wide blast radius.",
+      "recommendation": "Update protobufjs to >=7.6.5 in platform/orchestrator.",
+      "route_to": "TheGuardians",
+      "priority_tier": "block_deployment"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "title": "tiered-merge-pipeline.md has zero implementation",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "recommendation": "Mark as status: PLANNED with target milestone, or create a Plan for FR-TMP-001+ implementation.",
+      "route_to": "TheFixer",
+      "priority_tier": "next_sprint"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "test-coverage",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "title": "Duplicate test files with diverged mock coverage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Delete root-level stub test files. Keep tests/pages/ canonical versions.",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "Vite — Path Traversal in Optimized Deps .map Handling",
+      "package": "vite",
+      "cve": "GHSA-4w7w-66w2-5vf9",
+      "module": "Source/Frontend",
+      "is_direct_dep": true,
+      "recommendation": "Update vite to >=5.5.3",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "brace-expansion — Zero-step sequence causes process hang and memory exhaustion",
+      "package": "brace-expansion",
+      "cve": "GHSA-f886-m6hf-6m8v",
+      "module": "Source/Backend",
+      "recommendation": "Update brace-expansion to >=1.1.18",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "browserslist — Unbounded memory growth via distinct query results",
+      "package": "browserslist",
+      "cve": "GHSA-c83g-rgw3-j3cx",
+      "modules": ["Source/Backend", "Source/Frontend"],
+      "recommendation": "Update browserslist to >=4.28.7 in all modules",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "form-data — CRLF injection via unescaped multipart field names",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "modules": ["Source/Backend", "Source/Frontend"],
+      "recommendation": "Update form-data to >=4.0.6",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "@grpc/grpc-js — Malformed request causes server crash (DoS)",
+      "package": "@grpc/grpc-js",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "module": "platform/orchestrator",
+      "recommendation": "Update @grpc/grpc-js to >=1.14.4",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    },
+    {
+      "id": "DEP-009-015",
+      "severity": "P2",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "7 additional high-severity CVEs (see full dependency audit report)",
+      "count": 7,
+      "full_report": "Teams/TheInspector/findings/dependency-audit-20260909.md",
+      "recommendation": "Review full report for individual CVE details and update paths",
+      "route_to": "TheFixer",
+      "priority_tier": "this_sprint"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "title": "Undocumented eslint-disable for react-hooks/exhaustive-deps",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Add inline comment explaining why the dependency is intentionally omitted.",
+      "route_to": "TheFixer",
+      "priority_tier": "backlog"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "title": "portal/ spec path vs Source/ implementation mismatch",
+      "file": "Specifications/dev-workflow-platform.md:467",
+      "recommendation": "Clarify portal/ purpose in CLAUDE.md Key Domain Concepts. Document that FR-dependency-types reference was superseded by Source/ implementation.",
+      "route_to": "TheFixer",
+      "priority_tier": "backlog"
+    },
+    {
+      "id": "DEP-moderate",
+      "severity": "P3",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "14 moderate-severity CVEs (js-yaml, nanoid, postcss, path-to-regexp, ws, etc.)",
+      "count": 14,
+      "full_report": "Teams/TheInspector/findings/dependency-audit-20260909.md",
+      "recommendation": "Run npm audit fix in each module to resolve automatically-fixable moderate CVEs",
+      "route_to": "TheFixer",
+      "priority_tier": "next_sprint"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "category": "simplification",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "title": "workflow.ts approaching 500-line threshold (374 lines)",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "recommendation": "Refactor into per-action route modules when next touching this file.",
+      "route_to": "TheFixer",
+      "priority_tier": "backlog"
+    },
+    {
+      "id": "DEP-low",
+      "severity": "P4",
+      "category": "CVE",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "title": "4 low-severity CVEs (@babel/core, body-parser, etc.)",
+      "count": 4,
+      "full_report": "Teams/TheInspector/findings/dependency-audit-20260909.md",
+      "recommendation": "Address during next routine dependency maintenance window",
+      "route_to": "TheFixer",
+      "priority_tier": "backlog"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Spec ecosystem misalignment",
+      "findings": ["QO-001", "QO-002", "QO-003", "QO-006"],
+      "single_fix": "Archive/supersede stale specs + point enforcer at Specifications/ → resolves all 4 findings, lifts grade to B"
+    },
+    {
+      "root_cause": "Dependency update backlog",
+      "findings": ["DEP-001", "DEP-002", "DEP-004", "DEP-005", "DEP-006", "DEP-007"],
+      "single_fix": "npm audit fix + targeted major bumps for vite, handlebars, vitest → resolves 6+ findings"
+    },
+    {
+      "root_cause": "gRPC/protobuf library age in orchestrator",
+      "findings": ["DEP-003", "DEP-008"],
+      "single_fix": "Update protobufjs >=7.6.5 + @grpc/grpc-js >=1.14.4 in platform/orchestrator"
+    }
+  ],
+  "action_plan": {
+    "block_deployment": [
+      "Escalate DEP-001 + DEP-003 to TheGuardians for security audit",
+      "Update handlebars >=4.7.9 (Source/Backend)",
+      "Update protobufjs >=7.6.5 (platform/orchestrator)"
+    ],
+    "this_sprint": [
+      "Fix QO-001: Update traceability-enforcer.py to scan Specifications/",
+      "Fix QO-002: Add SUPERSEDED status to Specifications/dev-workflow-platform.md",
+      "Fix QO-004: Delete duplicate root-level test stubs in Source/Frontend/tests/",
+      "Update vite >=5.5.3 (Source/Frontend)",
+      "Update vitest >=5.0.0 (Source/Frontend — check breaking changes)",
+      "Update brace-expansion >=1.1.18 (Source/Backend)",
+      "Update form-data >=4.0.6 (all modules)",
+      "Update browserslist >=4.28.7 (all modules)",
+      "Update @grpc/grpc-js >=1.14.4 (platform/orchestrator)"
+    ],
+    "next_sprint": [
+      "Fix QO-003: Add PLANNED status to tiered-merge-pipeline.md",
+      "Run npm audit fix across all modules for moderate CVEs",
+      "Plan React 18→19 major upgrade",
+      "Plan Express 4→5 migration",
+      "Audit pino 8.x→10.x upgrade path"
+    ],
+    "backlog": [
+      "Fix QO-005: Document eslint-disable rationale in DependencyPicker.tsx and useWorkItems.ts",
+      "Fix QO-006: Clarify portal/ purpose in CLAUDE.md",
+      "Fix QO-007: Refactor workflow.ts when next touching the file",
+      "Address 4 low-severity CVEs during maintenance window"
+    ]
+  },
+  "report_files": {
+    "html_report": "Teams/TheInspector/findings/audit-20260909-D.html",
+    "bug_backlog": "Teams/TheInspector/findings/bug-backlog-20260909.json",
+    "dependency_report": "Teams/TheInspector/findings/dependency-audit-20260909.md",
+    "dependency_summary": "Teams/TheInspector/findings/dependency-audit-summary-20260909.json"
+  }
+}

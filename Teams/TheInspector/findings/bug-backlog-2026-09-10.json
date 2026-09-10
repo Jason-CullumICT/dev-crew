@@ -1,0 +1,376 @@
+{
+  "audit_metadata": {
+    "date": "2026-09-10",
+    "team": "TheInspector",
+    "synthesized_by": "team-leader (Claude Sonnet 4.6)",
+    "grade": "D",
+    "prior_audit": null,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_offline": ["performance-profiler", "chaos-monkey"],
+    "report_html": "Teams/TheInspector/findings/audit-2026-09-10-D.html"
+  },
+  "summary": {
+    "grade": "D",
+    "p1_total": 5,
+    "p2_total": 26,
+    "p3_total": 62,
+    "p4_total": 8,
+    "spec_coverage_percent": 13,
+    "frs_total": 97,
+    "frs_traced": 13,
+    "escalations_to_guardians": 3,
+    "dynamic_tests_run": 0,
+    "fixed_since_prior": 0
+  },
+  "grading_rationale": {
+    "config_thresholds": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": "anything worse than C"
+    },
+    "applied": "5 P1s exceeds C threshold of max 2 P1s; spec coverage 13% is below C threshold of 40%; 26 P2s exceeds C threshold of 15 → Grade D"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "title": "Handlebars JS Injection / RCE",
+      "package": "handlebars@4.7.8",
+      "cve": "GHSA-2qvq-rjwj-gvw9",
+      "cvss": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "affected_paths": ["Source/Backend/package-lock.json"],
+      "fix": "cd Source/Backend && npm update handlebars",
+      "fix_version": "4.7.9+",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "packages": ["vitest@2.1.9", "vitest@1.6.1"],
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "cwe": ["CWE-22", "CWE-862"],
+      "affected_paths": [
+        "Source/Frontend/package-lock.json",
+        "portal/Backend/package-lock.json",
+        "portal/Frontend/package-lock.json"
+      ],
+      "fix": "npm install vitest@latest in each affected workspace",
+      "fix_version": "3.2.6+",
+      "mitigation": "Disable vitest --ui in CI/production immediately",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "title": "protobufjs Arbitrary Code Execution",
+      "package": "protobufjs@7.5.4",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "cwe": ["CWE-94"],
+      "affected_paths": ["portal/Backend/package-lock.json"],
+      "fix": "cd portal/Backend && npm update protobufjs",
+      "fix_version": "7.5.5+",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Routes Bypass Service Layer for CRUD and Workflow State Changes",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "impact": "Business logic untestable in isolation; state-machine behaviour embedded in HTTP handlers; violates CLAUDE.md architecture rule",
+      "fix_owner": "TheFixer",
+      "fix_action": "Create workItemService.ts and workflowService.ts; extract store calls and state-machine logic from route handlers",
+      "cross_ref": "ROOT_CAUSE_B",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "Traceability Enforcer Blind Spot — 84 Spec FRs Untraced",
+      "files": ["tools/traceability-enforcer.py"],
+      "impact": "CI gate produces false green; 84/97 FRs (87%) are untraced; teams operate with false compliance confidence",
+      "fix_owner": "TheFixer",
+      "fix_action": "Extend enforcer to scan Specifications/ directory for FR IDs and match against // Verifies: comments in Source/",
+      "cross_ref": "ROOT_CAUSE_C",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dev-workflow-platform.md describes unimplemented product (74 FRs)",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "fix_owner": "requirements-reviewer",
+      "fix_action": "Add STATUS: SUPERSEDED header or create Plans tracking entry for the 74 FRs",
+      "cross_ref": "ROOT_CAUSE_C",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "tiered-merge-pipeline.md unimplemented — E2E suite has no runnable tests",
+      "files": [
+        "Specifications/tiered-merge-pipeline.md",
+        "Source/E2E/package.json"
+      ],
+      "fix_owner": "TheFixer",
+      "fix_action": "Add Plans/tiered-merge-pipeline/ plan; scaffold E2E placeholder tests or mark spec as Phase 1 not started",
+      "cross_ref": "ROOT_CAUSE_C",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H01",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "brace-expansion: zero-step sequence DoS",
+      "affected_paths": ["Source/Backend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update brace-expansion in Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H02",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "browserslist: unbounded memory growth OOM",
+      "affected_paths": ["Source/Backend", "Source/Frontend", "portal/Frontend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update browserslist in affected workspaces",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H03",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "form-data: CRLF injection in multipart (CVSS 6.5)",
+      "affected_paths": ["Source/Backend", "Source/Frontend", "portal/Frontend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update form-data in affected workspaces",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H04",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "js-yaml: quadratic-complexity DoS (CVSS 7.5)",
+      "affected_paths": ["Source/Backend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update js-yaml in Source/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H05",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "nanoid: non-secure generator loop (CVSS 5.3)",
+      "affected_paths": ["Source/Frontend", "portal/Frontend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update nanoid in Source/Frontend and portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H06",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "postcss: XSS via unescaped </style> (CVSS 6.5)",
+      "affected_paths": ["Source/Frontend", "portal/Frontend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update postcss in Source/Frontend and portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H07",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "picomatch: POSIX char class injection (CVSS 7.5)",
+      "affected_paths": ["portal/Frontend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update picomatch in portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H08",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "vite: path traversal in .map files (CVSS 6.3)",
+      "affected_paths": ["Source/Frontend", "portal/Frontend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update vite in Source/Frontend and portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H09",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "ws: uninitialized memory disclosure (CVSS 7.5)",
+      "affected_paths": ["portal/Frontend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update ws in portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H10",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "@grpc/grpc-js: malformed request crash DoS (CVSS 7.5)",
+      "affected_paths": ["portal/Backend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update @grpc/grpc-js in portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H11",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "@opentelemetry/auto-instrumentation-node: Prometheus exporter crash (CVSS 7.5)",
+      "affected_paths": ["portal/Backend"],
+      "fix_owner": "TheFixer",
+      "fix_action": "npm update @opentelemetry/auto-instrumentation-node in portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H12-24",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-high",
+      "title": "13 additional high-severity CVEs across workspaces",
+      "note": "See dependency-auditor-report.md for full CVSS details on remaining 13 high-severity findings",
+      "fix_owner": "TheFixer",
+      "fix_action": "Run npm audit fix --force after testing in each affected workspace",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppressions without justification",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "fix_owner": "TheFixer",
+      "fix_action": "Add explanatory comment alongside each eslint-disable-next-line directive",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Hardcoded fallback localhost URL in DebugPortalPage.tsx",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx:5"],
+      "fix_owner": "TheFixer",
+      "fix_action": "Remove fallback or guard: if (!portalUrl) return <p>Portal URL not configured</p>",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-M01-60",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "category": "cve-moderate",
+      "title": "60 moderate-severity CVEs across 5 workspaces",
+      "note": "Includes @remix-run/router open redirect, @vitest/mocker path traversal, XSS, prototype pollution, DoS",
+      "fix_owner": "TheFixer",
+      "fix_action": "Batch npm audit fix cycle; test after each workspace update",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "specialist": "quality-oracle",
+      "category": "test-coverage",
+      "title": "No backend test verifies FR-WF-013 Prometheus workflow metrics",
+      "files": ["Source/Backend/tests/routes/metrics.test.ts"],
+      "fix_owner": "TheFixer",
+      "fix_action": "Add test cases for workflow_items_created_total, _routed_total, _assessed_total, _dispatched_total",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-L01-7",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "category": "cve-low",
+      "title": "7 low-severity CVEs across workspaces",
+      "fix_owner": "TheFixer",
+      "fix_action": "Include in next scheduled dependency update cycle",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-OUT01-21",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "category": "outdated-packages",
+      "title": "21 packages outdated >1 major version (portal/Backend: 11, Source/Backend: 4)",
+      "fix_owner": "TheFixer",
+      "fix_action": "Run npm update in each workspace; prioritize portal/Backend with 11 outdated packages",
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "id": "ROOT_CAUSE_A",
+      "title": "Unupdated Critical Dependencies",
+      "affected_findings": ["DEP-001", "DEP-002", "DEP-003"],
+      "single_fix": "Patch handlebars, vitest, protobufjs to fixed versions. Resolves all 3 CVSS-9.8 escalations.",
+      "fix_impact": "Eliminates 3 P1 escalations to TheGuardians"
+    },
+    {
+      "id": "ROOT_CAUSE_B",
+      "title": "Missing Service Layer Abstraction",
+      "affected_findings": ["QO-001"],
+      "single_fix": "Create workItemService.ts + workflowService.ts. Extract business logic from route handlers.",
+      "fix_impact": "Resolves QO-001; unblocks testability of state machine; enables chaos-monkey concurrent-transition test"
+    },
+    {
+      "id": "ROOT_CAUSE_C",
+      "title": "Specification Governance Gap",
+      "affected_findings": ["QO-002", "QO-003", "QO-004"],
+      "single_fix": "Extend traceability-enforcer.py to scan Specifications/. Add STATUS headers or Plans tracking for stale specs.",
+      "fix_impact": "Resolves 3 findings; eliminates false-green CI gate; raises spec coverage accuracy from 13% to true count"
+    }
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "audit_metadata": {
+    "date": "2026-09-10",
+    "auditor": "dependency-auditor",
+    "model": "Claude Haiku 4.5",
+    "grade": "A",
+    "next_audit": "2026-09-17"
+  },
+  "summary": {
+    "total_projects": 5,
+    "clean_projects": 1,
+    "package_managers_detected": [
+      "npm"
+    ],
+    "total_vulnerabilities": 95,
+    "total_direct_dependencies": 65,
+    "total_transitive_dependencies": 1646,
+    "outdated_packages": 21
+  },
+  "vulnerabilities": {
+    "critical": {
+      "count": 4,
+      "findings": [
+        {
+          "id": "DEP-001",
+          "package": "handlebars",
+          "version": "4.7.8",
+          "cve": "GHSA-2qvq-rjwj-gvw9",
+          "title": "JavaScript Injection via AST Type Confusion",
+          "cvss": 9.8,
+          "affected_projects": [
+            "Source/Backend"
+          ],
+          "fix_available": "4.7.9+"
+        },
+        {
+          "id": "DEP-002",
+          "package": "vitest",
+          "versions": [
+            "2.1.9",
+            "1.6.1",
+            "1.6.1"
+          ],
+          "cve": "GHSA-5xrq-8626-4rwp",
+          "title": "Arbitrary File Read & Execution (UI Server)",
+          "cvss": 9.8,
+          "affected_projects": [
+            "Source/Frontend",
+            "portal/Backend",
+            "portal/Frontend"
+          ],
+          "fix_available": "3.2.6+ or 5.0.0+"
+        },
+        {
+          "id": "DEP-003",
+          "package": "protobufjs",
+          "version": "7.5.4",
+          "cve": "GHSA-xq3m-2v4x-88gg",
+          "title": "Arbitrary Code Execution (Multiple Issues)",
+          "cvss": 9.8,
+          "affected_projects": [
+            "portal/Backend"
+          ],
+          "fix_available": "7.5.5+"
+        }
+      ]
+    },
+    "high": {
+      "count": 24,
+      "severity_distribution": {
+        "cvss_8_plus": 8,
+        "cvss_7_to_8": 10,
+        "cvss_6_to_7": 6
+      }
+    },
+    "moderate": {
+      "count": 60
+    },
+    "low": {
+      "count": 7
+    }
+  },
+  "projects": [
+    {
+      "name": "Source/Backend",
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 3,
+        "low": 2
+      },
+      "dependencies": {
+        "direct": 13,
+        "transitive": 412,
+        "outdated": 4
+      },
+      "risk_level": "MODERATE"
+    },
+    {
+      "name": "Source/Frontend",
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 6,
+        "moderate": 7,
+        "low": 1
+      },
+      "dependencies": {
+        "direct": 13,
+        "transitive": 231,
+        "outdated": 3
+      },
+      "risk_level": "MODERATE"
+    },
+    {
+      "name": "Source/E2E",
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "dependencies": {
+        "direct": 5,
+        "transitive": 45,
+        "outdated": 0
+      },
+      "risk_level": "LOW"
+    },
+    {
+      "name": "portal/Backend",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 10,
+        "moderate": 41,
+        "low": 1
+      },
+      "dependencies": {
+        "direct": 22,
+        "transitive": 578,
+        "outdated": 11
+      },
+      "risk_level": "HIGH"
+    },
+    {
+      "name": "portal/Frontend",
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 7,
+        "moderate": 6,
+        "low": 2
+      },
+      "dependencies": {
+        "direct": 17,
+        "transitive": 425,
+        "outdated": 3
+      },
+      "risk_level": "HIGH"
+    }
+  ],
+  "supply_chain_analysis": {
+    "total_transitive_dependencies": 1646,
+    "risk_assessment": "HIGH",
+    "rationale": "Portal stack (portal/Backend: 578, portal/Frontend: 425) represents significant supply chain surface. Combined with multiple critical CVEs in dependencies, supply chain risk is elevated.",
+    "recommendations": [
+      "Implement Software Composition Analysis (SCA) in CI/CD",
+      "Add npm audit to CI/CD with failure threshold for critical/high",
+      "Review necessity of high-complexity packages (protobufjs, handlebars)",
+      "Consider dependency pinning for critical transitive deps",
+      "Monitor for abandoned packages in transitive tree"
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "notes": "No GPL/AGPL licenses detected in direct dependencies. Recommend periodic license-checker runs."
+  },
+  "recommendations": {
+    "immediate": [
+      "Update handlebars to 4.7.9+ in Source/Backend",
+      "Update protobufjs to 7.5.5+ in portal/Backend",
+      "Upgrade vitest to 3.2.6+ or 5.0.0+ across all projects",
+      "Disable vitest UI server in production and CI builds"
+    ],
+    "short_term": [
+      "Update packages with High-severity CVEs (form-data, postcss, vite, nanoid, js-yaml, brace-expansion)",
+      "Run full dependency upgrade cycle for portal/Backend (11 outdated packages)",
+      "Test all updates thoroughly to catch breaking changes"
+    ],
+    "medium_term": [
+      "Address 60 moderate-severity CVEs in batched updates",
+      "Reduce transitive dependency surface (consider alternatives to protobufjs)",
+      "Implement automated dependency update workflow (Dependabot/Renovate)"
+    ]
+  },
+  "escalations": {
+    "to_guardians": [
+      {
+        "finding": "DEP-001",
+        "reason": "Remote Code Execution in template rendering"
+      },
+      {
+        "finding": "DEP-002",
+        "reason": "Arbitrary file disclosure and execution via UI server"
+      },
+      {
+        "finding": "DEP-003",
+        "reason": "Remote Code Execution in protocol buffer parsing"
+      }
+    ]
+  }
+}

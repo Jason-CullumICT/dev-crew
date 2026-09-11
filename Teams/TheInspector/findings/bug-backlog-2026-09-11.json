@@ -1,0 +1,347 @@
+{
+  "audit_id": "run-20260911-071703",
+  "audit_date": "2026-09-11",
+  "branch": "audit/inspector-2026-09-11-432223",
+  "grade": "D",
+  "prior_grade": null,
+  "trend": "first_audit",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 14,
+    "p3_total": 12,
+    "p4_total": 9,
+    "spec_coverage_pct": 47,
+    "escalation_count": 2,
+    "fixed_count": 0
+  },
+  "specialists": {
+    "quality_oracle": { "mode": "static", "grade": "D", "p1": 2, "p2": 2, "p3": 2, "p4": 0 },
+    "dependency_auditor": { "mode": "static", "p1": 2, "p2": 12, "p3": 6, "p4": 9 },
+    "performance_profiler": { "mode": "skipped", "reason": "backend service unavailable" },
+    "chaos_monkey": { "mode": "skipped", "reason": "services unavailable — dynamic mode requires all services healthy" }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "handlebars@4.7.8 — JavaScript Injection via AST Type Confusion",
+      "severity": "P1",
+      "category": "cve",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "package": "handlebars@4.7.8",
+      "affected_files": ["Source/Backend/node_modules/handlebars", "platform/orchestrator"],
+      "attack_vector": "Network, Low Complexity, No Privileges Required",
+      "exploit_scenario": "Remote attacker crafts malicious template input triggering RCE via AST type confusion; prototype pollution allows XSS via partial templates",
+      "fix": "npm audit fix --force (updates to 4.8.1+)",
+      "status": "NEW",
+      "route": "ESCALATE → TheGuardians",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "title": "vitest <5.0.0 — Arbitrary File Read & Execution via UI Server",
+      "severity": "P1",
+      "category": "cve",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest@4.1.10",
+      "affected_files": ["Source/Frontend/node_modules/vitest"],
+      "attack_vector": "Network, Low Complexity, No Privileges Required",
+      "exploit_scenario": "When Vitest UI server is running (--ui flag), any attacker on the network can read arbitrary files and execute code; path traversal via @vitest/mocker redirect mock (GHSA-82fw-gwwq-j7x9)",
+      "fix": "npm update vitest@5.0.0+ (major version — requires full test suite validation)",
+      "status": "NEW",
+      "route": "ESCALATE → TheGuardians",
+      "specialist": "dependency-auditor",
+      "coordination": "vitest major version bump may break QA infrastructure — coordinate with QA team"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "dev-cycle-traceability: 20 FRs (FR-050–069) entirely unimplemented",
+      "severity": "P1",
+      "category": "spec-drift",
+      "file": "Plans/dev-cycle-traceability/requirements.md",
+      "status": "NEW",
+      "exploit_scenario": "Platform ships without CycleFeedback/ConsideredFix feature — 31 approved complexity points of planned capability silently absent; traceability enforcer gives false green",
+      "recommendation": "Dispatch to TheATeam pipeline; gate with python3 tools/traceability-enforcer.py --file Plans/dev-cycle-traceability/requirements.md",
+      "route": "TheFixer backlog",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "title": "orchestrator-cycle-dashboard: 7 FRs (FR-070–076) entirely unimplemented",
+      "severity": "P1",
+      "category": "spec-drift",
+      "file": "Plans/orchestrator-cycle-dashboard/requirements.md",
+      "status": "NEW",
+      "exploit_scenario": "OrchestratorCyclesPage, CycleCard, stop-button, CycleLogStream SSE, CompletedCyclesSection all missing from frontend — 10 approved complexity points undelivered",
+      "recommendation": "Dispatch frontend-coder via TheATeam pipeline; no backend changes required",
+      "route": "TheFixer backlog",
+      "specialist": "quality-oracle"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "title": "Traceability enforcer default scope silently skips two failing plans",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "file": "tools/traceability-enforcer.py:57",
+      "status": "NEW",
+      "exploit_scenario": "Developer runs python3 tools/traceability-enforcer.py, sees exit 0 (PASSED), and believes all FRs are traced — missing coverage for 27 FRs goes undetected in pre-commit/CI gates",
+      "recommendation": "Update enforcer to scan all Plans/**/requirements.md and fail if any plan has missing FRs; OR update CLAUDE.md gate to enumerate all plans explicitly",
+      "route": "TheFixer backlog",
+      "cross_refs": ["QO-001", "QO-002"],
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "title": "Route handlers bypass service layer — direct store calls in 3 route files",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/intake.ts:4",
+        "Source/Backend/src/routes/workflow.ts:15"
+      ],
+      "status": "NEW",
+      "exploit_scenario": "Business logic and data access co-located in route handlers; any route-layer bug directly corrupts store state; impossible to unit-test business logic in isolation",
+      "recommendation": "Extract workItemService.ts; move store interactions there; route handlers call service only",
+      "route": "TheFixer backlog",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "title": "brace-expansion ≤1.1.17 — DoS via Unbounded Memory Expansion",
+      "severity": "P2",
+      "category": "cve",
+      "packages": ["brace-expansion@<=1.1.17"],
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "fix": "npm audit fix (updates to 1.1.18+)",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "title": "browserslist ≤4.28.6 — Unbounded Memory Growth + Prototype Pollution",
+      "severity": "P2",
+      "category": "cve",
+      "packages": ["browserslist@<=4.28.6"],
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "fix": "npm audit fix (updates to 4.29.0+)",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "title": "nanoid ≤3.3.17 — Infinite Loop & Integer Overflow",
+      "severity": "P2",
+      "category": "cve",
+      "packages": ["nanoid@<=3.3.17"],
+      "affected_projects": ["Source/Frontend"],
+      "cves": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+      "fix": "npm update nanoid@^3.3.18+",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "title": "form-data 4.0.0–4.0.5 — CRLF Injection in Multipart Fields",
+      "severity": "P2",
+      "category": "cve",
+      "packages": ["form-data@4.0.0-4.0.5"],
+      "affected_projects": ["Source/Frontend"],
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "fix": "npm update form-data@4.0.6+",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "title": "postcss (transitive) — Template Injection",
+      "severity": "P2",
+      "category": "cve",
+      "packages": ["postcss"],
+      "affected_projects": ["Source/Frontend"],
+      "fix": "npm audit fix",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008-HIGH",
+      "title": "7 additional HIGH-severity CVEs across Backend/Frontend/platform",
+      "severity": "P2",
+      "category": "cve",
+      "count": 7,
+      "fix": "npm audit fix across all affected projects",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor",
+      "note": "Enumerated individually in Teams/TheInspector/findings/audit-2026-09-11-critical.md"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "severity": "P3",
+      "category": "test-coverage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "fix": "Consolidate into tests/pages/ canonical set; delete top-level duplicates",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "title": "Undocumented eslint-disable suppressions in two hook/component files",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "fix": "Add inline justification comment or refactor effect dependencies",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-008",
+      "title": "@remix-run/router — Open Redirect via Protocol-Relative URLs",
+      "severity": "P3",
+      "category": "cve",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "fix": "npm update react-router-dom@6.20.0+",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "title": "@vitest/mocker — Path Traversal Vulnerability",
+      "severity": "P3",
+      "category": "cve",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "fix": "Resolved by vitest@5.0.0+ upgrade (see DEP-002)",
+      "status": "NEW",
+      "cross_refs": ["DEP-002"],
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-010",
+      "title": "body-parser <1.20.6 — DoS via Invalid Limit Value",
+      "severity": "P3",
+      "category": "cve",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "fix": "npm update body-parser@1.20.6+",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-011",
+      "title": "@babel/core ≤7.29.0 — Arbitrary File Read via sourceMappingURL",
+      "severity": "P3",
+      "category": "cve",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "fix": "npm update @babel/core@7.30.0+",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-012",
+      "title": "esbuild ≤0.24.2 — Same-Origin Bypass in Dev Server",
+      "severity": "P3",
+      "category": "cve",
+      "cve": "GHSA-67mh-4wv8-2f99",
+      "fix": "npm update esbuild@0.24.3+",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-013",
+      "title": "25 Outdated Packages (>1 major version behind) across 5 projects",
+      "severity": "P3",
+      "category": "outdated",
+      "affected_projects": ["portal/Backend (11)", "Source/Backend (4)", "Source/Frontend (3)", "platform/orchestrator (3)", "portal/Frontend (3)"],
+      "fix": "Iterative npm update per project during maintenance windows",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-P4-batch",
+      "title": "9 low-severity vulnerabilities across Backend/Frontend/platform",
+      "severity": "P4",
+      "category": "cve",
+      "count": 9,
+      "fix": "npm audit fix",
+      "status": "NEW",
+      "route": "TheFixer backlog",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Approved features not dispatched to implementation pipeline",
+      "findings": ["QO-001", "QO-002"],
+      "single_fix": "Dispatch both plans through TheATeam in one sprint",
+      "fix_impact": "Resolves 2 P1 spec-drift findings; raises spec coverage from 47% → ~80%"
+    },
+    {
+      "root_cause": "Traceability enforcement tooling has single-plan blind spot",
+      "findings": ["QO-003", "QO-001", "QO-002"],
+      "single_fix": "Update traceability-enforcer.py to scan all Plans/**/requirements.md",
+      "fix_impact": "Removes false-green gate; would have surfaced QO-001 and QO-002 immediately"
+    },
+    {
+      "root_cause": "npm ecosystem shared vulnerable transitive dependencies (brace-expansion, browserslist)",
+      "findings": ["DEP-003", "DEP-004"],
+      "single_fix": "npm audit fix in Source/Backend and Source/Frontend",
+      "fix_impact": "Patches 2 P2 DoS vulnerabilities across both projects simultaneously"
+    },
+    {
+      "root_cause": "vitest major version lag",
+      "findings": ["DEP-002", "DEP-009"],
+      "single_fix": "npm update vitest@5.0.0+ in Source/Frontend",
+      "fix_impact": "Resolves 1 P1 (CVSS 9.8) + 1 P3 path traversal with a single package upgrade"
+    }
+  ],
+  "performance_profiler": {
+    "mode": "skipped",
+    "reason": "backend service at http://localhost:3001/ unavailable during audit",
+    "static_risks_noted": [
+      "GET /api/work-items has no pagination limit (unbounded Map iteration)",
+      "Large payload serialization risk on list endpoint",
+      "Missing input validation on request body fields"
+    ]
+  },
+  "chaos_monkey": {
+    "mode": "skipped",
+    "reason": "all services must be healthy for dynamic fault injection",
+    "static_risks_noted": [
+      "No concurrency guard on conflicting state transitions for same work item",
+      "In-memory store has no locking — concurrent POST /api/work-items could collide",
+      "Missing input validation means malformed request bodies may cause unhandled exceptions"
+    ]
+  }
+}

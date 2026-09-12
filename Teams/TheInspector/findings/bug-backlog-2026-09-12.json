@@ -1,0 +1,307 @@
+{
+  "meta": {
+    "audit_id": "run-20260912-071014",
+    "audit_date": "2026-09-12",
+    "branch": "audit/inspector-2026-09-12-72d3b5",
+    "grade": "D",
+    "grade_rationale": "spec_coverage 27% fails C threshold of 40%; P1=2 at C limit; P2=10 within C limit; no prior baseline",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "backend and frontend services offline; static-only audit",
+    "p1_total": 2,
+    "p2_total": 10,
+    "p3_total": 5,
+    "p4_total": 0,
+    "escalations_total": 2,
+    "active_plan_coverage_pct": 100,
+    "all_specs_coverage_pct": 27,
+    "generated_by": "TheInspector team-leader (sonnet)"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js JavaScript Injection RCE via AST Type Confusion",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "escalation_trigger": "injection",
+      "cvss": 7.5,
+      "packages": ["handlebars <=4.7.8"],
+      "affected": ["Source/Backend (transitive)", "Source/Frontend (transitive)"],
+      "fixed_version": ">=4.7.9",
+      "immediate_mitigation": "npm audit fix in Source/Backend && Source/Frontend",
+      "guardians_task": "Verify whether handlebars templates are ever compiled from user-controlled input in production code. If yes, treat as critical RCE.",
+      "failure_scenario": "Attacker injects arbitrary JavaScript through template compilation via AST type confusion or partial-block manipulation."
+    },
+    {
+      "id": "DEP-004",
+      "title": "form-data CRLF Injection in Multipart Headers",
+      "severity": "P2",
+      "category": "CVE-Injection",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "escalation_trigger": "injection",
+      "affected": ["Source/Backend (transitive)"],
+      "vulnerable_range": ">=4.0.0 <4.0.6",
+      "fixed_version": ">=4.0.6",
+      "immediate_mitigation": "npm audit fix in Source/Backend",
+      "guardians_task": "Determine if form-data is called with user-controlled field names or filenames in any production request path.",
+      "failure_scenario": "Attacker uses user-controlled multipart field names to inject CRLF sequences into HTTP headers, enabling request smuggling."
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "GET /api/search Route Not Mounted in app.ts",
+      "severity": "P1",
+      "category": "correctness",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route": "TheFixer",
+      "file": "Source/Backend/src/app.ts",
+      "related_file": "Source/Backend/tests/routes/search.test.ts",
+      "spec_ref": "FR-dependency-search",
+      "failure_scenario": "GET /api/search returns 404. DependencyPicker typeahead returns no results. Users cannot link work-item blockers.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts, mount in app.ts with app.use('/api', searchRouter), confirm search tests pass.",
+      "effort": "small"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "dev-workflow-platform.md (69 FRs) Has Zero Source Coverage — Divergence Undocumented",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route": "TheFixer",
+      "file": "Specifications/dev-workflow-platform.md",
+      "failure_scenario": "Developers consulting the primary spec are misled. Spec defines FeatureRequest/BugReport entities; source implements WorkItem domain. Onboarding and audits are unreliable.",
+      "recommendation": "Add a 'Spec Authority' note to CLAUDE.md. Label FR-001..069 as Phase 2 in dev-workflow-platform.md, or confirm WorkItem domain as the canonical model.",
+      "effort": "small (documentation only)"
+    },
+    {
+      "id": "QO-003",
+      "title": "FR-TMP-001..010 (Tiered Merge Pipeline) Fully Unimplemented",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route": "TheFixer",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "failure_scenario": "10 requirements (risk classification, Playwright E2E generation, auto-PR, AI review, auto-merge) are specified but produce no deliverable. Sprint gaps are silent.",
+      "recommendation": "Add Plans/tiered-merge-pipeline/requirements.md and classify FR-TMP-* as Phase 2, or assign to TheATeam.",
+      "effort": "medium"
+    },
+    {
+      "id": "QO-004",
+      "title": "Traceability Enforcer Only Checks Most-Recent Plan — 80+ FRs Invisible",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route": "TheFixer",
+      "file": "tools/traceability-enforcer.py",
+      "failure_scenario": "A coder ships without FR-dependency-* Verifies comments and the gate still passes. Regressions in dependency functionality are undetected.",
+      "recommendation": "Add --all flag to run enforcer against every requirements.md under Plans/, or invoke it per-plan in CI.",
+      "effort": "small"
+    },
+    {
+      "id": "QO-005",
+      "title": "FR-WF-013 (Observability) Has No Test Verifies Comment",
+      "severity": "P2",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route": "TheFixer",
+      "file": "Source/Backend/tests/routes/metrics.test.ts",
+      "spec_ref": "FR-WF-013",
+      "failure_scenario": "A change that silently disables logging or breaks the Prometheus registry passes the test gate. Observability regressions undetected.",
+      "recommendation": "Add // Verifies: FR-WF-013 to metrics.test.ts + assertions verifying GET /metrics returns 200 with metric counters.",
+      "effort": "small"
+    },
+    {
+      "id": "QO-006",
+      "title": "Silent Error Swallow in api/client.ts:26 — Violates Architecture Rule",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route": "TheFixer",
+      "file": "Source/Frontend/src/api/client.ts",
+      "line": 26,
+      "failure_scenario": "Backend returns non-JSON body (e.g., proxy HTML error). Client silently returns {} to callers, discarding the actual error. Debugging becomes impossible.",
+      "recommendation": "Replace catch(() => ({})) with catch(err => { logger.error('JSON parse failed', err); throw err; }) or add a justification comment if intentional.",
+      "effort": "small"
+    },
+    {
+      "id": "DEP-002",
+      "title": "brace-expansion <=1.1.17 — Quadratic DoS via OOM",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": ["brace-expansion <1.1.18"],
+      "affected": ["Source/Backend (transitive)"],
+      "cvss": 7.5,
+      "fixed_version": ">=1.1.18",
+      "recommendation": "cd Source/Backend && npm audit fix",
+      "effort": "trivial"
+    },
+    {
+      "id": "DEP-003",
+      "title": "browserslist <=4.28.6 — Unbounded Memory Growth + Crash",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": ["browserslist <=4.28.6"],
+      "affected": ["Source/Frontend (transitive)"],
+      "cvss": 7.5,
+      "fixed_version": ">=4.28.9",
+      "recommendation": "cd Source/Frontend && npm audit fix",
+      "effort": "trivial"
+    },
+    {
+      "id": "DEP-005",
+      "title": "js-yaml >=3.0.0 <3.15.2 — Quadratic CPU Exhaustion on Malformed YAML",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": ["js-yaml <3.15.2"],
+      "affected": ["Source/Backend (transitive via build tools)"],
+      "cvss": 7.5,
+      "fixed_version": ">=3.15.2",
+      "recommendation": "cd Source/Backend && npm audit fix",
+      "effort": "trivial"
+    },
+    {
+      "id": "DEP-006",
+      "title": "uuid <11.1.1 — Buffer Bounds Check Missing (Direct Dependency)",
+      "severity": "P2",
+      "category": "CVE-Memory",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": ["uuid@9.0.0 (Backend)", "uuid@9.0.1 (Frontend)"],
+      "fixed_version": ">=11.1.1",
+      "recommendation": "cd Source/Backend && npm install uuid@latest; cd Source/Frontend && npm install uuid@latest",
+      "effort": "small (direct dep, may need API compatibility check)"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "title": "Two eslint-disable-next-line react-hooks/exhaustive-deps Suppressions Without Justification",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "route": "TheFixer",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "recommendation": "Add inline justification comments or add missing deps to the dependency arrays.",
+      "effort": "small"
+    },
+    {
+      "id": "DEP-007",
+      "title": "@remix-run/router >=1.3.0 <1.23.3 — Open Redirect via Protocol-Relative URL",
+      "severity": "P3",
+      "category": "CVE-Redirect",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": ["@remix-run/router (via react-router-dom@6)"],
+      "cvss_label": "moderate",
+      "fixed_version": ">=1.23.3 (via react-router-dom@7)",
+      "recommendation": "Upgrade react-router-dom to v7.",
+      "effort": "medium (major version bump, test routing thoroughly)"
+    },
+    {
+      "id": "DEP-008",
+      "title": "@vitest/mocker Path Traversal / Arbitrary File Read (Test Environment)",
+      "severity": "P3",
+      "category": "CVE-Traversal",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": ["@vitest/mocker >=2.1.0 <4.1.11"],
+      "cvss": 5.9,
+      "fixed_version": ">=5.0.0",
+      "note": "Test environment only — production code not affected",
+      "recommendation": "Upgrade vitest to >=5.0.0 in Source/Frontend devDependencies.",
+      "effort": "medium"
+    },
+    {
+      "id": "DEP-009",
+      "title": "Cluster: qs DoS, @babel/core File Read, body-parser DoS, baseline-browser-mapping Crash",
+      "severity": "P3",
+      "category": "CVE-cluster",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": ["qs", "@babel/core", "body-parser", "baseline-browser-mapping"],
+      "recommendation": "npm audit fix resolves most. Monitor next maintenance cycle.",
+      "effort": "trivial"
+    },
+    {
+      "id": "DEP-010",
+      "title": "Outdated Major Versions — express 4→5, pino 8→10, react-router-dom 6→7",
+      "severity": "P3",
+      "category": "outdated",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "route": "TheFixer",
+      "packages": {
+        "backend": ["express@4 → 5.2.1", "pino@8 → 10.3.1", "uuid@9 → 14.0.2"],
+        "frontend": ["react@18 → 19.3.0", "react-dom@18 → 19.3.0", "react-router-dom@6 → 7.18.3"]
+      },
+      "recommendation": "Schedule major-version migration sprint. Priority: react-router-dom@7 (contains CVE fix DEP-007).",
+      "effort": "large (breaking changes; dedicated sprint)"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "No npm audit fix run",
+      "findings": ["DEP-002", "DEP-003", "DEP-004", "DEP-005"],
+      "single_fix": "npm audit fix in Source/Backend && Source/Frontend",
+      "impact": "Resolves 4 P2 CVEs and most remaining moderate CVEs"
+    },
+    {
+      "root_cause": "Undocumented strategic spec divergence",
+      "findings": ["QO-002", "QO-003", "QO-004"],
+      "single_fix": "Add Spec Authority note to CLAUDE.md + --all flag to traceability enforcer",
+      "impact": "Resolves 3 P2 findings, makes CI gate accurate"
+    },
+    {
+      "root_cause": "Direct dependency staleness",
+      "findings": ["DEP-006", "DEP-007"],
+      "single_fix": "npm install uuid@latest && npm install react-router-dom@7",
+      "impact": "Resolves 1 P2 + 1 P3; router upgrade also fixes open redirect CVE"
+    }
+  ],
+  "grading": {
+    "thresholds": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": {"max_p1": 999}
+    },
+    "actual": {
+      "p1": 2,
+      "p2": 10,
+      "spec_coverage_pct": 27
+    },
+    "grade": "D",
+    "reason": "P1=2 (at C limit) and P2=10 (within C limit) but spec_coverage=27% fails C minimum of 40%"
+  }
+}

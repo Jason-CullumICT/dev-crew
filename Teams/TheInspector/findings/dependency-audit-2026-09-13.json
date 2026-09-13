@@ -1,0 +1,293 @@
+{
+  "audit_metadata": {
+    "date": "2026-09-13",
+    "auditor": "dependency-auditor",
+    "projects_scanned": 6,
+    "package_managers_detected": ["npm"],
+    "overall_grade": "C",
+    "grade_rationale": "Multiple critical CVEs (protobufjs, handlebars, vitest) + 35 high-severity vulnerabilities requiring immediate remediation"
+  },
+  "vulnerability_summary": {
+    "critical": 5,
+    "high": 35,
+    "moderate": 57,
+    "low": 6,
+    "total": 103,
+    "projects_affected": 6,
+    "projects_clean": 0
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "protobufjs",
+      "severity": "critical",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "title": "Arbitrary Code Execution via Malformed Protobuf Message",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "affected_versions": "<7.5.5",
+      "fix": "npm install protobufjs@^7.5.5 --force",
+      "timeline_days": 1,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "handlebars",
+      "severity": "critical",
+      "cvss": 8.0,
+      "cve": "GHSA-765h-jf2j-89j8",
+      "title": "JavaScript Injection via AST Type Confusion in @partial-block",
+      "affected_projects": ["Source/Backend"],
+      "affected_versions": "<=4.7.x",
+      "fix": "npm install handlebars@^4.7.8 --save",
+      "timeline_days": 1,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "vitest",
+      "severity": "critical",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "title": "Path Traversal / Arbitrary File Read in @vitest/mocker",
+      "affected_projects": ["portal/Backend", "portal/Frontend"],
+      "affected_versions": "<4.1.11",
+      "fix": "npm install vitest@^2.0.0 --save-dev",
+      "timeline_days": 1,
+      "risk": "Can read .env files and secrets during test execution",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "brace-expansion",
+      "severity": "high",
+      "count": 4,
+      "title": "Multiple DoS Vulnerabilities (Process Hang, OOM)",
+      "affected_projects": ["Source/Backend"],
+      "timeline_days": 7,
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"]
+    },
+    {
+      "id": "DEP-005",
+      "package": "browserslist",
+      "severity": "high",
+      "count": 2,
+      "title": "Unbounded Memory Growth (OOM) + Prototype Pollution",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "timeline_days": 7,
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"]
+    },
+    {
+      "id": "DEP-006",
+      "package": "form-data",
+      "severity": "high",
+      "title": "CRLF Injection in Multipart Field Names",
+      "affected_projects": ["Source/Backend", "portal/Backend", "portal/Frontend"],
+      "timeline_days": 14
+    },
+    {
+      "id": "DEP-007",
+      "package": "vite",
+      "severity": "high",
+      "title": "Path Traversal in Optimized Deps `.map` Handling",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "timeline_days": 7,
+      "is_direct": true
+    },
+    {
+      "id": "DEP-008",
+      "package": "postcss",
+      "severity": "high",
+      "title": "XSS via Unescaped </style> in CSS Stringify",
+      "affected_projects": ["portal/Frontend", "Source/Frontend"],
+      "timeline_days": 7,
+      "is_direct": true
+    },
+    {
+      "id": "DEP-009",
+      "package": "path-to-regexp",
+      "severity": "high",
+      "title": "Regular Expression Denial of Service (ReDoS)",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "timeline_days": 7
+    },
+    {
+      "id": "DEP-010",
+      "package": "@grpc/grpc-js",
+      "severity": "high",
+      "count": 2,
+      "title": "Server Crash via Malformed Requests / Compressed Messages",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "timeline_days": 7
+    },
+    {
+      "id": "DEP-011",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "severity": "high",
+      "title": "Prometheus Exporter Process Crash",
+      "affected_projects": ["portal/Backend"],
+      "timeline_days": 7,
+      "is_direct": true
+    },
+    {
+      "id": "DEP-012",
+      "package": "nanoid",
+      "severity": "high",
+      "title": "Non-Secure Generators Can Loop Indefinitely",
+      "affected_projects": ["portal/Backend", "portal/Frontend"],
+      "timeline_days": 7
+    },
+    {
+      "id": "DEP-013",
+      "package": "@remix-run/router",
+      "severity": "high",
+      "title": "Open Redirect via Protocol-Relative URL",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "timeline_days": 14
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "id": "DEP-018",
+      "package": "express",
+      "current": "4.18.2",
+      "wanted": "4.22.2",
+      "latest": "5.2.1",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "priority": "medium",
+      "note": "Express 5.x has breaking changes; recommend 4.x patch first, then plan 5.x migration"
+    },
+    {
+      "id": "DEP-019",
+      "package": "pino",
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.3.1",
+      "affected_projects": ["Source/Backend"],
+      "priority": "medium",
+      "major_versions_behind": 2
+    },
+    {
+      "id": "DEP-020",
+      "package": "uuid",
+      "current": "9.0.0",
+      "wanted": "9.0.1",
+      "latest": "14.0.2",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "priority": "low",
+      "note": "Very outdated but low functional risk; stable package"
+    },
+    {
+      "id": "DEP-021",
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "priority": "medium",
+      "note": "React 19 has new APIs; requires code migration planning"
+    },
+    {
+      "id": "DEP-022",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.3",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "priority": "medium",
+      "note": "React Router 7 requires React 16.8+; breaking API changes"
+    }
+  ],
+  "dependency_tree_analysis": {
+    "Source/Backend": {
+      "direct_dependencies": 13,
+      "total_packages": 412,
+      "health": "moderate",
+      "notes": "High transitive count due to dev dependencies; within safe bounds"
+    },
+    "Source/Frontend": {
+      "direct_dependencies": 13,
+      "total_packages": 231,
+      "health": "healthy",
+      "notes": "Reasonable size for modern React app"
+    },
+    "Source/E2E": {
+      "direct_dependencies": 1,
+      "total_packages": 5,
+      "health": "healthy",
+      "notes": "Minimal footprint; only Playwright"
+    },
+    "platform/orchestrator": {
+      "direct_dependencies": 3,
+      "total_packages": 150,
+      "health": "healthy",
+      "notes": "Small focused project"
+    },
+    "portal/Backend": {
+      "direct_dependencies": 9,
+      "total_packages": 450,
+      "health": "moderate",
+      "notes": "High transitive count; mostly from OpenTelemetry auto-instrumentation"
+    },
+    "portal/Frontend": {
+      "direct_dependencies": 9,
+      "total_packages": 240,
+      "health": "moderate",
+      "notes": "Reasonable for React + dev tools"
+    }
+  },
+  "license_compliance": {
+    "violations": 0,
+    "status": "compliant",
+    "licenses_found": ["MIT", "Apache-2.0", "ISC"],
+    "notes": "All permissive licenses; no GPL/AGPL exposure"
+  },
+  "abandoned_dependencies": {
+    "count": 0,
+    "status": "none_detected",
+    "notes": "All dependencies are actively maintained"
+  },
+  "action_plan": {
+    "immediate": {
+      "days": 1,
+      "items": [
+        "Fix protobufjs CVE in platform/orchestrator and portal/Backend",
+        "Fix vitest CVE in portal/Backend and portal/Frontend",
+        "Fix brace-expansion CVE in Source/Backend",
+        "Fix browserslist CVE in Source/Frontend and portal/Frontend"
+      ]
+    },
+    "this_week": {
+      "days": 7,
+      "items": [
+        "Fix path-to-regexp, @grpc/grpc-js, vite, postcss, form-data, nanoid",
+        "Run full test suite to verify no regressions",
+        "Test in staging environment"
+      ]
+    },
+    "next_sprint": {
+      "days": 30,
+      "items": [
+        "Plan React 18.x patch updates",
+        "Begin planning React 19.x and React Router 7.x migrations",
+        "Audit all new dependencies for CVEs"
+      ]
+    }
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": ["protobufjs", "handlebars", "vitest"],
+      "reason": "Arbitrary code execution, template injection, secret exposure"
+    }
+  ],
+  "metrics": {
+    "total_vulnerabilities": 103,
+    "critical_count": 5,
+    "high_count": 35,
+    "moderate_count": 57,
+    "low_count": 6,
+    "cves_requiring_immediate_fix": 3,
+    "estimated_fix_hours": 16,
+    "next_audit_recommended_days": 30
+  }
+}

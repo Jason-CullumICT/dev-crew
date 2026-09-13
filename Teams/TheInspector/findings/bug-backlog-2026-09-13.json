@@ -1,0 +1,313 @@
+{
+  "audit_id": "run-20260913-072900",
+  "audit_date": "2026-09-13",
+  "branch": "audit/inspector-2026-09-13-aed3a2",
+  "grade": "D",
+  "grade_rationale": "4 P1 findings (exceeds C-grade threshold of 2); spec coverage 12.1% (below 40% minimum); 14 P2 findings across quality and dependency dimensions",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend service not reachable at http://localhost:3001 (static mode only)",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 14,
+    "p3_total": 60,
+    "p4_total": 6,
+    "escalated_to_guardians": 3,
+    "spec_coverage_pct": 12.1,
+    "active_plan_coverage_pct": 100,
+    "total_cves": 103
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary Code Execution via Malformed Protobuf Message",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "fix": "npm install protobufjs@^7.5.5 --force",
+      "escalation_target": "TheGuardians",
+      "escalation_trigger": "injection / arbitrary code execution",
+      "timeline_days": 1
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "package": "handlebars",
+      "cve": "GHSA-765h-jf2j-89j8",
+      "cvss": 8.0,
+      "title": "JavaScript Template Injection via AST Type Confusion",
+      "affected_projects": ["Source/Backend"],
+      "fix": "npm install handlebars@^4.7.8 --save",
+      "escalation_target": "TheGuardians",
+      "escalation_trigger": "injection",
+      "timeline_days": 1
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "package": "vitest (@vitest/mocker)",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "title": "Path Traversal / Arbitrary .env File Read during Test Execution",
+      "affected_projects": ["portal/Backend", "portal/Frontend"],
+      "fix": "npm install vitest@^2.0.0 --save-dev",
+      "escalation_target": "TheGuardians",
+      "escalation_trigger": "sensitive data exposed",
+      "timeline_days": 1
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "source": "quality-oracle",
+      "category": "untested / spec-drift",
+      "title": "GET /api/search not implemented — DependencyPicker broken at runtime",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/tests/routes/search.test.ts",
+        "Source/Frontend/src/api/client.ts:101-104",
+        "Source/Frontend/src/components/DependencyPicker.tsx:54"
+      ],
+      "failure_scenario": "User opens DependencyPicker and types a search query. Frontend calls GET /api/search?q=… Backend returns 404 — no handler registered. Picker shows no results; dependency links cannot be set via search.",
+      "recommendation": "Add search route in Source/Backend/src/routes/workItems.ts (or new search.ts), wire into app.ts, confirm search.test.ts passes.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer blind to Specifications/ — false-green coverage gate",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Add --specs-dir mode to enforcer, or add status frontmatter to spec files so enforcer can skip non-active specs.",
+      "route_to": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "dev-workflow-platform.md — 69 FRs describe an unbuilt system",
+      "file": "Specifications/dev-workflow-platform.md:337-459",
+      "recommendation": "Add 'status: roadmap' banner or move to Specifications/Roadmap/.",
+      "route_to": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR-dependency-* IDs used across two incompatible domain models",
+      "files": [
+        "Specifications/dev-workflow-platform.md:461-482",
+        "Source/Backend/src/services/dependency.ts",
+        "Source/Backend/tests/routes/dependencies.test.ts"
+      ],
+      "recommendation": "Update dev-workflow-platform.md dependency section to reflect actual implementation, or create Specifications/dependency-tracking.md.",
+      "route_to": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "tiered-merge-pipeline.md — 10 FR-TMP requirements with zero implementation",
+      "file": "Specifications/tiered-merge-pipeline.md:15-134",
+      "recommendation": "Add 'status: roadmap' frontmatter or move to Specifications/Roadmap/.",
+      "route_to": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "brace-expansion — 4 DoS CVEs (Process Hang, OOM)",
+      "affected_projects": ["Source/Backend"],
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "browserslist — Unbounded Memory Growth (OOM) + Prototype Pollution",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "form-data — CRLF Injection in Multipart Field Names",
+      "affected_projects": ["Source/Backend", "portal/Backend", "portal/Frontend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "vite — Path Traversal in Optimized Deps .map Handling",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "postcss — XSS via Unescaped </style> in CSS Stringify",
+      "affected_projects": ["portal/Frontend", "Source/Frontend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "path-to-regexp — Regular Expression Denial of Service (ReDoS)",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "@grpc/grpc-js — Server Crash via Malformed/Compressed Requests",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "@opentelemetry/auto-instrumentations-node — Prometheus Exporter Process Crash",
+      "affected_projects": ["portal/Backend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "nanoid — Non-Secure Generator Infinite Loop",
+      "affected_projects": ["portal/Backend", "portal/Frontend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "@remix-run/router — Open Redirect via Protocol-Relative URL",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "test-coverage",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Delete root-level duplicates; keep tests/pages/ versions.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "eslint-disable-next-line react-hooks/exhaustive-deps without explanation",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "recommendation": "Fix dependency arrays or add explanatory comment for each suppression.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "category": "test-coverage",
+      "title": "search.test.ts contains self-documented known-failing tests in CI",
+      "file": "Source/Backend/tests/routes/search.test.ts:11-15",
+      "recommendation": "Convert to test.todo() or implement the route (see QO-001).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-BULK",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "57 moderate-severity CVEs across 6 projects",
+      "note": "See Teams/TheInspector/findings/dependency-audit-2026-09-13.md for full list",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-P4-BULK",
+      "severity": "P4",
+      "source": "dependency-auditor",
+      "category": "dependency-vulnerability",
+      "title": "6 low-severity CVEs across projects",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "fixed_findings": [],
+  "prior_audit": null,
+  "positive_signals": [
+    "FR-WF-001 through FR-WF-013: 100% traceability on active plan",
+    "No console.log in production backend source",
+    "No empty catch blocks — all errors re-thrown or logged with context",
+    "No hardcoded secrets in source",
+    "No files exceeding 500 lines",
+    "Structured JSON logging fully wired (FR-WF-013)",
+    "Prometheus metrics for all domain-significant operations",
+    "Dependency cycle detection (BFS) implemented and tested",
+    "License compliance: 100% MIT/Apache-2.0/ISC",
+    "No abandoned dependencies detected",
+    "Source/E2E: 0 CVEs (clean)"
+  ]
+}

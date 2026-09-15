@@ -1,0 +1,337 @@
+{
+  "audit_id": "run-20260915-074233",
+  "audit_date": "2026-09-15",
+  "branch": "audit/inspector-2026-09-15-2d6a78",
+  "overall_grade": "D",
+  "grade_rationale": "5 P1 findings exceed the C threshold (max_p1=2). 33 P2 findings also exceed C threshold (max_p2=15). Spec coverage of active plan is 100% (satisfies minimum), but P1 count alone forces grade D.",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 33,
+    "p3_total": 3,
+    "p4_total": 0,
+    "total_findings": 41,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend and frontend services were down at audit time — dynamic specialists require live services",
+    "spec_coverage_active": "100%",
+    "test_gate_backend": { "pass": 164, "fail": 5, "status": "FAIL" },
+    "test_gate_frontend": { "pass": 135, "fail": 0, "status": "PASS" }
+  },
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "correctness",
+      "title": "GET /api/search not implemented — DependencyPicker typeahead broken in production",
+      "file": "Source/Backend/src/app.ts",
+      "line": 44,
+      "detail": "FR-dependency-search: the search route is not registered. DependencyPicker calls GET /api/search?q=… on every keystroke and receives 404. 5 tests in tests/routes/search.test.ts all fail.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts, implement handler scanning workItemStore.findAll() for title/description matches filtering soft-deleted items. Register in app.ts as app.use('/api', searchRouter). Tests already written.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "CVE — RCE",
+      "title": "protobufjs — Arbitrary Code Execution (CVSS 9.8)",
+      "file": "platform/orchestrator/package.json",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "detail": "Untrusted protobuf deserialization triggers RCE. Infrastructure-level: orchestrator manages all agent pipelines. Fix: npm update protobufjs@latest in platform/orchestrator.",
+      "recommendation": "cd platform/orchestrator && npm update protobufjs@latest. Block all deployments until patched.",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "escalate": true,
+      "escalate_reason": "RCE — infrastructure-level code execution"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "CVE — File Disclosure + RCE",
+      "title": "vitest — File Disclosure + Remote Code Execution (CVSS 9.1)",
+      "file": "portal/Frontend/package.json",
+      "cve": "GHSA-r9bx-mhh7-3q2q",
+      "cvss": 9.1,
+      "detail": "vitest UI server exposes filesystem and allows RCE if accessible from untrusted network. Fix: npm update vitest@latest + disable UI in production.",
+      "recommendation": "cd portal/Frontend && npm update vitest@latest. Add --no-ui flag or disable in vitest.config.ts for any shared/CI environment.",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "escalate": true,
+      "escalate_reason": "File disclosure + RCE — test infrastructure"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "CVE — Injection",
+      "title": "handlebars — JavaScript Injection via Template AST (CVSS 8.6)",
+      "file": "Source/Backend/package.json",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "cvss": 8.6,
+      "detail": "AST tampering in Handlebars allows attacker-controlled template content to execute arbitrary JavaScript in the backend process. Fix: npm update handlebars@>=4.7.9.",
+      "recommendation": "cd Source/Backend && npm update 'handlebars@>=4.7.9'. Verify no user-controlled content reaches Handlebars template compilation.",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "escalate": true,
+      "escalate_reason": "Template injection — server-side code execution risk"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "CVE — DoS",
+      "title": "@grpc/grpc-js — Denial of Service via Malformed gRPC Messages (CVSS 7.5)",
+      "file": "platform/orchestrator/package.json + portal/Backend/package.json",
+      "cve": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "cvss": 7.5,
+      "detail": "Malformed or over-compressed gRPC messages crash the server. Zero-precondition — any network-reachable attacker can trigger complete availability loss for orchestrator and portal backend.",
+      "recommendation": "npm update '@grpc/grpc-js@>=1.14.4' in both platform/orchestrator and portal/Backend.",
+      "status": "NEW",
+      "route": "TheGuardians",
+      "escalate": true,
+      "escalate_reason": "DoS — zero-precondition crash of infrastructure"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift / architecture-violation",
+      "title": "OpenTelemetry tracing absent — FR-021 and architecture rule violated",
+      "file": "Source/Backend/src/",
+      "detail": "No @opentelemetry imports anywhere in Source/Backend. Architecture rule (CLAUDE.md) and FR-021 require OTel distributed tracing. Structured logging and metrics exist but tracing is entirely absent.",
+      "recommendation": "Add @opentelemetry/sdk-node + @opentelemetry/auto-instrumentations-node. Bootstrap in tracing.ts loaded before app.ts. Add custom spans for assessment pod and workflow dispatch paths. Propagate W3C traceparent in outbound calls.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "Traceability enforcer auto-selects wrong spec file — 3 subsystem specs invisible to gate",
+      "file": "tools/traceability-enforcer.py",
+      "line": 44,
+      "detail": "Enforcer picks most-recently-modified requirements.md (self-judging-workflow) and reports PASS. This hides dev-workflow-platform.md (76 FRs, portal/) and tiered-merge-pipeline.md (10 FRs, platform/) from verification. Cross-ref: QO-004.",
+      "recommendation": "Add enforcer_files list to inspector.config.yml. Update enforcer to accept --dirs flag for multi-subsystem scanning.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "workflow-engine.md canonical domain spec has no FR IDs — traceability unenforced",
+      "file": "Specifications/workflow-engine.md",
+      "detail": "Primary domain spec has rich prose but zero FR-XXX identifiers. Enforcer reports 'No FR IDs found'. Implementation traces to plan file (FR-WF-*) rather than canonical domain spec. Cross-ref: QO-003.",
+      "recommendation": "Add FR-WF-001 through FR-WF-013 identifiers to workflow-engine.md sections matching the plan, or add a mapping block at the top.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-H01",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE — CRLF injection",
+      "title": "form-data CRLF injection (GHSA-hmw2-7cc7-3qxx) — affects 4 projects",
+      "file": "Source/Backend, portal/Backend, Source/Frontend, portal/Frontend",
+      "detail": "CRLF injection via form-data headers in multipart requests. Affects 4 workspaces. Fix: npm update form-data@>=4.0.6 in each.",
+      "recommendation": "for dir in Source/Backend Source/Frontend portal/Backend portal/Frontend; do cd $dir && npm update form-data; done",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-H02",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE — memory exhaustion",
+      "title": "browserslist memory exhaustion DoS (GHSA-c83g-rgw3-j3cx) — affects all builds",
+      "file": "All 6 workspaces",
+      "detail": "Malformed browser query triggers unbounded memory allocation in browserslist, causing build/test OOM. Affects all projects that use browserslist in their build tools.",
+      "recommendation": "npm update browserslist@>=4.28.7 in all workspaces.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-H03",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE — path traversal",
+      "title": "vite dev server path traversal",
+      "file": "Source/Frontend, portal/Frontend",
+      "detail": "vite dev server allows path traversal to serve files outside the project root. Risk in any shared or CI environment where vite is exposed.",
+      "recommendation": "npm update vite in Source/Frontend and portal/Frontend.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-H04",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE — XSS",
+      "title": "postcss XSS in CSS parsing",
+      "file": "Source/Frontend, portal/Frontend",
+      "detail": "Malformed CSS input triggers XSS via postcss output. Fix: npm update postcss.",
+      "recommendation": "npm update postcss in Source/Frontend and portal/Frontend.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-H05",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE — loop DoS",
+      "title": "nanoid loop DoS",
+      "file": "Source/Frontend, portal/Frontend",
+      "detail": "Certain nanoid inputs trigger an infinite loop. Fix: npm update nanoid.",
+      "recommendation": "npm update nanoid in Source/Frontend and portal/Frontend.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-H06-H30",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE — high severity",
+      "title": "25 additional high-severity CVEs — primarily in portal/Backend",
+      "file": "portal/Backend (10), Source/Frontend (5), portal/Frontend (7), others",
+      "detail": "See Teams/TheInspector/findings/dependency-audit-2026-09-15.md for full listing. Portal/Backend has largest cluster (10 high-severity CVEs across 577 transitive deps).",
+      "recommendation": "Run npm audit --json in portal/Backend and triage by CVSS score. Patch in descending severity order. See Teams/TheInspector/findings/dependency-audit-2026-09-15.md.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppresses react-hooks/exhaustive-deps in 2 production hooks",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "detail": "Stale closure bugs hidden by eslint-disable comments. Architecture rule: no disabled linting rules.",
+      "recommendation": "Audit both locations. Wrap stable values in useCallback or use refs. Remove suppress comments.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "CRUD route handlers access workItemStore directly — no service layer",
+      "files": ["Source/Backend/src/routes/workItems.ts", "Source/Backend/src/routes/intake.ts"],
+      "detail": "Architecture rule: no direct DB calls from route handlers. workItems.ts and intake.ts import workItemStore directly. workflow.ts correctly uses service layer. Cross-ref: QO-001 (search route should also use a service).",
+      "recommendation": "Create Source/Backend/src/services/workItemService.ts wrapping store operations. Update workItems.ts and intake.ts to import from service.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "simplification",
+      "title": "Duplicate logger abstraction — compat shim and canonical both exist",
+      "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "detail": "Two logger interfaces for the same thing. src/logger.ts is a compat re-export wrapper around src/utils/logger.ts. New files importing from either path get different call signatures.",
+      "recommendation": "Pick one canonical path. Delete the compat shim. Migrate all import paths. Verify tests still pass.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    }
+  ],
+  "p4_findings": [],
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "target": "TheGuardians",
+      "reason": "P1 RCE (CVSS 9.8) — protobufjs deserialization in platform/orchestrator",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "urgency": "IMMEDIATE"
+    },
+    {
+      "id": "DEP-002",
+      "target": "TheGuardians",
+      "reason": "P1 File Disclosure + RCE (CVSS 9.1) — vitest UI in portal/Frontend",
+      "cve": "GHSA-r9bx-mhh7-3q2q",
+      "urgency": "Within 24 hours"
+    },
+    {
+      "id": "DEP-003",
+      "target": "TheGuardians",
+      "reason": "P1 Template injection (CVSS 8.6) — handlebars in Source/Backend",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "urgency": "Within 24 hours"
+    },
+    {
+      "id": "DEP-004",
+      "target": "TheGuardians",
+      "reason": "P1 DoS (CVSS 7.5) — @grpc/grpc-js in platform/orchestrator + portal/Backend",
+      "cve": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "urgency": "Within 48 hours"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Traceability tooling incomplete",
+      "findings": ["QO-003", "QO-004"],
+      "single_fix": "Add FR-WF-* IDs to workflow-engine.md + update enforcer for multi-target mode"
+    },
+    {
+      "root_cause": "Stale platform/orchestrator dependencies",
+      "findings": ["DEP-001", "DEP-004 (partial)"],
+      "single_fix": "cd platform/orchestrator && npm update protobufjs @grpc/grpc-js"
+    },
+    {
+      "root_cause": "Backend service layer missing",
+      "findings": ["QO-001", "QO-006"],
+      "single_fix": "Create workItemService.ts + searchService.ts — unifies store access, implements missing route"
+    },
+    {
+      "root_cause": "Frontend dev dep cluster",
+      "findings": ["DEP-002", "DEP-H03", "DEP-H04", "DEP-H05"],
+      "single_fix": "npm update vitest vite postcss nanoid in portal/Frontend and Source/Frontend"
+    }
+  ],
+  "fix_commands": {
+    "immediate": [
+      "cd platform/orchestrator && npm update protobufjs @grpc/grpc-js",
+      "cd portal/Frontend && npm update vitest",
+      "cd Source/Backend && npm update 'handlebars@>=4.7.9'",
+      "cd portal/Backend && npm update @grpc/grpc-js"
+    ],
+    "week_1": [
+      "for dir in Source/Backend Source/Frontend portal/Backend portal/Frontend; do cd $dir && npm update form-data browserslist; done",
+      "for dir in Source/Frontend portal/Frontend; do cd $dir && npm update vite postcss nanoid; done"
+    ],
+    "verify": [
+      "npm test --workspaces --if-present",
+      "npm audit --audit-level=high"
+    ]
+  },
+  "report_files": {
+    "html_report": "Teams/TheInspector/findings/audit-2026-09-15-D.html",
+    "bug_backlog": "Teams/TheInspector/findings/bug-backlog-2026-09-15.json",
+    "dependency_detail": "Teams/TheInspector/findings/dependency-audit-2026-09-15.md",
+    "dependency_summary": "Teams/TheInspector/findings/dependency-audit-summary-2026-09-15.json",
+    "quality_oracle_detail": "Teams/TheInspector/findings/audit-2026-09-15-B.md"
+  }
+}

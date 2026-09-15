@@ -1,0 +1,171 @@
+{
+  "date": "2026-09-15",
+  "project": "dev-crew",
+  "audit_type": "dependency",
+  "summary": {
+    "total_vulnerabilities": 103,
+    "critical": 5,
+    "high": 30,
+    "moderate": 58,
+    "low": 10
+  },
+  "packages_audited": [
+    {
+      "name": "Source/Backend",
+      "transitive": 412,
+      "prod": 102,
+      "dev": 310,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 3,
+        "low": 2
+      }
+    },
+    {
+      "name": "Source/Frontend",
+      "transitive": 230,
+      "prod": 9,
+      "dev": 222,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 5,
+        "moderate": 7,
+        "low": 1
+      }
+    },
+    {
+      "name": "Source/E2E",
+      "transitive": 4,
+      "prod": 4,
+      "dev": 0,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      }
+    },
+    {
+      "name": "portal/Backend",
+      "transitive": 577,
+      "prod": 397,
+      "dev": 181,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 10,
+        "moderate": 41,
+        "low": 1
+      }
+    },
+    {
+      "name": "portal/Frontend",
+      "transitive": 424,
+      "prod": 9,
+      "dev": 416,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 7,
+        "moderate": 6,
+        "low": 2
+      }
+    },
+    {
+      "name": "platform/orchestrator",
+      "transitive": 155,
+      "prod": 153,
+      "dev": 0,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 4,
+        "low": 1
+      }
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "protobufjs",
+      "severity": "P1",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "type": "Arbitrary Code Execution",
+      "location": "platform/orchestrator",
+      "cvss": 9.8,
+      "fix": "npm update protobufjs@latest"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "P1",
+      "cve": "GHSA-r9bx-mhh7-3q2q",
+      "type": "File Disclosure + RCE",
+      "location": "portal/Frontend",
+      "cvss": 9.1,
+      "fix": "npm update vitest@latest; disable UI in production"
+    },
+    {
+      "id": "DEP-003",
+      "package": "handlebars",
+      "severity": "P1",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "type": "JavaScript Injection",
+      "location": "Source/Backend",
+      "cvss": 8.6,
+      "fix": "npm update handlebars@>=4.7.9"
+    },
+    {
+      "id": "DEP-004",
+      "package": "@grpc/grpc-js",
+      "severity": "P1",
+      "cve": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "type": "Denial of Service",
+      "location": "platform/orchestrator, portal/Backend",
+      "cvss": 7.5,
+      "fix": "npm update @grpc/grpc-js@>=1.14.4"
+    }
+  ],
+  "licenses": {
+    "status": "PASS",
+    "notes": "No GPL/AGPL/SSPL licenses detected. All permissive (MIT, Apache-2.0, BSD)"
+  },
+  "abandoned_packages": {
+    "status": "PASS",
+    "notes": "No abandoned packages identified"
+  },
+  "supply_chain": {
+    "post_install_scripts": "PASS",
+    "single_maintainers": "PASS",
+    "recent_transfers": "PASS"
+  },
+  "recommendations": {
+    "immediate": [
+      "Update protobufjs in platform/orchestrator (RCE)",
+      "Update vitest in portal/Frontend (File disclosure)",
+      "Update handlebars in Source/Backend (Template injection)"
+    ],
+    "high_priority": [
+      "Update @grpc/grpc-js across all projects",
+      "Update form-data across all projects",
+      "Update browserslist across all projects",
+      "Update vite, postcss, nanoid in frontend projects"
+    ]
+  },
+  "escalations": [
+    {
+      "target": "TheGuardians",
+      "reason": "P1 RCE in protobufjs - infrastructure impact",
+      "ticket": "DEP-001"
+    },
+    {
+      "target": "TheGuardians",
+      "reason": "P1 File disclosure in vitest - test infrastructure",
+      "ticket": "DEP-002"
+    },
+    {
+      "target": "TheGuardians",
+      "reason": "P1 Template injection in handlebars",
+      "ticket": "DEP-003"
+    }
+  ]
+}

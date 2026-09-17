@@ -1,0 +1,41 @@
+{
+  "audit_id": "run-20260917-073822",
+  "date": "2026-09-17",
+  "branch": "audit/inspector-2026-09-17-2ccce3",
+  "grade": "C",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "totals": { "p1": 2, "p2": 8, "p3": 12, "p4": 3, "total": 25, "fixed": 0, "new": 25 },
+  "escalations": [
+    { "id": "DEP-001", "severity": "P1", "category": "cve", "title": "Handlebars.js JavaScript Injection via AST Type Confusion", "package": "handlebars@4.7.8", "file": "Source/Backend/package-lock.json", "cvss": 9.8, "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-xhpv-hc6g-r9c6"], "fix": "npm update handlebars@4.7.9+ (identify parent via npm why handlebars)", "escalate_to": "TheGuardians", "status": "NEW" },
+    { "id": "DEP-002", "severity": "P1", "category": "cve", "title": "Vitest UI Server — Arbitrary File Read / Code Execution", "package": "vitest@4.1.10", "file": "Source/Frontend/package.json", "cvss": 9.8, "cves": ["GHSA-5xrq-8626-4rwp", "GHSA-82fw-gwwq-j7x9"], "fix": "npm update vitest (target >=4.1.11 or 5.x)", "escalate_to": "TheGuardians", "status": "NEW" }
+  ],
+  "p2_findings": [
+    { "id": "QO-001", "severity": "P2", "category": "spec-drift", "specialist": "quality-oracle", "title": "Traceability enforcer blind to 7 of 8 plans", "file": "tools/traceability-enforcer.py", "fix": "Add --all-plans mode", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-002", "severity": "P2", "category": "spec-drift", "specialist": "quality-oracle", "title": "FR-dependency-api-types: blocked_by field missing", "file": "portal/Shared/api.ts:32,59", "fix": "Add blocked_by?: string[] to UpdateBugInput and UpdateFeatureRequestInput", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-003", "severity": "P2", "category": "spec-drift", "specialist": "quality-oracle", "title": "FR-dependency-seed: seed.ts missing", "file": "portal/Backend/src/database/", "fix": "Create seed.ts with 4 dependency relationships + idempotency guard", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "QO-004", "severity": "P2", "category": "untested", "specialist": "quality-oracle", "title": "FR-dependency-frontend-tests: DependencySection + BlockedBadge tests missing", "file": "portal/Frontend/tests/", "fix": "Create DependencySection.test.tsx and BlockedBadge.test.tsx", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-003", "severity": "P2", "category": "cve", "specialist": "dependency-auditor", "title": "Brace-Expansion DoS (CVSS 7.5)", "package": "brace-expansion@1.1.17", "fix": "npm update brace-expansion@1.1.18+", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-004", "severity": "P2", "category": "cve", "specialist": "dependency-auditor", "title": "Browserslist memory exhaustion (CVSS 7.5)", "package": "browserslist@4.28.6", "fix": "npm update browserslist@4.28.7+", "assign_to": "TheFixer", "status": "NEW" },
+    { "id": "DEP-005", "severity": "P2", "category": "cve", "specialist": "dependency-auditor", "title": "Form-Data CRLF injection (CVSS 7.5)", "package": "form-data@4.0.5", "fix": "npm update form-data@4.0.6+", "assign_to": "TheFixer", "escalation_note": "Escalate to TheGuardians if form field names are user-controlled", "status": "NEW" },
+    { "id": "DEP-006", "severity": "P2", "category": "cve", "specialist": "dependency-auditor", "title": "js-yaml quadratic CPU DoS (CVSS 7.5)", "package": "js-yaml@3.15.1", "fix": "npm update js-yaml@3.15.2+", "assign_to": "TheFixer", "escalation_note": "Escalate to TheGuardians if YAML parsed from user input", "status": "NEW" }
+  ],
+  "p3_p4_findings": [
+    { "id": "QO-005", "severity": "P3", "title": "Logger never pretty-prints in development", "file": "Source/Backend/src/utils/logger.ts" },
+    { "id": "QO-006", "severity": "P3", "title": "FR-WF-013 WF metrics have no explicit test", "file": "Source/Backend/tests/routes/metrics.test.ts" },
+    { "id": "QO-007", "severity": "P3", "title": "Error discrimination by string-matching", "file": "Source/Backend/src/routes/workflow.ts:330-348" },
+    { "id": "QO-008", "severity": "P3", "title": "Logger API inconsistency (workItemStore)", "file": "Source/Backend/src/store/workItemStore.ts:10" },
+    { "id": "DEP-007", "severity": "P3", "title": "Nanoid infinite loop (CVSS 7.4)", "package": "nanoid@3.3.17" },
+    { "id": "DEP-008", "severity": "P3", "title": "PostCSS path traversal (CVSS 7.5)", "package": "postcss@8.5.22" },
+    { "id": "DEP-009", "severity": "P3", "title": "Vite path traversal / fs.deny bypass (CVSS 7.5)", "package": "vite@6.4.2" },
+    { "id": "DEP-010", "severity": "P3", "title": "WebSocket memory exhaustion DoS (CVSS 7.5)", "package": "ws@8.20.1" },
+    { "id": "DEP-012", "severity": "P3", "title": "Express 4→5 outdated", "package": "express@4.18.2" },
+    { "id": "DEP-013", "severity": "P3", "title": "pino 8→10 outdated", "package": "pino@8.17.0" },
+    { "id": "DEP-014", "severity": "P3", "title": "uuid 9→14 outdated", "package": "uuid@9.0.0" },
+    { "id": "DEP-015", "severity": "P3", "title": "React 18→19 outdated", "package": "react@18.3.1" },
+    { "id": "DEP-016", "severity": "P3", "title": "react-router-dom 6→7 + redirect bypass", "package": "react-router-dom@6.30.6" },
+    { "id": "QO-009", "severity": "P4", "title": "eslint-disable suppressions without justification", "file": "useWorkItems.ts:63, DependencyPicker.tsx:82" },
+    { "id": "QO-010", "severity": "P4", "title": "12 of 20 plans lack requirements.md", "file": "Plans/" },
+    { "id": "DEP-011", "severity": "P4", "title": "Babel source map file read (CVSS 3.2)", "package": "@babel/core@7.29.0" }
+  ]
+}

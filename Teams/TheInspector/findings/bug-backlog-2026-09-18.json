@@ -1,0 +1,398 @@
+{
+  "audit_id": "run-20260918-072513",
+  "audit_date": "2026-09-18",
+  "branch": "audit/inspector-2026-09-18-25fd15",
+  "grade": "D",
+  "grade_rationale": "5 P1 findings (threshold for C is max 2; threshold for D is >2 P1s). 28 P2 findings (threshold for C is max 15).",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 28,
+    "p3_total": 23,
+    "p4_total": 5,
+    "spec_coverage_pct": 96,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend and frontend services offline at time of audit"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "injection",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion",
+      "package": "handlebars < 4.7.9",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "workspace": "Source/Backend",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "fix": "npm update handlebars (target >= 4.7.9)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "injection",
+      "title": "Vitest UI Server Arbitrary File Read & Code Execution",
+      "package": "vitest < 5.0.1",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "workspaces": ["Source/Frontend", "portal/Backend"],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "fix": "npm install vitest@^5.0.1 in Source/Frontend and portal/Backend; disable --ui flag in CI immediately",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "injection",
+      "title": "Protobufjs Arbitrary Code Execution via Deserialization",
+      "package": "protobufjs < 7.5.5",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "workspaces": ["platform/orchestrator", "portal/Backend"],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "fix": "npm update protobufjs (target >= 7.5.5) in platform/orchestrator and portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "injection",
+      "title": "form-data CRLF Injection (HTTP Request Smuggling)",
+      "package": "form-data 4.0.0-4.0.5",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "workspaces": ["Source/Frontend", "Source/Backend"],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "injection",
+      "fix": "npm update form-data (target >= 4.0.6)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010-P1",
+      "severity": "P1",
+      "category": "sensitive_data_exposed",
+      "title": "PostCSS Arbitrary File Read via sourceMappingURL",
+      "package": "postcss <= 8.5.22",
+      "cve": "GHSA-6g55-p6wh-862q",
+      "cvss": 7.5,
+      "workspaces": ["Source/Frontend", "Source/Backend"],
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "sensitive data exposed",
+      "fix": "npm update postcss (target >= 8.5.23)",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "missing-implementation",
+      "title": "GET /api/search unregistered — DependencyPicker broken in production",
+      "file": "Source/Backend/src/app.ts",
+      "requirement": "FR-dependency-search",
+      "description": "No search route exists in Source/Backend/src/routes/. The DependencyPicker component calls /api/search and receives a 404.",
+      "recommendation": "Create Source/Backend/src/routes/search.ts and register in app.ts",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "observability",
+      "title": "dependencyCheckDuration histogram missing from Source Backend",
+      "file": "Source/Backend/src/metrics.ts",
+      "requirement": "FR-dependency-metrics",
+      "recommendation": "Add dependencyCheckDuration histogram, wire around readiness/cascade calls",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-hygiene",
+      "title": "Specifications/ covers two architecturally distinct apps with no labeling",
+      "file": "Specifications/",
+      "recommendation": "Add 'Applies to:' header to each spec; map it in CLAUDE.md",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "tooling",
+      "title": "Enforcer auto-selects wrong plan; dependency-linking requirements never gate-checked",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Enumerate both --plan targets in CLAUDE.md; fix false-positive ID matching",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "traceability",
+      "title": "FR-TMP-001–010 (Tiered Merge Pipeline) have zero source traceability",
+      "file": "Source/E2E/playwright.pipeline.config.ts",
+      "recommendation": "Confirm whether FRs are implemented in platform/ (enforcer doesn't scan it) or not yet implemented",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-injection",
+      "title": "Handlebars multiple injection/DoS/XSS vectors",
+      "package": "handlebars 4.0.0-4.7.8",
+      "cvss_range": "4.7-8.2",
+      "workspaces": ["Source/Backend"],
+      "fix": "npm update handlebars (>= 4.7.9)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "title": "brace-expansion exponential expansion OOM",
+      "package": "brace-expansion < 1.1.18",
+      "cvss": 7.5,
+      "workspaces": ["Source/Backend"],
+      "fix": "npm update brace-expansion",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "title": "browserslist unbounded cache memory growth + prototype pollution",
+      "package": "browserslist <= 4.28.6",
+      "cvss": 7.5,
+      "workspaces": ["Source/Frontend", "Source/Backend"],
+      "fix": "npm update browserslist (>= 4.28.7)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-injection",
+      "title": "form-data CRLF injection (request smuggling)",
+      "package": "form-data 4.0.0-4.0.5",
+      "cvss": 7.5,
+      "workspaces": ["Source/Frontend", "Source/Backend"],
+      "fix": "npm update form-data (>= 4.0.6)",
+      "assign_to": "TheFixer",
+      "note": "Also escalated to TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "title": "js-yaml quadratic CPU consumption DoS",
+      "package": "js-yaml <= 3.15.1",
+      "cvss": 7.5,
+      "workspaces": ["Source/Backend"],
+      "fix": "npm update js-yaml (>= 3.15.2)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "title": "nanoid integer overflow + infinite loops",
+      "package": "nanoid <= 3.3.17",
+      "cvss": 7.4,
+      "workspaces": ["Source/Frontend"],
+      "fix": "npm update nanoid (>= 3.3.18)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-info-disclosure",
+      "title": "PostCSS arbitrary file read + XSS via source maps",
+      "package": "postcss <= 8.5.22",
+      "cvss": 7.5,
+      "workspaces": ["Source/Frontend", "Source/Backend"],
+      "fix": "npm update postcss (>= 8.5.23)",
+      "assign_to": "TheFixer",
+      "note": "Also escalated to TheGuardians as DEP-010-P1",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-path-traversal",
+      "title": "Vite server.fs.deny bypass on Windows alternate paths",
+      "package": "vite <= 6.4.2",
+      "cvss": 7.5,
+      "workspaces": ["Source/Frontend"],
+      "fix": "npm install vite@^6.5.0 (or 8.x major bump)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "title": "ws WebSocket memory exhaustion from tiny frames",
+      "package": "ws 8.0.0-8.20.1",
+      "cvss": 7.5,
+      "workspaces": ["Source/Frontend", "Source/Backend"],
+      "fix": "npm update ws (>= 8.21.0)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "title": "playwright.pipeline.config.ts hardcodes expired cycle directory",
+      "file": "Source/E2E/playwright.pipeline.config.ts:3",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "title": "Duplicate test files for WorkItemListPage and WorkItemDetailPage",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable suppressions without rationale (useWorkItems.ts, DependencyPicker.tsx)",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "title": "body-parser invalid limit silently disables size enforcement",
+      "package": "body-parser < 1.20.6",
+      "fix": "npm update body-parser",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "title": "@babel/core arbitrary file read via sourceMappingURL",
+      "package": "@babel/core <= 7.29.0",
+      "fix": "npm install @babel/core@^7.30.0",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "specialist": "dependency-auditor",
+      "title": "@remix-run/router open redirect via protocol-relative URL",
+      "package": "@remix-run/router 1.3.0-1.23.2",
+      "fix": "Upgrade react-router-dom",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-016",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "title": "handlebars property access validation bypass",
+      "package": "handlebars (fixed with >= 4.7.9 — same fix as DEP-001)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-017",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "title": "baseline-browser-mapping DoS on invalid input",
+      "package": "baseline-browser-mapping 2.0.0-2.11.0",
+      "fix": "npm update baseline-browser-mapping (>= 2.11.0)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-018",
+      "severity": "P4",
+      "specialist": "dependency-auditor",
+      "title": "@grpc/grpc-js server crash on malformed request",
+      "package": "@grpc/grpc-js 1.14.0-1.14.3",
+      "fix": "npm update @grpc/grpc-js (>= 1.14.4)",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "xref_id": "XREF-1",
+      "root_cause": "handlebars < 4.7.9 in Source/Backend transitive deps",
+      "linked_findings": ["DEP-001", "DEP-004", "DEP-016"],
+      "single_fix": "cd Source/Backend && npm update handlebars",
+      "fix_impact": "Resolves 3 findings across 1 workspace"
+    },
+    {
+      "xref_id": "XREF-2",
+      "root_cause": "vitest < 5.0.1 as direct dependency in 2 workspaces",
+      "linked_findings": ["DEP-002"],
+      "single_fix": "npm install vitest@^5.0.1 in Source/Frontend and portal/Backend",
+      "fix_impact": "Eliminates highest-risk CVE (CVSS 9.8) across 2 workspaces"
+    },
+    {
+      "xref_id": "XREF-3",
+      "root_cause": "postcss <= 8.5.22 in transitive deps for 2 workspaces",
+      "linked_findings": ["DEP-010", "DEP-010-P1"],
+      "single_fix": "npm update postcss across Source/Frontend and Source/Backend",
+      "fix_impact": "Resolves info disclosure + XSS in 2 workspaces"
+    },
+    {
+      "xref_id": "XREF-4",
+      "root_cause": "FR-dependency-search not implemented in Source/Backend",
+      "linked_findings": ["QO-001", "QO-002"],
+      "single_fix": "Create Source/Backend/src/routes/search.ts and register in app.ts",
+      "fix_impact": "Unblocks DependencyPicker and enables dependencyCheckDuration instrumentation"
+    },
+    {
+      "xref_id": "XREF-5",
+      "root_cause": "Traceability enforcer picks wrong plan; specs lack 'Applies to:' headers",
+      "linked_findings": ["QO-003", "QO-004", "QO-005"],
+      "single_fix": "Add 'Applies to:' to all 3 specs; enumerate --plan targets in CLAUDE.md",
+      "fix_impact": "Resolves 3 P2 findings — restores enforcer reliability"
+    }
+  ],
+  "generated_by": "team_leader (TheInspector)",
+  "run_id": "run-20260918-072513"
+}

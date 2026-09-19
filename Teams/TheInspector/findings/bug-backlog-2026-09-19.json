@@ -1,0 +1,269 @@
+{
+  "audit_id": "run-20260919-072143",
+  "audit_date": "2026-09-19",
+  "branch": "audit/inspector-2026-09-19-7b3adc",
+  "overall_grade": "D",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — static-only mode",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 12,
+    "p3_total": 64,
+    "p4_total": 5,
+    "fixed_total": 0,
+    "escalations_total": 3
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE / Code Execution",
+      "title": "Arbitrary code execution in protobufjs (CVSS 9.8)",
+      "package": "protobufjs ≤7.6.4",
+      "location": "portal/Backend/package-lock.json",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "escalate_to": "TheGuardians",
+      "reason": "Network-exploitable code execution via crafted protobuf messages — no user interaction required",
+      "fix": "Update protobufjs to ≥7.6.5"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE / Path Traversal + Code Execution",
+      "title": "Arbitrary file read and execution in Vitest UI (CVSS 9.8)",
+      "package": "vitest ≤3.2.5 (frontend), ≤1.2.2 (portal/Backend)",
+      "location": "Source/Frontend/package-lock.json, portal/Backend/package-lock.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "escalate_to": "TheGuardians",
+      "reason": "Any file readable by the process can be read and executed when Vitest UI server is running — including secrets and source code",
+      "fix": "Upgrade vitest to ≥3.2.6 (frontend) / ≥2.x (portal). Disable Vitest UI in CI."
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE / Template Injection",
+      "title": "JavaScript injection via Handlebars AST type confusion (CVSS 9.8)",
+      "package": "handlebars 4.0.0–4.7.8",
+      "location": "Source/Backend/package-lock.json (transitive)",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "escalate_to": "TheGuardians",
+      "reason": "Arbitrary JavaScript injection via crafted templates — bypasses sandbox protections",
+      "fix": "Update handlebars to ≥4.7.9 (npm audit fix)"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR-001..FR-069 canonical spec has 0% implementation coverage",
+      "file": "Specifications/dev-workflow-platform.md:337-452",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Clarify status of FR-001..FR-069. If future milestone, add status:future label. Update enforcer to scan Specifications/ directory."
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "GET /api/search unimplemented — DependencyPicker typeahead broken",
+      "file": "Source/Backend/src/app.ts, Source/Backend/tests/routes/search.test.ts",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Implement GET /api/search?q= route, wire into app.ts, add // Verifies: FR-dependency-search"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "3 route handlers bypass service layer — call store directly",
+      "files": ["Source/Backend/src/routes/workItems.ts", "Source/Backend/src/routes/workflow.ts", "Source/Backend/src/routes/intake.ts"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Extract WorkItem CRUD into workItemService.ts. Route handlers call service, not store directly."
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed seed data completely unimplemented",
+      "file": "Specifications/dev-workflow-platform.md:475",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Create seed script in backend. Add // Verifies: FR-dependency-seed."
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "title": "Traceability enforcer scans only one plan — blind to spec gaps",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Extend enforcer to scan all plans and Specifications/ directory FR tables."
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "test-coverage",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "files": ["Source/Frontend/tests/WorkItemDetailPage.test.tsx", "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "Consolidate into one authoritative test file per component. Keep tests/pages/ version, merge unique cases."
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / DoS",
+      "title": "Multiple DoS vulnerabilities in brace-expansion (CVSS 7.5)",
+      "package": "brace-expansion ≤1.1.17",
+      "location": "Source/Backend/package-lock.json",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update brace-expansion in Source/Backend"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / DoS + Prototype Pollution",
+      "title": "Unbounded memory growth and prototype pollution in browserslist (CVSS 7.5)",
+      "package": "browserslist ≤4.28.6",
+      "locations": ["Source/Backend/package-lock.json", "Source/Frontend/package-lock.json"],
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update browserslist in Source/Backend and Source/Frontend"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / Header Injection",
+      "title": "CRLF injection in form-data allows request smuggling (CVSS 7.5)",
+      "package": "form-data 4.0.0–4.0.5",
+      "location": "Source/Frontend/package-lock.json",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update form-data in Source/Frontend (target ≥4.0.6)"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / DoS + Integer Overflow",
+      "title": "Integer overflow and infinite loops in nanoid (CVSS 7.4)",
+      "package": "nanoid ≤3.3.17",
+      "location": "Source/Frontend/package-lock.json",
+      "cves": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update nanoid in Source/Frontend (target ≥3.3.18)"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / Path Traversal",
+      "title": "Path traversal and fs.deny bypass in Vite (CVSS 7.5)",
+      "package": "vite ≤6.4.2",
+      "location": "portal/Backend/package-lock.json",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-fx2h-pf6j-xcff", "GHSA-v6wh-96g9-6wx3"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update vite in portal/Backend (target ≥6.4.3)"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / Arbitrary File Read + XSS",
+      "title": "Arbitrary file read via sourceMappingURL in PostCSS (CVSS 7.5)",
+      "package": "postcss ≤8.5.22",
+      "location": "portal/Backend/package-lock.json",
+      "cves": ["GHSA-6g55-p6wh-862q", "GHSA-r28c-9q8g-f849", "GHSA-qx2v-qp2m-jg93", "GHSA-fxqj-rqcc-2cmp"],
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update postcss in portal/Backend (target ≥8.5.23)"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / ReDoS",
+      "title": "Catastrophic regex backtracking in path-to-regexp (CVSS 7.5)",
+      "package": "path-to-regexp <0.1.13",
+      "location": "portal/Backend/package-lock.json",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update path-to-regexp in portal/Backend (target ≥0.1.13)"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "CVE / Open Redirect",
+      "title": "Open redirect via protocol-relative URL in @remix-run/router",
+      "package": "@remix-run/router 1.3.0–1.23.2",
+      "location": "Source/Frontend/package-lock.json",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm update react-router-dom in Source/Frontend (target @remix-run/router ≥1.23.3)"
+    }
+  ],
+  "p3_p4_findings": [
+    { "id": "QO-007", "severity": "P3", "specialist": "quality-oracle", "title": "ESLint suppressions without documented justification", "file": "Source/Frontend/src/hooks/useWorkItems.ts, DependencyPicker.tsx", "status": "NEW" },
+    { "id": "QO-008", "severity": "P3", "specialist": "quality-oracle", "title": "DependencyPicker silently swallows search errors — no logging", "file": "Source/Frontend/src/components/DependencyPicker.tsx:56-58", "status": "NEW" },
+    { "id": "QO-009", "severity": "P3", "specialist": "quality-oracle", "title": "DebugPortalPage traces to informal ID, not formal FR", "file": "Source/Frontend/src/pages/DebugPortalPage.tsx", "status": "NEW" },
+    { "id": "QO-010", "severity": "P3", "specialist": "quality-oracle", "title": "Two competing logger abstractions in backend", "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"], "status": "NEW" },
+    { "id": "DEP-012-047", "severity": "P3", "specialist": "dependency-auditor", "title": "60 moderate + 4 low CVEs (portal/Backend primarily)", "count": 64, "status": "NEW", "route_to": "TheFixer" },
+    { "id": "QO-011", "severity": "P4", "specialist": "quality-oracle", "title": "workflow-engine.md spec has no FR IDs — untraceable", "file": "Specifications/workflow-engine.md", "status": "NEW" }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Portal/Backend severely outdated dependency chain",
+      "single_fix": "npm audit fix --force in portal/Backend + scheduled major version upgrades",
+      "affected_findings": ["DEP-001", "DEP-008", "DEP-009", "DEP-010"],
+      "fix_impact": "Resolves 4 findings (1 P1 + 3 P2) — 25 CVEs"
+    },
+    {
+      "root_cause": "Vitest not upgraded across all packages",
+      "single_fix": "Coordinate vitest major version bump across Source/Frontend + portal/Backend",
+      "affected_findings": ["DEP-002"],
+      "fix_impact": "Resolves 1 P1 CVE (CVSS 9.8) in 2 packages — file read/execute attack vector eliminated"
+    },
+    {
+      "root_cause": "Traceability enforcer incomplete — scans only one plan",
+      "single_fix": "Extend tools/traceability-enforcer.py to scan all plans + Specifications/ directory",
+      "affected_findings": ["QO-001", "QO-005"],
+      "fix_impact": "Resolves 1 P1 + 1 P2 — closes false-passing gate for 69 untraced FRs"
+    },
+    {
+      "root_cause": "DependencyPicker feature incomplete — search and seed missing",
+      "single_fix": "Implement GET /api/search, implement FR-dependency-seed data, wire both into app.ts",
+      "affected_findings": ["QO-002", "QO-004"],
+      "fix_impact": "Resolves 1 P1 + 1 P2 — restores broken UI feature for dependency tracking"
+    },
+    {
+      "root_cause": "Missing WorkItem service layer abstraction",
+      "single_fix": "Create workItemService.ts, refactor 3 route files to use it",
+      "affected_findings": ["QO-003"],
+      "fix_impact": "Resolves 1 P2 architecture violation — prepares for DB migration"
+    }
+  ]
+}

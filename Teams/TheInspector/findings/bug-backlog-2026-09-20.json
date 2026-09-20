@@ -1,0 +1,269 @@
+{
+  "audit_id": "run-20260920-074528",
+  "audit_date": "2026-09-20",
+  "branch": "audit/inspector-2026-09-20-a866e2",
+  "overall_grade": "C",
+  "first_audit": true,
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 14,
+    "p3_total": 1,
+    "p4_total": 1,
+    "total_findings": 18,
+    "escalations_to_guardians": 3,
+    "fixes_to_fixer": 13,
+    "spec_coverage_min": "81%",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"]
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "dependency-vuln",
+      "title": "Handlebars.js Remote Code Execution (8 CVEs)",
+      "package": "handlebars <=4.7.8",
+      "location": "Source/Backend",
+      "exploit": "JavaScript injection via AST type confusion — RCE if user input reaches templates",
+      "fix": "Upgrade to handlebars >=4.7.9",
+      "route_to": "TheGuardians",
+      "owasp": "A03: Injection",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "dependency-vuln",
+      "title": "protobufjs — 16 CVEs (Code Injection, DoS, Prototype Pollution)",
+      "package": "protobufjs <=6.x",
+      "location": "platform/orchestrator",
+      "exploit": "Crafted .proto message triggers code execution or crashes orchestrator — halts all CI/CD pipelines",
+      "fix": "Upgrade protobufjs (requires regression testing of orchestrator)",
+      "route_to": ["TheGuardians", "Infrastructure Team"],
+      "owasp": "A03: Injection, A06: Vulnerable Components",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "postcss XSS & Path Traversal (4 CVEs)",
+      "package": "postcss",
+      "location": "Source/Frontend",
+      "exploit": "XSS injection and path traversal via crafted CSS input",
+      "fix": "npm update postcss",
+      "route_to": "TheGuardians",
+      "owasp": "A03: Injection",
+      "status": "NEW"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Direct store access from route handlers",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "description": "Route handlers import and call workItemStore functions directly, bypassing the service layer. Violates CLAUDE.md architecture rule.",
+      "recommendation": "Extract workItemService.ts; all routes call service layer only.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Missing blocked_by field in API types + unsafe as-any casts",
+      "files": [
+        "portal/Shared/api.ts",
+        "portal/Frontend/src/components/shared/DependencyPicker.tsx"
+      ],
+      "description": "FR-dependency-api-types requires blocked_by?: string[] on UpdateBugInput and UpdateFeatureRequestInput. Field is missing, forcing as any casts in DependencyPicker.tsx:291,293.",
+      "recommendation": "Add blocked_by field to both interfaces; remove as any casts.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Missing seed file in portal/Backend",
+      "files": [
+        "portal/Backend/src/database/seed.ts"
+      ],
+      "description": "FR-dependency-seed requires idempotent seed.ts with 4 known dependency relationships. File missing from portal/Backend/src/database/.",
+      "recommendation": "Create seed.ts per spec; wire into index.ts startup.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "untested",
+      "title": "Missing DependencySection and BlockedBadge component tests",
+      "files": [
+        "portal/Frontend/tests/DependencySection.test.tsx",
+        "portal/Frontend/tests/BlockedBadge.test.tsx"
+      ],
+      "description": "FR-dependency-frontend-tests requires both test files. Only DependencyPicker.test.tsx exists. DependencySection and BlockedBadge have zero test coverage.",
+      "recommendation": "Create both test files with // Verifies: FR-dependency-frontend-tests comments.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "brace-expansion DoS — 4 CVEs",
+      "package": "brace-expansion",
+      "location": "Source/Backend",
+      "description": "Zero-step sequences cause process hangs; exponential expansion causes memory exhaustion.",
+      "fix": "npm audit fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "browserslist Memory Exhaustion & Prototype Pollution — 2 CVEs",
+      "package": "browserslist",
+      "location": "Source/Backend",
+      "description": "Memory exhaustion and prototype pollution via crafted browserslist query.",
+      "fix": "npm audit fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "form-data CRLF Injection — 1 CVE",
+      "package": "form-data",
+      "location": "Source/Backend",
+      "description": "CRLF injection via crafted form field names in multipart boundary.",
+      "fix": "npm audit fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "js-yaml Quadratic CPU DoS — 4 CVEs",
+      "package": "js-yaml",
+      "location": "Source/Backend",
+      "description": "Quadratic complexity in YAML parsing causes CPU exhaustion with crafted input.",
+      "fix": "npm audit fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "vite Path Traversal in .map handling — 3 CVEs",
+      "package": "vite",
+      "location": "Source/Frontend",
+      "description": "Path traversal vulnerability via .map file handling and Windows path bypass.",
+      "fix": "npm update vite in Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "nanoid Integer Overflow & Infinite Loop — 3 CVEs",
+      "package": "nanoid",
+      "location": "Source/Backend",
+      "description": "Integer overflow and potential infinite loop in ID generation.",
+      "fix": "npm audit fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "@grpc/grpc-js Malformed Message Crash — 2 CVEs",
+      "package": "@grpc/grpc-js",
+      "location": "platform/orchestrator",
+      "description": "Crafted gRPC message causes process crash, disrupting orchestrator communication.",
+      "fix": "npm update @grpc/grpc-js in platform/orchestrator",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "@remix-run/router Open Redirect — 1 CVE",
+      "package": "@remix-run/router (via react-router-dom)",
+      "location": "Source/Frontend",
+      "description": "Open redirect vulnerability allows phishing attacks via crafted URLs.",
+      "fix": "npm update react-router-dom in Source/Frontend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "dependency-vuln",
+      "title": "path-to-regexp ReDoS — 1 CVE",
+      "package": "path-to-regexp (via express)",
+      "location": "Source/Backend",
+      "description": "Regex denial-of-service via crafted route parameter patterns.",
+      "fix": "npm audit fix in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "Tiered Merge Pipeline FRs not scanned by traceability enforcer",
+      "files": [
+        "Specifications/tiered-merge-pipeline.md",
+        "tools/traceability-enforcer.py"
+      ],
+      "description": "FR-TMP-001–010 are implemented in platform/ which is excluded from the enforcer's scan dirs. Regressions in these requirements would not be caught automatically.",
+      "recommendation": "Add Plans/tiered-merge-pipeline/requirements.md and extend enforcer to platform/, or add per-plan Makefile targets.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "Undocumented eslint-disable suppression in useWorkItems.ts",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "line": 63,
+      "description": "eslint-disable-next-line react-hooks/exhaustive-deps suppresses exhaustive-deps rule without explaining why the omission is intentional.",
+      "recommendation": "Add inline comment explaining the deliberate dependency array omission.",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "source": "quality-oracle"
+    }
+  ]
+}

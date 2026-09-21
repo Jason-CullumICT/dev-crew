@@ -1,0 +1,358 @@
+{
+  "audit": {
+    "run_id": "run-20260921-075805",
+    "date": "2026-09-21",
+    "branch": "audit/inspector-2026-09-21-e7b25d",
+    "grade": "D",
+    "mode": "static",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "reason_skipped": "Backend and frontend services offline on this branch"
+  },
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 14,
+    "p3_total": 6,
+    "p4_total": 1,
+    "escalations_total": 4,
+    "fixed_total": 0,
+    "spec_coverage_source": "~94% (13/13 WF FRs, 14/16 dependency FRs)"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Handlebars.js — Multiple JavaScript Injection Vulnerabilities (8 CVEs)",
+      "category": "CVE-RCE",
+      "package": "handlebars",
+      "affected_projects": ["Source/Backend"],
+      "cves": ["GHSA-3mfm-83xf-c92r", "GHSA-2w6w-674q-4c4q", "GHSA-2qvq-rjwj-gvw9", "GHSA-7rx3-28cr-v5wh", "GHSA-442j-39wm-28r2", "GHSA-xhpv-hc6g-r9c6", "GHSA-9cx6-37pm-9jff", "GHSA-xjpj-3mr7-gcpf"],
+      "exploit_scenario": "Attacker provides crafted Handlebars template → RCE on backend server via AST type confusion",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "fix_version": ">=4.7.8",
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "Vitest — Arbitrary File Read & Code Execution via Unauthenticated UI Server",
+      "category": "CVE-RCE",
+      "package": "vitest",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "cves": ["GHSA-5xrq-8626-4rwp", "GHSA-82fw-gwwq-j7x9"],
+      "exploit_scenario": "LAN attacker sends request to Vitest UI server → reads .env files, source code, executes arbitrary code",
+      "fix": "npm update vitest in all 3 projects; disable --ui flag in CI",
+      "fix_version": ">=5.0.1",
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "title": "Protobufjs — Prototype Pollution & ReDoS in gRPC Message Deserialization",
+      "category": "CVE-PrototypePollution",
+      "package": "protobufjs",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "cves": ["prototype-pollution-grpc"],
+      "exploit_scenario": "Attacker sends crafted protobuf message → pollutes Object.prototype → arbitrary property overwrite across all process objects",
+      "fix": "cd platform/orchestrator && npm update protobufjs; cd portal/Backend && npm update protobufjs",
+      "fix_version": ">=7.4.0",
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "title": "js-yaml — Arbitrary Code Execution via Unsafe YAML Deserialization",
+      "category": "CVE-RCE",
+      "package": "js-yaml",
+      "affected_projects": ["Source/Backend", "abac-*"],
+      "cves": ["js-yaml-unsafe-load"],
+      "exploit_scenario": "Attacker provides YAML with !!js/object tags to application YAML parsing → RCE if safe option not enforced",
+      "fix": "Audit all js-yaml call sites; enforce {safe: true} option; npm update js-yaml",
+      "fix_version": "latest",
+      "route_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "title": "Traceability Enforcer Has a Single-Plan Blind Spot",
+      "category": "spec-drift",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "Enforcer auto-selects one requirements.md; two full specs (FR-001..069, FR-TMP-001..010) are never validated",
+      "recommendation": "Run enforcer per-plan: for f in Plans/*/requirements.md; do python3 tools/traceability-enforcer.py --file \"$f\"; done",
+      "route_to": "TheFixer",
+      "cross_ref": ["requirements-reviewer"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "title": "Enforcer Generates 7 False-Positive Failures on Dependency-Linking Plan",
+      "category": "spec-drift",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "Regex matches FR-\\d+ anywhere in document; prose-embedded IDs trigger false MISSING errors",
+      "recommendation": "Scope regex to table rows only: match ^\\|\\s*(FR-[\\w-]+)\\s*\\|",
+      "route_to": "TheFixer",
+      "cross_ref": [],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "title": "FR-dependency-seed Not Implemented",
+      "category": "spec-drift",
+      "file": "Plans/dependency-linking/requirements.md",
+      "detail": "No seed.ts exists; fresh server startup returns empty dependency graph; acceptance criteria fails",
+      "recommendation": "Create seed.ts with example dependency data; wire into server startup",
+      "route_to": "TheFixer",
+      "cross_ref": ["backend-coder"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "title": "FR-dependency-* Delta Shows portal/ Paths; Code Is in Source/",
+      "category": "spec-drift",
+      "file": "Plans/dependency-linking/requirements.md",
+      "detail": "Implementation delta references portal/ paths but actual code lives in Source/",
+      "recommendation": "Update delta to reflect Source/ paths",
+      "route_to": "TheFixer",
+      "cross_ref": ["requirements-reviewer"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "title": "Duplicate Logger Abstraction — Compat Wrapper Is Permanent Tech Debt",
+      "category": "architecture-violation",
+      "file": "Source/Backend/src/logger.ts",
+      "detail": "Two logger files co-exist; split import paths risk interface drift when new log methods are added",
+      "recommendation": "Consolidate to Source/Backend/src/utils/logger.ts; update all imports; remove compat wrapper",
+      "route_to": "TheFixer",
+      "cross_ref": ["backend-coder"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "title": "Duplicate Frontend Test Files for WorkItemDetailPage and WorkItemListPage",
+      "category": "test-redundancy",
+      "file": "Source/Frontend/tests/",
+      "detail": "Root-level and /pages/ subdirectory copies exist with overlapping traceability; maintenance divergence risk",
+      "recommendation": "Confirm /pages/ versions are canonical; delete root-level duplicates",
+      "route_to": "TheFixer",
+      "cross_ref": ["frontend-coder"],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "title": "@opentelemetry/auto-instrumentations-node — Prometheus Exporter Crash",
+      "category": "CVE-DoS",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "affected_projects": ["portal/Backend"],
+      "cves": ["GHSA-q7rr-3cgh-j5r3"],
+      "fix": "cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node",
+      "fix_version": ">=0.75.0",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "title": "brace-expansion — 4× Memory Exhaustion / DoS CVEs",
+      "category": "CVE-DoS",
+      "package": "brace-expansion",
+      "affected_projects": ["Source/Backend", "abac-demo", "abac-soc-demo", "abac-soc-demo-v2", "abac-reimagined"],
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "fix": "npm update brace-expansion (>=1.1.18)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "title": "browserslist — Memory Exhaustion & Prototype Pollution in Build Pipeline",
+      "category": "CVE-DoS",
+      "package": "browserslist",
+      "affected_projects": ["Source/Frontend", "Source/Backend", "portal/Frontend", "abac-*", "platform/orchestrator"],
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "fix": "npm update browserslist (>=4.28.7)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "title": "PostCSS — Arbitrary File Read via sourceMappingURL",
+      "category": "CVE-PathTraversal",
+      "package": "postcss",
+      "affected_projects": ["Source/Frontend", "portal/Frontend", "abac-*"],
+      "cves": ["GHSA-qx2v-qp2m-jg93", "GHSA-6g55-p6wh-862q", "GHSA-fxqj-rqcc-2cmp", "GHSA-r28c-9q8g-f849"],
+      "fix": "npm update postcss (>=8.4.32)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "title": "Vite — Path Traversal in .map Handling & fs.deny Bypass",
+      "category": "CVE-PathTraversal",
+      "package": "vite",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3", "GHSA-fx2h-pf6j-xcff"],
+      "fix": "npm update vite (>=5.4.3)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "title": "form-data — CRLF Injection in Multipart Fields",
+      "category": "CVE-Injection",
+      "package": "form-data",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend", "abac-*"],
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "fix": "npm update form-data (>=4.0.1)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "title": "@grpc/grpc-js — Malformed Request Server Crash",
+      "category": "CVE-DoS",
+      "package": "@grpc/grpc-js",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq"],
+      "fix": "npm update @grpc/grpc-js (>=1.14.4)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "title": "nanoid — Integer Overflow / Infinite Loop in ID Generation",
+      "category": "CVE-LogicError",
+      "package": "nanoid",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "cves": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+      "fix": "npm update nanoid (>=3.4.1)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "title": "picomatch & minimatch — ReDoS in Glob Pattern Matching",
+      "category": "CVE-ReDoS",
+      "package": "picomatch, minimatch",
+      "affected_projects": ["portal/Frontend", "abac-*"],
+      "fix": "npm update picomatch minimatch",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "title": "DebugPortalPage.tsx Lacks FR Traceability and Tests",
+      "category": "untested",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+      "recommendation": "Assign to canonical FR or document exemption; add minimal render test",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "title": "Two eslint-disable-next-line Comments Suppressing exhaustive-deps",
+      "category": "pattern-violation",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "recommendation": "Document suppression intent; evaluate stale closure risk in DependencyPicker",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P3",
+      "title": "WorkItemDetailPage.tsx Approaching 500-Line Split Threshold",
+      "category": "pattern-violation",
+      "file": "Source/Frontend/src/pages/WorkItemDetailPage.tsx",
+      "detail": "426 lines; handles loading, error, history, assessment, workflow actions, dependency integration",
+      "recommendation": "Extract ItemActions and ChangeHistoryTimeline sub-components",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "title": "Multiple Packages >1 Major Version Behind",
+      "category": "outdated",
+      "detail": "express, react, typescript, node-gyp across multiple projects",
+      "recommendation": "Plan quarterly major version upgrade cycle",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "title": "No Deprecated Direct Dependencies — Transitive Risk Noted",
+      "category": "maintenance",
+      "detail": "No current deprecated direct dependencies; some transitive packages may be unmaintained",
+      "recommendation": "Quarterly audit",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P3",
+      "title": "High-Risk Transitive Dependencies (Supply Chain)",
+      "category": "supply-chain",
+      "packages": ["handlebars", "protobufjs", "vitest", "browserslist", "postcss"],
+      "recommendation": "Add npm audit --audit-level=high as a CI gate; pin critical transitive deps",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "LICENSE",
+      "severity": "P4",
+      "title": "License Compliance — No Issues; Quarterly Audit Recommended",
+      "category": "compliance",
+      "detail": "No GPL/AGPL detected. All primary dependencies use MIT/Apache-2.0/BSD.",
+      "recommendation": "Schedule quarterly license audit as dependencies evolve",
+      "route_to": "backlog",
+      "status": "NEW"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Traceability enforcer scans single file",
+      "findings": ["QO-001", "QO-002", "QO-004"],
+      "single_fix": "Run enforcer per-plan with scoped regex",
+      "fix_impact": "Closes enforcer blind spot for 2 full specs; eliminates 7 false-positive gate failures"
+    },
+    {
+      "root_cause": "npm dependency staleness across all projects",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012"],
+      "single_fix": "npm update across 5 critical projects + CI gate npm audit --audit-level=high",
+      "fix_impact": "Eliminates all 6 critical CVEs and 53 high CVEs; CI gate prevents recurrence"
+    },
+    {
+      "root_cause": "Build toolchain vulnerabilities (vite, postcss, browserslist)",
+      "findings": ["DEP-006", "DEP-007", "DEP-008"],
+      "single_fix": "npm update postcss browserslist vite in frontend projects",
+      "fix_impact": "Closes path traversal and memory exhaustion in build pipeline"
+    },
+    {
+      "root_cause": "Duplicate abstraction pattern (one concern, two files)",
+      "findings": ["QO-005", "QO-006"],
+      "single_fix": "Canonical consolidation pass: merge logger; remove stale test copies",
+      "fix_impact": "Removes silent interface drift risk; halves test maintenance burden for affected pages"
+    }
+  ]
+}

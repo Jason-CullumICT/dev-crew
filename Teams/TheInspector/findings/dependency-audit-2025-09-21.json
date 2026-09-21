@@ -1,0 +1,348 @@
+{
+  "audit_metadata": {
+    "date": "2025-09-21T07:53:00Z",
+    "auditor": "dependency-auditor (Claude Haiku 4.5)",
+    "scope": "10 npm projects (Source/, platform/, portal/, demo directories)",
+    "report_id": "audit-2025-09-21-001"
+  },
+  "summary": {
+    "projects_scanned": 10,
+    "total_dependencies": 2856,
+    "direct_dependencies": 89,
+    "transitive_dependencies": 2767,
+    "grade": "F",
+    "critical_vulns": 6,
+    "high_vulns": 53,
+    "moderate_vulns": 74,
+    "low_vulns": 9,
+    "total_vulns": 142,
+    "escalation_required": true,
+    "escalation_team": "TheGuardians"
+  },
+  "projects": [
+    {
+      "name": "Source/Backend",
+      "critical": 1,
+      "high": 4,
+      "moderate": 3,
+      "low": 2,
+      "total_deps": 411,
+      "risk_level": "CRITICAL"
+    },
+    {
+      "name": "Source/Frontend",
+      "critical": 1,
+      "high": 6,
+      "moderate": 7,
+      "low": 1,
+      "total_deps": 230,
+      "risk_level": "CRITICAL"
+    },
+    {
+      "name": "Source/E2E",
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total_deps": 4,
+      "risk_level": "CLEAN"
+    },
+    {
+      "name": "platform/orchestrator",
+      "critical": 1,
+      "high": 2,
+      "moderate": 4,
+      "low": 1,
+      "total_deps": 155,
+      "risk_level": "CRITICAL"
+    },
+    {
+      "name": "portal/Backend",
+      "critical": 2,
+      "high": 10,
+      "moderate": 41,
+      "low": 1,
+      "total_deps": 577,
+      "risk_level": "CRITICAL"
+    },
+    {
+      "name": "portal/Frontend",
+      "critical": 1,
+      "high": 7,
+      "moderate": 6,
+      "low": 2,
+      "total_deps": 424,
+      "risk_level": "CRITICAL"
+    },
+    {
+      "name": "abac-demo",
+      "critical": 0,
+      "high": 8,
+      "moderate": 3,
+      "low": 1,
+      "total_deps": 238,
+      "risk_level": "HIGH"
+    },
+    {
+      "name": "abac-soc-demo",
+      "critical": 0,
+      "high": 8,
+      "moderate": 3,
+      "low": 1,
+      "total_deps": 238,
+      "risk_level": "HIGH"
+    },
+    {
+      "name": "abac-soc-demo-v2",
+      "critical": 0,
+      "high": 8,
+      "moderate": 3,
+      "low": 1,
+      "total_deps": 237,
+      "risk_level": "HIGH"
+    },
+    {
+      "name": "abac-reimagined",
+      "critical": 0,
+      "high": 8,
+      "moderate": 7,
+      "low": 1,
+      "total_deps": 322,
+      "risk_level": "HIGH"
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js - Multiple JavaScript Injection Vulnerabilities",
+      "severity": "P1",
+      "category": "cve-rce",
+      "package": "handlebars",
+      "affected_projects": ["Source/Backend"],
+      "cve_count": 8,
+      "main_cves": [
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "description": "8 distinct AST/template injection vulnerabilities allow arbitrary JavaScript execution",
+      "exploitation_risk": "HIGH",
+      "fix": "npm update handlebars to >=4.7.8",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest - Arbitrary File Read & Code Execution",
+      "severity": "P1",
+      "category": "cve-rce",
+      "package": "vitest",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "cve_count": 2,
+      "main_cves": [
+        "GHSA-5xrq-8626-4rwp",
+        "GHSA-82fw-gwwq-j7x9"
+      ],
+      "description": "UI server allows unauthenticated arbitrary file read/execution; @vitest/mocker allows path traversal",
+      "exploitation_risk": "CRITICAL",
+      "impact": "Local network attacker can read .env files, source code, execute arbitrary code",
+      "fix": "npm update vitest to >=5.0.1; disable --ui in CI/shared environments",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Protobufjs - Prototype Pollution & DoS",
+      "severity": "P1",
+      "category": "cve-rce",
+      "package": "protobufjs",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "cve_count": 3,
+      "description": "Prototype pollution in untrusted protobuf deserialization; ReDoS in parsing",
+      "exploitation_risk": "CRITICAL",
+      "impact": "Code execution via Object.prototype pollution; service crash",
+      "fix": "npm update protobufjs to latest stable (>=7.4.0 if available)",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "@opentelemetry/auto-instrumentations-node - Prometheus Exporter Crash",
+      "severity": "P2",
+      "category": "cve-dos",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "affected_projects": ["portal/Backend"],
+      "cve": "GHSA-q7rr-3cgh-j5r3",
+      "description": "Malformed HTTP request to /metrics endpoint crashes Prometheus exporter",
+      "exploitation_risk": "HIGH",
+      "fix": "npm update @opentelemetry/auto-instrumentations-node to >=0.75.0"
+    },
+    {
+      "id": "DEP-005",
+      "title": "brace-expansion - Multiple DoS Vulnerabilities",
+      "severity": "P2",
+      "category": "cve-dos",
+      "package": "brace-expansion",
+      "cve_count": 4,
+      "affected_projects": ["Source/Backend", "abac-*"],
+      "description": "4 separate DoS vectors: memory exhaustion, exponential expansion, unbounded arrays",
+      "exploitation_risk": "MEDIUM",
+      "fix": "npm update brace-expansion to >=1.1.18"
+    },
+    {
+      "id": "DEP-006",
+      "title": "browserslist - Memory Exhaustion & Prototype Pollution",
+      "severity": "P2",
+      "category": "cve-dos",
+      "package": "browserslist",
+      "cve_count": 2,
+      "affected_projects": ["Source/Frontend", "Source/Backend", "portal/Frontend", "abac-*", "platform/orchestrator"],
+      "description": "Unbounded memory growth (no cache eviction); prototype pollution via stats.json",
+      "exploitation_risk": "MEDIUM",
+      "fix": "npm update browserslist to >=4.28.7"
+    },
+    {
+      "id": "DEP-007",
+      "title": "PostCSS - Arbitrary File Read via sourceMappingURL",
+      "severity": "P2",
+      "category": "cve-info-disclosure",
+      "package": "postcss",
+      "cve_count": 4,
+      "affected_projects": ["Source/Frontend", "portal/Frontend", "abac-*"],
+      "description": "4 distinct file read/traversal vulnerabilities; .env and source map leakage",
+      "exploitation_risk": "MEDIUM",
+      "fix": "npm update postcss to >=8.4.32"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Vite - Path Traversal & fs.deny Bypass",
+      "severity": "P2",
+      "category": "cve-path-traversal",
+      "package": "vite",
+      "cve_count": 3,
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "description": "Windows UNC path bypass of fs.deny; path traversal in .map handling",
+      "exploitation_risk": "MEDIUM",
+      "fix": "npm update vite to >=5.4.3"
+    },
+    {
+      "id": "DEP-009",
+      "title": "form-data - CRLF Injection in Multipart Fields",
+      "severity": "P2",
+      "category": "cve-injection",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend", "abac-*"],
+      "description": "Newline injection in field names/filenames; HTTP header injection possible",
+      "exploitation_risk": "MEDIUM",
+      "fix": "npm update form-data to >=4.0.1"
+    },
+    {
+      "id": "DEP-010",
+      "title": "@grpc/grpc-js - Malformed Request Crash (DoS)",
+      "severity": "P2",
+      "category": "cve-dos",
+      "package": "@grpc/grpc-js",
+      "cve_count": 2,
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "description": "Network attacker can crash gRPC services with malformed/compressed messages",
+      "exploitation_risk": "HIGH",
+      "fix": "npm update @grpc/grpc-js to >=1.14.4"
+    },
+    {
+      "id": "DEP-011",
+      "title": "nanoid - Integer Overflow & Infinite Loop",
+      "severity": "P2",
+      "category": "cve-dos",
+      "package": "nanoid",
+      "cve_count": 3,
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "description": "Custom generators infinite-loop on invalid size; integer overflow possible",
+      "exploitation_risk": "LOW-MEDIUM",
+      "fix": "npm update nanoid to >=3.4.1"
+    },
+    {
+      "id": "DEP-012",
+      "title": "picomatch & minimatch - Regular Expression DoS (ReDoS)",
+      "severity": "P2",
+      "category": "cve-dos",
+      "package": "picomatch,minimatch",
+      "affected_projects": ["portal/Frontend", "abac-*"],
+      "description": "Glob pattern matching allows catastrophic backtracking",
+      "exploitation_risk": "MEDIUM",
+      "fix": "npm update picomatch minimatch to latest"
+    },
+    {
+      "id": "DEP-013",
+      "title": "js-yaml - Arbitrary Code Execution via Unsafe Deserialization",
+      "severity": "P2",
+      "category": "cve-rce",
+      "package": "js-yaml",
+      "affected_projects": ["Source/Backend", "abac-*"],
+      "description": "Default deserialization allows RCE via !!js/object tags; use {safe: true}",
+      "exploitation_risk": "MEDIUM",
+      "fix": "npm update js-yaml; use safe: true in yaml.load() calls",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "remediation_timeline": {
+    "immediate": {
+      "week": 1,
+      "items": [
+        "Update handlebars to >=4.7.8",
+        "Update vitest to >=5.0.1+ (all projects)",
+        "Update protobufjs to latest",
+        "Update @opentelemetry/auto-instrumentations-node to >=0.75.0+"
+      ]
+    },
+    "short_term": {
+      "weeks": "2-3",
+      "items": [
+        "Update brace-expansion to >=1.1.18+",
+        "Update browserslist to >=4.28.7+",
+        "Update postcss to >=8.4.32+",
+        "Update vite to >=5.4.3+",
+        "Update form-data to >=4.0.1+",
+        "Update @grpc/grpc-js to >=1.14.4+"
+      ]
+    },
+    "mid_term": {
+      "weeks": "4+",
+      "items": [
+        "Full dependency audit across all 10 projects",
+        "Plan major version upgrades",
+        "Implement CI/CD dependency scanning"
+      ]
+    }
+  },
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: Handlebars RCE (user-supplied templates)",
+      "DEP-002: Vitest LAN-based arbitrary file read/execution",
+      "DEP-003: Protobufjs prototype pollution in gRPC messages",
+      "DEP-013: js-yaml unsafe YAML deserialization"
+    ]
+  },
+  "quality_score": {
+    "overall": 10,
+    "scale": "0-100 (0=critical, 100=excellent)",
+    "breakdown": {
+      "critical_count": 6,
+      "high_count": 53,
+      "moderate_count": 74,
+      "outdated_major": "Unknown",
+      "license_risk": 0,
+      "supply_chain_risk": "MEDIUM (many high-risk transitive deps)"
+    }
+  },
+  "recommendations": {
+    "immediate": "Deploy handlebars, vitest, protobufjs updates this week",
+    "ci_integration": "Add npm audit --audit-level=high to CI/CD pipeline",
+    "monitoring": "Quarterly dependency audits; watch list for handlebars, vitest, protobufjs",
+    "governance": "No GPL/AGPL licenses; all MIT/Apache-2.0/BSD compatible"
+  }
+}

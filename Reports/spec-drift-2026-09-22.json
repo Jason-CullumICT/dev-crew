@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "canonical_frs_in_specs": 10,
+    "canonical_frs_covered": 0,
+    "coverage_percentage": "0.0%",
+    "raw_verifies_ids_in_source": 13,
+    "alias_resolved_count": 0,
+    "unresolved_legacy_ids": 13
+  },
+  "covered_frs": [],
+  "missing_frs": [
+    "FR-TMP-001",
+    "FR-TMP-002",
+    "FR-TMP-003",
+    "FR-TMP-004",
+    "FR-TMP-005",
+    "FR-TMP-006",
+    "FR-TMP-007",
+    "FR-TMP-008",
+    "FR-TMP-009",
+    "FR-TMP-010"
+  ],
+  "untracked_implementations": [
+    "FR-WF-001",
+    "FR-WF-002",
+    "FR-WF-003",
+    "FR-WF-004",
+    "FR-WF-005",
+    "FR-WF-006",
+    "FR-WF-007",
+    "FR-WF-008",
+    "FR-WF-009",
+    "FR-WF-010",
+    "FR-WF-011",
+    "FR-WF-012",
+    "FR-WF-013"
+  ],
+  "unresolved_legacy_ids": [
+    "FR-WF-001",
+    "FR-WF-002",
+    "FR-WF-003",
+    "FR-WF-004",
+    "FR-WF-005",
+    "FR-WF-006",
+    "FR-WF-007",
+    "FR-WF-008",
+    "FR-WF-009",
+    "FR-WF-010",
+    "FR-WF-011",
+    "FR-WF-012",
+    "FR-WF-013"
+  ],
+  "coverage_by_file": {}
+}

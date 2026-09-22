@@ -1,0 +1,307 @@
+{
+  "audit_id": "run-20260922-074443",
+  "audit_date": "2026-09-22",
+  "branch": "audit/inspector-2026-09-22-8460c0",
+  "grade": "D",
+  "generated_by": "team_leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — static-mode only; dynamic-mode findings pending next audit when services are up",
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 11,
+    "p3_total": 9,
+    "p4_total": 1,
+    "total_findings": 24,
+    "escalation_count": 5,
+    "fixed_since_prior": 0,
+    "prior_audit": "none — first audit, no baseline"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "RCE in vitest (CVSS 9.8) — arbitrary file read and code execution via Vitest UI server",
+      "files": ["Source/Frontend/package.json", "portal/Backend/package.json"],
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Code execution vulnerability — verify dev environments do not expose Vitest UI to network",
+      "fix": "npm update vitest in Source/Frontend and portal/Backend",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "RCE in protobufjs (CVSS 9.8) — arbitrary code execution via unsafe deserialization",
+      "files": ["portal/Backend/package.json"],
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Code execution in infrastructure layer — protobufjs used by gRPC telemetry exporters",
+      "fix": "npm update protobufjs in portal/Backend (target v7.7.0+)",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "@vitest/mocker path traversal — arbitrary file disclosure",
+      "files": ["Source/Frontend/package.json"],
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Path injection vulnerability allowing arbitrary file disclosure",
+      "fix": "npm update @vitest/mocker in Source/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "vite path traversal (Windows) — arbitrary file disclosure on Windows hosts",
+      "files": ["portal/Frontend/package.json"],
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Path traversal / injection — affects Windows CI/CD and dev machines",
+      "fix": "npm update vite in portal/Frontend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "React Router open redirect — missing access control on navigation",
+      "files": ["Source/Frontend/package.json"],
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Missing access control — open redirect can be used for phishing",
+      "fix": "npm update react-router-dom in Source/Frontend",
+      "status": "NEW"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer doesn't scan portal/ — 76 requirements permanently show as untraced",
+      "file": "tools/traceability-enforcer.py",
+      "line": 70,
+      "recommendation": "Add portal/ to source_dirs OR support per-spec scan-dir mapping in inspector.config.yml",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer regex matches phantom FR-N from inside NFR-N strings",
+      "file": "tools/traceability-enforcer.py",
+      "line": 51,
+      "recommendation": "Change pattern to r\"\\bFR-[A-Z0-9-]+\" (add word boundary \\b before FR)",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "pending_dependencies status claimed in traceability comment but not implemented in WorkItemStatus enum",
+      "file": "Source/Shared/types/workflow.ts",
+      "line": 213,
+      "recommendation": "Either add PendingDependencies to WorkItemStatus and implement gating, or remove misleading traceability comment and document the 409 divergence",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "/approve endpoint has no dependency gating — blocked items can reach approved status",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "line": 94,
+      "recommendation": "Add computeHasUnresolvedBlockers check in /approve handler; reject with 409 or set pending_dependencies status",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "dependencyCheckDuration histogram missing from metrics (FR-dependency-metrics requirement)",
+      "file": "Source/Backend/src/metrics.ts",
+      "recommendation": "Add Histogram for dependency_check_duration_seconds; instrument computeHasUnresolvedBlockers and isReady calls",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "DoS vulnerability in brace-expansion — ReDoS in glob expansion",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update brace-expansion in Source/Backend (target >=1.1.18)",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "DoS vulnerability in js-yaml — untrusted YAML can cause CPU exhaustion",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update js-yaml in Source/Backend",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "Transitive DoS in qs — prototype pollution / ReDoS via crafted query string",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update qs in Source/Backend (transitive via express)",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "DoS in body-parser — ReDoS via crafted Content-Type header",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update body-parser in Source/Backend (transitive via express)",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "ws memory exhaustion — crafted WebSocket frames exhaust server memory",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update ws in Source/Backend",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "browserslist ReDoS — crafted browser query causes CPU exhaustion in portal/Frontend build",
+      "file": "portal/Frontend/package.json",
+      "recommendation": "npm update browserslist in portal/Frontend",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "No route latency middleware — HTTP p95/p99 latency budgets cannot be enforced",
+      "file": "Source/Backend/src/app.ts",
+      "recommendation": "Add http_request_duration_seconds Histogram middleware in app.ts",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "OpenTelemetry not initialized in Source/Backend — no distributed tracing",
+      "file": "Source/Backend/src/app.ts",
+      "recommendation": "Add @opentelemetry/sdk-node + auto-instrumentations-node; initialize in tracing.ts before app.ts",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "Undocumented eslint-disable for react-hooks/exhaustive-deps in two hook/component files",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts",
+        "Source/Frontend/src/components/DependencyPicker.tsx"
+      ],
+      "recommendation": "Add explanatory comment for each suppression; fix the hook if suppression is wrong",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "outdated",
+      "source": "dependency-auditor",
+      "title": "express outdated (Source/Backend) — 2 major versions behind",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update express (or npm install express@latest with migration testing)",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "outdated",
+      "source": "dependency-auditor",
+      "title": "pino logger outdated (Source/Backend) — missing structured log improvements",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update pino pino-pretty",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "outdated",
+      "source": "dependency-auditor",
+      "title": "react outdated (Source/Frontend) — missing concurrent features and security patches",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "npm update react react-dom @types/react @types/react-dom",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P3",
+      "category": "maintenance",
+      "source": "dependency-auditor",
+      "title": "portal/Backend has 22 transitive OpenTelemetry deps — excessive for current usage",
+      "file": "portal/Backend/package.json",
+      "recommendation": "Audit which OTel packages are actually used; remove unused exporters to reduce attack surface",
+      "team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-009",
+      "severity": "P4",
+      "category": "test-coverage",
+      "source": "quality-oracle",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage — drift risk",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "recommendation": "Consolidate each pair into a single file; keep tests/pages/ variants; archive root-level duplicates",
+      "team": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

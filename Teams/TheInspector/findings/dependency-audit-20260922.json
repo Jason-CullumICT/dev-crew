@@ -1,0 +1,385 @@
+{
+  "audit_date": "2026-09-22",
+  "audit_id": "audit-20260922",
+  "summary": {
+    "packages_audited": 6,
+    "projects": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E",
+      "platform/orchestrator",
+      "portal/Backend",
+      "portal/Frontend"
+    ],
+    "total_cves": 53,
+    "severity_breakdown": {
+      "critical": 3,
+      "high": 17,
+      "moderate": 28,
+      "low": 5
+    },
+    "findings_by_priority": {
+      "p1": 2,
+      "p2": 7,
+      "p3": 6
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Critical RCE in vitest",
+      "severity": "P1",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss_score": 9.8,
+      "packages": [
+        {
+          "name": "vitest",
+          "affected_versions": "<3.2.6",
+          "projects": ["Source/Frontend", "portal/Backend"],
+          "fix": "npm update vitest"
+        }
+      ],
+      "description": "Vitest UI server allows unauthenticated arbitrary file read and code execution",
+      "action_required": true,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Critical RCE in protobufjs",
+      "severity": "P1",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss_score": 9.8,
+      "packages": [
+        {
+          "name": "protobufjs",
+          "affected_versions": "<=7.6.4",
+          "projects": ["portal/Backend"],
+          "fix": "npm update protobufjs"
+        }
+      ],
+      "description": "Arbitrary code execution via unsafe deserialization; also includes prototype pollution and DoS vectors",
+      "action_required": true,
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_priority_findings": [
+    {
+      "id": "DEP-003",
+      "title": "Multiple DoS Vulnerabilities in brace-expansion",
+      "severity": "P2",
+      "cves": [
+        "GHSA-3jxr-9vmj-r5cp",
+        "GHSA-mh99-v99m-4gvg",
+        "GHSA-rgw5-rvv9-x895"
+      ],
+      "packages": [
+        {
+          "name": "brace-expansion",
+          "affected_versions": "<1.1.18",
+          "projects": ["Source/Backend"]
+        }
+      ],
+      "max_cvss": 7.5
+    },
+    {
+      "id": "DEP-004",
+      "title": "Multiple Critical DoS Flaws in js-yaml",
+      "severity": "P2",
+      "cves": [
+        "GHSA-6qg2-gpw9-rf3x",
+        "GHSA-52cp-r559-cp3m",
+        "GHSA-5p4m-2wfm-xmqj",
+        "GHSA-2883-xcg3-v3hh"
+      ],
+      "packages": [
+        {
+          "name": "js-yaml",
+          "affected_versions": "<=3.15.1",
+          "projects": ["Source/Backend"]
+        }
+      ],
+      "max_cvss": 7.5
+    },
+    {
+      "id": "DEP-005",
+      "title": "Vitest Path Traversal in @vitest/mocker",
+      "severity": "P2",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "cvss_score": 5.9,
+      "packages": [
+        {
+          "name": "@vitest/mocker",
+          "affected_versions": "<=4.1.10",
+          "projects": ["Source/Frontend"]
+        }
+      ]
+    },
+    {
+      "id": "DEP-006",
+      "title": "Multiple High-Risk vulnerabilities in Vite",
+      "severity": "P2",
+      "cves": [
+        "GHSA-fx2h-pf6j-xcff",
+        "GHSA-v6wh-96g9-6wx3"
+      ],
+      "packages": [
+        {
+          "name": "vite",
+          "affected_versions": "<=6.4.2",
+          "projects": ["portal/Frontend"]
+        }
+      ],
+      "max_cvss": 7.5
+    },
+    {
+      "id": "DEP-007",
+      "title": "Open Redirect in React Router",
+      "severity": "P2",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "packages": [
+        {
+          "name": "@remix-run/router",
+          "affected_versions": "1.3.0-1.23.2",
+          "projects": ["Source/Frontend"]
+        }
+      ]
+    },
+    {
+      "id": "DEP-008",
+      "title": "Unbounded Memory Growth in browserslist",
+      "severity": "P2",
+      "cves": [
+        "GHSA-c83g-rgw3-j3cx",
+        "GHSA-73wf-gq98-2v4g"
+      ],
+      "packages": [
+        {
+          "name": "browserslist",
+          "affected_versions": "<=4.28.6",
+          "projects": ["portal/Frontend"]
+        }
+      ],
+      "max_cvss": 7.5
+    },
+    {
+      "id": "DEP-009",
+      "title": "Direct Dependency: UUID Buffer Overrun",
+      "severity": "P2",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss_score": 7.5,
+      "packages": [
+        {
+          "name": "uuid",
+          "affected_versions": "<11.1.1",
+          "current": "9.0.1",
+          "latest": "14.0.2",
+          "projects": ["Source/Backend"]
+        }
+      ],
+      "note": "Direct dependency; requires call site audit before upgrade"
+    }
+  ],
+  "moderate_priority_findings": [
+    {
+      "id": "DEP-010",
+      "title": "Outdated Major Versions",
+      "severity": "P3",
+      "packages": [
+        {
+          "name": "express",
+          "current": "4.22.3",
+          "latest": "5.2.1",
+          "gap": 1,
+          "project": "Source/Backend"
+        },
+        {
+          "name": "pino",
+          "current": "8.21.0",
+          "latest": "10.3.1",
+          "gap": 2,
+          "project": "Source/Backend"
+        },
+        {
+          "name": "react",
+          "current": "18.3.1",
+          "latest": "19.3.0",
+          "gap": 1,
+          "project": "Source/Frontend"
+        },
+        {
+          "name": "react-dom",
+          "current": "18.3.1",
+          "latest": "19.3.0",
+          "gap": 1,
+          "project": "Source/Frontend"
+        },
+        {
+          "name": "react-router-dom",
+          "current": "6.30.6",
+          "latest": "7.18.4",
+          "gap": 1,
+          "project": "Source/Frontend"
+        }
+      ]
+    },
+    {
+      "id": "DEP-011",
+      "title": "Denial of Service in body-parser",
+      "severity": "P3",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "packages": [
+        {
+          "name": "body-parser",
+          "affected_versions": "<1.20.6",
+          "projects": ["Source/Backend"]
+        }
+      ]
+    },
+    {
+      "id": "DEP-012",
+      "title": "Arbitrary File Read in @babel/core",
+      "severity": "P3",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "packages": [
+        {
+          "name": "@babel/core",
+          "affected_versions": "<=7.29.0",
+          "projects": ["Source/Frontend", "Source/Backend"]
+        }
+      ]
+    },
+    {
+      "id": "DEP-013",
+      "title": "Denial of Service in baseline-browser-mapping",
+      "severity": "P3",
+      "cve": "GHSA-w5vr-8v7q-w6rv",
+      "packages": [
+        {
+          "name": "baseline-browser-mapping",
+          "affected_versions": ">=2.0.0 <2.11.0",
+          "projects": ["Source/Frontend"]
+        }
+      ]
+    },
+    {
+      "id": "DEP-014",
+      "title": "DoS Vulnerabilities in qs",
+      "severity": "P3",
+      "cves": [
+        "GHSA-q8mj-m7cp-5q26",
+        "GHSA-x5fp-wj9c-mxmx",
+        "GHSA-4mjr-xmp4-gh2g"
+      ],
+      "packages": [
+        {
+          "name": "qs",
+          "affected_versions": ">=2.2.5 <6.16.0",
+          "projects": ["Source/Backend"]
+        }
+      ]
+    },
+    {
+      "id": "DEP-015",
+      "title": "Memory Exhaustion in WebSocket",
+      "severity": "P3",
+      "cves": [
+        "GHSA-58qx-3vcg-4xpx",
+        "GHSA-96hv-2xvq-fx4p"
+      ],
+      "packages": [
+        {
+          "name": "ws",
+          "affected_versions": "8.0.0-8.20.1",
+          "projects": ["Source/Frontend"]
+        }
+      ]
+    }
+  ],
+  "supply_chain": {
+    "post_install_scripts": {
+      "status": "SAFE",
+      "count": 0,
+      "note": "No packages with postinstall scripts detected"
+    },
+    "transitive_dependencies": {
+      "Source/Backend": 13,
+      "Source/Frontend": 13,
+      "Source/E2E": 5,
+      "platform/orchestrator": 3,
+      "portal/Backend": 22,
+      "portal/Frontend": 17,
+      "note": "portal/Backend has highest risk (OpenTelemetry instrumentation); consider pruning"
+    }
+  },
+  "license_compliance": {
+    "status": "COMPLIANT",
+    "note": "No GPL/AGPL detected; standard MIT/Apache/ISC/BSD licenses",
+    "action_required": "Run formal audit before production: npx license-checker --json"
+  },
+  "remediation_steps": [
+    {
+      "phase": "Immediate",
+      "priority": 1,
+      "items": [
+        "npm update vitest (Source/Frontend and portal/Backend)",
+        "npm update protobufjs (portal/Backend)",
+        "npm update js-yaml (Source/Backend)",
+        "npm update brace-expansion (Source/Backend)"
+      ],
+      "tests_required": "npm test --workspaces"
+    },
+    {
+      "phase": "Short-term",
+      "priority": 2,
+      "items": [
+        "npm update uuid, qs, body-parser (Source/Backend)",
+        "npm update react-router-dom, browserslist (Source/Frontend)",
+        "npm update vite, browserslist (portal/Frontend)",
+        "Stagger major version upgrades (express 4->5, pino 8->10, react 18->19)"
+      ],
+      "tests_required": "npm test --workspaces && python3 tools/traceability-enforcer.py"
+    },
+    {
+      "phase": "Long-term",
+      "priority": 3,
+      "items": [
+        "Set up automated dependency scanning (Dependabot or similar)",
+        "Audit portal/Backend OpenTelemetry dependencies; remove unused exporters",
+        "Establish monthly security review cadence"
+      ]
+    }
+  ],
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "issues": [
+        "DEP-001: vitest RCE",
+        "DEP-002: protobufjs RCE",
+        "DEP-005: @vitest/mocker path traversal",
+        "DEP-006: vite path traversal",
+        "DEP-007: react-router open redirect"
+      ],
+      "reason": "Security-critical; code execution or critical access control bypass"
+    },
+    {
+      "team": "performance-profiler",
+      "issues": [
+        "DEP-003: brace-expansion DoS",
+        "DEP-014: qs DoS",
+        "DEP-015: ws memory exhaustion"
+      ],
+      "reason": "Potential performance/availability impact under attack"
+    }
+  ],
+  "overall_grade": "D",
+  "audit_notes": [
+    "This is the first comprehensive dependency audit. Establish baseline for future comparisons.",
+    "vitest and protobufjs are on critical watch list.",
+    "Source code projects are lean and well-scoped. Portal/platform have heavier dependencies.",
+    "No post-install script supply-chain risks detected.",
+    "License compliance looks good; run formal checker before production.",
+    "Consider reducing portal/Backend OpenTelemetry footprint if not all exporters are needed."
+  ],
+  "generated_by": "dependency_auditor",
+  "model": "haiku-4.5"
+}

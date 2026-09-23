@@ -1,0 +1,264 @@
+{
+  "audit_date": "2026-09-23T07:40:28Z",
+  "codebase": "dev-crew",
+  "package_manager": "npm",
+  "grade": "F",
+  "summary": {
+    "total_cves": 110,
+    "critical": 6,
+    "high": 33,
+    "moderate": 64,
+    "low": 7,
+    "blocking_release": true
+  },
+  "modules": {
+    "source_backend": {
+      "path": "Source/Backend",
+      "direct_dependencies": 13,
+      "transitive_dependencies": 411,
+      "supply_chain_risk": "CRITICAL",
+      "cves": 10,
+      "critical": 1,
+      "high": 4,
+      "moderate": 3,
+      "low": 2
+    },
+    "source_frontend": {
+      "path": "Source/Frontend",
+      "direct_dependencies": 11,
+      "transitive_dependencies": 230,
+      "supply_chain_risk": "MODERATE",
+      "cves": 15,
+      "critical": 1,
+      "high": 6,
+      "moderate": 7,
+      "low": 1
+    },
+    "source_e2e": {
+      "path": "Source/E2E",
+      "direct_dependencies": 5,
+      "transitive_dependencies": 50,
+      "supply_chain_risk": "LOW",
+      "cves": 0,
+      "status": "CLEAN"
+    },
+    "platform_orchestrator": {
+      "path": "platform/orchestrator",
+      "transitive_dependencies": 155,
+      "supply_chain_risk": "MODERATE",
+      "cves": 15,
+      "critical": 1,
+      "high": 6,
+      "moderate": 7,
+      "low": 1
+    },
+    "portal_backend": {
+      "path": "portal/Backend",
+      "cves": 54,
+      "critical": 2,
+      "high": 10,
+      "moderate": 41,
+      "low": 1
+    },
+    "portal_frontend": {
+      "path": "portal/Frontend",
+      "cves": 16,
+      "critical": 1,
+      "high": 7,
+      "moderate": 6,
+      "low": 2
+    }
+  },
+  "critical_blocking_issues": [
+    {
+      "id": "DEPS-001",
+      "package": "vitest",
+      "version_range": "<=4.1.10",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "advisory": "GHSA-5xrq-8626-4rwp",
+      "title": "Path Traversal & Arbitrary File Read on Dev Server",
+      "location": "Source/Frontend (DIRECT)",
+      "cwe": ["CWE-22", "CWE-862"],
+      "exploit": "Arbitrary file read/execution when Vitest UI server is listening",
+      "required_version": ">=4.1.11",
+      "recommended_version": "5.0.1",
+      "fix_command": "cd Source/Frontend && npm install vitest@5.0.1"
+    },
+    {
+      "id": "DEPS-002",
+      "package": "handlebars",
+      "version_range": "<=4.7.8",
+      "severity": "CRITICAL",
+      "advisory": "GHSA-xvch-5gqq-41q4",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "location": "Source/Backend (transitive)",
+      "cwe": ["CWE-93"],
+      "exploit": "Arbitrary JS injection via @partial-block tampering",
+      "required_version": ">4.7.8",
+      "fix_command": "cd Source/Backend && npm update handlebars"
+    },
+    {
+      "id": "DEPS-003",
+      "package": "protobufjs",
+      "severity": "CRITICAL",
+      "title": "Remote Code Execution",
+      "location": "platform/orchestrator (transitive)",
+      "exploit": "Arbitrary code execution in deserialization",
+      "fix_command": "cd platform/orchestrator && npm update protobufjs"
+    }
+  ],
+  "high_severity_packages": [
+    {
+      "package": "brace-expansion",
+      "version_range": "<=1.1.17",
+      "required": ">=1.1.18",
+      "issues": 4,
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+      "affected_modules": ["Source/Backend", "Source/Frontend"]
+    },
+    {
+      "package": "browserslist",
+      "version_range": "<=4.28.6",
+      "required": ">4.28.6",
+      "issues": 2,
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "affected_modules": ["Source/Backend", "Source/Frontend"]
+    },
+    {
+      "package": "vite",
+      "version_range": "5.4.0",
+      "severity": "HIGH",
+      "title": "Path Traversal in Optimized Dependencies",
+      "location": "Source/Frontend (DIRECT)"
+    },
+    {
+      "package": "form-data",
+      "severity": "HIGH",
+      "title": "CRLF Injection in Multipart Headers"
+    },
+    {
+      "package": "nanoid",
+      "severity": "HIGH",
+      "title": "ReDoS with Negative Size"
+    },
+    {
+      "package": "postcss",
+      "severity": "HIGH",
+      "title": "XSS via </style> in CSS Stringify Output"
+    },
+    {
+      "package": "js-yaml",
+      "severity": "HIGH",
+      "title": "Quadratic-complexity DoS via Merge Keys"
+    },
+    {
+      "package": "ws",
+      "severity": "HIGH",
+      "title": "Incorrect Regex Validation"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.2",
+      "gap_majors": 5,
+      "priority": "URGENT",
+      "reason": "Unusual lag suggests stale lock file"
+    },
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.2.1",
+      "gap_majors": 2,
+      "priority": "HIGH",
+      "reason": "Breaking changes; requires code migration"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "gap_majors": 2,
+      "priority": "HIGH"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "gap_majors": 1,
+      "priority": "MEDIUM"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "gap_majors": 1,
+      "priority": "MEDIUM"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.4",
+      "gap_majors": 1,
+      "priority": "MEDIUM",
+      "reason": "Major rewrite; Data APIs + breaking routing changes"
+    }
+  ],
+  "supply_chain_analysis": {
+    "source_backend_risk": {
+      "description": "411 transitive dependencies (23% above 350-dep risk threshold)",
+      "root_cause": "jest + ts-jest ecosystem bloat",
+      "action": "Evaluate jest → vitest migration; reduce tree by ~100+ deps"
+    }
+  },
+  "license_compliance": {
+    "status": "COMPLIANT",
+    "summary": "All production dependencies use MIT/ISC (permissive licenses)",
+    "viral_licenses_found": false
+  },
+  "action_plan": {
+    "phase_1_critical_same_day": [
+      "cd Source/Frontend && npm install vitest@5.0.1",
+      "cd Source/Backend && npm update handlebars",
+      "cd platform/orchestrator && npm update protobufjs",
+      "npm run test --workspaces --if-present"
+    ],
+    "phase_2_high_severity_this_week": [
+      "npm audit fix --workspaces --audit-level=high",
+      "npm run typecheck --workspaces --if-present",
+      "npm run test --workspaces --if-present"
+    ],
+    "phase_3_supply_chain_next_sprint": [
+      "Reduce Source/Backend transitive deps: 411 → <350",
+      "Evaluate jest → vitest migration",
+      "Plan major version upgrades (express, react-router-dom)",
+      "Add pre-commit hook: npm audit --audit-level=high"
+    ]
+  },
+  "escalation": {
+    "to_team": "TheGuardians",
+    "items": [
+      {
+        "id": "DEPS-001",
+        "reason": "Network-accessible arbitrary file read (CVSS 9.8) on dev server"
+      },
+      {
+        "id": "DEPS-002",
+        "reason": "Template-based code injection risk if templates are user-controlled"
+      },
+      {
+        "id": "DEPS-003",
+        "reason": "RCE in platform/orchestrator if untrusted protobuf messages are processed"
+      }
+    ]
+  },
+  "tools_used": [
+    "npm audit --json",
+    "npm outdated --json",
+    "package-lock.json analysis"
+  ],
+  "modules_scanned": 6,
+  "lines_of_report": 531,
+  "next_audit_date": "2026-10-23"
+}

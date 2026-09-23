@@ -1,0 +1,330 @@
+{
+  "audit_id": "run-20260923-074449",
+  "audit_date": "2026-09-23",
+  "project": "dev-crew Source App",
+  "overall_grade": "D",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline (backend http://localhost:3001 and frontend http://localhost:5173 not reachable); static-mode reports were not produced for these specialists in this run",
+  "summary": {
+    "total_findings": 46,
+    "p1": 5,
+    "p2": 37,
+    "p3": 4,
+    "p4": 0,
+    "fixed": 0,
+    "still_open": 0,
+    "new": 46,
+    "regressed": 0,
+    "first_audit": true
+  },
+  "escalations": [
+    {
+      "id": "DEPS-001",
+      "priority": "P1",
+      "category": "security",
+      "specialist": "dependency-auditor",
+      "title": "Path Traversal & Arbitrary File Read via vitest Dev Server",
+      "package": "vitest",
+      "version_range": "<=4.1.10",
+      "cvss": 9.8,
+      "advisory": "GHSA-5xrq-8626-4rwp",
+      "cwe": ["CWE-22", "CWE-862"],
+      "file": "Source/Frontend/package.json",
+      "exploit": "Any user on the same network as the running Vitest UI dev server can issue crafted requests to read arbitrary files: .env, source code, private keys",
+      "impact": "Full exposure of secrets and source code; likely full compromise of dev environment",
+      "fix": "cd Source/Frontend && npm install vitest@5.0.1",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Sensitive data exposed via exploitable network-accessible path traversal",
+      "status": "NEW"
+    },
+    {
+      "id": "DEPS-002",
+      "priority": "P1",
+      "category": "security",
+      "specialist": "dependency-auditor",
+      "title": "JavaScript Injection via Handlebars AST Type Confusion",
+      "package": "handlebars",
+      "version_range": "<=4.7.8",
+      "advisory": "GHSA-xvch-5gqq-41q4",
+      "cwe": ["CWE-93"],
+      "file": "Source/Backend/package.json (transitive)",
+      "exploit": "If handlebars templates are rendered with any user-controlled input (e.g., @partial-block), an attacker can inject arbitrary JavaScript that executes server-side",
+      "impact": "Server-side code execution if templates touch user data",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Template injection (CWE-93) — requires assessment of whether user-controlled data reaches handlebars templates",
+      "status": "NEW"
+    },
+    {
+      "id": "DEPS-003",
+      "priority": "P1",
+      "category": "security",
+      "specialist": "dependency-auditor",
+      "title": "Remote Code Execution in protobufjs Deserialization",
+      "package": "protobufjs",
+      "file": "platform/orchestrator/package.json (transitive)",
+      "exploit": "Deserializing an attacker-controlled protobuf message can trigger arbitrary code execution in the orchestrator process",
+      "impact": "Full RCE in platform orchestrator — highest severity in the pipeline infrastructure",
+      "fix": "cd platform/orchestrator && npm update protobufjs",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Remote code execution in platform infrastructure; requires isolation assessment",
+      "status": "NEW",
+      "note": "platform/ is solo-session only per CLAUDE.md; fix must not go through team pipeline"
+    }
+  ],
+  "findings": {
+    "p1": [
+      {
+        "id": "QO-001",
+        "priority": "P1",
+        "category": "traceability",
+        "specialist": "quality-oracle",
+        "title": "Traceability Gate Produces False PASS — Two Plans Silently Skip",
+        "file": "tools/traceability-enforcer.py",
+        "description": "The enforcer's default mode selects only the latest-mtime requirements.md (currently self-judging-workflow). Running the CLAUDE.md-mandated gate shows PASS while dev-workflow-platform (34 unimplemented FRs) and dependency-linking (7 stale FRs) silently fail. Any agent running the gate believes traceability is clean when it is not.",
+        "exploit_scenario": "Any pipeline agent runs `python3 tools/traceability-enforcer.py`, sees PASS, and proceeds to merge code with completely unimplemented feature requirements — silent drift accumulates",
+        "impact": "Architecture rule 'Every FR needs a test' is unenforceable at scale; spec-first discipline breaks down",
+        "recommendation": "Run gate explicitly against all plans: `python3 tools/traceability-enforcer.py --all` or enumerate plans in CLAUDE.md. Add --all flag to enforcer script.",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-002",
+        "priority": "P1",
+        "category": "spec-drift",
+        "specialist": "quality-oracle",
+        "title": "FR-001 through FR-032: dev-workflow-platform Entirely Unimplemented",
+        "file": "Specifications/dev-workflow-platform.md",
+        "description": "The dev-workflow-platform spec (69 FRs: feature requests, bug reports, dev cycles, SQLite backend, full React UI) was approved in plan run-1774234977 but never dispatched to a coder team. Current Source/ implements a completely different domain (self-judging workflow engine). Git history has only one commit.",
+        "exploit_scenario": "Stakeholders believe the platform is spec-compliant; 34 committed FRs have zero implementation and zero tests",
+        "impact": "Entire product domain is misaligned with specifications; cannot pass traceability audit",
+        "recommendation": "Decision required: (a) Archive spec as superseded — move to Specifications/archived/ and close the plan, or (b) Dispatch TheATeam to implement. Must resolve before next audit.",
+        "status": "NEW"
+      }
+    ],
+    "p2": [
+      {
+        "id": "QO-003",
+        "priority": "P2",
+        "category": "traceability",
+        "specialist": "quality-oracle",
+        "title": "Stale FR IDs in dependency-linking Plan",
+        "file": "Plans/dependency-linking/requirements.md",
+        "description": "FR IDs (FR-0002, FR-0003, FR-070, FR-085, etc.) reference a portal/ codebase that no longer exists in Source/. The feature was implemented under FR-dependency-* IDs. Requirements file was never updated after implementation.",
+        "recommendation": "Update requirements.md to use the actual FR IDs implemented, or mark plan as archived.",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-004",
+        "priority": "P2",
+        "category": "correctness",
+        "specialist": "quality-oracle",
+        "title": "Silent Error Swallowing on Non-2xx JSON Parse",
+        "file": "Source/Frontend/src/api/client.ts",
+        "line": 26,
+        "description": ".catch(() => ({})) silently swallows JSON parse errors on non-2xx responses (e.g., HTML 502 from a proxy). The caller receives an empty object instead of an error, masking real failures.",
+        "exploit_scenario": "Backend returns 502 HTML error page; frontend silently treats it as empty JSON — no error displayed to user, state corrupted",
+        "impact": "Violates 'never swallow errors silently' architecture rule; masks production errors from operators",
+        "recommendation": "Add rationale comment or log at debug level: `.catch(err => { logger.debug('json parse failed', err); return {}; })`",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-001",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "brace-expansion: 4 High-Severity CVEs (ReDoS, DoS, OOM)",
+        "file": "Source/Backend/package.json, Source/Frontend/package.json (transitive)",
+        "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895"],
+        "fix": "npm install brace-expansion@>=1.1.18 --workspaces",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-002",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "browserslist: Memory Exhaustion + Prototype Pollution",
+        "file": "Source/Backend/package.json, Source/Frontend/package.json (transitive)",
+        "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+        "fix": "npm install browserslist@>4.28.6 --workspaces",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-003",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "vite 5.4.0: Path Traversal in Optimized Dependencies",
+        "file": "Source/Frontend/package.json (direct)",
+        "fix": "cd Source/Frontend && npm update vite",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-004",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "form-data: CRLF Injection in Multipart Headers",
+        "file": "Source/Backend/package.json (transitive)",
+        "fix": "cd Source/Backend && npm update form-data",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-005",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "nanoid: ReDoS with Negative Size Parameter",
+        "fix": "npm update nanoid --workspaces",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-006",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "postcss: XSS via </style> in CSS Stringify Output",
+        "fix": "npm update postcss --workspaces",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-007",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "js-yaml: Quadratic-Complexity DoS via Merge Keys",
+        "fix": "npm update js-yaml --workspaces",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-HIGH-008",
+        "priority": "P2",
+        "category": "dependency-vulnerability",
+        "specialist": "dependency-auditor",
+        "title": "ws: Incorrect Regex Validation",
+        "fix": "npm update ws --workspaces",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-OUTDATED-001",
+        "priority": "P2",
+        "category": "outdated-dependency",
+        "specialist": "dependency-auditor",
+        "title": "uuid 9.0.0 → 14.0.2: 5 Major Versions Behind (Stale Lock File Risk)",
+        "fix": "npm install uuid@latest --workspaces",
+        "status": "NEW"
+      },
+      {
+        "id": "DEPS-SUPPLY-001",
+        "priority": "P2",
+        "category": "supply-chain",
+        "specialist": "dependency-auditor",
+        "title": "Source/Backend: 411 Transitive Dependencies (23% Above Safe Threshold)",
+        "description": "Root cause: jest + ts-jest ecosystem bloat. Evaluate vitest migration to reduce tree by ~100+ deps.",
+        "fix": "Plan jest → vitest migration for Source/Backend",
+        "status": "NEW"
+      }
+    ],
+    "p3": [
+      {
+        "id": "QO-005",
+        "priority": "P3",
+        "category": "code-quality",
+        "specialist": "quality-oracle",
+        "title": "Duplicate Logger: src/logger.ts Wraps src/utils/logger.ts Without Documentation",
+        "file": "Source/Backend/src/logger.ts",
+        "description": "Undocumented wrapper risks divergence and confuses agents about which logger to use",
+        "recommendation": "Delete src/logger.ts and update all imports to use src/utils/logger.ts directly, or document the wrapper's intent",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-006",
+        "priority": "P3",
+        "category": "code-quality",
+        "specialist": "quality-oracle",
+        "title": "eslint-disable Without Rationale Comment in useWorkItems.ts",
+        "file": "Source/Frontend/src/hooks/useWorkItems.ts",
+        "line": 63,
+        "description": "eslint-disable-next-line react-hooks/exhaustive-deps with no explanation — may hide a real stale-closure bug",
+        "recommendation": "Add a comment explaining why the dependency is intentionally excluded, or fix the hook deps",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-007",
+        "priority": "P3",
+        "category": "test-coverage",
+        "specialist": "quality-oracle",
+        "title": "5 Frontend Components Have No Test File",
+        "description": "Layout.tsx, PriorityBadge.tsx, StatusBadge.tsx, TypeBadge.tsx, DebugPortalPage.tsx — all untested",
+        "recommendation": "Add unit tests for each component covering rendering and key interactions",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-008",
+        "priority": "P3",
+        "category": "correctness",
+        "specialist": "quality-oracle",
+        "title": "7 Catch Blocks in workflow.ts Bypass Centralized Error Handler",
+        "file": "Source/Backend/src/routes/workflow.ts",
+        "description": "All 7 catch blocks return res.status(500) directly instead of calling next(err) — bypasses Express centralized error handler, loses stack traces and error-id correlation",
+        "recommendation": "Replace res.status(500).json(...) with next(err) in all 7 catch blocks",
+        "status": "NEW"
+      }
+    ],
+    "p4": []
+  },
+  "cross_references": [
+    {
+      "root_cause": "No automated `npm audit` gate in CI/pre-commit",
+      "affected_findings": ["DEPS-001", "DEPS-002", "DEPS-003", "DEPS-HIGH-001", "DEPS-HIGH-002", "DEPS-HIGH-003", "DEPS-HIGH-004", "DEPS-HIGH-005", "DEPS-HIGH-006", "DEPS-HIGH-007", "DEPS-HIGH-008"],
+      "single_fix": "Add `npm audit --audit-level=high` as pre-commit hook and required CI step. All 11 findings would have been caught before merging.",
+      "specialists": ["dependency-auditor"]
+    },
+    {
+      "root_cause": "Plan documentation not maintained post-implementation",
+      "affected_findings": ["QO-001", "QO-003"],
+      "single_fix": "Enforce all-plan traceability check (`--all` flag) in CLAUDE.md gate; add a plan-closeout checklist requiring FR ID reconciliation before archiving",
+      "specialists": ["quality-oracle"]
+    },
+    {
+      "root_cause": "Error handling patterns inconsistent across layers",
+      "affected_findings": ["QO-004", "QO-008"],
+      "single_fix": "Add an architecture decision record (ADR) for error handling patterns; add lint rule or test asserting next(err) is called in route catch blocks and no silent swallowing in API client",
+      "specialists": ["quality-oracle"]
+    }
+  ],
+  "action_plan": {
+    "block_deployment": [
+      "DEPS-001 (CVSS 9.8 arbitrary file read — escalated to TheGuardians)",
+      "DEPS-002 (JS injection — escalated to TheGuardians)",
+      "DEPS-003 (RCE in orchestrator — escalated to TheGuardians)",
+      "QO-001 (traceability gate is broken — blocks compliance verification)"
+    ],
+    "this_sprint": [
+      "QO-002: Resolve dev-workflow-platform spec status (archive or implement)",
+      "QO-004: Fix silent error swallowing in client.ts",
+      "QO-003: Reconcile stale FR IDs in dependency-linking plan",
+      "DEPS-HIGH-001 through DEPS-HIGH-008: npm audit fix --audit-level=high",
+      "DEPS-OUTDATED-001: Update uuid to latest",
+      "DEPS-SUPPLY-001: Begin jest→vitest migration planning"
+    ],
+    "next_sprint": [
+      "QO-007: Add tests for 5 untested components",
+      "QO-008: Fix 7 catch blocks in workflow.ts",
+      "QO-005: Resolve duplicate logger",
+      "QO-006: Document eslint-disable rationale",
+      "Plan express 4→5 upgrade",
+      "Plan react-router-dom 6→7 upgrade"
+    ],
+    "backlog": [
+      "Plan pino 8→10 upgrade",
+      "Plan react 18→19 upgrade",
+      "Reduce Source/Backend transitive dep tree: 411 → <350",
+      "Add npm audit pre-commit hook",
+      "Re-run TheInspector with services live (performance-profiler + chaos-monkey)"
+    ]
+  },
+  "prior_audit": null,
+  "next_audit_due": "2026-10-23"
+}

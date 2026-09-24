@@ -1,0 +1,349 @@
+{
+  "audit_id": "run-20260924-073556",
+  "audit_date": "2026-09-24",
+  "grade": "D",
+  "branch": "main",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "totals": {
+    "p1": 3,
+    "p2": 31,
+    "p3": 83,
+    "p4": 8,
+    "fixed": 0,
+    "escalations": 3
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Arbitrary Code Execution — protobufjs (CVSS 9.8)",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "fix": "npm update protobufjs --save (>=7.5.5)",
+      "route": "TheGuardians",
+      "rationale": "CVE-class RCE vector requires security team exploitability assessment"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "JavaScript Injection — handlebars (CVSS 9.8)",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "affected": ["Source/Backend", "Source/Frontend"],
+      "fix": "npm update handlebars --save (>=4.7.9)",
+      "route": "TheGuardians",
+      "rationale": "Code injection via user-controlled templates requires security assessment"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "title": "Test Framework Integrity — vitest (critical)",
+      "advisory": "source:1139528",
+      "affected": ["portal/Backend", "portal/Frontend", "Source/Frontend"],
+      "fix": "npm update vitest --save-dev",
+      "route": "TheGuardians",
+      "rationale": "CI pipeline integrity risk requires security team assessment"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "DEP-001",
+      "specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "rce-vulnerability",
+      "title": "protobufjs: Arbitrary Code Execution (CVSS 9.8)",
+      "packages": ["platform/orchestrator/package.json", "portal/Backend/package.json"],
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "fix": "Update protobufjs to >=7.5.5",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "injection-vulnerability",
+      "title": "handlebars: JavaScript Injection (CVSS 9.8)",
+      "packages": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "fix": "Update handlebars to >=4.7.9",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "test-integrity",
+      "title": "vitest: Test Framework Critical Vulnerability",
+      "packages": ["portal/Backend/package.json", "portal/Frontend/package.json", "Source/Frontend/package.json"],
+      "advisory": "source:1139528",
+      "fix": "Update vitest to latest patch",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md describes an unimplemented system",
+      "file": "Specifications/dev-workflow-platform.md",
+      "fix": "Add PLANNED status header or move to Specifications/planned/",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-brace-expansion",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "dos-vulnerability",
+      "title": "brace-expansion: 4 DoS CVEs (exponential expansion)",
+      "fix": "npm update brace-expansion",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-js-yaml",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "dos-vulnerability",
+      "title": "js-yaml: 4 DoS CVEs (quadratic CPU, unbounded recursion)",
+      "fix": "npm update js-yaml (>=3.15.2)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-qs",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "dos-vulnerability",
+      "title": "qs: 3 CVEs (array-limit bypass, buffer DoS)",
+      "fix": "npm update qs",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-browserslist",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "memory-vulnerability",
+      "title": "browserslist: unbounded memory + prototype pollution",
+      "fix": "npm update browserslist",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-form-data",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "injection",
+      "title": "form-data: CRLF injection (CWE-93)",
+      "fix": "npm update form-data",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-uuid",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "vulnerability",
+      "title": "uuid: missing buffer bounds validation",
+      "fix": "npm update uuid (>=11.1.1)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-protobufjs-dos",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "dos-vulnerability",
+      "title": "protobufjs: unbounded recursion DoS",
+      "fix": "Resolved by DEP-001 fix (>=7.5.5)",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-body-parser",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "vulnerability",
+      "title": "body-parser: size enforcement bypass",
+      "fix": "npm update body-parser",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "test-coverage",
+      "title": "Duplicate frontend test files",
+      "file": "Source/Frontend/tests/ vs Source/Frontend/tests/pages/",
+      "fix": "Delete root-level duplicates; keep tests/pages/ as canonical",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "DebugPortalPage.tsx: free-text Verifies: comment, not an FR-WF-ID",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "fix": "Assign FR-WF-XXX ID or document as infrastructure",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "E2E playwright.pipeline.config.ts references non-existent testDir",
+      "file": "Source/E2E/playwright.pipeline.config.ts:3",
+      "fix": "Delete or reset; add to .gitignore",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "specialist": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Unexplained eslint-disable suppressions in 2 production files",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "fix": "Add inline rationale comments",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-react-major",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "react 18.3.1 vs latest 19.3.0",
+      "workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fix": "Plan React 19 upgrade",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-react-router-major",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "react-router-dom 6.30.6 vs latest 7.18.4",
+      "workspaces": ["Source/Frontend", "portal/Frontend"],
+      "fix": "Plan React Router 7 upgrade",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-express-major",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "express 4.22.3 vs latest 5.2.1",
+      "workspaces": ["platform/orchestrator"],
+      "fix": "Plan Express 5 upgrade",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-opentelemetry",
+      "specialist": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "@opentelemetry/* 0.40-0.47 (100-175 versions behind latest)",
+      "workspaces": ["portal/Backend"],
+      "fix": "Audit necessity; update or remove",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-006",
+      "specialist": "quality-oracle",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "title": "Frontend tests/setup.ts missing doc comment",
+      "file": "Source/Frontend/tests/setup.ts",
+      "fix": "Add documentation comment",
+      "route": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "dependency_summary": {
+    "workspaces": [
+      { "name": "Source/E2E", "direct": 1, "transitive": 4, "cves": 0, "risk": "CLEAN" },
+      { "name": "Source/Frontend", "direct": 3, "transitive": 9, "cves": 15, "risk": "MEDIUM" },
+      { "name": "Source/Backend", "direct": 5, "transitive": 102, "cves": 10, "risk": "MEDIUM" },
+      { "name": "platform/orchestrator", "direct": 153, "transitive": 153, "cves": 8, "risk": "MEDIUM" },
+      { "name": "portal/Frontend", "direct": 9, "transitive": 424, "cves": 16, "risk": "HIGH" },
+      { "name": "portal/Backend", "direct": 397, "transitive": 577, "cves": 54, "risk": "CRITICAL" }
+    ],
+    "total_dependencies": 1837,
+    "license_violations": 0,
+    "license_status": "PASS"
+  },
+  "spec_coverage": {
+    "active": { "spec": "Plans/self-judging-workflow/requirements.md", "total": 13, "traced": 13, "pct": 100 },
+    "planned": { "spec": "Specifications/dev-workflow-platform.md", "total": 85, "traced": 0, "pct": 0, "note": "Different system — not yet built. See QO-001." }
+  },
+  "grading": {
+    "grade": "D",
+    "rationale": "3 P1 CVEs exceed C-grade ceiling (max_p1: 2). Code quality alone would be B.",
+    "thresholds_applied": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+      "D": { "max_p1": 999 },
+      "F": "reserved for exploitable auth bypass + critical domain failure"
+    }
+  },
+  "cross_references": [
+    {
+      "root_cause": "AST type-confusion in template/proto parsing",
+      "findings": ["DEP-001", "DEP-002"],
+      "single_fix": "Update protobufjs >=7.5.5 AND handlebars >=4.7.9",
+      "impact": "Eliminates 2 of 3 P1s, removes 16 CVEs"
+    },
+    {
+      "root_cause": "Supply-chain bloat in portal/Backend",
+      "findings": ["DEP-003", "DEP-P2-brace-expansion", "DEP-P2-qs", "DEP-P2-js-yaml", "DEP-P3-opentelemetry"],
+      "single_fix": "Audit portal/Backend deps; remove unnecessary transitive packages; pin @opentelemetry/*",
+      "impact": "Reduces ~40 CVEs across P1/P2/P3"
+    },
+    {
+      "root_cause": "Test directory disorganisation",
+      "findings": ["QO-002", "QO-004"],
+      "single_fix": "Delete root-level duplicate tests + delete/reset playwright.pipeline.config.ts",
+      "impact": "Resolves both test hygiene P3s in one pass"
+    },
+    {
+      "root_cause": "Missing intent documentation",
+      "findings": ["QO-003", "QO-005", "QO-006"],
+      "single_fix": "Targeted inline comment pass on 4 files",
+      "impact": "Resolves 3 P3s + 1 P4 in a single low-risk PR"
+    }
+  ],
+  "next_audit_targets": [
+    "Resolve DEP-001/DEP-002/DEP-003 to restore grade B",
+    "Run with services up for dynamic performance + chaos analysis",
+    "Add npm audit CI gate to prevent P1 CVE regressions"
+  ]
+}

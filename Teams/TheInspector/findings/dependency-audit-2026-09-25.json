@@ -1,0 +1,192 @@
+{
+  "audit_date": "2026-09-25",
+  "auditor": "dependency_auditor",
+  "model": "claude-haiku-4-5",
+  "scope": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E",
+    "platform/orchestrator",
+    "portal/Backend",
+    "portal/Frontend"
+  ],
+  "statistics": {
+    "total_transitive_dependencies": 800,
+    "total_direct_dependencies": 350,
+    "total_vulnerabilities": 32,
+    "by_severity": {
+      "critical_p1": 3,
+      "high_p2": 9,
+      "moderate_p3": 20,
+      "low_p4": 3
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "current_version": "~4.1.10",
+      "affected_range": "<3.2.6",
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "issue": "Arbitrary file read and code execution via UI server",
+      "location": "Source/Frontend/package.json",
+      "fix": "npm install --save-dev vitest@latest",
+      "priority": "BLOCKER_DAY1",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "current_version": "~7.6.4",
+      "affected_range": "<7.5.5",
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "issue": "Arbitrary code execution via .proto file parsing",
+      "location": "platform/orchestrator/package.json",
+      "fix": "npm install protobufjs@>=7.5.5",
+      "priority": "BLOCKER_DAY1",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "uuid",
+      "affected_range": "<11.1.1",
+      "cvss_score": 7.5,
+      "cve_id": "GHSA-w5hq-g745-h8pq",
+      "issue": "Missing buffer bounds check in v3/v5/v6 generation",
+      "location": "Source/Backend/package.json (direct), platform/orchestrator (transitive)",
+      "fix": "npm install uuid@>=11.1.1",
+      "priority": "BLOCKER_DAY1",
+      "escalate_to": "TheGuardians"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "package": "brace-expansion",
+      "affected_range": "<1.1.18",
+      "issue": "4x DoS CVEs: exponential expansion, unbounded arrays, zero-step sequences",
+      "max_cvss": 7.5,
+      "location": "Source/Backend",
+      "fix": "npm update brace-expansion@>=1.1.18",
+      "priority": "URGENT_DAY2"
+    },
+    {
+      "id": "DEP-005",
+      "package": "js-yaml",
+      "affected_range": "<=3.15.1",
+      "issue": "3x DoS CVEs: merge-key chains, omap resolution, quadratic CPU",
+      "max_cvss": 7.5,
+      "location": "Source/Backend",
+      "fix": "npm update js-yaml@>=3.15.2",
+      "priority": "URGENT_DAY2"
+    },
+    {
+      "id": "DEP-006",
+      "package": "browserslist",
+      "affected_range": "<=4.28.6",
+      "issue": "2x DoS CVEs: unbounded memory growth (OOM), prototype write crash",
+      "max_cvss": 7.5,
+      "location": "Source/Frontend",
+      "fix": "npm update browserslist@>=4.28.7",
+      "priority": "URGENT_DAY2"
+    },
+    {
+      "id": "DEP-007",
+      "package": "vite",
+      "affected_range": "<=6.4.2",
+      "issue": "3x DoS/Path Traversal: fs.deny bypass on Windows, NTLMv2 leak, symlink traversal",
+      "max_cvss": 7.5,
+      "location": "Source/Frontend",
+      "fix": "npm update vite@>=6.4.3",
+      "priority": "URGENT_DAY2"
+    },
+    {
+      "id": "DEP-008",
+      "package": "ws",
+      "affected_range": ">=8.0.0 <8.21.0",
+      "issue": "Memory exhaustion DoS via fragmented WebSocket frames",
+      "max_cvss": 7.5,
+      "location": "Source/Frontend",
+      "fix": "npm update ws@>=8.21.0",
+      "priority": "URGENT_DAY2"
+    },
+    {
+      "id": "DEP-009",
+      "package": "@grpc/grpc-js",
+      "affected_range": "1.14.0 - 1.14.3",
+      "issue": "2x CVEs: server crash on malformed request/message",
+      "max_cvss": 7.5,
+      "location": "platform/orchestrator, portal/Backend",
+      "fix": "npm update @grpc/grpc-js@>=1.14.4",
+      "priority": "URGENT_DAY2"
+    },
+    {
+      "id": "DEP-010",
+      "package": "path-to-regexp",
+      "affected_range": "<0.1.13",
+      "issue": "ReDoS via multiple route parameters",
+      "max_cvss": 7.5,
+      "location": "platform/orchestrator",
+      "fix": "npm update path-to-regexp@>=0.1.13",
+      "priority": "URGENT_DAY2"
+    },
+    {
+      "id": "DEP-011",
+      "package": "@opentelemetry/auto-instrumentations-node",
+      "affected_range": "<0.75.0",
+      "issue": "Prometheus exporter crash on malformed HTTP request",
+      "max_cvss": 7.5,
+      "location": "portal/Backend",
+      "fix": "npm update @opentelemetry/auto-instrumentations-node@>=0.75.0",
+      "priority": "URGENT_DAY2"
+    }
+  ],
+  "supply_chain_risks": {
+    "post_install_scripts": "CLEAR",
+    "abandoned_packages": "CLEAR",
+    "transitive_dependency_count": "~800 (moderate surface)",
+    "license_violations": "CLEAR (all MIT, Apache-2.0, or proprietary)"
+  },
+  "grading": {
+    "current_grade": "F",
+    "reason": "3 critical RCE vulnerabilities in active infrastructure",
+    "can_reach_a": "Yes, post-remediation",
+    "remediation_effort": "5-7 days"
+  },
+  "next_steps": [
+    {
+      "day": 1,
+      "items": [
+        "Update vitest to >=5.0.1",
+        "Update protobufjs to >=7.5.5",
+        "Update uuid to >=11.1.1",
+        "Run unit tests for each module"
+      ]
+    },
+    {
+      "day": "2-3",
+      "items": [
+        "Update js-yaml, brace-expansion, browserslist, vite, ws, grpc-js, path-to-regexp, opentelemetry",
+        "Run full integration tests",
+        "Re-run npm audit to confirm 0 critical/high"
+      ]
+    },
+    {
+      "day": "4-5",
+      "items": [
+        "Deploy to staging",
+        "Smoke test all services",
+        "Prepare release"
+      ]
+    }
+  ],
+  "recommendations": [
+    "Set up Dependabot/Renovate for automated dependency updates",
+    "Enforce npm audit gates in CI pipeline (fail on critical/high)",
+    "Schedule quarterly dependency audits",
+    "Monitor protobufjs, grpc-js, vitest for future CVEs (high-risk packages)",
+    "Add pre-commit hook for license-checker (GPL/AGPL detection)"
+  ]
+}

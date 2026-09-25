@@ -1,0 +1,313 @@
+{
+  "audit_date": "2026-09-25",
+  "run_id": "run-20260925-074020",
+  "branch": "audit/inspector-2026-09-25-3ac23e",
+  "grade": "D",
+  "grade_rationale": "4 P1 findings (exceeds C threshold of max_p1=2). D is the catch-all for anything worse than C per inspector.config.yml grading rules. F reserved for exploitable auth bypass + critical domain failure.",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 11,
+    "p3_total": 23,
+    "p4_total": 4,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend (localhost:3001) and frontend (localhost:5173) were offline — dynamic mode requires live services",
+    "spec_coverage_active_plan": 100,
+    "spec_coverage_all_plans": 9,
+    "prior_grade": null,
+    "prior_audit": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "package": "vitest",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "issue": "Arbitrary file read and code execution via UI server",
+      "location": "Source/Frontend/package.json",
+      "fix": "npm install --save-dev vitest@>=3.2.6",
+      "route_to": "TheGuardians",
+      "reason": "RCE-class CVE — requires security team review and confirmation before deployment",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "issue": "Arbitrary code execution via .proto file parsing in live orchestrator",
+      "location": "platform/orchestrator/package.json",
+      "fix": "npm install protobufjs@>=7.5.5 (solo session required — platform/ is solo-session only)",
+      "route_to": "TheGuardians",
+      "reason": "RCE in production orchestrator infrastructure — highest priority escalation",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "package": "uuid",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "issue": "Missing buffer bounds check in v3/v5/v6 UUID generation in production backend",
+      "location": "Source/Backend/package.json (direct); platform/orchestrator (transitive)",
+      "fix": "npm install uuid@>=11.1.1",
+      "route_to": "TheGuardians",
+      "reason": "Buffer vulnerability in production backend dependency — security team confirmation required",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift / broken-feature",
+      "specialist": "quality-oracle",
+      "title": "GET /api/search route unregistered — DependencyPicker typeahead silently broken",
+      "file": "Source/Backend/src/app.ts",
+      "related_files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:54-56",
+        "Source/Backend/tests/routes/search.test.ts:3-6"
+      ],
+      "exploit_scenario": "User types in DependencyPicker → GET /api/search → 404 (unregistered) → silently swallowed → empty results with no user feedback",
+      "impact": "FR-dependency-search (cross-entity typeahead) is non-functional in production. Silent suppression means defect is invisible to users and testers.",
+      "recommendation": "Register GET /api/search?q= in Source/Backend/src/app.ts; implement route handler; remove intentional-failure note in search.test.ts; remove catch suppression in DependencyPicker.tsx",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift / process-gap",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer silently ignores 7/8 plan requirements files (124 FRs unchecked)",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Update CLAUDE.md gate to: for f in Plans/*/requirements.md; do python3 tools/traceability-enforcer.py --file \"$f\"; done — or mark deferred plans explicitly",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "OpenTelemetry tracing not implemented — required by CLAUDE.md non-negotiable architecture rules",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "cross_ref": "DEP-011",
+      "recommendation": "Add @opentelemetry/sdk-node >=0.75.0; inject trace_id/span_id into log entries; add W3C traceparent middleware in app.ts",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Logger always emits raw JSON — no development pretty-printing despite CLAUDE.md mandate",
+      "file": "Source/Backend/src/utils/logger.ts:1",
+      "recommendation": "Add NODE_ENV !== 'production' branch in emit() function to pretty-print logs in dev mode",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion <1.1.18 — 4 DoS CVEs (exponential expansion, OOM, zero-step sequences)",
+      "location": "Source/Backend (transitive)",
+      "cvss_max": 7.5,
+      "fix": "npm update brace-expansion@>=1.1.18",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "js-yaml <=3.15.1 — 3 DoS CVEs (merge-key chains, omap resolution, quadratic CPU)",
+      "location": "Source/Backend (transitive)",
+      "cvss_max": 7.5,
+      "fix": "npm update js-yaml@>=3.15.2",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "browserslist <=4.28.6 — 2 DoS CVEs (unbounded memory growth OOM, prototype write crash)",
+      "location": "Source/Frontend",
+      "cvss_max": 7.5,
+      "fix": "npm update browserslist@>=4.28.7",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE / DoS + Path Traversal",
+      "specialist": "dependency-auditor",
+      "title": "vite <=6.4.2 — 3 CVEs: fs.deny bypass on Windows, NTLMv2 credential leak, symlink traversal",
+      "location": "Source/Frontend",
+      "cvss_max": 7.5,
+      "fix": "npm update vite@>=6.4.3",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "ws >=8.0.0 <8.21.0 — Memory exhaustion DoS via fragmented WebSocket frames",
+      "location": "Source/Frontend",
+      "cvss_max": 7.5,
+      "fix": "npm update ws@>=8.21.0",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "@grpc/grpc-js 1.14.0-1.14.3 — 2 CVEs: server crash on malformed request/message",
+      "location": "platform/orchestrator, portal/Backend",
+      "cvss_max": 7.5,
+      "fix": "npm update @grpc/grpc-js@>=1.14.4 (solo session for platform/; TheFixer for portal/Backend)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE / ReDoS",
+      "specialist": "dependency-auditor",
+      "title": "path-to-regexp <0.1.13 — ReDoS via multiple route parameters",
+      "location": "platform/orchestrator",
+      "cvss_max": 7.5,
+      "fix": "npm update path-to-regexp@>=0.1.13 (solo session — platform/ is solo-session only)",
+      "route_to": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "specialist": "dependency-auditor",
+      "title": "@opentelemetry/auto-instrumentations-node <0.75.0 — Prometheus exporter crash on malformed HTTP",
+      "location": "portal/Backend",
+      "cvss_max": 7.5,
+      "cross_ref": "QO-003",
+      "fix": "npm update @opentelemetry/auto-instrumentations-node@>=0.75.0; also implement OTel SDK in Source/Backend to satisfy QO-003",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Workflow route catch blocks bypass Express error middleware (7 locations in workflow.ts)",
+      "file": "Source/Backend/src/routes/workflow.ts:59-62,86-89,137-140,204-207,291-294,329-332,366-370",
+      "recommendation": "Replace direct res.status(500) with next(err) in all 7 catch blocks",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable suppressions lack justification comments (2 instances)",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "recommendation": "Add inline comments explaining why exhaustive-deps suppression is correct",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "test-quality",
+      "specialist": "quality-oracle",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/ (root-level) AND Source/Frontend/tests/pages/",
+      "recommendation": "Consolidate into tests/pages/ variants; delete root-level duplicates",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3",
+      "severity": "P3",
+      "category": "CVE / moderate",
+      "specialist": "dependency-auditor",
+      "title": "~20 moderate-severity CVEs (CVSS 4.0-6.9) across all workspaces",
+      "note": "See Teams/TheInspector/findings/dependency-audit-2026-09-25.md for full list",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Silent catch on JSON parse in api/client.ts:26 — intentional but undocumented",
+      "file": "Source/Frontend/src/api/client.ts:26",
+      "recommendation": "Add comment: // JSON body may be empty on 5xx from proxy/load-balancer; fallback to {}",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P4",
+      "severity": "P4",
+      "category": "CVE / low",
+      "specialist": "dependency-auditor",
+      "title": "~3 low-severity CVEs (CVSS <4.0) across workspaces",
+      "note": "See Teams/TheInspector/findings/dependency-audit-2026-09-25.md for full list",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Observability stack absent / vulnerable",
+      "findings": ["QO-003", "DEP-011"],
+      "specialists": ["quality-oracle", "dependency-auditor"],
+      "single_fix": "Add @opentelemetry/sdk-node >=0.75.0 and implement OTel tracing in Source/Backend — satisfies CLAUDE.md rule and patches DoS CVE"
+    },
+    {
+      "root_cause": "Search feature partially implemented",
+      "findings": ["QO-001", "QO-007"],
+      "specialists": ["quality-oracle"],
+      "single_fix": "Register GET /api/search in app.ts and consolidate tests/pages/ test file — fully operational search with one PR"
+    },
+    {
+      "root_cause": "Frontend devDependency CVEs",
+      "findings": ["DEP-001", "DEP-006", "DEP-007", "DEP-008"],
+      "specialists": ["dependency-auditor"],
+      "single_fix": "Single npm update in Source/Frontend/ resolves all four findings"
+    },
+    {
+      "root_cause": "Platform orchestrator CVEs",
+      "findings": ["DEP-002", "DEP-009", "DEP-010"],
+      "specialists": ["dependency-auditor"],
+      "single_fix": "Solo session npm update in platform/orchestrator/ resolves all three findings"
+    }
+  ],
+  "action_plan": [
+    { "priority": "BLOCK_DEPLOYMENT", "items": ["DEP-001", "DEP-002", "DEP-003", "QO-001"], "owner": "TheGuardians (security CVEs) + TheFixer (QO-001)" },
+    { "priority": "THIS_SPRINT", "items": ["DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "QO-003", "QO-002"], "owner": "TheFixer (Source/*) + solo-session (platform/)" },
+    { "priority": "NEXT_SPRINT", "items": ["QO-004", "QO-005", "QO-007"], "owner": "TheFixer" },
+    { "priority": "BACKLOG", "items": ["QO-006", "QO-008", "DEP-P3", "DEP-P4"], "owner": "TheFixer" }
+  ]
+}

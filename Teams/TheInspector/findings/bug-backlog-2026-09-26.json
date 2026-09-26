@@ -1,0 +1,342 @@
+{
+  "audit_id": "run-20260926-073344",
+  "audit_date": "2026-09-26",
+  "branch": "audit/inspector-2026-09-26-0796b3",
+  "project": "dev-crew Source App",
+  "overall_grade": "D",
+  "grade_rationale": "3 P1 Critical CVEs — exceeds grade C threshold (max_p1: 2). Grade D assigned per inspector.config.yml grading rules.",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Backend (localhost:3001) and frontend (localhost:5173) services were offline at audit time. Re-run with live services for full dynamic coverage.",
+
+  "summary": {
+    "p1": 3,
+    "p2": 20,
+    "p3": 30,
+    "p4": 5,
+    "total": 58,
+    "spec_coverage_pct": 97,
+    "requirements_traced": 28,
+    "requirements_total": 29,
+    "license_clean": true,
+    "supply_chain_secure": true
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection (RCE — arbitrary code execution in production infrastructure)",
+      "title": "protobufjs Arbitrary Code Execution (CVSS 9.8) in platform/orchestrator",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "package": "protobufjs ≤ 7.6.4",
+      "workspace": "platform/orchestrator",
+      "impact": "Full host RCE on gRPC orchestrator — production dependency, zero dev deps in this workspace",
+      "deployment_blocker": true,
+      "immediate_fix": "cd platform/orchestrator && npm update protobufjs",
+      "status": "NEW"
+    }
+  ],
+
+  "p1_findings": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "category": "cve",
+      "title": "vitest Arbitrary File Read/Execute (CVSS 9.8)",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "package": "vitest 2.0.5",
+      "workspace": "Source/Frontend",
+      "impact": "Dev-time: source exfiltration and code execution if vitest UI server exposed to network",
+      "deployment_blocker": false,
+      "fix": "cd Source/Frontend && npm install vitest@5.0.2",
+      "cross_ref": ["DEP-003"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "category": "cve",
+      "title": "protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "package": "protobufjs ≤ 7.6.4",
+      "workspace": "platform/orchestrator",
+      "impact": "PRODUCTION: Full RCE on gRPC orchestrator host",
+      "deployment_blocker": true,
+      "fix": "cd platform/orchestrator && npm update protobufjs",
+      "escalate_to": "TheGuardians",
+      "route_to": "TheFixer (dependency patch) + TheGuardians (security review)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "source": "dependency-auditor",
+      "category": "cve",
+      "title": "vitest Arbitrary File Read/Execute (CVSS 9.8)",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "package": "vitest ≤ 3.2.5",
+      "workspace": "portal/Frontend",
+      "impact": "Dev-time: source exfiltration and code execution if vitest UI server exposed to network",
+      "deployment_blocker": false,
+      "fix": "cd portal/Frontend && npm install vitest@5.0.2",
+      "cross_ref": ["DEP-001"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed unimplemented — no seed.ts, no Verifies comment",
+      "file": "Plans/dependency-linking/requirements.md:46",
+      "description": "Idempotent seed function establishing known dependency relationships on server startup is missing. Integration tests relying on seeded dependency graphs silently return empty results.",
+      "recommendation": "Implement Source/Backend/src/store/seedDependencies.ts; call idempotently in app.ts; add // Verifies: FR-dependency-seed comment.",
+      "cross_ref": ["QO-002"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "source": "quality-oracle",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer auto-selects stale plan; dependency-linking gap hidden from CI",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Enforcer picks the most-recently-modified requirements.md (self-judging-workflow, 100% covered) and exits green, completely hiding QO-001 from automated gates.",
+      "recommendation": "Extend enforcer to scan all Plans/*/requirements.md or pin explicit plan list in inspector.config.yml.",
+      "cross_ref": ["QO-001"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-001",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "brace-expansion — unbounded expansion (DoS)",
+      "workspace": "Source/Backend",
+      "fix": "cd Source/Backend && npm update brace-expansion",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-002",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "js-yaml — quadratic CPU via merge-key chains (DoS)",
+      "workspace": "Source/Backend",
+      "fix": "cd Source/Backend && npm update js-yaml",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-003",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "vite — path traversal in dev server exposes source files",
+      "workspace": "Source/Frontend, portal/Frontend",
+      "fix": "npm install vite@8.3.1 in both workspaces",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-004",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "ws — memory exhaustion in WebSocket frame parsing (DoS)",
+      "workspace": "Source/Frontend",
+      "fix": "cd Source/Frontend && npm update ws",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-005",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "browserslist — memory exhaustion + prototype pollution",
+      "workspace": "Source/Frontend, portal/Frontend",
+      "fix": "npm update browserslist in both workspaces",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-006",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "@grpc/grpc-js — server crashes on malformed frames",
+      "workspace": "platform/orchestrator",
+      "fix": "cd platform/orchestrator && npm update @grpc/grpc-js",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-007",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "path-to-regexp — ReDoS",
+      "workspace": "platform/orchestrator",
+      "fix": "cd platform/orchestrator && npm update path-to-regexp",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-008",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "@opentelemetry/auto-instrumentations-node — Prometheus exporter crash",
+      "workspace": "portal/Backend",
+      "fix": "cd portal/Backend && npm update @opentelemetry/auto-instrumentations-node @opentelemetry/sdk-node",
+      "cross_ref": ["DEP-P2-009", "DEP-P2-010"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-009",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "@opentelemetry/sdk-node — Prometheus exporter crash (cascade)",
+      "workspace": "portal/Backend",
+      "fix": "Resolved by DEP-P2-008 coordinated upgrade",
+      "cross_ref": ["DEP-P2-008", "DEP-P2-010"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-010",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "@opentelemetry/core — memory exhaustion (cascade)",
+      "workspace": "portal/Backend",
+      "fix": "Resolved by DEP-P2-008 coordinated upgrade",
+      "cross_ref": ["DEP-P2-008", "DEP-P2-009"],
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-011",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "uuid — buffer bounds check vulnerability",
+      "workspace": "All workspaces",
+      "fix": "npm install uuid@14.0.2 across all workspaces",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-012",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "mime-type — regular expression denial of service (ReDoS)",
+      "workspace": "Source/Backend",
+      "fix": "cd Source/Backend && npm update mime-types",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-013-to-018",
+      "severity": "P2",
+      "source": "dependency-auditor",
+      "category": "cve-high",
+      "title": "6 additional High CVEs (vite ecosystem, postcss, portal/Frontend transitive)",
+      "workspace": "Source/Frontend, portal/Frontend",
+      "fix": "See Teams/TheInspector/findings/DEP_AUDIT_2026-09-26.md for full remediation commands",
+      "route_to": "TheFixer",
+      "status": "NEW",
+      "count": 6
+    }
+  ],
+
+  "p3_findings_summary": {
+    "quality_oracle": [
+      {
+        "id": "QO-003",
+        "title": "Silent catch(() => ({})) in api/client.ts:26 violates no-swallow rule",
+        "file": "Source/Frontend/src/api/client.ts:26",
+        "route_to": "TheFixer"
+      },
+      {
+        "id": "QO-004",
+        "title": "eslint-disable react-hooks/exhaustive-deps in DependencyPicker.tsx and useWorkItems.ts",
+        "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+        "route_to": "TheFixer"
+      }
+    ],
+    "dependency_auditor": {
+      "count": 28,
+      "description": "28 Moderate CVEs (transitive DoS, info-disclosure, prototype pollution). See Teams/TheInspector/findings/DEP_AUDIT_2026-09-26.md.",
+      "route_to": "TheFixer"
+    }
+  },
+
+  "p4_findings_summary": {
+    "quality_oracle": [
+      {
+        "id": "QO-005",
+        "title": "FR-WF-* IDs originate from Plans/ not Specifications/ — traceability chain ambiguous",
+        "category": "informational",
+        "route_to": "Backlog"
+      }
+    ],
+    "dependency_auditor": {
+      "count": 4,
+      "description": "4 Low-severity CVEs (dev-time only, low exploitability). Monitor only.",
+      "route_to": "Monitor"
+    }
+  },
+
+  "cross_reference_map": [
+    {
+      "root_cause": "vitest pinned at v2/v3 in both frontend workspaces",
+      "findings": ["DEP-001", "DEP-003"],
+      "single_fix": "npm install vitest@5.0.2 in Source/Frontend and portal/Frontend — one PR resolves 2 P1s"
+    },
+    {
+      "root_cause": "Traceability enforcer single-plan selection logic",
+      "findings": ["QO-001", "QO-002"],
+      "single_fix": "Fix enforcer to scan all Plans/*/requirements.md — resolves QO-002 and surfaces QO-001 in gates"
+    },
+    {
+      "root_cause": "OpenTelemetry monorepo not upgraded holistically in portal/Backend",
+      "findings": ["DEP-P2-008", "DEP-P2-009", "DEP-P2-010"],
+      "single_fix": "npm update @opentelemetry/auto-instrumentations-node @opentelemetry/sdk-node — cascade resolves all three"
+    }
+  ],
+
+  "report_paths": {
+    "html_report": "Teams/TheInspector/findings/audit-2026-09-26-D.html",
+    "bug_backlog": "Teams/TheInspector/findings/bug-backlog-2026-09-26.json",
+    "dep_audit_detail": "Teams/TheInspector/findings/DEP_AUDIT_2026-09-26.md",
+    "dep_audit_json": "Teams/TheInspector/findings/DEP_AUDIT_2026-09-26.json"
+  },
+
+  "next_audit_recommendations": [
+    "Run with live services (localhost:3001, localhost:5173) to enable performance-profiler and chaos-monkey",
+    "After patching P1s, re-run dependency-auditor to confirm zero critical CVEs",
+    "Set up npm audit --audit-level=moderate as CI gate on all PRs",
+    "Next scheduled dependency audit: 2026-10-10"
+  ]
+}

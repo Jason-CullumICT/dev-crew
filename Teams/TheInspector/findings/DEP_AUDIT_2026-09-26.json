@@ -1,0 +1,212 @@
+{
+  "audit_date": "2026-09-26",
+  "auditor": "Dependency Auditor (Haiku 4.5)",
+  "overall_status": "CRITICAL",
+  "summary": {
+    "total_vulnerabilities": 53,
+    "by_severity": {
+      "critical": 3,
+      "high": 18,
+      "moderate": 28,
+      "low": 4
+    },
+    "workspaces_audited": 6,
+    "workspaces_with_vulnerabilities": 5
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "workspace": "Source/Frontend",
+      "package": "vitest",
+      "version": "2.0.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "title": "Arbitrary file read/execute when UI server listening",
+      "impact": "dev-only (test runner)",
+      "fix": "npm install vitest@5.0.2",
+      "priority": "P1"
+    },
+    {
+      "id": "DEP-002",
+      "workspace": "platform/orchestrator",
+      "package": "protobufjs",
+      "version": "<=7.6.4",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary code execution in protobufjs",
+      "impact": "production gRPC infrastructure",
+      "fix": "npm update protobufjs",
+      "priority": "P1 (blocks deployment)"
+    },
+    {
+      "id": "DEP-003",
+      "workspace": "portal/Frontend",
+      "package": "vitest",
+      "version": "<=3.2.5",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "title": "Arbitrary file read/execute when UI server listening",
+      "impact": "dev-only (test runner)",
+      "fix": "npm install vitest@5.0.2",
+      "priority": "P1"
+    }
+  ],
+  "workspace_summary": [
+    {
+      "workspace": "Source/Backend",
+      "status": "vulnerable",
+      "total_deps": 411,
+      "prod_deps": 102,
+      "dev_deps": 310,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 4,
+        "moderate": 3,
+        "low": 2
+      },
+      "key_issues": [
+        "brace-expansion (DoS)",
+        "js-yaml (quadratic CPU)",
+        "uuid (buffer bounds)",
+        "mime-type (ReDoS)"
+      ]
+    },
+    {
+      "workspace": "Source/Frontend",
+      "status": "critical",
+      "total_deps": 230,
+      "prod_deps": 9,
+      "dev_deps": 222,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 6,
+        "moderate": 7,
+        "low": 1
+      },
+      "key_issues": [
+        "vitest (arbitrary file read, CVSS 9.8)",
+        "browserslist (memory exhaustion)",
+        "vite (path traversal)",
+        "ws (memory exhaustion)"
+      ]
+    },
+    {
+      "workspace": "Source/E2E",
+      "status": "clean",
+      "total_deps": 5,
+      "prod_deps": 4,
+      "dev_deps": 0,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "key_issues": []
+    },
+    {
+      "workspace": "platform/orchestrator",
+      "status": "critical",
+      "total_deps": 155,
+      "prod_deps": 153,
+      "dev_deps": 0,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 2,
+        "moderate": 4,
+        "low": 1
+      },
+      "key_issues": [
+        "protobufjs (arbitrary code execution, CVSS 9.8)",
+        "@grpc/grpc-js (server crashes)",
+        "path-to-regexp (ReDoS)"
+      ]
+    },
+    {
+      "workspace": "portal/Backend",
+      "status": "critical",
+      "total_deps": 300,
+      "prod_deps": 100,
+      "dev_deps": 200,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 3,
+        "moderate": 5,
+        "low": 0
+      },
+      "key_issues": [
+        "@opentelemetry/auto-instrumentations-node (Prometheus crash)",
+        "@opentelemetry/sdk-node (Prometheus crash)",
+        "@opentelemetry/core (memory exhaustion)",
+        "Cascading dependency issues"
+      ]
+    },
+    {
+      "workspace": "portal/Frontend",
+      "status": "critical",
+      "total_deps": 424,
+      "prod_deps": 9,
+      "dev_deps": 416,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 7,
+        "moderate": 6,
+        "low": 2
+      },
+      "key_issues": [
+        "vitest (arbitrary file read, CVSS 9.8)",
+        "browserslist (memory exhaustion)",
+        "vite (path traversal)",
+        "postcss (parsing vulnerabilities)"
+      ]
+    }
+  ],
+  "remediation_plan": {
+    "P1_immediate": [
+      {
+        "step": 1,
+        "workspace": "platform/orchestrator",
+        "action": "npm update protobufjs",
+        "reason": "Arbitrary code execution — blocks production",
+        "timeline": "immediate"
+      },
+      {
+        "step": 2,
+        "workspace": "Source/Frontend, portal/Frontend",
+        "action": "npm install vitest@5.0.2",
+        "reason": "Arbitrary file read in test runner (dev-only risk)",
+        "timeline": "within 48 hours"
+      },
+      {
+        "step": 3,
+        "workspace": "portal/Backend",
+        "action": "npm update @opentelemetry/auto-instrumentations-node @opentelemetry/sdk-node",
+        "reason": "Prometheus exporter crash — fixes observability",
+        "timeline": "within 48 hours"
+      }
+    ],
+    "P2_high_priority": [
+      "Source/Frontend: npm install vite@8.3.1",
+      "Source/Backend: npm update brace-expansion js-yaml",
+      "platform/orchestrator: npm update @grpc/grpc-js path-to-regexp",
+      "All workspaces: npm install uuid@14.0.2"
+    ],
+    "P3_medium_priority": [
+      "Coordinated major version bumps for vite ecosystem",
+      "Review vitest alternatives (400+ dep tree is heavy)",
+      "Evaluate OpenTelemetry consolidation"
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "viral_licenses_detected": 0,
+    "unknown_licenses": 0,
+    "primary_licenses": ["MIT", "Apache 2.0"]
+  },
+  "supply_chain_health": {
+    "post_install_scripts": 0,
+    "hardcoded_secrets": 0,
+    "status": "SECURE"
+  },
+  "next_review_date": "2026-10-10"
+}

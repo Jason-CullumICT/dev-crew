@@ -1,0 +1,283 @@
+{
+  "audit_id": "run-20260927-080255",
+  "audit_date": "2026-09-27",
+  "branch": "audit/inspector-2026-09-27-abead6",
+  "grade": "C",
+  "generated_by": "TheInspector team-leader (synthesis)",
+  "specialists": ["quality-oracle", "dependency-auditor"],
+  "static_only": ["performance-profiler", "chaos-monkey"],
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 13,
+    "p3_total": 10,
+    "p4_total": 1,
+    "fixed_total": 0,
+    "escalations_total": 4
+  },
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "GET /api/search route not wired — intentionally failing tests contaminating baseline",
+      "file": "Source/Backend/src/app.ts",
+      "detail": "FR-dependency-search requires a cross-entity search endpoint. Test file Source/Backend/tests/routes/search.test.ts explicitly documents it will FAIL until the route is implemented. This creates known baseline failures that violate the zero-regressions rule.",
+      "exploit_scenario": "CI pipeline reports test failures that are not regressions, masking real regressions. Developers learn to ignore failing tests, increasing defect escape rate.",
+      "impact": "Test baseline corrupted; real regressions invisible; FR-dependency-search unimplemented.",
+      "recommendation": "Either implement the /api/search route in Source/Backend (wire into app.ts, add handler), or formally defer FR-dependency-search and mark tests as test.skip with tracking comment.",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "cross_refs": ["requirements-reviewer (defer decision)"]
+    },
+    {
+      "id": "DEP-001",
+      "specialist": "dependency-auditor",
+      "severity": "P1",
+      "category": "CVE / CWE-94",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion (GHSA-3mfm-83xf-c92r)",
+      "file": "Source/Backend/package-lock.json",
+      "package": "handlebars <=4.7.8",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "detail": "Handlebars.js has JavaScript Injection via AST Type Confusion by tampering @partial-block. Allows arbitrary JavaScript execution if attacker controls template partials.",
+      "exploit_scenario": "If backend uses Handlebars for any user-controlled template partial, attacker can inject malicious JavaScript that executes server-side.",
+      "impact": "Remote code execution on backend server if Handlebars templates accept user input.",
+      "recommendation": "Run 'npm audit fix' in Source/Backend. Verify backend does NOT use Handlebars for user-controlled templates. If it does, fix is urgent.",
+      "status": "NEW",
+      "escalation": "[ESCALATE → TheGuardians]",
+      "route_to": "TheGuardians",
+      "cross_refs": []
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration histogram missing from Source/Backend metrics",
+      "file": "Source/Backend/src/metrics.ts",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer excludes portal/ and platform/ — 89 requirements unaudited",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry not instrumented in Source/Backend (CLAUDE.md rule violated)",
+      "file": "Source/Backend/src/app.ts",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-002",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "brace-expansion DoS via zero-step sequence (GHSA-fwmj-hxvj-5930)",
+      "file": "Source/Backend/package-lock.json",
+      "package": "brace-expansion",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm audit fix in Source/Backend"
+    },
+    {
+      "id": "DEP-003",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Memory DoS",
+      "title": "browserslist Memory Exhaustion (GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g)",
+      "file": "Source/Backend/package-lock.json, Source/Frontend/package-lock.json",
+      "package": "browserslist <4.24.2",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm audit fix in both workspaces",
+      "cross_refs": ["[CROSS-REF: both Backend and Frontend affected]"]
+    },
+    {
+      "id": "DEP-004",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Header Injection",
+      "title": "form-data CRLF Injection in multipart fields (GHSA-hmw2-7cc7-3qxx)",
+      "file": "Source/Backend/package-lock.json, Source/Frontend/package-lock.json",
+      "package": "form-data",
+      "status": "NEW",
+      "escalation": "[ESCALATE → TheGuardians]",
+      "route_to": "TheGuardians",
+      "fix": "npm audit fix in both workspaces",
+      "cross_refs": ["[CROSS-REF: both Backend and Frontend affected]"]
+    },
+    {
+      "id": "DEP-005",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / ReDoS",
+      "title": "js-yaml quadratic DoS in merge key handling (GHSA-6bw5-2rq6-7hcj)",
+      "file": "Source/Backend/package-lock.json",
+      "package": "js-yaml",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm audit fix in Source/Backend"
+    },
+    {
+      "id": "DEP-006",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Cryptographic",
+      "title": "nanoid RNG initialization bugs & integer overflow (GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8, GHSA-xwg4-73v4-xw9w)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "nanoid",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm audit fix — upgrade nanoid to >=3.3.8"
+    },
+    {
+      "id": "DEP-007",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Path Traversal / XSS",
+      "title": "PostCSS XSS & path traversal in source map handling (4 CVEs)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "postcss",
+      "status": "NEW",
+      "escalation": "[ESCALATE → TheGuardians]",
+      "route_to": "TheGuardians",
+      "fix": "npm audit fix — upgrade postcss to >=8.4.48"
+    },
+    {
+      "id": "DEP-008",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Path Traversal",
+      "title": "Vite path traversal in optimized deps .map handling",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "vite <5.4.21",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm audit fix in Source/Frontend"
+    },
+    {
+      "id": "DEP-009",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Memory Disclosure / DoS",
+      "title": "WebSocket (ws) memory disclosure & DoS via fragments (GHSA-58qx-3vcg-4xpx, GHSA-96hv-2xvq-fx4p)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "ws",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm audit fix in Source/Frontend"
+    },
+    {
+      "id": "DEP-010",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Open Redirect",
+      "title": "React Router open redirect via protocol-relative URL (GHSA-2j2x-hqr9-3h42)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "@remix-run/router >=1.3.0 <1.23.3",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "status": "NEW",
+      "escalation": "[ESCALATE → TheGuardians]",
+      "route_to": "TheGuardians",
+      "fix": "npm install react-router-dom@latest in Source/Frontend"
+    },
+    {
+      "id": "DEP-011",
+      "specialist": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Path Traversal",
+      "title": "@vitest/mocker path traversal in mock redirect (GHSA-82fw-gwwq-j7x9)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "@vitest/mocker",
+      "note": "Test-time risk only — lower production impact",
+      "status": "NEW",
+      "route_to": "TheFixer",
+      "fix": "npm audit fix — upgrade vitest to >=5.0.2"
+    }
+  ],
+  "p3_findings": [
+    { "id": "QO-005", "specialist": "quality-oracle", "title": "eslint-disable suppressions for react-hooks/exhaustive-deps (stale closure risk)", "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"], "status": "NEW" },
+    { "id": "QO-006", "specialist": "quality-oracle", "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage", "files": ["Source/Frontend/tests/WorkItemDetailPage.test.tsx", "Source/Frontend/tests/WorkItemListPage.test.tsx"], "status": "NEW" },
+    { "id": "DEP-012", "specialist": "dependency-auditor", "title": "baseline-browser-mapping DoS on invalid input (GHSA-w5vr-8v7q-w6rv)", "package": "baseline-browser-mapping", "fix": "npm audit fix", "status": "NEW" },
+    { "id": "DEP-013", "specialist": "dependency-auditor", "title": "body-parser size limit bypass disabling payload protection (GHSA-v422-hmwv-36x6)", "package": "body-parser", "fix": "npm audit fix", "status": "NEW" },
+    { "id": "DEP-014", "specialist": "dependency-auditor", "title": "@babel/core arbitrary file read via sourceMappingURL (GHSA-4x5r-pxfx-6jf8)", "package": "@babel/core", "fix": "npm audit fix", "status": "NEW" },
+    { "id": "DEP-015", "specialist": "dependency-auditor", "title": "express 1 major version behind (4.22.1 → 5.2.1)", "workspace": "Backend", "status": "NEW" },
+    { "id": "DEP-016", "specialist": "dependency-auditor", "title": "pino 2 major versions behind (8.21.0 → 10.3.1)", "workspace": "Backend", "status": "NEW" },
+    { "id": "DEP-017", "specialist": "dependency-auditor", "title": "uuid 5 major versions behind (9.0.1 → 14.0.2)", "workspace": "Backend", "status": "NEW" },
+    { "id": "DEP-018", "specialist": "dependency-auditor", "title": "react/react-dom 1 major version behind (18.3.1 → 19.3.0)", "workspace": "Frontend", "status": "NEW" },
+    { "id": "DEP-019", "specialist": "dependency-auditor", "title": "react-router-dom 1 major version behind + linked to open redirect CVE (DEP-010)", "workspace": "Frontend", "status": "NEW" }
+  ],
+  "p4_findings": [
+    { "id": "DEP-020", "specialist": "dependency-auditor", "title": "TypeScript minor versions behind (dev-only, no runtime impact)", "status": "NEW" }
+  ],
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "summary": "Handlebars JavaScript code injection (GHSA-3mfm-83xf-c92r) — arbitrary JS execution if backend uses templates with user-controlled partials",
+      "severity": "P1",
+      "urgency": "Before next deployment"
+    },
+    {
+      "finding_id": "DEP-004",
+      "team": "TheGuardians",
+      "trigger": "injection",
+      "summary": "form-data CRLF injection in multipart fields (GHSA-hmw2-7cc7-3qxx) — HTTP header forgery if backend accepts file uploads",
+      "severity": "P2",
+      "urgency": "This sprint"
+    },
+    {
+      "finding_id": "DEP-007",
+      "team": "TheGuardians",
+      "trigger": "sensitive data exposed",
+      "summary": "PostCSS source map disclosure + XSS (4 CVEs) — arbitrary .map file reads if frontend processes untrusted CSS",
+      "severity": "P2",
+      "urgency": "This sprint"
+    },
+    {
+      "finding_id": "DEP-010",
+      "team": "TheGuardians",
+      "trigger": "missing access control",
+      "summary": "React Router open redirect via protocol-relative URL (GHSA-2j2x-hqr9-3h42) — phishing/SSRF risk from crafted //evil.com URLs",
+      "severity": "P2",
+      "urgency": "This sprint"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "npm transitive dependency sprawl — no regular audit cadence",
+      "affected_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011"],
+      "single_fix": "Run 'npm audit fix' in both workspaces + pin browserslist and form-data; resolves 11 P2 CVEs in one operation",
+      "specialists": ["dependency-auditor"]
+    },
+    {
+      "root_cause": "In-memory backend has no tracing or observable state",
+      "affected_findings": ["QO-004", "QO-002"],
+      "single_fix": "Add @opentelemetry/sdk-node + dependencyCheckDuration histogram to Source/Backend — resolves both metrics gaps and OTel absence",
+      "specialists": ["quality-oracle"]
+    },
+    {
+      "root_cause": "Unimplemented FR-dependency-search creates permanent test debt",
+      "affected_findings": ["QO-001"],
+      "single_fix": "Implement GET /api/search route OR skip the test with tracking comment",
+      "specialists": ["quality-oracle"]
+    }
+  ],
+  "fixed_findings": [],
+  "prior_audit": null,
+  "report_html": "Teams/TheInspector/findings/audit-2026-09-27-C.html"
+}

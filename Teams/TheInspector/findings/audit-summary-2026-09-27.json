@@ -1,0 +1,229 @@
+{
+  "audit_date": "2026-09-27T00:00:00Z",
+  "auditor": "dependency_auditor",
+  "grade": "D",
+  "summary": {
+    "projects_audited": 3,
+    "package_managers": ["npm"],
+    "workspaces": ["Source/Backend", "Source/Frontend", "Source/E2E"]
+  },
+  "cve_summary": {
+    "total": 25,
+    "critical": 1,
+    "high": 11,
+    "moderate": 7,
+    "low": 6
+  },
+  "vulnerabilities": {
+    "critical": [
+      {
+        "id": "DEP-001",
+        "package": "handlebars",
+        "cve": "GHSA-3mfm-83xf-c92r",
+        "title": "JavaScript Injection via AST Type Confusion",
+        "severity": "critical",
+        "workspace": "Source/Backend",
+        "affected_versions": "<=4.7.8"
+      }
+    ],
+    "high": [
+      {
+        "id": "DEP-002",
+        "package": "brace-expansion",
+        "cve": "GHSA-fwmj-hxvj-5930",
+        "title": "DoS via zero-step sequence",
+        "severity": "high",
+        "workspaces": ["Backend"]
+      },
+      {
+        "id": "DEP-003",
+        "package": "browserslist",
+        "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+        "title": "Memory exhaustion & prototype pollution",
+        "severity": "high",
+        "workspaces": ["Backend", "Frontend"]
+      },
+      {
+        "id": "DEP-004",
+        "package": "form-data",
+        "cve": "GHSA-hmw2-7cc7-3qxx",
+        "title": "CRLF injection in multipart fields",
+        "severity": "high",
+        "workspaces": ["Backend", "Frontend"]
+      },
+      {
+        "id": "DEP-005",
+        "package": "js-yaml",
+        "cve": "GHSA-6bw5-2rq6-7hcj",
+        "title": "ReDoS in merge key handling",
+        "severity": "high",
+        "workspace": "Backend"
+      },
+      {
+        "id": "DEP-006",
+        "package": "nanoid",
+        "cves": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+        "title": "RNG initialization bugs & integer overflow",
+        "severity": "high",
+        "workspace": "Frontend"
+      },
+      {
+        "id": "DEP-007",
+        "package": "postcss",
+        "cves": ["GHSA-qx2v-qp2m-jg93", "GHSA-6g55-p6wh-862q", "GHSA-fxqj-rqcc-2cmp", "GHSA-r28c-9q8g-f849"],
+        "title": "XSS & path traversal in source map handling",
+        "severity": "high",
+        "workspace": "Frontend"
+      },
+      {
+        "id": "DEP-008",
+        "package": "vite",
+        "title": "Path traversal in optimized deps .map handling",
+        "severity": "high",
+        "workspace": "Frontend",
+        "affected_versions": "<5.4.21"
+      },
+      {
+        "id": "DEP-009",
+        "package": "ws",
+        "cves": ["GHSA-58qx-3vcg-4xpx", "GHSA-96hv-2xvq-fx4p"],
+        "title": "Memory disclosure & DoS via fragments",
+        "severity": "high",
+        "workspace": "Frontend"
+      },
+      {
+        "id": "DEP-010",
+        "package": "@remix-run/router",
+        "cve": "GHSA-2j2x-hqr9-3h42",
+        "title": "Open redirect via protocol-relative URL",
+        "severity": "high",
+        "workspace": "Frontend",
+        "affected_versions": ">=1.3.0 <1.23.3"
+      },
+      {
+        "id": "DEP-011",
+        "package": "@vitest/mocker",
+        "cve": "GHSA-82fw-gwwq-j7x9",
+        "title": "Path traversal in mock redirect",
+        "severity": "high",
+        "workspace": "Frontend",
+        "note": "Test-time risk only"
+      }
+    ]
+  },
+  "outdated_major_versions": [
+    {
+      "id": "DEP-015",
+      "package": "express",
+      "installed": "4.22.1",
+      "latest": "5.2.1",
+      "versions_behind": 1,
+      "workspace": "Backend"
+    },
+    {
+      "id": "DEP-016",
+      "package": "pino",
+      "installed": "8.21.0",
+      "latest": "10.3.1",
+      "versions_behind": 2,
+      "workspace": "Backend"
+    },
+    {
+      "id": "DEP-017",
+      "package": "uuid",
+      "installed": "9.0.1",
+      "latest": "14.0.2",
+      "versions_behind": 5,
+      "workspace": "Backend"
+    },
+    {
+      "id": "DEP-018",
+      "package": "react",
+      "installed": "18.3.1",
+      "latest": "19.3.0",
+      "versions_behind": 1,
+      "workspace": "Frontend"
+    },
+    {
+      "id": "DEP-019",
+      "package": "react-dom",
+      "installed": "18.3.1",
+      "latest": "19.3.0",
+      "versions_behind": 1,
+      "workspace": "Frontend"
+    },
+    {
+      "id": "DEP-020",
+      "package": "react-router-dom",
+      "installed": "6.30.3",
+      "latest": "7.18.4",
+      "versions_behind": 1,
+      "workspace": "Frontend",
+      "note": "Also has open redirect CVE (DEP-010)"
+    }
+  ],
+  "dependency_tree": {
+    "Backend": {
+      "direct": 4,
+      "transitive": 13,
+      "total": 17
+    },
+    "Frontend": {
+      "direct": 3,
+      "transitive": 13,
+      "total": 16
+    },
+    "E2E": {
+      "direct": 1,
+      "transitive": 1,
+      "total": 2
+    },
+    "summary": {
+      "total_direct": 8,
+      "total_transitive": 27,
+      "total_all": 35
+    }
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "notes": "All direct dependencies use permissive licenses (MIT, Apache-2.0, ISC, BSD)",
+    "viral_licenses_found": 0
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": "NONE",
+    "version_collisions": "NONE",
+    "abandoned_packages": "NONE",
+    "high_transitive_surface": true,
+    "notes": "27 transitive dependencies = moderate supply chain exposure"
+  },
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "team": "TheGuardians",
+      "reason": "Code injection risk in Handlebars; check if backend uses for user-controlled templates"
+    },
+    {
+      "finding_id": "DEP-004",
+      "team": "TheGuardians",
+      "reason": "CRLF injection in form-data; check if backend accepts file uploads"
+    },
+    {
+      "finding_id": "DEP-007",
+      "team": "TheGuardians",
+      "reason": "PostCSS source map disclosure; check if frontend processes untrusted CSS"
+    },
+    {
+      "finding_id": "DEP-010",
+      "team": "TheGuardians",
+      "reason": "Open redirect vulnerability; phishing/SSRF risk in react-router-dom"
+    }
+  ],
+  "immediate_actions": [
+    "Run 'npm audit fix' in Source/Backend and Source/Frontend",
+    "Manually upgrade react-router-dom to latest (open redirect fix)",
+    "Verify Backend does not use Handlebars for user-controlled templates",
+    "Schedule major version upgrades for express, pino, react after testing"
+  ],
+  "report_file": "Teams/TheInspector/findings/audit-dependencies-2026-09-27.md",
+  "learnings_file": "Teams/TheInspector/learnings/dependency-auditor.md"
+}

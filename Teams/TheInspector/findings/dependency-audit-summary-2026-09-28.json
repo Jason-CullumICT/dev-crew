@@ -1,0 +1,279 @@
+{
+  "audit_date": "2026-09-28T08:35:00Z",
+  "audit_scope": "npm workspaces: Source/Backend, Source/Frontend, Source/E2E, portal/Backend, portal/Frontend, platform/orchestrator",
+  "summary": {
+    "workspaces_audited": 6,
+    "total_vulnerabilities": 103,
+    "critical": 6,
+    "high": 29,
+    "moderate": 61,
+    "low": 7,
+    "outdated_major_versions": 8
+  },
+  "by_workspace": {
+    "Source/Backend": {
+      "total": 10,
+      "critical": 1,
+      "high": 4,
+      "moderate": 3,
+      "low": 2,
+      "critical_packages": ["handlebars@4.0.0-4.7.8"]
+    },
+    "Source/Frontend": {
+      "total": 15,
+      "critical": 1,
+      "high": 6,
+      "moderate": 7,
+      "low": 1,
+      "critical_packages": ["transitive critical (not directly visible)"]
+    },
+    "Source/E2E": {
+      "total": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "critical_packages": []
+    },
+    "portal/Backend": {
+      "total": 54,
+      "critical": 2,
+      "high": 10,
+      "moderate": 41,
+      "low": 1,
+      "critical_packages": ["protobufjs (9 CVEs including RCE)"]
+    },
+    "portal/Frontend": {
+      "total": 16,
+      "critical": 1,
+      "high": 7,
+      "moderate": 6,
+      "low": 2,
+      "critical_packages": ["transitive critical"]
+    },
+    "platform/orchestrator": {
+      "total": 8,
+      "critical": 1,
+      "high": 2,
+      "moderate": 4,
+      "low": 1,
+      "critical_packages": ["protobufjs (9 CVEs including RCE)"]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection & XSS",
+      "package": "handlebars",
+      "version_range": "4.0.0-4.7.8",
+      "severity": "critical",
+      "workspace": "Source/Backend",
+      "cves": [
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-442j-39wm-28r2",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "impact": "Template compilation can execute arbitrary code; XSS through partial injection",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "protobufjs Arbitrary Code Execution",
+      "package": "protobufjs",
+      "version_range": "all affected versions",
+      "severity": "critical",
+      "workspaces": ["portal/Backend", "platform/orchestrator"],
+      "cves": [
+        "GHSA-xq3m-2v4x-88gg (RCE)",
+        "GHSA-66ff-xgx4-vchm (code injection)",
+        "GHSA-2pr8-phx7-x9h3 (DoS)",
+        "GHSA-fx83-v9x8-x52w (prototype injection)",
+        "GHSA-75px-5xx7-5xc7 (code generation gadget)",
+        "GHSA-jvwf-75h9-cwgg (process DoS)",
+        "GHSA-685m-2w69-288q (recursion DoS)",
+        "GHSA-q6x5-8v7m-xcrf (UTF-8 decoding)",
+        "GHSA-jggg-4jg4-v7c6 (JSON descriptor DoS)"
+      ],
+      "impact": "Arbitrary code execution if untrusted protobuf/JSON deserialized; prototype pollution",
+      "escalate_to": "TheGuardians",
+      "action_required": "IMMEDIATE - if deserializes untrusted data, this is RCE vector"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-003",
+      "package": "brace-expansion",
+      "cve": "GHSA-f886-m6hf-6m8v, GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895",
+      "impact": "DoS via regex patterns; process hang or crash"
+    },
+    {
+      "id": "DEP-004",
+      "package": "browserslist",
+      "cve": "GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g",
+      "impact": "OOM crashes; prototype pollution via stats file"
+    },
+    {
+      "id": "DEP-005",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "impact": "CRLF injection in multipart headers",
+      "affected_workspaces": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-006",
+      "package": "js-yaml",
+      "cve": "GHSA-h67p-54hq-rp68, GHSA-52cp-r559-cp3m, GHSA-5p4m-2wfm-xmqj, GHSA-2883-xcg3-v3hh",
+      "impact": "Quadratic CPU consumption parsing malicious YAML"
+    },
+    {
+      "id": "DEP-007",
+      "package": "nanoid",
+      "cve": "GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8, GHSA-xwg4-73v4-xw9w",
+      "impact": "RNG failures; predictable ID generation",
+      "affected_workspaces": ["Source/Frontend", "portal/Backend"]
+    },
+    {
+      "id": "DEP-008",
+      "package": "postcss",
+      "cve": "GHSA-qx2v-qp2m-jg93, GHSA-6g55-p6wh-862q, GHSA-fxqj-rqcc-2cmp, GHSA-r28c-9q8g-f849",
+      "impact": "XSS in CSS output; arbitrary .map file disclosure",
+      "affected_workspaces": ["Source/Frontend", "portal/Backend"]
+    },
+    {
+      "id": "DEP-009",
+      "package": "@remix-run/router (via react-router-dom)",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "impact": "Protocol-relative URL open redirect",
+      "affected_workspaces": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-010",
+      "package": "ws",
+      "cve": "GHSA-58qx-3vcg-4xpx, GHSA-96hv-2xvq-fx4p",
+      "impact": "Memory disclosure; DoS from tiny fragments",
+      "affected_workspaces": ["Source/Frontend", "portal/Backend"]
+    },
+    {
+      "id": "DEP-011",
+      "package": "@grpc/grpc-js",
+      "cve": "GHSA-5375-pq7m-f5r2",
+      "impact": "Malformed request causes server crash",
+      "affected_workspaces": ["portal/Backend"]
+    },
+    {
+      "id": "DEP-012",
+      "package": "path-to-regexp",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "impact": "ReDoS with multiple route parameters",
+      "affected_workspaces": ["portal/Backend"]
+    }
+  ],
+  "outdated_packages": [
+    {
+      "id": "DEP-020",
+      "package": "express",
+      "affected_workspaces": ["Source/Backend", "platform/orchestrator"],
+      "current": "4.18.2 / 4.22.3",
+      "latest": "5.2.1",
+      "major_versions_behind": 1
+    },
+    {
+      "id": "DEP-021",
+      "package": "pino",
+      "affected_workspaces": ["Source/Backend"],
+      "current": "8.17.0",
+      "latest": "10.3.1",
+      "major_versions_behind": 2
+    },
+    {
+      "id": "DEP-022",
+      "package": "react",
+      "affected_workspaces": ["Source/Frontend"],
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "major_versions_behind": 1
+    },
+    {
+      "id": "DEP-023",
+      "package": "react-router-dom",
+      "affected_workspaces": ["Source/Frontend"],
+      "current": "6.30.6",
+      "latest": "7.18.4",
+      "major_versions_behind": 1
+    },
+    {
+      "id": "DEP-024",
+      "package": "dockerode",
+      "affected_workspaces": ["platform/orchestrator"],
+      "current": "4.0.12",
+      "latest": "5.0.1",
+      "major_versions_behind": 1
+    },
+    {
+      "id": "DEP-025",
+      "package": "multer",
+      "affected_workspaces": ["platform/orchestrator"],
+      "current": "1.4.5-lts.2",
+      "latest": "2.4.0",
+      "major_versions_behind": 1
+    }
+  ],
+  "recommendations": {
+    "p1_immediate": [
+      "Block protobufjs usage in portal/Backend and platform/orchestrator until patched",
+      "Audit handlebars usage in Source/Backend; if user templates processed, patch immediately"
+    ],
+    "p2_urgent": [
+      "Run 'npm audit fix' in all workspaces (safe fixes)",
+      "Run 'npm audit fix --force' in Source/Frontend, portal/Frontend, Source/Backend, platform/orchestrator (breaking changes)",
+      "Run full test suite after each fix"
+    ],
+    "p3_scheduled": [
+      "Update express to v5 in Source/Backend and platform/orchestrator",
+      "Update pino to v10 in Source/Backend (API compatibility check required)",
+      "Update react, react-dom, react-router-dom in Source/Frontend",
+      "Update dockerode and multer in platform/orchestrator"
+    ]
+  },
+  "escalations": [
+    {
+      "finding": "DEP-001",
+      "team": "TheGuardians",
+      "reason": "Prototype pollution and XSS in template engine"
+    },
+    {
+      "finding": "DEP-002",
+      "team": "TheGuardians",
+      "reason": "Arbitrary code execution in protobufjs — critical RCE vector"
+    },
+    {
+      "finding": "DEP-008",
+      "team": "TheGuardians",
+      "reason": "Information disclosure via sourceMap processing"
+    }
+  ],
+  "supply_chain_assessment": {
+    "high_risk_patterns": [
+      "Large transitive dependency trees (portal/Backend: 200+ transitive deps)",
+      "Prototype pollution chains (browserslist → protobufjs → postcss)",
+      "Build-tool vulnerabilities affecting source code confidentiality (sourceMappingURL attacks)"
+    ],
+    "recommendations": [
+      "Pin critical transitive dependencies in lock files",
+      "Add npm audit to pre-commit hooks",
+      "Implement dependency update automation (Dependabot/Renovate)",
+      "Isolate dev dependencies from production builds"
+    ]
+  },
+  "methodology": {
+    "tool": "npm audit",
+    "scope": "All npm workspaces and lock files",
+    "audit_date": "2026-09-28",
+    "confidence": "High (official npm advisory data)"
+  }
+}

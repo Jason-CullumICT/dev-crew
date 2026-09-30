@@ -1,0 +1,382 @@
+{
+  "audit_run_id": "run-20260930-082147",
+  "audit_date": "2026-09-30",
+  "branch": "audit/inspector-2026-09-30-693918",
+  "overall_grade": "D",
+  "grade_rationale": "4 P1 findings — exceeds C-grade threshold (max_p1: 2). Primary spec coverage 0% — below C-grade minimum of 40%.",
+  "grading_config": {
+    "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+    "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+    "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+    "D": "Anything worse",
+    "F": "Reserved for: exploitable auth bypass + critical domain failure"
+  },
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 11,
+    "p3_total": 3,
+    "p4_total": 0,
+    "total_findings": 18,
+    "escalations_to_guardians": 3,
+    "fixed_since_prior": 0,
+    "prior_audit": null,
+    "trend": "FIRST_AUDIT"
+  },
+  "specialists": {
+    "quality_oracle": { "mode": "static", "p1": 2, "p2": 3, "p3": 3, "p4": 0, "grade": "D" },
+    "dependency_auditor": { "mode": "static", "p1": 2, "p2": 8, "p3": 0, "p4": 0, "grade": "D" },
+    "performance_profiler": { "mode": "SKIPPED", "reason": "backend service unreachable at http://localhost:3001" },
+    "chaos_monkey": { "mode": "SKIPPED", "reason": "all services unreachable" }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "escalate_to": "TheGuardians",
+      "severity": "P1",
+      "trigger": "injection",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion (RCE)",
+      "package": "handlebars",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "module": "Source/Backend",
+      "is_direct_dep": false,
+      "fix": "cd Source/Backend && npm update handlebars",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "escalate_to": "TheGuardians",
+      "severity": "P1",
+      "trigger": "injection",
+      "title": "Vitest Arbitrary File Read and Execution via UI Server",
+      "package": "vitest",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "module": "Source/Frontend",
+      "is_direct_dep": true,
+      "fix": "cd Source/Frontend && npm update vitest@^3.2.6",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "escalate_to": "TheGuardians",
+      "severity": "P2",
+      "trigger": "auth bypass",
+      "title": "ws WebSocket Authentication Bypass",
+      "package": "ws",
+      "cve": "GHSA (ws auth bypass)",
+      "module": "Source/Frontend",
+      "is_direct_dep": false,
+      "fix": "cd Source/Frontend && npm update ws",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Primary Spec (dev-workflow-platform.md FR-001–069) Entirely Unimplemented",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "Source/ implements the Self-Judging Workflow Engine (FR-WF-001–013 + FR-dependency-*). None of FR-001–069 from the primary spec appear in Source/ as // Verifies: comments. The running application is a different product from what the primary spec defines.",
+      "impact": "Any agent following CLAUDE.md spec-first rule will build the wrong product. No compliance audit against primary spec is possible.",
+      "recommendation": "Decide canonical spec direction: deprecate dev-workflow-platform.md or begin implementation. Update CLAUDE.md and inspector.config.yml accordingly.",
+      "cross_refs": ["QO-002"],
+      "assign_to": "TheFixer",
+      "requires_decision_from": "requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Traceability Enforcer Produces False-Positive PASS on Primary Spec",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "The mandatory verification gate targets only Plans/self-judging-workflow/requirements.md (most-recently-modified plan), not Specifications/dev-workflow-platform.md. Gate exits PASS while 69 primary FRs are unimplemented.",
+      "impact": "Every CI run and agent receives false confidence. Gate cannot catch regressions in primary spec.",
+      "recommendation": "Add second enforcer invocation targeting Specifications/dev-workflow-platform.md, or enumerate all Specifications/*.md files. If primary spec is deprecated, remove it.",
+      "cross_refs": ["QO-001"],
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion (CVSS 9.8)",
+      "package": "handlebars",
+      "version_affected": ">=4.0.0 <=4.7.8",
+      "fixed_version": ">=4.7.9",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "module": "Source/Backend",
+      "is_direct": false,
+      "impact": "Remote Code Execution if any code path processes untrusted Handlebars templates",
+      "remediation": "cd Source/Backend && npm update handlebars",
+      "escalate_to": "TheGuardians",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Vitest Arbitrary File Read and Execution via UI Server (CVSS 9.8)",
+      "package": "vitest",
+      "version_affected": "<=4.1.10",
+      "fixed_version": ">=3.2.6",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "module": "Source/Frontend",
+      "is_direct": true,
+      "impact": "Remote Code Execution when Vitest UI server is listening on a network-reachable interface. Zero-authentication exploit.",
+      "remediation": "cd Source/Frontend && npm update vitest@^3.2.6 (major version change required)",
+      "escalate_to": "TheGuardians",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Two Logger Modules — Undocumented Wrapper Creates Import Ambiguity",
+      "files": ["Source/Backend/src/logger.ts", "Source/Backend/src/utils/logger.ts"],
+      "detail": "src/utils/logger.ts is canonical; src/logger.ts is an undocumented re-export wrapper. New files may import either, breaking the single log sink rule.",
+      "recommendation": "Merge to one file or document canonical path and add eslint no-restricted-imports rule.",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "WorkItemDetailPage.tsx (426 ln) and workflow.ts (374 ln) Approaching 500-line Limit",
+      "files": [
+        "Source/Frontend/src/pages/WorkItemDetailPage.tsx",
+        "Source/Backend/src/routes/workflow.ts"
+      ],
+      "recommendation": "Extract AssessmentList, ActionBar sub-components from WorkItemDetailPage. Split workflow.ts into workflow.ts + dependencies.ts.",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "untested",
+      "specialist": "quality-oracle",
+      "title": "Frontend Components Modified in Last 14 Days With Zero Tests",
+      "files": [
+        "Source/Frontend/src/components/Layout.tsx",
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx"
+      ],
+      "recommendation": "Add component tests with // Verifies: FR-WF-009/010/011 traceability comments.",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "brace-expansion — DoS via Uncontrolled Recursion",
+      "package": "brace-expansion",
+      "module": "Source/Backend",
+      "cves": ["GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg"],
+      "remediation": "cd Source/Backend && npm update brace-expansion",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "browserslist — Memory Exhaustion and Prototype Pollution",
+      "package": "browserslist",
+      "module": "Both",
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "remediation": "npm update browserslist in both modules",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "form-data — Multipart Upload Denial of Service",
+      "package": "form-data",
+      "module": "Both",
+      "remediation": "npm update form-data in both modules",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "js-yaml — YAML Deserialization RCE on Untrusted Input",
+      "package": "js-yaml",
+      "module": "Source/Backend",
+      "remediation": "cd Source/Backend && npm update js-yaml. Audit all call sites for untrusted YAML input.",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "vite Dev Server — CORS Bypass (Direct Dependency)",
+      "package": "vite",
+      "module": "Source/Frontend",
+      "is_direct": true,
+      "remediation": "cd Source/Frontend && npm update vite",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "nanoid — Weak Random Number Generation (v<=3.3.17)",
+      "package": "nanoid",
+      "module": "Source/Frontend",
+      "remediation": "cd Source/Frontend && npm update nanoid",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "postcss — Regular Expression Denial of Service in CSS Parser",
+      "package": "postcss",
+      "module": "Source/Frontend",
+      "remediation": "cd Source/Frontend && npm update postcss",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "ws — WebSocket Authentication Bypass",
+      "package": "ws",
+      "module": "Source/Frontend",
+      "remediation": "cd Source/Frontend && npm update ws",
+      "escalate_to": "TheGuardians",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Two eslint-disable Suppressions Without Justifying Comments",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Add inline comment explaining why react-hooks/exhaustive-deps is suppressed, or refactor with useCallback.",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "DebugPortalPage Uses Non-Standard Free-Text Verifies Comment",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "recommendation": "Create an FR for the debug portal or remove the pseudo-Verifies comment.",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "DependencyPicker.tsx Mixes Domain Cycle-Detection Logic with React Rendering",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx",
+      "recommendation": "Extract useDependencyPicker hook or pure utility function for cycle-detection logic.",
+      "assign_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "spec_coverage": {
+    "dev-workflow-platform.md (FR-001–069)": "0%",
+    "tiered-merge-pipeline.md (FR-TMP-*)": "0%",
+    "self-judging-workflow (FR-WF-001–013)": "100%",
+    "dependency (FR-dependency-*)": "100%",
+    "overall_active_spec_coverage": "0%"
+  },
+  "clean_checks": [
+    "No console.log in production backend source",
+    "No hardcoded secrets or URLs found",
+    "No swallowed errors — all catch blocks log and respond",
+    "No skipped tests (no .skip, .todo, xdescribe)",
+    "FR-WF-* and FR-dependency-* 100% traced",
+    "All list endpoints use {data: T[]} wrapper (workflow engine)",
+    "Service layer used — no direct store calls from route handlers",
+    "License compliance PASS — no GPL/AGPL in direct dependencies"
+  ],
+  "remediation_roadmap": {
+    "block_deploy": {
+      "label": "Block Deployment",
+      "tasks": [
+        "Patch DEP-001: cd Source/Backend && npm update handlebars",
+        "Patch DEP-002: cd Source/Frontend && npm update vitest@^3.2.6",
+        "Patch DEP-010: cd Source/Frontend && npm update ws",
+        "Escalate DEP-001, DEP-002, DEP-010 to TheGuardians for call-site audit",
+        "Resolve QO-001/QO-002: requirements-reviewer decision on primary spec direction"
+      ]
+    },
+    "this_sprint": {
+      "label": "This Sprint",
+      "tasks": [
+        "Run npm audit fix in Source/Backend and Source/Frontend (resolves DEP-003–009)",
+        "Add component tests for Layout.tsx, StatusBadge.tsx, PriorityBadge.tsx, TypeBadge.tsx (QO-006)",
+        "Consolidate logger modules — remove or document re-export wrapper (QO-003)",
+        "Enable Dependabot or Snyk; add npm audit --audit-level=high to CI"
+      ]
+    },
+    "next_sprint": {
+      "label": "Next Sprint",
+      "tasks": [
+        "Split WorkItemDetailPage.tsx and workflow.ts (QO-004)",
+        "Extract useDependencyPicker hook (QO-008)",
+        "Add eslint-disable justification comments (QO-005)",
+        "Create FR for DebugPortalPage or remove pseudo-Verifies comment (QO-007)",
+        "Plan major version upgrades: express v5, pino v10, React 19, React Router v7"
+      ]
+    },
+    "backlog": {
+      "label": "Backlog",
+      "tasks": [
+        "Schedule performance-profiler run with live backend",
+        "Schedule chaos-monkey run with all services live",
+        "Lock patch versions in package.json (~ instead of ^)",
+        "Update CLAUDE.md post QO-001 resolution"
+      ]
+    }
+  }
+}

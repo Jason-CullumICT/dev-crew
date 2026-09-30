@@ -1,0 +1,249 @@
+{
+  "audit_date": "2026-09-30",
+  "auditor": "dependency-auditor",
+  "overall_grade": "D",
+  "recommendation": "BLOCK RELEASE — fix 2 critical CVEs",
+  "package_managers_detected": ["npm"],
+  "modules": {
+    "Source/Backend": {
+      "direct_dependencies": 4,
+      "transitive_dependencies": 407,
+      "total_dependencies": 411,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 4,
+        "moderate": 3,
+        "low": 2,
+        "total": 10
+      },
+      "outdated_major_versions": 3
+    },
+    "Source/Frontend": {
+      "direct_dependencies": 3,
+      "transitive_dependencies": 227,
+      "total_dependencies": 230,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 5,
+        "moderate": 5,
+        "low": 1,
+        "total": 15
+      },
+      "outdated_major_versions": 3
+    },
+    "Source/E2E": {
+      "direct_dependencies": 4,
+      "transitive_dependencies": 0,
+      "total_dependencies": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "outdated_major_versions": 0
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion",
+      "severity": "P1",
+      "package": "handlebars",
+      "version_range": ">=4.0.0 <=4.7.8",
+      "fixed_version": ">=4.7.9",
+      "cve_id": "GHSA-2w6w-674q-4c4q",
+      "cvss_score": 9.8,
+      "module": "Source/Backend",
+      "is_direct": false,
+      "vulnerability": "Arbitrary JavaScript code injection via template AST type confusion",
+      "impact": "Remote Code Execution if processing untrusted templates",
+      "remediation": "npm update handlebars",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest Arbitrary File Read and Execution",
+      "severity": "P1",
+      "package": "vitest",
+      "version_range": "<=4.1.10",
+      "fixed_version": ">=3.2.6 (or >=5.0.2 for all fixes)",
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "cvss_score": 9.8,
+      "module": "Source/Frontend",
+      "is_direct": true,
+      "vulnerability": "When UI server is listening, arbitrary files can be read and executed",
+      "impact": "Remote Code Execution via Vitest UI server exposure",
+      "remediation": "npm update vitest@^3.2.6 (major version change)",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-003",
+      "package": "brace-expansion",
+      "module": "Source/Backend",
+      "severity": "P2",
+      "issue": "DoS via uncontrolled recursion and stack exhaustion",
+      "cves": ["GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg"],
+      "remediation": "npm update brace-expansion"
+    },
+    {
+      "id": "DEP-004",
+      "package": "browserslist",
+      "module": "Both",
+      "severity": "P2",
+      "issue": "Unbounded memory growth and prototype pollution",
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "remediation": "npm update browserslist"
+    },
+    {
+      "id": "DEP-005",
+      "package": "form-data",
+      "module": "Both",
+      "severity": "P2",
+      "issue": "Multipart upload denial of service",
+      "remediation": "npm update form-data"
+    },
+    {
+      "id": "DEP-006",
+      "package": "js-yaml",
+      "module": "Source/Backend",
+      "severity": "P2",
+      "issue": "YAML deserialization RCE if parsing untrusted input",
+      "remediation": "npm update js-yaml"
+    },
+    {
+      "id": "DEP-007",
+      "package": "vite",
+      "module": "Source/Frontend",
+      "severity": "P2",
+      "is_direct": true,
+      "issue": "Dev server CORS bypass",
+      "remediation": "npm update vite"
+    },
+    {
+      "id": "DEP-008",
+      "package": "nanoid",
+      "module": "Source/Frontend",
+      "severity": "P2",
+      "issue": "Weak random number generation",
+      "remediation": "npm update nanoid"
+    },
+    {
+      "id": "DEP-009",
+      "package": "postcss",
+      "module": "Source/Frontend",
+      "severity": "P2",
+      "issue": "Regular Expression Denial of Service in CSS parsing",
+      "remediation": "npm update postcss"
+    },
+    {
+      "id": "DEP-010",
+      "package": "ws",
+      "module": "Source/Frontend",
+      "severity": "P2",
+      "issue": "WebSocket authentication bypass",
+      "remediation": "npm update ws"
+    }
+  ],
+  "outdated_major_versions": {
+    "Source/Backend": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "wanted": "4.22.3",
+        "latest": "5.2.1",
+        "status": "1 minor behind, 1 major available"
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "wanted": "8.21.0",
+        "latest": "10.3.1",
+        "status": "2 majors behind"
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "wanted": "9.0.1",
+        "latest": "14.0.2",
+        "status": "5 majors behind, has CVE"
+      }
+    ],
+    "Source/Frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.3.0",
+        "status": "1 major behind"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.3.0",
+        "status": "1 major behind"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "wanted": "6.30.6",
+        "latest": "7.18.4",
+        "status": "1+ minor behind, 1 major available"
+      }
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "notes": "No GPL/AGPL in direct dependencies. All MIT, Apache-2.0, ISC, or UNLICENSED."
+  },
+  "supply_chain_health": {
+    "total_direct_deps": 11,
+    "total_transitive_deps": 634,
+    "transitive_risk": "HIGH",
+    "recommendations": [
+      "Enable Dependabot or Snyk for continuous monitoring",
+      "Lock patch versions where possible (use ~ instead of ^)",
+      "Enable npm audit on CI/CD with --audit-level=moderate"
+    ]
+  },
+  "remediation_phases": {
+    "phase_1_critical": {
+      "timeline": "This week",
+      "tasks": [
+        "Update handlebars in Source/Backend",
+        "Update vitest to >=3.2.6 in Source/Frontend (major version)",
+        "Run npm audit fix in both modules",
+        "Run npm test in both modules"
+      ]
+    },
+    "phase_2_high": {
+      "timeline": "1-2 weeks",
+      "tasks": [
+        "Update all HIGH severity packages via npm audit fix",
+        "Verify js-yaml usage in Backend (check for untrusted YAML parsing)",
+        "Check CI/CD for Vitest UI server exposure",
+        "Run comprehensive test suites"
+      ]
+    },
+    "phase_3_moderate": {
+      "timeline": "Sprint planning",
+      "tasks": [
+        "Plan express, pino upgrades for Backend",
+        "Plan React 19, React Router 7 upgrade for Frontend (breaking changes)",
+        "Test and validate major version upgrades"
+      ]
+    },
+    "phase_4_monitoring": {
+      "timeline": "Ongoing",
+      "tasks": [
+        "Enable Dependabot for automated CVE detection",
+        "Set up GitHub Actions to fail on HIGH/CRITICAL",
+        "Schedule weekly npm audit reviews"
+      ]
+    }
+  }
+}

@@ -1,0 +1,370 @@
+{
+  "audit_id": "run-20261001-084711",
+  "audit_date": "2026-10-01",
+  "branch": "audit/inspector-2026-10-01-8aafac",
+  "grade": "D",
+  "grade_rationale": "5 P1 findings (threshold for C is max 2 P1s). 4 CVSS-9.8 dependency CVEs + 1 tool gap giving false-green traceability gate. 12 P2 findings. Spec coverage 72% (active requirements).",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skipped_reason": "Services offline — backend and frontend not running during audit. Static mode only.",
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 12,
+    "p3_total": 7,
+    "p4_total": 1,
+    "total": 25,
+    "fixed_total": 0,
+    "spec_coverage_pct": 72,
+    "security_escalations": 2
+  },
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift/tool-gap",
+      "title": "Traceability enforcer blind to tiered-merge-pipeline spec — reports false PASSED",
+      "file": "tools/traceability-enforcer.py",
+      "impact": "10 unimplemented functional requirements (FR-TMP-001 through FR-TMP-010) are invisible to the CI gate. python3 tools/traceability-enforcer.py returns PASSED while spec coverage for tiered-merge-pipeline is 0%. Gate gives false confidence.",
+      "recommendation": "Add multi-spec support to enforcer (scan all Specifications/*.md for FR patterns) OR mark tiered-merge-pipeline.md as status: deferred. Either way the gate must not silently skip active specs.",
+      "route": "TheFixer/backend-coder",
+      "status": "NEW",
+      "escalate": false
+    },
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "cve/code-injection",
+      "title": "Handlebars.js CVSS 9.8 — JavaScript injection via AST type confusion",
+      "file": "Source/Backend/package.json",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "package": "handlebars@4.7.8",
+      "impact": "Attacker bypasses sandbox via crafted @partial-block directives, achieving arbitrary code execution in the backend process.",
+      "recommendation": "Upgrade: cd Source/Backend && npm install handlebars@latest && npm test",
+      "route": "TheFixer/backend-coder",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "injection — CVSS 9.8 RCE"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "cve/file-access",
+      "title": "Vitest CVSS 9.8 — arbitrary file read/execution when UI server running",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "package": "vitest@4.1.10",
+      "impact": "Attacker can read and execute arbitrary files on the dev/CI machine running the Vitest UI server. Affects source code and .env secret exposure.",
+      "recommendation": "Upgrade: cd Source/Frontend && npm install vitest@latest && npm test",
+      "route": "TheFixer/frontend-coder",
+      "status": "NEW",
+      "escalate": false
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "cve/code-injection",
+      "title": "Protobufjs CVSS 9.8 — arbitrary code execution on orchestrator",
+      "file": "platform/orchestrator/package.json",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "package": "protobufjs@7.6.4",
+      "impact": "Malformed .proto files or crafted protobuf messages can inject code into generated message classes. Orchestrator is infrastructure — compromise affects all agents.",
+      "recommendation": "Upgrade: cd platform/orchestrator && npm install protobufjs@latest @grpc/grpc-js@latest && npm test. NOTE: platform/ is solo-session only — pipeline agents must not touch this directory.",
+      "route": "solo-session/platform-maintainer",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "injection — CVSS 9.8 RCE on infrastructure"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "supply-chain",
+      "title": "Portal Backend — 54 accumulated CVEs (2 critical, 11 high); no npm audit enforcement",
+      "file": "portal/Backend/package.json",
+      "impact": "Debug portal is a pivot point for attackers. 54 known vulnerabilities indicate long gap since last dependency maintenance and no CI enforcement. Portal is not isolated from main application.",
+      "recommendation": "Run: cd portal/Backend && npm audit fix --force && npm test. Add npm audit to CI/CD pipeline to fail on critical/high CVEs.",
+      "route": "solo-session/platform-maintainer",
+      "status": "NEW",
+      "escalate": false
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-TMP-001 through FR-TMP-010 — zero implementation",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "recommendation": "Either create Plans/tiered-merge-pipeline/requirements.md to formally track implementation, or add Status: Deferred — Phase 2 to the spec header.",
+      "route": "requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers call store directly — service layer bypassed",
+      "file": "Source/Backend/src/routes/workItems.ts, Source/Backend/src/routes/workflow.ts",
+      "recommendation": "Extract Source/Backend/src/services/workItem.ts. Route handlers: validate input → call service → return response.",
+      "route": "TheFixer/backend-coder",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "test-coverage",
+      "title": "E2E test harness is a stub — zero test files, test command fails",
+      "file": "Source/E2E/package.json",
+      "recommendation": "Implement smoke-test E2E specs OR remove Source/E2E/ from workspace to stop gate failures.",
+      "route": "TheFixer/frontend-coder",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/dos",
+      "title": "brace-expansion — 6 DoS CVEs (exponential expansion, stack exhaustion, OOM)",
+      "file": "Transitive via Source/Backend, Source/Frontend",
+      "cve": "GHSA-3jxr-9vmj-r5cp + 5 others",
+      "recommendation": "npm audit fix across Source/Backend and Source/Frontend",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/dos",
+      "title": "browserslist — unbounded memory growth + crash via malformed stats file",
+      "file": "Transitive via Source/Backend, Source/Frontend",
+      "cve": "GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g",
+      "recommendation": "npm audit fix to upgrade browserslist >=4.28.7",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/injection",
+      "title": "form-data CRLF injection — HTTP header smuggling (CVSS 7.5)",
+      "file": "Transitive via Source/Backend, Source/Frontend",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "recommendation": "npm audit fix to upgrade form-data >=4.0.6",
+      "route": "TheFixer",
+      "status": "NEW",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "injection — CRLF header injection / HTTP smuggling"
+    },
+    {
+      "id": "DEP-008",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/dos",
+      "title": "js-yaml — quadratic-complexity DoS via merge-key chains (4 CVEs)",
+      "file": "Transitive via Source/Backend, Source/Frontend",
+      "cve": "GHSA-52cp-r559-cp3m + 3 others",
+      "recommendation": "npm audit fix to upgrade js-yaml >=3.15.2",
+      "route": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/dos",
+      "title": "@grpc/grpc-js — malformed requests crash orchestrator; cert validation bypass",
+      "file": "platform/orchestrator/package.json",
+      "cve": "GHSA-5375-pq7m-f5r2, GHSA-m9gg-hp2v-232j",
+      "recommendation": "cd platform/orchestrator && npm install @grpc/grpc-js@latest. Solo-session only.",
+      "route": "solo-session/platform-maintainer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/dos-regex",
+      "title": "path-to-regexp ReDoS — catastrophic backtracking on malformed URLs",
+      "file": "platform/orchestrator (transitive)",
+      "cve": "GHSA-37ch-88jc-xwx2",
+      "recommendation": "cd platform/orchestrator && npm audit fix",
+      "route": "solo-session/platform-maintainer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/path-traversal",
+      "title": "PostCSS — arbitrary file read via sourceMappingURL path traversal",
+      "file": "Source/Frontend/package.json (transitive)",
+      "cve": "GHSA-6g55-p6wh-862q",
+      "recommendation": "cd Source/Frontend && npm install postcss@latest",
+      "route": "TheFixer/frontend-coder",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/dos-loop",
+      "title": "nanoid — integer overflow and infinite loops (3 CVEs)",
+      "file": "Source/Frontend/package.json (transitive)",
+      "cve": "GHSA-28wg-ghj8-5hjv + 2 others",
+      "recommendation": "cd Source/Frontend && npm install nanoid@latest",
+      "route": "TheFixer/frontend-coder",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "cve/dos-memory",
+      "title": "ws — memory exhaustion DoS via tiny WebSocket fragments",
+      "file": "Source/Frontend/package.json (transitive via vite)",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "recommendation": "cd Source/Frontend && npm install ws@latest",
+      "route": "TheFixer/frontend-coder",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Silent .catch(() => ({})) swallows JSON parse error without documentation",
+      "file": "Source/Frontend/src/api/client.ts:26",
+      "recommendation": "Add inline comment explaining the intentional suppression."
+    },
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "test-coverage/hygiene",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/",
+      "recommendation": "Remove root-level test files; keep tests/pages/ variants as canonical."
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppressions lack rationale comments",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "recommendation": "Add inline rationale comments explaining why deps are intentionally omitted."
+    },
+    {
+      "id": "DEP-014",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "cve/various",
+      "title": "Multiple moderate DoS and path-traversal CVEs (aggregated)",
+      "file": "All npm projects",
+      "recommendation": "npm audit fix across all projects to clear moderate CVEs."
+    },
+    {
+      "id": "DEP-015",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "React 18.3.1 is one major version behind (latest: 19.3.0)",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "Plan React 19 upgrade for next minor release cycle."
+    },
+    {
+      "id": "DEP-016",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "react-router-dom 6.30.6 one major behind — contains open redirect CVE",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "recommendation": "Prioritize upgrade to react-router-dom@7 to resolve open redirect."
+    },
+    {
+      "id": "DEP-019",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "supply-chain",
+      "title": "Build tools (vite, vitest, postcss) have known CVEs — dev machine risk",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "Update all build tools; run builds in containers where possible."
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-017",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "abandoned",
+      "title": "No obviously abandoned packages found; monitor quarterly",
+      "file": "All projects",
+      "recommendation": "Run npm audit regularly; CLI flags deprecated packages."
+    }
+  ],
+  "escalations": [
+    {
+      "finding_id": "DEP-001",
+      "team": "TheGuardians",
+      "reason": "injection — handlebars CVSS 9.8 JavaScript injection/RCE in Source/Backend",
+      "trigger": "injection"
+    },
+    {
+      "finding_id": "DEP-003",
+      "team": "TheGuardians",
+      "reason": "injection — protobufjs CVSS 9.8 code injection on orchestrator infrastructure",
+      "trigger": "injection"
+    },
+    {
+      "finding_id": "DEP-007",
+      "team": "TheGuardians",
+      "reason": "injection — form-data CRLF injection enabling HTTP header smuggling",
+      "trigger": "injection"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "No npm audit enforcement in CI/CD pipeline",
+      "affected_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-013"],
+      "single_fix": "Add npm audit --audit-level=high to CI pipeline with fail-on-critical gate. This prevents future accumulation of all 13 dependency findings.",
+      "impact": "Resolves 13 findings (all DEP-005 through DEP-013 prevented from recurrence)"
+    },
+    {
+      "root_cause": "Traceability enforcer scans only most-recently-modified requirements.md in Plans/",
+      "affected_findings": ["QO-001", "QO-002"],
+      "single_fix": "Extend enforcer to scan all Specifications/*.md for FR patterns. This fixes the false-green gate (QO-001) and makes QO-002 visible to the enforcement gate.",
+      "impact": "Resolves 2 findings; enforcer becomes reliable across all spec families"
+    },
+    {
+      "root_cause": "No workItemService.ts abstraction layer",
+      "affected_findings": ["QO-003"],
+      "single_fix": "Create Source/Backend/src/services/workItem.ts wrapping all store CRUD operations.",
+      "impact": "Resolves 1 finding; unlocks testability and future DB migration"
+    }
+  ],
+  "trend": {
+    "prior_audit": null,
+    "note": "First audit — no baseline available. All findings are NEW."
+  },
+  "next_audit_recommended": "2026-10-08",
+  "generated_by": "TheInspector team-leader (sonnet)",
+  "run_id": "run-20261001-084711"
+}

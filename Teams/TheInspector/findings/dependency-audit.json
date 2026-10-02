@@ -1,0 +1,288 @@
+{
+  "audit_date": "2026-10-02",
+  "auditor": "dependency_auditor",
+  "scan_type": "CVE + License + Outdated",
+  "overall_health_grade": "C",
+  "summary": {
+    "total_vulnerabilities": 118,
+    "critical": 5,
+    "high": 31,
+    "moderate": 61,
+    "low": 21,
+    "package_manager": "npm",
+    "directories_scanned": 13,
+    "transitive_dependencies_estimated": 400
+  },
+  "vulnerability_by_directory": {
+    "Source/Backend": {
+      "critical": 1,
+      "high": 4,
+      "moderate": 3,
+      "low": 2,
+      "total": 10,
+      "critical_packages": ["handlebars"]
+    },
+    "Source/Frontend": {
+      "critical": 1,
+      "high": 6,
+      "moderate": 7,
+      "low": 1,
+      "total": 15,
+      "critical_packages": ["vitest"]
+    },
+    "Source/E2E": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "critical_packages": []
+    },
+    "platform/orchestrator": {
+      "critical": 1,
+      "high": 2,
+      "moderate": 4,
+      "low": 1,
+      "total": 8,
+      "critical_packages": ["dockerode-chain"]
+    },
+    "portal/Backend": {
+      "critical": 2,
+      "high": 11,
+      "moderate": 40,
+      "low": 1,
+      "total": 54,
+      "critical_packages": ["protobufjs", "vitest"]
+    },
+    "portal/Frontend": {
+      "critical": 1,
+      "high": 7,
+      "moderate": 6,
+      "low": 2,
+      "total": 16,
+      "critical_packages": ["vitest"]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "critical",
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "cvss": 9.8,
+      "title": "JavaScript Injection via AST Type Confusion",
+      "affected_versions": "<=4.7.8",
+      "recommended_version": ">=4.8.0",
+      "directories": ["Source/Backend"],
+      "is_direct": false,
+      "exploitability": "high",
+      "escalate": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "critical",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "title": "Arbitrary File Read via UI Server",
+      "affected_versions": "<3.2.6",
+      "recommended_version": ">=3.2.6",
+      "directories": ["Source/Frontend", "portal/Backend"],
+      "is_direct": true,
+      "exploitability": "high",
+      "escalate": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "severity": "critical",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary Code Execution via .proto Parsing",
+      "affected_versions": "<7.5.5",
+      "recommended_version": ">=7.5.5",
+      "directories": ["portal/Backend"],
+      "is_direct": false,
+      "exploitability": "high",
+      "escalate": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "package": "handlebars",
+      "severity": "critical",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "cvss": 8.1,
+      "title": "JavaScript Injection via @partial-block Tampering",
+      "affected_versions": ">=4.0.0 <=4.7.8",
+      "recommended_version": ">=4.8.0",
+      "directories": ["Source/Backend"],
+      "is_direct": false,
+      "escalate": "TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "package": "vitest",
+      "severity": "critical",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "cvss": 5.9,
+      "title": "Path Traversal via @vitest/mocker Redirect Mock",
+      "affected_versions": ">=2.1.0 <4.1.11",
+      "recommended_version": ">=4.1.11",
+      "directories": ["Source/Frontend", "portal/Backend"],
+      "is_direct": true,
+      "escalate": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-006",
+      "package": "js-yaml",
+      "cve": "GHSA-52cp-r559-cp3m",
+      "cvss": 7.5,
+      "title": "DoS via Quadratic Complexity Merge Keys",
+      "affected_versions": ">=3.0.0 <3.15.0",
+      "directories": ["Source/Backend"]
+    },
+    {
+      "id": "DEP-007",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "cvss": 7.5,
+      "title": "CRLF Injection via Multipart Fields",
+      "affected_versions": ">=4.0.0 <4.0.6",
+      "directories": ["Source/Backend", "Source/Frontend"]
+    },
+    {
+      "id": "DEP-008",
+      "package": "brace-expansion",
+      "cve": "GHSA-4x5r-5xpv-4q5x",
+      "cvss": 7.5,
+      "title": "DoS via Unbounded Recursion",
+      "affected_versions": "<=1.1.20",
+      "directories": ["Source/Backend"]
+    },
+    {
+      "id": "DEP-009",
+      "package": "browserslist",
+      "cve": "GHSA-c83g-rgw3-j3cx",
+      "cvss": 7.5,
+      "title": "Unbounded Memory Growth (OOM)",
+      "affected_versions": "<=4.28.6",
+      "directories": ["Source/Backend"]
+    },
+    {
+      "id": "DEP-010",
+      "package": "vite",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "cvss": 7.5,
+      "title": "server.fs.deny Bypass on Windows",
+      "affected_versions": "<=6.4.2",
+      "directories": ["Source/Frontend"]
+    },
+    {
+      "id": "DEP-011",
+      "package": "react-router-dom",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "cvss": "varies",
+      "title": "Open Redirect via Protocol-Relative URLs",
+      "affected_versions": "6.0.0 - 7.17.0",
+      "directories": ["Source/Frontend"],
+      "escalate": "TheGuardians"
+    },
+    {
+      "id": "DEP-012",
+      "package": "postcss",
+      "cve": "GHSA-6g55-p6wh-862q",
+      "cvss": 7.5,
+      "title": "Arbitrary File Read via sourceMappingURL",
+      "affected_versions": "<=8.5.11",
+      "directories": ["portal/Frontend"]
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "majors_behind": 1,
+      "priority": "medium",
+      "requires_testing": true
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "majors_behind": 1,
+      "priority": "medium",
+      "requires_testing": true
+    },
+    {
+      "package": "vite",
+      "current": "5.4.0",
+      "latest": "8.3.2",
+      "majors_behind": 2,
+      "priority": "high",
+      "requires_testing": true
+    },
+    {
+      "package": "vitest",
+      "current": "2.0.5",
+      "latest": "5.0.3",
+      "majors_behind": 2,
+      "priority": "high",
+      "requires_testing": true
+    }
+  ],
+  "license_compliance": {
+    "status": "clean",
+    "viral_licenses_found": 0,
+    "production_licenses": ["MIT", "Apache 2.0", "ISC"],
+    "issues": []
+  },
+  "remediation_priority": {
+    "immediate_48h": [
+      "DEP-002 (vitest)",
+      "DEP-001 (handlebars)",
+      "DEP-003 (protobufjs)"
+    ],
+    "week_1": [
+      "DEP-007 (form-data)",
+      "DEP-006 (js-yaml)",
+      "DEP-008 (brace-expansion)",
+      "DEP-009 (browserslist)",
+      "DEP-011 (react-router-dom)",
+      "DEP-010 (vite)"
+    ],
+    "week_2_ongoing": [
+      "React 19 migration",
+      "Vitest 5.x upgrade",
+      "OpenTelemetry strategy review"
+    ]
+  },
+  "supply_chain_risks": {
+    "transitive_dependency_count": 400,
+    "risk_level": "medium-high",
+    "concerns": [
+      "Large dependency tree increases attack surface",
+      "Portal/Backend has heavy OpenTelemetry instrumentation",
+      "13 package.json files = inconsistent versions",
+      "3 direct CRITICAL dependencies (vitest)"
+    ],
+    "recommendations": [
+      "Implement npm workspaces to deduplicate dependencies",
+      "Evaluate OpenTelemetry scope in debug portal",
+      "Set up automated dependency scanning (Dependabot/Renovate)",
+      "Policy: patch critical/high within 7 days"
+    ]
+  },
+  "cross_team_escalations": [
+    {
+      "type": "security",
+      "team": "TheGuardians",
+      "findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005", "DEP-011"],
+      "reason": "RCE, file disclosure, open redirect risks"
+    }
+  ],
+  "report_file": "Teams/TheInspector/findings/dependency-audit.md",
+  "next_audit_recommended": "2026-10-09"
+}

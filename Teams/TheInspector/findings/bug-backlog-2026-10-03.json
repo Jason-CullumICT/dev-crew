@@ -1,0 +1,348 @@
+{
+  "audit": {
+    "id": "run-20261003-080024",
+    "date": "2026-10-03",
+    "branch": "audit/inspector-2026-10-03-6d97f9",
+    "grade": "D",
+    "mode": "static",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend (localhost:3001) and Frontend (localhost:5173) unavailable — static mode only"
+  },
+  "summary": {
+    "p1_total": 3,
+    "p2_total": 9,
+    "p3_total": 6,
+    "p4_total": 1,
+    "total_findings": 19,
+    "escalations_to_guardians": 2,
+    "spec_coverage_enforced_pct": 8.3,
+    "spec_coverage_actual_pct": 85,
+    "prior_audit": null,
+    "fixed_since_prior": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read / Remote Code Execution",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cwe": ["CWE-22", "CWE-862"],
+      "file": "Source/Frontend/package.json",
+      "package": "vitest ≤4.1.10",
+      "description": "When the Vitest UI server is listening, any unauthenticated network attacker can read arbitrary files from the filesystem and execute arbitrary JavaScript. Sensitive .env files, credentials, and source code are exposed.",
+      "fix": "npm install vitest@^5.0.3 in Source/Frontend",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Dev-environment RCE / sensitive data exposed — requires hardening review beyond a simple version bump",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-003",
+      "title": "gRPC Server Crash + TLS Certificate Authentication Bypass",
+      "severity": "P1",
+      "cvss": 7.5,
+      "cve": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "cwe": ["CWE-400", "CWE-295"],
+      "file": "platform/orchestrator/package-lock.json",
+      "package": "@grpc/grpc-js 1.14.0–1.14.4 (transitive via dockerode)",
+      "description": "Malformed gRPC requests crash the orchestrator server (DoS); malformed compressed messages crash client and server; TLS certificate validation can be bypassed. The orchestrator loses availability and mutual-TLS guarantees.",
+      "fix": "npm install @grpc/grpc-js@^1.14.5 in platform/orchestrator (or dockerode@^5.0.1 for full resolution)",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "auth bypass (TLS cert validation bypass) — explicitly listed escalation trigger",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Traceability Enforcer Scans Wrong Directory — 92% of Requirements Invisible",
+      "severity": "P1",
+      "category": "process/tooling",
+      "file": "tools/traceability-enforcer.py",
+      "lines": "69-70",
+      "description": "Source dirs hardcoded as [\"Source\", \"E2E\"]. All FR-001–089 implementations live in portal/ which is completely excluded. The required verification gate validates only 8% of total requirements.",
+      "impact": "Traceability gate gives a false green on 92% of the codebase. Spec drift in portal/ is completely undetected.",
+      "fix": "Add portal/ (and optionally platform/) to scan dirs, or make enforcer read source.dirs from inspector.config.yml",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "escalate_to": "TheFixer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "FR-070 ID Collision Across Two Plans",
+      "severity": "P2",
+      "category": "spec-integrity",
+      "files": ["Plans/image-upload/requirements.md", "Plans/orchestrator-cycle-dashboard/requirements.md"],
+      "description": "Two distinct requirements both carry the ID FR-070 (ImageAttachment type vs. OrchestratorCyclesPage). Any Verifies: FR-070 comment is now ambiguous.",
+      "fix": "Renumber one FR-070; run enforcer to find all affected Verifies: comments and update them",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "title": "Ghost FRs FR-090—095 — Code Written Before Spec",
+      "severity": "P2",
+      "category": "spec-drift",
+      "files": [
+        "portal/Frontend/src/components/orchestrator/types.ts",
+        "portal/Frontend/src/components/orchestrator/RunsTab.tsx"
+      ],
+      "description": "Code references FR-090, FR-091, FR-093–095 which appear in no specification or plan. Violates the spec-first mandate.",
+      "fix": "Write the missing spec sections for FR-090–095 in the appropriate plan, then link them to the code comments",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "title": "Recently-Modified Files With Zero Traceability",
+      "severity": "P2",
+      "category": "traceability",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts",
+        "portal/Frontend/src/pages/TeamsPage.tsx"
+      ],
+      "description": "Both files modified within 14 days, 0 Verifies: annotations. teamDispatches.ts is 85 lines; TeamsPage.tsx is 406 lines.",
+      "fix": "Add Verifies: FR-XXX comments to every business-logic block; link to the appropriate spec requirements",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Jest Ecosystem Cascade — 15+ Modules With HIGH CVEs",
+      "severity": "P2",
+      "category": "dependency-cve",
+      "file": "Source/Backend/package.json",
+      "package": "jest ≤30.2.0",
+      "cvss": 7.5,
+      "description": "15+ jest submodules (jest-message-util, jest-resolve, @jest/test-result, etc.) carry HIGH-severity CVEs affecting test suite integrity and CI/CD pipeline. No backport to 29.x.",
+      "fix": "npm install jest@^30.5.2 in Source/Backend",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Browserslist Unbounded Memory Growth (DoS)",
+      "severity": "P2",
+      "category": "dependency-cve",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "browserslist ≤4.28.6",
+      "cve": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "cvss": 7.5,
+      "description": "Distinct query results cached indefinitely — eventual OOM. Production frontend builds and CI/CD can exhaust memory.",
+      "fix": "npm install browserslist@^4.28.7 (transitive via Vite update)",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "title": "path-to-regexp ReDoS in Orchestrator",
+      "severity": "P2",
+      "category": "dependency-cve",
+      "file": "platform/orchestrator/package-lock.json",
+      "package": "path-to-regexp 0.1.1–0.1.11 / 1.0.0–1.9.0 / 3.0.0–3.3.1",
+      "cvss": 7.5,
+      "description": "Malformed route patterns cause exponential regex matching — CPU exhaustion, orchestrator API unresponsive.",
+      "fix": "Upgrade express to ^4.21.0+ in platform/orchestrator (contains patched path-to-regexp)",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "title": "js-yaml Quadratic CPU Consumption (DoS)",
+      "severity": "P2",
+      "category": "dependency-cve",
+      "file": "Source/Backend/package-lock.json",
+      "package": "js-yaml <3.15.0",
+      "cve": ["GHSA-h67p-54hq-rp68", "GHSA-52cp-r559-cp3m", "GHSA-5p4m-2wfm-xmqj"],
+      "cvss": 7.5,
+      "description": "Repeated aliases and merge-key chains force quadratic CPU — config parsing or spec loading can hang indefinitely.",
+      "fix": "Upgrade transitive js-yaml to ≥3.15.0 (via jest@^30.5.2 — shares root cause with DEP-002)",
+      "status": "NEW",
+      "cross_ref": "DEP-002",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-010",
+      "title": "ws WebSocket Memory Exhaustion (DoS)",
+      "severity": "P2",
+      "category": "dependency-cve",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "ws 8.0.0–8.20.1",
+      "cve": ["GHSA-96hv-2xvq-fx4p", "GHSA-58qx-3vcg-4xpx"],
+      "cvss": 7.5,
+      "description": "Tiny WebSocket fragments exhaust server memory; uninitialized memory disclosure possible. Affects Vite dev server HMR.",
+      "fix": "npm install ws@^8.21.0 in Source/Frontend",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-011",
+      "title": "protobufjs Multiple DoS & Schema Injection",
+      "severity": "P2",
+      "category": "dependency-cve",
+      "file": "platform/orchestrator/package-lock.json",
+      "package": "protobufjs ≤7.6.4",
+      "cve": ["GHSA-wcpc-wj8m-hjx6", "GHSA-f38q-mgvj-vph7", "GHSA-j3f2-48v5-ccww", "GHSA-4x5r-pxfx-6jf8"],
+      "cvss": 7.5,
+      "description": "Unbounded Any expansion, schema-derived names shadowing properties, infinite loop in .proto parsing. Orchestrator gRPC handler hangs on malformed messages.",
+      "fix": "Upgrade protobufjs to ≥7.7.0+ (transitive via @grpc/grpc-js update — shares root cause with DEP-003)",
+      "status": "NEW",
+      "cross_ref": "DEP-003",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "title": "Large Service Files Exceeding 500-Line Threshold",
+      "severity": "P3",
+      "category": "code-quality",
+      "files": [
+        "portal/Backend/src/services/cycleService.ts",
+        "portal/Backend/src/services/featureRequestService.ts"
+      ],
+      "description": "526-line and 506-line service files with mixed responsibilities. Decomposition opportunity.",
+      "fix": "Split each service into focused sub-services (e.g., separate query vs. mutation logic)",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-006",
+      "title": "eslint-disable Without Explanatory Comments",
+      "severity": "P3",
+      "category": "lint-hygiene",
+      "description": "Three recently-modified files suppress react-hooks/exhaustive-deps without rationale. CLAUDE.md prohibits unexplained lint disables.",
+      "fix": "Add rationale comment or fix the dependency array exhaustiveness issue",
+      "status": "NEW",
+      "source_specialist": "quality-oracle",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "title": "Enforcer Ignores inspector.config.yml",
+      "severity": "P3",
+      "category": "tooling",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Enforcer hardcodes behavior independent of inspector.config.yml. Config updates have no effect.",
+      "fix": "Make enforcer read specs.dir and source.dirs from inspector.config.yml (shares root cause with QO-001)",
+      "status": "NEW",
+      "cross_ref": "QO-001",
+      "source_specialist": "quality-oracle",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "title": "react-router Open Redirect via Protocol-Relative URLs",
+      "severity": "P3",
+      "category": "dependency-cve",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "@remix-run/router 1.3.0–1.23.2",
+      "cvss": 5.0,
+      "description": "Paths beginning with // reinterpreted as protocol-relative URLs, enabling open redirect to attacker-controlled domain.",
+      "fix": "npm install react-router-dom@^7.18.4 in Source/Frontend and portal/Frontend",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "title": "@vitest/mocker Path Traversal File Read",
+      "severity": "P3",
+      "category": "dependency-cve",
+      "file": "Source/Frontend/package.json",
+      "package": "@vitest/mocker 2.1.0–4.1.10",
+      "cvss": 5.9,
+      "description": "Redirect mocking allows path traversal — arbitrary file read via test runner. Shares fix with DEP-001.",
+      "fix": "npm install vitest@^5.0.3 (resolves DEP-001 and DEP-008 together)",
+      "status": "NEW",
+      "cross_ref": "DEP-001",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "title": "uuid Buffer Bounds Check Missing",
+      "severity": "P3",
+      "category": "dependency-cve",
+      "files": [
+        "Source/Backend/package.json",
+        "portal/Backend/package.json",
+        "platform/orchestrator/package-lock.json"
+      ],
+      "package": "uuid <11.1.1",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "description": "When buf parameter provided to v3/v5/v6 UUID functions, no length validation — buffer overflow possible.",
+      "fix": "npm install uuid@^11.1.1 in Backend and portal/Backend; update dockerode@^5.0.1 for orchestrator",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-012",
+      "title": "@babel/core Arbitrary File Read During Transpilation (Low)",
+      "severity": "P4",
+      "category": "dependency-cve",
+      "files": [
+        "Source/Backend/package-lock.json",
+        "Source/Frontend/package-lock.json"
+      ],
+      "package": "@babel/core ≤7.29.0",
+      "cvss": 3.2,
+      "description": "sourceMappingURL comments can trigger arbitrary file reads during transpilation — requires local dev environment, low exploitability.",
+      "fix": "Upgrade babel to ≥7.30.0 (typically resolved via TypeScript/build tool update)",
+      "status": "NEW",
+      "source_specialist": "dependency-auditor",
+      "escalate_to": "TheFixer"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "vitest package outdated (≤4.1.10)",
+      "affected_findings": ["DEP-001", "DEP-008"],
+      "single_fix": "npm install vitest@^5.0.3 in Source/Frontend",
+      "fix_impact": "Resolves 1×P1 + 1×P3 with a single command"
+    },
+    {
+      "root_cause": "jest ecosystem not upgraded past 30.2.0",
+      "affected_findings": ["DEP-002", "DEP-007"],
+      "single_fix": "npm install jest@^30.5.2 in Source/Backend",
+      "fix_impact": "Resolves 2×P2 (15+ cascading CVEs) with a single command"
+    },
+    {
+      "root_cause": "gRPC dependency chain outdated in platform/orchestrator",
+      "affected_findings": ["DEP-003", "DEP-005", "DEP-011"],
+      "single_fix": "Update @grpc/grpc-js@^1.14.5 + dockerode@^5.0.1 + express@^4.21.0 in platform/orchestrator",
+      "fix_impact": "Resolves 1×P1 + 2×P2 (auth bypass, DoS, ReDoS) with coordinated update"
+    },
+    {
+      "root_cause": "Traceability enforcer hardcodes source dirs, ignores config",
+      "affected_findings": ["QO-001", "QO-008"],
+      "single_fix": "Make tools/traceability-enforcer.py read source.dirs from inspector.config.yml",
+      "fix_impact": "Resolves 1×P1 + 1×P3, restores visibility into 92% of codebase"
+    }
+  ],
+  "routing": {
+    "TheGuardians": ["DEP-001", "DEP-003"],
+    "TheFixer": ["QO-001", "QO-002", "QO-003", "QO-004", "QO-005", "QO-006", "QO-008",
+                 "DEP-002", "DEP-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008",
+                 "DEP-009", "DEP-010", "DEP-011", "DEP-012"]
+  }
+}

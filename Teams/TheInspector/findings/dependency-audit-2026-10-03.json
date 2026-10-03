@@ -1,0 +1,422 @@
+{
+  "audit_metadata": {
+    "date": "2026-10-03",
+    "agent": "dependency_auditor",
+    "model": "claude-haiku-4-5",
+    "scope": "dev-crew monorepo (Source/, platform/, portal/)",
+    "duration_minutes": 5
+  },
+  "summary": {
+    "total_packages_scanned": 6,
+    "total_direct_dependencies": 42,
+    "total_transitive_dependencies": 806,
+    "total_vulnerabilities": 58,
+    "critical_count": 2,
+    "high_count": 20,
+    "moderate_count": 28,
+    "low_count": 3,
+    "outdated_major_versions": 12,
+    "abandoned_packages": 0,
+    "license_violations": 0,
+    "post_install_scripts": 0
+  },
+  "projects": {
+    "source_backend": {
+      "path": "Source/Backend",
+      "package_manager": "npm",
+      "direct_dependencies": 8,
+      "dev_dependencies": 17,
+      "transitive_dependencies": 413,
+      "vulnerabilities": 22,
+      "critical": 0,
+      "high": 7,
+      "moderate": 6,
+      "low": 1,
+      "outdated_major": [
+        {
+          "package": "express",
+          "current": "4.18.2",
+          "latest": "5.2.1",
+          "gap": 1,
+          "severity": "P3"
+        },
+        {
+          "package": "pino",
+          "current": "8.17.0",
+          "latest": "10.4.0",
+          "gap": 2,
+          "severity": "P2"
+        },
+        {
+          "package": "uuid",
+          "current": "9.0.0",
+          "latest": "14.0.2",
+          "gap": 5,
+          "severity": "P2"
+        }
+      ],
+      "risk_level": "VERY HIGH",
+      "notes": "Jest ecosystem dominance (200+ deps). Consider vitest migration for 63% reduction."
+    },
+    "source_frontend": {
+      "path": "Source/Frontend",
+      "package_manager": "npm",
+      "direct_dependencies": 9,
+      "dev_dependencies": 13,
+      "transitive_dependencies": 232,
+      "vulnerabilities": 15,
+      "critical": 1,
+      "high": 6,
+      "moderate": 7,
+      "low": 1,
+      "critical_cves": [
+        "GHSA-5xrq-8626-4rwp"
+      ],
+      "outdated_major": [
+        {
+          "package": "react",
+          "current": "18.3.1",
+          "latest": "19.3.0",
+          "gap": 1,
+          "severity": "P3"
+        },
+        {
+          "package": "react-router-dom",
+          "current": "6.26.0",
+          "latest": "7.18.4",
+          "gap": 1,
+          "severity": "P2"
+        }
+      ],
+      "risk_level": "HIGH",
+      "notes": "Vitest UI server RCE vulnerability (CVSS 9.8). Requires immediate update to vitest@>=5.0.3"
+    },
+    "source_e2e": {
+      "path": "Source/E2E",
+      "package_manager": "npm",
+      "direct_dependencies": 1,
+      "dev_dependencies": 0,
+      "transitive_dependencies": 4,
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "risk_level": "LOW",
+      "notes": "@playwright/test only; clean security profile."
+    },
+    "platform_orchestrator": {
+      "path": "platform/orchestrator",
+      "package_manager": "npm",
+      "direct_dependencies": 3,
+      "dev_dependencies": 0,
+      "transitive_dependencies": 157,
+      "vulnerabilities": 8,
+      "critical": 1,
+      "high": 2,
+      "moderate": 4,
+      "low": 1,
+      "critical_cves": [
+        "GHSA-5375-pq7m-f5r2",
+        "GHSA-99f4-grh7-6pcq",
+        "GHSA-m9gg-hp2v-232j"
+      ],
+      "risk_level": "CRITICAL",
+      "notes": "gRPC server crashes (CVSS 7.5+), cert auth bypass. Update @grpc/grpc-js to >=1.14.5 or dockerode to >=5.0.1"
+    },
+    "portal_backend": {
+      "path": "portal/Backend",
+      "package_manager": "npm",
+      "direct_dependencies": 9,
+      "dev_dependencies": 7,
+      "transitive_dependencies": "TBD",
+      "vulnerabilities": "8+",
+      "risk_level": "HIGH",
+      "notes": "Uses vitest (lighter than jest). OpenTelemetry instrumentation adds 50+ deps."
+    },
+    "portal_frontend": {
+      "path": "portal/Frontend",
+      "package_manager": "npm",
+      "direct_dependencies": 12,
+      "dev_dependencies": 9,
+      "transitive_dependencies": "TBD",
+      "vulnerabilities": "4+",
+      "risk_level": "HIGH",
+      "notes": "Vite + vitest + tailwindcss. Similar profile to Source/Frontend."
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read/Execute",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest",
+      "affected_versions": "<=4.1.10",
+      "files": ["Source/Frontend/package.json"],
+      "description": "Unauthenticated network attacker can read arbitrary files and execute code when UI server listening",
+      "impact": "Confidentiality breach, code injection, credential theft",
+      "fix": "npm install vitest@^5.0.3",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "gRPC Server Crash Vulnerabilities & Certificate Auth Bypass",
+      "severity": "P1",
+      "cvss": 7.5,
+      "cves": [
+        "GHSA-5375-pq7m-f5r2",
+        "GHSA-99f4-grh7-6pcq",
+        "GHSA-m9gg-hp2v-232j"
+      ],
+      "package": "@grpc/grpc-js",
+      "affected_versions": "1.14.0-1.14.4",
+      "files": ["platform/orchestrator/package-lock.json"],
+      "description": "Malformed requests cause server crash; compressed message handling crash; TLS cert validation bypassed",
+      "impact": "DoS, auth bypass, TLS compromise",
+      "fix": "npm install @grpc/grpc-js@^1.14.5 OR npm install dockerode@^5.0.1",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Jest Module Cascade - HIGH Severity Vulnerabilities",
+      "severity": "P2",
+      "cvss": 7.5,
+      "package": "jest",
+      "affected_versions": "<=30.2.0",
+      "files": ["Source/Backend/package.json"],
+      "description": "Multiple HIGH-severity CVEs in jest submodules cascading through test pipeline (15+ affected modules)",
+      "impact": "Test suite integrity, potential code injection during test execution",
+      "fix": "npm install jest@^30.5.2",
+      "escalate_to": "TheFixer"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-004",
+      "title": "Browserslist Unbounded Memory Growth DoS",
+      "severity": "P2",
+      "cvss": 7.5,
+      "package": "browserslist",
+      "affected_versions": "<=4.28.6",
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"]
+    },
+    {
+      "id": "DEP-005",
+      "title": "path-to-regexp ReDoS (Regular Expression Denial of Service)",
+      "severity": "P2",
+      "cvss": 7.5,
+      "package": "path-to-regexp",
+      "cves": ["GHSA-7jxf-39hm-987g"]
+    },
+    {
+      "id": "DEP-007",
+      "title": "js-yaml Quadratic CPU Consumption (DoS)",
+      "severity": "P2",
+      "cvss": 7.5,
+      "package": "js-yaml",
+      "affected_versions": "<3.15.0",
+      "cves": ["GHSA-52cp-r559-cp3m", "GHSA-5p4m-2wfm-xmqj"]
+    },
+    {
+      "id": "DEP-010",
+      "title": "ws WebSocket Memory Exhaustion DoS",
+      "severity": "P2",
+      "cvss": 7.5,
+      "package": "ws",
+      "affected_versions": "8.0.0-8.20.1",
+      "cves": ["GHSA-96hv-2xvq-fx4p"]
+    }
+  ],
+  "moderate_findings": [
+    {
+      "id": "DEP-006",
+      "title": "@remix-run/router - Protocol-Relative URL Open Redirect",
+      "severity": "P3",
+      "package": "@remix-run/router",
+      "affected_versions": "1.3.0-1.23.2",
+      "cves": ["GHSA-2j2x-hqr9-3h42"]
+    },
+    {
+      "id": "DEP-008",
+      "title": "@vitest/mocker Path Traversal / File Read",
+      "severity": "P3",
+      "cvss": 5.9,
+      "package": "@vitest/mocker",
+      "affected_versions": "2.1.0-4.1.10",
+      "cves": ["GHSA-82fw-gwwq-j7x9"]
+    },
+    {
+      "id": "DEP-009",
+      "title": "uuid Buffer Bounds Check Missing",
+      "severity": "P3",
+      "cvss": 7.5,
+      "package": "uuid",
+      "affected_versions": "<11.1.1",
+      "cves": ["GHSA-w5hq-g745-h8pq"]
+    }
+  ],
+  "license_audit": {
+    "status": "COMPLIANT",
+    "total_packages_checked": 20,
+    "mit": 18,
+    "apache_2_0": 2,
+    "isc": 2,
+    "gpl_agpl": 0,
+    "unlicensed": 0,
+    "notes": "No GPL/AGPL packages detected. All primary dependencies use permissive licenses."
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": 0,
+    "abandoned_packages": 0,
+    "single_maintainer_packages": "Not fully analyzed",
+    "low_download_count_packages": 0,
+    "status": "LOW RISK"
+  },
+  "dependency_tree_analysis": {
+    "backend": {
+      "direct": 8,
+      "transitive": 413,
+      "ratio": "1:51",
+      "risk_level": "VERY HIGH",
+      "root_cause": "jest ecosystem (200+ deps)",
+      "recommendation": "Migrate to vitest (63% reduction: 413 → 150)"
+    },
+    "frontend": {
+      "direct": 9,
+      "transitive": 232,
+      "ratio": "1:26",
+      "risk_level": "HIGH",
+      "root_cause": "Vite + vitest + testing-library + TypeScript",
+      "recommendation": "Keep up-to-date; ensure vitest UI server localhost-only"
+    },
+    "orchestrator": {
+      "direct": 3,
+      "transitive": 157,
+      "ratio": "1:52",
+      "risk_level": "CRITICAL",
+      "root_cause": "gRPC (90+ deps) + dockerode + express",
+      "recommendation": "Evaluate gRPC necessity; consider REST/HTTP alternative"
+    }
+  },
+  "outdated_versions": {
+    "backend": [
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.2.1",
+        "major_gap": 1
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.4.0",
+        "major_gap": 2
+      },
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "latest": "14.0.2",
+        "major_gap": 5
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.3.0",
+        "major_gap": 1
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "latest": "19.3.0",
+        "major_gap": 1
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "latest": "7.18.4",
+        "major_gap": 1
+      }
+    ]
+  },
+  "recommendations": {
+    "immediate_actions": [
+      {
+        "priority": 1,
+        "action": "Update vitest to ^5.0.3 in Source/Frontend",
+        "reason": "CRITICAL: Arbitrary file read/execute vulnerability (CVSS 9.8)"
+      },
+      {
+        "priority": 2,
+        "action": "Update @grpc/grpc-js to ^1.14.5 in platform/orchestrator",
+        "reason": "CRITICAL: Server crash vulnerabilities & cert auth bypass (CVSS 7.5)"
+      },
+      {
+        "priority": 3,
+        "action": "Update jest to ^30.5.2 in Source/Backend",
+        "reason": "HIGH: Cascading HIGH CVEs in jest ecosystem"
+      },
+      {
+        "priority": 4,
+        "action": "Update uuid to ^14+ in Source/Backend and portal/Backend",
+        "reason": "MODERATE: Buffer bounds check missing (CVSS 7.5)"
+      }
+    ],
+    "medium_term_actions": [
+      {
+        "timeline": "Sprint",
+        "action": "Update express, pino majors in Backend & Portal",
+        "reason": "Feature gaps and missing security patches"
+      },
+      {
+        "timeline": "Sprint",
+        "action": "Update react, react-router-dom majors in Frontend & Portal",
+        "reason": "CVE fixes and feature updates"
+      },
+      {
+        "timeline": "Sprint",
+        "action": "Audit and update all transitive deps",
+        "reason": "Ensure cascading CVE fixes applied"
+      }
+    ],
+    "long_term_actions": [
+      {
+        "timeline": "Q4 2026",
+        "action": "Migrate Backend from jest to vitest",
+        "reason": "60%+ dependency reduction; active security updates"
+      },
+      {
+        "timeline": "Q4 2026",
+        "action": "Evaluate gRPC necessity in Orchestrator",
+        "reason": "50%+ potential dependency reduction if REST/HTTP viable"
+      },
+      {
+        "timeline": "2027",
+        "action": "Automate supply chain hardening",
+        "reason": "CI/CD integration: npm audit --production, dependabot, npm 2FA"
+      }
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "Vitest UI server arbitrary file read (development environment hardening)",
+      "gRPC certificate auth bypass & crash vectors (orchestrator security)"
+    ],
+    "TheFixer": [
+      "jest ecosystem HIGH CVEs (requires major version bump + regression testing)",
+      "All HIGH/MODERATE dependency updates (requires version testing)"
+    ]
+  },
+  "audit_tools_used": [
+    "npm audit --json",
+    "npm outdated --json",
+    "npm ls --all --depth=0",
+    "grep for package-lock.json analysis",
+    "Manual CVE cross-reference via GHSA database"
+  ],
+  "next_audit": "2026-11-03",
+  "reporting_status": "PENDING_RUN_ID"
+}

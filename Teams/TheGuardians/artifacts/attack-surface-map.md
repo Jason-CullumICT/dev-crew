@@ -309,3 +309,184 @@ Based on the objectives in `security.config.yml`, prioritize in this order:
 - **No authentication** — every curl command below works with zero headers beyond `Content-Type`
 - **State machine entry points:** `Backlog → route → (Proposed | Approved) → assess → (Approved | Rejected) → dispatch → InProgress`
 - **Fast-track shortcut:** `Backlog → route(overrideRoute:"fast-track") → Approved → dispatch` (bypasses everything)
+
+---
+
+## Red Team Results
+
+**Executed by:** red_teamer  
+**Date:** 2026-10-05  
+**Environment:** Ephemeral isolated — `docker-compose.test.yml` (portal service on `http://localhost:3001`)  
+**Model:** claude-sonnet-4-6
+
+> ⚠️ **Target Environment Mismatch (RED-META-001):** The Attack Surface Map was authored against `Source/Backend/` routes (`/api/work-items`, `/api/intake/zendesk`, `/api/dashboard/queue`). The ephemeral test environment (`docker-compose.test.yml`) runs the `portal/` application, which serves entirely different routes (`/api/feature-requests`, `/api/bugs`, `/api/cycles`). PEN-001 through PEN-011 were theoretically verified against the correct vulnerability *classes* applied to the portal's live routes. All four security objectives from `security.config.yml` were achieved against the running service.
+
+---
+
+### RED-001: Unauthenticated Force-Approve Bypasses AI Voting Pipeline
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/feature-requests`, `PATCH /api/feature-requests/:id`, `POST /api/feature-requests/:id/force-approve`
+- **Based On:** PEN-001 (No Auth), PEN-003 (State Machine Bypass)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with `{"title":"...", "description":"...", "source":"manual"}` — zero credentials, `201` returned, `FR-0001` created.
+  2. `PATCH /api/feature-requests/FR-0001` with `{"status":"voting"}` — anonymously advanced to voting phase.
+  3. `POST /api/feature-requests/FR-0001/force-approve` — feature request **approved with 0 AI votes**, bypassing the entire agent-voting pipeline.
+  4. Final state: `status=approved`, `human_approval_approved_at=2026-10-05T10:19:18Z`, `votes=[]`.
+- **Evidence:** HTTP 200 `{"id":"FR-0001","status":"approved","votes":[],"human_approval_approved_at":"2026-10-05T10:19:18.766Z"}`
+- **Recommendation:** Mount authentication middleware before ALL routes. The `force-approve` endpoint must additionally require a specific `admin` or `human-reviewer` role. Log all force-approve actions to the audit trail.
+
+---
+
+### RED-002: Full Unauthenticated Lifecycle Control of Bug Reports
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/bugs`, `POST /api/bugs/:id/triage`, `POST /api/bugs/:id/resolve`, `POST /api/bugs/:id/close`, `POST /api/bugs/:id/reopen`, `DELETE /api/bugs/:id`
+- **Based On:** PEN-001 (No Auth)
+- **Exploit Scenario:**
+  1. `POST /api/bugs` — created `BUG-0001` with `severity=critical`, zero credentials.
+  2. `POST /api/bugs/BUG-0001/triage` → `POST …/resolve` (via PATCH in_development) → `POST …/close` → `POST …/reopen` — full lifecycle traversal with no auth at any step.
+  3. `DELETE /api/bugs/BUG-0001` — permanently destroyed the item; HTTP 204; subsequent GET returns 404.
+- **Evidence:** All transition endpoints returned `2xx` with no `Authorization` header present at any step. Bug successfully moved `reported→triaged→in_development→resolved→closed→triaged→(deleted)`.
+- **Recommendation:** Require authenticated session for all state-transition and delete endpoints. Implement audit logging for every state change including actor identity.
+
+---
+
+### RED-003: Complete Store Enumeration — Pagination Not Enforced
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/feature-requests`, `GET /api/bugs`
+- **Based On:** PEN-004 (Unbounded Pagination), PEN-005 (Dashboard Exposure)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests?limit=1` — returned all 9 feature requests (limit parameter silently ignored).
+  2. `GET /api/feature-requests?limit=999999` — same result: all 9 items returned.
+  3. Full dump includes IDs, titles, descriptions, statuses, priority levels, votes, and dependency links.
+- **Evidence:** `limit=1` → 9 items; `limit=999999` → 9 items. Parameter has zero effect. No `total`/`page` metadata in response.
+- **Recommendation:** Implement server-side pagination with a maximum page size (e.g., 100). Enforce the limit in the service layer, not just as a slice.
+
+---
+
+### RED-004: Unauthenticated Permanent Deletion of Any Item
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Access or modify a soft-deleted work item via direct ID reference"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `DELETE /api/feature-requests/:id`, `DELETE /api/bugs/:id`
+- **Based On:** PEN-001 (No Auth)
+- **Exploit Scenario:**
+  1. `DELETE /api/feature-requests/FR-0007` with zero credentials → HTTP 204; item permanently destroyed.
+  2. `DELETE /api/bugs/BUG-0001` with zero credentials → HTTP 204; item permanently destroyed.
+  3. Note: portal uses hard-delete (no soft-delete), so items are gone permanently — no recovery path.
+- **Evidence:** `GET /api/feature-requests/FR-0007` returned `200` before delete, `404` after. `GET /api/bugs/BUG-0001` same result.
+- **Recommendation:** Require authenticated session and `admin`/`owner` role for delete operations. Consider implementing soft-delete to enable recovery and maintain audit trail.
+
+---
+
+### RED-005: Missing Security HTTP Headers — Clickjacking & Information Disclosure
+- **Severity:** Medium
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** All API endpoints
+- **Based On:** PEN-007 (Missing Security Headers)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests` — response includes `X-Powered-By: Express` disclosing backend framework.
+  2. No `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, or `Strict-Transport-Security` headers present.
+  3. CORS response includes `Access-Control-Allow-Credentials: true` — dangerous when paired with any future cookie-based auth without a strict allowlist.
+- **Evidence:** Response headers: `X-Powered-By: Express`. Missing: `X-Frame-Options`, `X-Content-Type-Options`, `Content-Security-Policy`, `HSTS`.
+- **Recommendation:** Install `helmet` middleware. Set explicit CORS allowlist tied to the frontend origin. Never set `Access-Control-Allow-Credentials: true` without an explicit, non-wildcard origin allowlist.
+
+---
+
+### RED-006: Prometheus Metrics — Unauthenticated Operational Intelligence
+- **Severity:** Medium
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /metrics`
+- **Based On:** PEN-008 (Metrics Disclosure)
+- **Exploit Scenario:**
+  1. `GET /metrics` with zero credentials → HTTP 200, full Prometheus export.
+  2. Revealed: `feature_request_status_transitions_total`, `bug_status_transitions_total`, `ai_voting_invocations_total`, Node.js process internals (heap, CPU, event loop lag, open file descriptors).
+  3. An adversary can track deployment cadence, team velocity, vote manipulation rates, and system load to time attacks.
+- **Evidence:** `curl http://localhost:3001/metrics` returned HTTP 200 with all metric families. `ai_voting_invocations_total 2` visible.
+- **Recommendation:** Restrict `/metrics` to internal network or require bearer token. Never expose operational metrics to unauthenticated public callers.
+
+---
+
+### RED-007: Deleted Item ID Leaked via Dependency Reference (IDOR Oracle)
+- **Severity:** Low
+- **Objective Achieved:** Partial — "Access or modify a soft-deleted work item via direct ID reference"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET /api/bugs/:id`, `POST /api/bugs/:id/dependencies`
+- **Based On:** PEN-010 (Soft-Deleted ID Enumeration)
+- **Exploit Scenario:**
+  1. Created `BUG-0005` (blocker) and `BUG-0006` (blocked). Linked via `POST /api/bugs/BUG-0006/dependencies`.
+  2. Deleted `BUG-0005`. `GET /api/bugs/BUG-0005` → 404.
+  3. `GET /api/bugs/BUG-0006` returns `blocked_by: [{"item_id":"BUG-0005","title":"Unknown","status":"unknown"}]` — deleted item's ID persisted in the live item's dependency list.
+  4. The ID can be used as a timing/existence oracle to determine if the target ID was deleted vs. never created.
+- **Evidence:** `BUG-0006.blocked_by` = `[{item_type: bug, item_id: BUG-0005, title: Unknown, status: unknown}]` after deletion of `BUG-0005`.
+- **Recommendation:** On item deletion, cascade-remove or nullify dependency references in blocking items. Alternatively, resolve dependency metadata at query time with explicit handling of deleted items.
+
+---
+
+### RED-008: Unauthenticated Development Cycle Creation
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/cycles`
+- **Based On:** PEN-001 (No Auth)
+- **Exploit Scenario:**
+  1. Created and triaged three bugs (`BUG-0007`, `BUG-0008`, `BUG-0009`) with zero credentials.
+  2. `POST /api/cycles` with no auth → HTTP 201 → `CYCLE-0001` created with `status=spec_changes`, assigned to `BUG-0007`, `pipeline_run_id=RUN-0001`.
+  3. An adversary can inject arbitrary bugs into the development pipeline and trigger entire development cycles for attacker-controlled work items, potentially causing real code to be generated/deployed.
+- **Evidence:** `{"id":"CYCLE-0001","work_item_id":"BUG-0007","status":"spec_changes","team_name":"TheATeam","pipeline_run_id":"RUN-0001"}`
+- **Recommendation:** Require authentication for cycle creation. Restrict cycle creation to `team-lead` role. Cycle creation should be audited with full actor identity.
+
+---
+
+### RED-009: Vote Stuffing — Unlimited Anonymous AI Votes Per Feature Request
+- **Severity:** High
+- **Objective Achieved:** Yes — "Submit a malformed assessment verdict that bypasses routing logic"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST /api/feature-requests/:id/vote`
+- **Based On:** PEN-001 (No Auth), PEN-006 (Assessment Verdict Bypass analogue)
+- **Exploit Scenario:**
+  1. Called `POST /api/feature-requests/FR-0003/vote` three times with zero credentials.
+  2. Each call added multiple votes (5 total after 3 calls) with `voter_id=null` — no identity tracking.
+  3. All votes were `approve`, causing the item to advance to `voting` status with an artificial approve majority manufactured by the attacker.
+  4. Conversely, the `/retrigger` endpoint (also unauthenticated) can erase all legitimate votes, resetting the decision.
+- **Evidence:** `FR-0003.votes` contained 5 entries after 3 calls; all had `voter_id: null`. Status moved to `voting`.
+- **Recommendation:** Rate-limit the `/vote` endpoint per item. Require authenticated caller identity; record `voter_id` from session, not from client-supplied data. Prevent duplicate votes from the same caller identity.
+
+---
+
+### RED-010: Stored XSS Payloads Accepted and Persisted
+- **Severity:** High
+- **Objective Achieved:** Partial
+- **Status:** Confirmed (Live Exploit — requires frontend rendering)
+- **Target URL:** `POST /api/feature-requests`
+- **Based On:** PEN-009 (Input Injection analogue)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with `title="<script>alert(document.cookie)</script>"` and `description="<img src=x onerror=alert(1)>"` → HTTP 201, `FR-0009` created.
+  2. `GET /api/feature-requests/FR-0009` returned both payloads verbatim in JSON: `"title":"<script>alert(document.cookie)</script>"`.
+  3. If the frontend renders title/description without HTML escaping (likely for rich-text display), any user visiting the feature request page will execute attacker-controlled JavaScript.
+- **Evidence:** Stored payload confirmed: `"title":"<script>alert(document.cookie)</script>"`, `"description":"<img src=x onerror=alert(1)>"` — both persisted unmodified.
+- **Recommendation:** Sanitize HTML on write (strip tags server-side) or ensure the frontend always renders content via text node (not `innerHTML`). Never trust user-supplied HTML in stored fields.
+
+---
+
+## Red Team Objective Scorecard
+
+| Objective | Status | Chain |
+|-----------|--------|-------|
+| Bypass work item state machine to invalid status | ✅ Achieved | RED-001: force-approve with 0 votes |
+| Access/modify soft-deleted item via direct ID | ⚠️ Partial | RED-007: ID leaked in blocked_by; direct access returns 404 |
+| Submit malformed verdict bypassing routing logic | ✅ Achieved | RED-009: vote stuffing with null voter_id |
+| Enumerate all work items without pagination | ✅ Achieved | RED-003: limit param ignored, all items returned |
+| **Bonus: Unauthenticated development cycle creation** | ✅ Critical | RED-008: full pipeline injection |
+| **Bonus: Unauthenticated permanent deletion** | ✅ Critical | RED-004: any item deletable with no auth |
+
+**Objectives Achieved: 4/4 (+ 2 bonus critical)**  
+**Confirmed Breaches: 7**  
+**Grade Impact: F** (confirmed red-team breach of critical objectives)

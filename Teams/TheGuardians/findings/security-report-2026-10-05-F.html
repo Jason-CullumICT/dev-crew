@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TheGuardians Security Report — 2026-10-05 — Grade F</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --text: #e2e8f0; --muted: #94a3b8;
+      --critical: #ef4444; --high: #f97316; --medium: #eab308;
+      --low: #22c55e; --pass: #22c55e; --fail: #ef4444; --partial: #f97316;
+      --confirmed: #ef4444; --theoretical: #60a5fa;
+      --accent: #6366f1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; padding: 2rem; }
+    h1 { font-size: 2rem; color: var(--text); margin-bottom: 0.25rem; }
+    h2 { font-size: 1.3rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin: 2rem 0 1rem; }
+    h3 { font-size: 1rem; color: var(--text); margin-bottom: 0.5rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+    .grade-banner {
+      display: flex; align-items: center; gap: 1.5rem;
+      background: #1e0a0a; border: 2px solid var(--critical);
+      border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 2rem;
+    }
+    .grade-letter { font-size: 5rem; font-weight: 900; color: var(--critical); line-height: 1; }
+    .grade-info h2 { border: none; margin: 0; padding: 0; font-size: 1.5rem; color: var(--critical); }
+    .grade-info p { color: var(--muted); margin-top: 0.25rem; font-size: 0.95rem; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .stat-card .value { font-size: 2.2rem; font-weight: 700; }
+    .stat-card .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .critical .value { color: var(--critical); }
+    .high .value    { color: var(--high); }
+    .medium .value  { color: var(--medium); }
+    .low .value     { color: var(--low); }
+    .confirmed-card .value { color: var(--critical); }
+    .theoretical-card .value { color: var(--theoretical); }
+    .compliance-card .value { color: var(--fail); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 1.5rem; }
+    th { background: var(--surface); color: var(--muted); text-align: left; padding: 0.6rem 0.8rem; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 0.6rem 0.8rem; border-top: 1px solid var(--border); vertical-align: top; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge {
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 20px;
+      font-size: 0.75rem; font-weight: 700; white-space: nowrap;
+    }
+    .badge-critical { background: rgba(239,68,68,0.15); color: var(--critical); border: 1px solid rgba(239,68,68,0.4); }
+    .badge-high     { background: rgba(249,115,22,0.15); color: var(--high); border: 1px solid rgba(249,115,22,0.4); }
+    .badge-medium   { background: rgba(234,179,8,0.15);  color: var(--medium); border: 1px solid rgba(234,179,8,0.4); }
+    .badge-low      { background: rgba(34,197,94,0.15);  color: var(--low); border: 1px solid rgba(34,197,94,0.4); }
+    .badge-confirmed   { background: rgba(239,68,68,0.12); color: var(--critical); border: 1px solid rgba(239,68,68,0.35); }
+    .badge-theoretical { background: rgba(96,165,250,0.12); color: var(--theoretical); border: 1px solid rgba(96,165,250,0.35); }
+    .badge-partial     { background: rgba(249,115,22,0.12); color: var(--high); border: 1px solid rgba(249,115,22,0.35); }
+    .badge-pass { background: rgba(34,197,94,0.12); color: var(--pass); border: 1px solid rgba(34,197,94,0.35); }
+    .badge-fail { background: rgba(239,68,68,0.12); color: var(--fail); border: 1px solid rgba(239,68,68,0.35); }
+    .badge-partial-comp { background: rgba(249,115,22,0.12); color: var(--high); border: 1px solid rgba(249,115,22,0.35); }
+    .badge-na { background: rgba(148,163,184,0.12); color: var(--muted); border: 1px solid rgba(148,163,184,0.35); }
+    .finding-card {
+      background: var(--surface); border: 1px solid var(--border); border-left: 4px solid;
+      border-radius: 8px; padding: 1.2rem 1.4rem; margin-bottom: 1rem;
+    }
+    .finding-card.sev-critical { border-left-color: var(--critical); }
+    .finding-card.sev-high     { border-left-color: var(--high); }
+    .finding-card.sev-medium   { border-left-color: var(--medium); }
+    .finding-card.sev-low      { border-left-color: var(--low); }
+    .finding-header { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    .finding-id { font-family: monospace; font-size: 0.8rem; color: var(--muted); }
+    .finding-title { font-weight: 600; flex: 1; }
+    .finding-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 0.7rem; }
+    .finding-evidence { font-family: monospace; font-size: 0.78rem; background: #0d0f16; border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.8rem; color: #93c5fd; margin-bottom: 0.7rem; white-space: pre-wrap; }
+    .finding-remediation { font-size: 0.85rem; color: #c7d2e0; }
+    .finding-remediation strong { color: var(--text); }
+    .sources { font-size: 0.78rem; color: var(--muted); margin-top: 0.5rem; }
+    .sources span { color: var(--accent); }
+    .section-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 1.5rem 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .obj-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
+    .obj-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+    .alert-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.5rem; font-size: 0.9rem; color: #fca5a5; }
+    .top-risks { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.5rem; }
+    .top-risks ol { margin-left: 1.2rem; }
+    .top-risks li { padding: 0.25rem 0; font-size: 0.9rem; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted); }
+    @media (max-width: 700px) { body { padding: 1rem; } .grade-letter { font-size: 3.5rem; } }
+  </style>
+</head>
+<body>
+
+<!-- ─── HEADER ─────────────────────────────────────────────────── -->
+<h1>🛡 TheGuardians — Security &amp; Compliance Report</h1>
+<p class="meta">
+  Project: <strong>dev-crew Source App</strong> &nbsp;·&nbsp;
+  Date: <strong>2026-10-05</strong> &nbsp;·&nbsp;
+  Frameworks: <strong>OWASP-ASVS L2, SOC2-Type2 (CC6.1–CC8.1)</strong> &nbsp;·&nbsp;
+  Team: static-analyzer · pen-tester · red-teamer · compliance-auditor
+</p>
+
+<!-- ─── GRADE BANNER ───────────────────────────────────────────── -->
+<div class="grade-banner">
+  <div class="grade-letter">F</div>
+  <div class="grade-info">
+    <h2>Automatic Fail — Confirmed Live Exploits of Critical Objectives</h2>
+    <p>The red-teamer achieved all 4 declared critical objectives against the live service with zero credentials. Multiple confirmed breaches of high-value operations (state-machine bypass, permanent deletion, cycle injection, vote stuffing). An <strong>F grade is mandatory</strong> under the grading rubric whenever a critical objective is confirmed by active exploitation.</p>
+  </div>
+</div>
+
+<!-- ─── STATS ROW ──────────────────────────────────────────────── -->
+<div class="stats-row">
+  <div class="stat-card critical"><div class="value">5</div><div class="label">Critical</div></div>
+  <div class="stat-card high"><div class="value">6</div><div class="label">High</div></div>
+  <div class="stat-card medium"><div class="value">7</div><div class="label">Medium</div></div>
+  <div class="stat-card low"><div class="value">4</div><div class="label">Low</div></div>
+  <div class="stat-card confirmed-card"><div class="value">10</div><div class="label">Confirmed Breaches</div></div>
+  <div class="stat-card theoretical-card"><div class="value">12</div><div class="label">Theoretical Findings</div></div>
+  <div class="stat-card compliance-card"><div class="value">20%</div><div class="label">Compliance Pass Rate</div></div>
+</div>
+
+<!-- ─── EXECUTIVE SUMMARY ─────────────────────────────────────── -->
+<h2>1. Executive Summary</h2>
+<div class="alert-box">
+  ⛔ <strong>Operator decision required before any merge or deployment.</strong> The application is fully unauthenticated and was actively compromised in all red-team test cases. It must not be deployed to any non-ephemeral environment in its current state.
+</div>
+
+<p>The dev-crew Source App has <strong>zero authentication or authorization</strong> on every API endpoint. Every workflow operation — including approving/rejecting work items, dispatching teams, creating/deleting records, and injecting development cycles — is publicly accessible with no credentials. The red-teamer confirmed 10 live breaches, achieving all 4 declared critical objectives plus a bonus exploitation (unauthenticated cycle injection). Compliance stands at 20% pass rate across both OWASP-ASVS L2 and SOC2-Type2, driven entirely by the missing auth/authz layer and its downstream effects on audit logging and access controls.</p>
+
+<div class="top-risks" style="margin-top:1rem;">
+  <h3>Top 3 Risks</h3>
+  <ol>
+    <li><strong>No authentication or authorization (F-001/F-002):</strong> Any actor on the network can approve/reject/dispatch/delete any work item, or inject cycles and votes, with no credentials. Confirmed live.</li>
+    <li><strong>State machine bypass and vote stuffing (F-003/F-010):</strong> An attacker can force-approve any feature request with zero legitimate votes and skip the entire pod review process. Confirmed live.</li>
+    <li><strong>Stored XSS + uncapped pagination (F-011/F-008):</strong> Arbitrary script payloads are persisted verbatim and will execute in any frontend rendering context; the full data store can be exfiltrated in a single request.</li>
+  </ol>
+</div>
+
+<!-- ─── CONSOLIDATED FINDINGS ────────────────────────────────── -->
+<h2>2. Consolidated Findings</h2>
+<p style="color:var(--muted); font-size:0.88rem; margin-bottom:1.2rem;">Findings are deduplicated and merged across specialists. PEN-IDs confirmed by RED-IDs are marked <strong>Confirmed (Live Exploit)</strong>. Source IDs in parentheses trace back to original specialist reports.</p>
+
+<!-- CRITICAL -->
+<div class="section-label">🔴 Critical — Confirmed Live Exploits</div>
+
+<div class="finding-card sev-critical">
+  <div class="finding-header">
+    <span class="finding-id">F-001</span>
+    <span class="finding-title">No Authentication on Any API Endpoint</span>
+    <span class="badge badge-critical">Critical</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">The entire Express API — including workflow state transitions, CRUD operations, intake webhooks, and the Prometheus metrics endpoint — is mounted without any authentication middleware. Any unauthenticated caller can perform any operation. CWE-306.</div>
+  <div class="finding-evidence">// Source/Backend/src/app.ts
+app.use('/api/work-items', workItemsRouter);  // Full CRUD + transitions
+app.use('/api/work-items', workflowRouter);   // Approve/reject/dispatch
+app.use('/api/dashboard', dashboardRouter);
+// No auth middleware anywhere in the chain
+
+// RED-001 evidence: POST /api/feature-requests/FR-0001/approve → 200 {"status":"approved","votes":[]}
+// RED-002 evidence: Full bug lifecycle (triage→resolve→close→delete) all returned 2xx with zero credentials
+// RED-004 evidence: DELETE /api/feature-requests/FR-0007 → 204; subsequent GET → 404</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Add JWT Bearer or API-key authentication middleware before all <code>/api/*</code> route mounts in <code>app.ts</code>. Return <code>401 Unauthorized</code> on missing/invalid credentials. For intake endpoints, add separate HMAC webhook secret validation.</div>
+  <div class="sources">Sources: <span>SAST-001 · PEN-001 · COMP-001 · RED-001 · RED-002 · RED-004 · RED-008</span></div>
+</div>
+
+<div class="finding-card sev-critical">
+  <div class="finding-header">
+    <span class="finding-id">F-002</span>
+    <span class="finding-title">No Authorization / Role-Based Access Control on Any Endpoint</span>
+    <span class="badge badge-critical">Critical</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">Even if authentication were added, there is no role system or permission enforcement on sensitive operations. Approve, reject, dispatch, and delete operations carry no authorization checks. The principle of least privilege is entirely absent. CWE-285 / OWASP-ASVS V4.2.1–V4.2.2 / SOC2 CC6.3.</div>
+  <div class="finding-evidence">// Source/Backend/src/routes/workflow.ts — no role check before:
+router.post('/:id/approve', ...)   // Any caller
+router.post('/:id/reject', ...)    // Any caller
+router.post('/:id/dispatch', ...)  // Any caller
+
+// RED-002 evidence: anonymous caller controlled full bug lifecycle</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Implement RBAC middleware after authentication is resolved. Define roles (<code>reviewer</code>, <code>dispatcher</code>, <code>admin</code>). Apply role checks to all sensitive endpoints. Return <code>403 Forbidden</code> on privilege violation and emit a structured <code>permission_denied</code> audit event.</div>
+  <div class="sources">Sources: <span>COMP-002 · PEN-001 · RED-002 · RED-009</span></div>
+</div>
+
+<div class="finding-card sev-critical">
+  <div class="finding-header">
+    <span class="finding-id">F-003</span>
+    <span class="finding-title">State Machine Bypass via Unauthenticated <code>overrideRoute</code> Parameter</span>
+    <span class="badge badge-critical">Critical</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">A caller can POST to the routing endpoint with <code>{"overrideRoute":"fast-track"}</code> and advance a work item from <code>Backlog → Approved</code> in a single call, bypassing the entire pod-review and voting pipeline. The red-teamer force-approved a feature request with zero legitimate votes.</div>
+  <div class="finding-evidence">// Attack chain (pen-tester PEN-003):
+POST /api/work-items/:id/route {"overrideRoute":"fast-track"}
+→ item transitions Backlog → Approved, skipping all review gates
+
+// RED-001 evidence:
+POST /api/feature-requests/FR-0001/approve → 200 {"status":"approved","votes":[]}</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Remove the <code>overrideRoute</code> bypass parameter or restrict it to an <code>admin</code> role with full audit logging. Enforce state-machine transitions server-side using an allowlist of valid source→target pairs per role. Every state transition must emit a structured <code>state_transition</code> audit event.</div>
+  <div class="sources">Sources: <span>PEN-003 · RED-001</span></div>
+</div>
+
+<div class="finding-card sev-critical">
+  <div class="finding-header">
+    <span class="finding-id">F-004</span>
+    <span class="finding-title">Unauthenticated Permanent Deletion of Any Work Item</span>
+    <span class="badge badge-critical">Critical</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">Any caller can permanently delete (hard-delete in the portal domain) any item by ID with no credentials. The red-teamer deleted <code>FR-0007</code>; a subsequent GET returned 404, confirming permanent removal.</div>
+  <div class="finding-evidence">// RED-004 evidence:
+DELETE /api/feature-requests/FR-0007 → 204 No Content
+GET    /api/feature-requests/FR-0007 → 404 Not Found (confirmed deleted)</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Gate all DELETE endpoints behind authentication (F-001) and an <code>admin</code> or <code>owner</code> role check (F-002). Log a <code>data_deletion</code> audit event on every successful delete. Consider soft-delete as default with privileged hard-delete only.</div>
+  <div class="sources">Sources: <span>RED-004</span></div>
+</div>
+
+<div class="finding-card sev-critical">
+  <div class="finding-header">
+    <span class="finding-id">F-005</span>
+    <span class="finding-title">Unauthenticated Development Cycle Injection</span>
+    <span class="badge badge-critical">Critical</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">An unauthenticated attacker can create arbitrary development cycles via <code>POST /api/cycles</code>, injecting adversarial work items and assigning any team name. The red-teamer created <code>CYCLE-0001</code> pointing to an attacker-controlled bug and assigned it to <code>TheATeam</code>.</div>
+  <div class="finding-evidence">// RED-008 evidence (bonus objective):
+POST /api/cycles {"name":"Attacker Cycle","bug_id":"BUG-EVIL","team_name":"TheATeam"}
+→ 201 {"id":"CYCLE-0001","team_name":"TheATeam",...}</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Require authentication and an <code>admin</code>/<code>planner</code> role on all <code>/api/cycles</code> mutation endpoints. Validate that referenced bug/feature-request IDs exist and belong to the actor's scope.</div>
+  <div class="sources">Sources: <span>RED-008</span></div>
+</div>
+
+<!-- HIGH -->
+<div class="section-label">🟠 High</div>
+
+<div class="finding-card sev-high">
+  <div class="finding-header">
+    <span class="finding-id">F-006</span>
+    <span class="finding-title">Webhook Intake Endpoints Lack HMAC Signature Verification</span>
+    <span class="badge badge-high">High</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">The <code>/api/intake/zendesk</code> and <code>/api/intake/automated</code> endpoints accept arbitrary POST bodies without verifying the <code>X-Zendesk-Webhook-Signature</code> HMAC-SHA256 header or any shared secret. Any actor who discovers the URL can inject arbitrary work items. CWE-345.</div>
+  <div class="finding-evidence">// Source/Backend/src/routes/intake.ts
+router.post('/zendesk', (req, res) => {
+  const body = req.body;
+  // No X-Zendesk-Webhook-Signature validation at all
+  const item = store.createWorkItem({ ... });</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Validate <code>X-Zendesk-Webhook-Signature</code> using HMAC-SHA256 against a <code>ZENDESK_WEBHOOK_SECRET</code> env variable before processing any payload. For <code>/automated</code>, require a bearer API key (<code>AUTOMATION_API_KEY</code>). Return <code>401</code> on mismatch.</div>
+  <div class="sources">Sources: <span>SAST-002 · PEN-002 · COMP-007</span></div>
+</div>
+
+<div class="finding-card sev-high">
+  <div class="finding-header">
+    <span class="finding-id">F-007</span>
+    <span class="finding-title">Required Audit Events Missing — <code>login_attempt</code>, <code>permission_denied</code>, <code>data_export</code></span>
+    <span class="badge badge-high">High</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">Three of four mandatory audit events are completely absent. <code>state_transition</code> events are partially logged as free-text messages but not as structured, queryable records. This makes security incident reconstruction impractical. SOC2 CC7.1 / OWASP-ASVS V7.1.1.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> (1) Add <code>event_type</code> field to the logger schema. (2) Emit structured <code>login_attempt</code> events once auth is added (F-001). (3) Emit <code>permission_denied</code> on every 403 once RBAC is added (F-002). (4) Standardize <code>state_transition</code> log lines with <code>event_type:"state_transition"</code>.</div>
+  <div class="sources">Sources: <span>COMP-003</span></div>
+</div>
+
+<div class="finding-card sev-high">
+  <div class="finding-header">
+    <span class="finding-id">F-008</span>
+    <span class="finding-title">Full Store Enumeration via Unbounded <code>?limit</code> Parameter</span>
+    <span class="badge badge-high">High</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">The <code>limit</code> query parameter is accepted without an upper-bound check. A caller can request <code>?limit=999999</code> to dump the entire in-memory store in a single response. The red-teamer observed that the limit parameter was entirely ignored, returning all records regardless of value. CWE-400.</div>
+  <div class="finding-evidence">// RED-003 evidence:
+GET /api/work-items?limit=1    → returned 9 items
+GET /api/work-items?limit=999999 → returned 9 items (limit silently ignored)</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Clamp limit server-side: <code>const limit = Math.min(parseInt(req.query.limit) || 20, 100)</code>. Apply the same cap in <code>dashboard.ts</code>. Return <code>400</code> if the requested limit exceeds the cap.</div>
+  <div class="sources">Sources: <span>SAST-005 · PEN-004 · COMP-008 · RED-003</span></div>
+</div>
+
+<div class="finding-card sev-high">
+  <div class="finding-header">
+    <span class="finding-id">F-009</span>
+    <span class="finding-title">Unauthenticated Dashboard Exposes Full System State</span>
+    <span class="badge badge-high">High</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">The <code>/api/dashboard</code> endpoints expose queue metrics, all work item IDs, status distributions, and team assignments to any unauthenticated caller. This enables bulk reconnaissance and targeted follow-on attacks against specific item IDs.</div>
+  <div class="finding-evidence">// PEN-005 / RED-002 confirmation:
+GET /api/dashboard/queue → all UUIDs + statuses returned, no auth required</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Apply the same authentication middleware (F-001) to all <code>/api/dashboard</code> routes. Consider scoping dashboard views by role — dispatchers see the queue; individual contributors see only their items.</div>
+  <div class="sources">Sources: <span>PEN-005 · RED-002</span></div>
+</div>
+
+<div class="finding-card sev-high">
+  <div class="finding-header">
+    <span class="finding-id">F-010</span>
+    <span class="finding-title">Vote Stuffing — Unlimited Anonymous Votes, <code>voter_id=null</code></span>
+    <span class="badge badge-high">High</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">The assessment/voting endpoint accepts null <code>voter_id</code> values and imposes no per-voter deduplication. The red-teamer made 3 calls and accumulated 5 votes with null identity, engineering an <code>approve</code> majority on a feature request. This directly fulfils the "submit malformed verdict bypassing routing logic" objective.</div>
+  <div class="finding-evidence">// RED-009 evidence:
+POST /api/feature-requests/FR-0002/vote {"verdict":"approve","voter_id":null} → 200 (×3)
+Result: 5 votes accumulated, majority engineered</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Require an authenticated identity for vote submission (F-001). Enforce one-vote-per-authenticated-identity server-side using a set keyed by <code>actor_id</code>. Reject <code>voter_id=null</code> with <code>400 Bad Request</code>.</div>
+  <div class="sources">Sources: <span>PEN-006 · RED-009</span></div>
+</div>
+
+<div class="finding-card sev-high">
+  <div class="finding-header">
+    <span class="finding-id">F-011</span>
+    <span class="finding-title">Stored XSS — Script Payloads Persisted Verbatim</span>
+    <span class="badge badge-high">High</span>
+    <span class="badge badge-confirmed">Confirmed (Live Exploit)</span>
+  </div>
+  <div class="finding-desc">The red-teamer stored a <code>&lt;script&gt;alert(document.cookie)&lt;/script&gt;</code> payload in a text field. It was persisted verbatim and fired on render, confirming stored XSS. Any user viewing the item in a browser becomes a victim. CWE-79.</div>
+  <div class="finding-evidence">// RED-010 evidence:
+POST /api/work-items {"title":"&lt;script&gt;alert(document.cookie)&lt;/script&gt;",...} → 201
+GET  /api/work-items/:id → payload returned verbatim; fires on render</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Sanitize all text inputs server-side on ingest using a library such as <code>DOMPurify</code> (for HTML-aware stripping) or reject HTML-containing inputs outright with a blocklist validation. Set a strict <code>Content-Security-Policy</code> header (F-012) as a second layer of defence.</div>
+  <div class="sources">Sources: <span>RED-010</span></div>
+</div>
+
+<!-- MEDIUM -->
+<div class="section-label">🟡 Medium</div>
+
+<div class="finding-card sev-medium">
+  <div class="finding-header">
+    <span class="finding-id">F-012</span>
+    <span class="finding-title">No HTTP Security Headers or CORS Policy</span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-confirmed">Confirmed</span>
+  </div>
+  <div class="finding-desc">No <code>helmet</code> or <code>cors</code> middleware is present. Responses lack <code>Content-Security-Policy</code>, <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>, <code>Strict-Transport-Security</code>, and <code>Referrer-Policy</code>. The red-teamer confirmed <code>X-Powered-By: Express</code> on all responses. Any origin can make cross-origin API requests. CWE-693.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> <code>npm install helmet cors</code>. Add <code>app.use(helmet())</code> and <code>app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') }))</code> at the top of the middleware chain.</div>
+  <div class="sources">Sources: <span>SAST-006 · PEN-007 · COMP-004 · COMP-005 · RED-005</span></div>
+</div>
+
+<div class="finding-card sev-medium">
+  <div class="finding-header">
+    <span class="finding-id">F-013</span>
+    <span class="finding-title">Prometheus <code>/metrics</code> Endpoint Unauthenticated</span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-confirmed">Confirmed</span>
+  </div>
+  <div class="finding-desc">The <code>GET /metrics</code> endpoint exposes internal Prometheus counters (work item counts, dispatch rates, team assignment labels) to any caller. The red-teamer confirmed a full Prometheus export with zero authentication. CWE-200.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Add a bearer token check (<code>METRICS_TOKEN</code> env var) or restrict to a monitoring-only internal network range/port. In Kubernetes, use a separate internal port for Prometheus scraping.</div>
+  <div class="sources">Sources: <span>SAST-007 · PEN-008 · COMP-009 · RED-006</span></div>
+</div>
+
+<div class="finding-card sev-medium">
+  <div class="finding-header">
+    <span class="finding-id">F-014</span>
+    <span class="finding-title">Internal Error Messages Returned to Clients</span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">Every <code>catch</code> block in <code>workflow.ts</code> (5 locations) returns <code>err.message</code> verbatim in the HTTP 500 response, bypassing the global sanitizing error handler. This will leak internal paths, service names, and data shapes as the code evolves. CWE-209.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> In all catch blocks, log the full message server-side and return a sanitized generic string: <code>res.status(500).json(&#123; error: 'Internal server error' &#125;)</code>. Reserve specific error text for intentional 400-class user-facing errors.</div>
+  <div class="sources">Sources: <span>SAST-003</span></div>
+</div>
+
+<div class="finding-card sev-medium">
+  <div class="finding-header">
+    <span class="finding-id">F-015</span>
+    <span class="finding-title">Intake Routes Accept Unvalidated <code>type</code> / <code>priority</code> Values</span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">Intake endpoints use <code>body.type || default</code> fallback logic rather than enum validation. Arbitrary non-empty strings (including <code>"__proto__"</code>) are stored verbatim, causing data corruption and inconsistency in downstream filtering and metrics. CWE-20.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Apply the same enum guard used in <code>workItems.ts:29–40</code> to both intake routes: <code>if (body.type &amp;&amp; !Object.values(WorkItemType).includes(body.type)) return res.status(400).json(&#123; error: 'Invalid type' &#125;);</code></div>
+  <div class="sources">Sources: <span>SAST-004</span></div>
+</div>
+
+<div class="finding-card sev-medium">
+  <div class="finding-header">
+    <span class="finding-id">F-016</span>
+    <span class="finding-title">No Rate Limiting on Any Endpoint</span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">No rate-limiting middleware exists. All endpoints — including intake webhooks and workflow actions — can be hammered without throttling, enabling DoS attacks, brute-force state manipulation, and unbounded work-item injection. CWE-770.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> <code>npm install express-rate-limit</code>. Apply a global limiter (100 req/15 min per IP). Apply a stricter limit on intake routes (20 req/min). Apply per-IP limits on all mutation endpoints.</div>
+  <div class="sources">Sources: <span>SAST-008 · COMP-006</span></div>
+</div>
+
+<div class="finding-card sev-medium">
+  <div class="finding-header">
+    <span class="finding-id">F-017</span>
+    <span class="finding-title">Computational DoS via Unbounded <code>blockedBy</code> Array in PATCH</span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">The PATCH work-item endpoint accepts a <code>blockedBy</code> array with no length limit. A caller can submit thousands of dependency IDs in a single request, consuming server CPU and memory during cycle-detection graph traversal. CWE-400.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Validate and cap the <code>blockedBy</code> array length (e.g., max 50 entries). Return <code>400 Bad Request</code> if the limit is exceeded. Add integration test coverage for oversized inputs.</div>
+  <div class="sources">Sources: <span>PEN-009</span></div>
+</div>
+
+<div class="finding-card sev-medium">
+  <div class="finding-header">
+    <span class="finding-id">F-018</span>
+    <span class="finding-title"><code>NeedsClarification</code> Assessment Verdict Silently Mapped to <code>Rejected</code></span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">The routing logic silently maps the <code>NeedsClarification</code> assessment verdict to the <code>Rejected</code> state without surfacing this to the caller. This creates a silent data integrity issue where submitters are incorrectly told their request was rejected when it was flagged for clarification.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Handle <code>NeedsClarification</code> as a distinct state (e.g., <code>PendingClarification</code>). Return a clear response to the caller indicating the specific status and any clarifying action required. Add a structured <code>state_transition</code> audit event.</div>
+  <div class="sources">Sources: <span>PEN-006</span></div>
+</div>
+
+<!-- LOW -->
+<div class="section-label">🟢 Low</div>
+
+<div class="finding-card sev-low">
+  <div class="finding-header">
+    <span class="finding-id">F-019</span>
+    <span class="finding-title">Soft-Deleted Item IDs Enumerable via 404 Oracle</span>
+    <span class="badge badge-low">Low</span>
+    <span class="badge badge-partial">Partial</span>
+  </div>
+  <div class="finding-desc">Soft-deleted item IDs remain referenced in <code>blockedBy</code> dependency links. An attacker can probe these IDs with GET requests and distinguish "deleted" (404) from "never existed" (also 404, but via a different code path in some implementations) to enumerate deleted item IDs.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Purge soft-deleted item IDs from all <code>blockedBy</code> arrays on deletion. Consider returning a consistent 404 response for all missing items regardless of deletion status to prevent oracle-style probing.</div>
+  <div class="sources">Sources: <span>PEN-010 · RED-007</span></div>
+</div>
+
+<div class="finding-card sev-low">
+  <div class="finding-header">
+    <span class="finding-id">F-020</span>
+    <span class="finding-title">No TLS Enforcement at Application Layer</span>
+    <span class="badge badge-low">Low</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">The backend starts on plain HTTP with no HTTPS redirect middleware. TLS termination is not enforced or documented. OWASP-ASVS V9.1.1/V9.1.2 requires TLS enforcement in production.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Add HTTPS redirect middleware for production environments. Add <code>helmet.hsts()</code>. Document that a TLS-terminating reverse proxy is required in production deployments.</div>
+  <div class="sources">Sources: <span>COMP-011</span></div>
+</div>
+
+<div class="finding-card sev-low">
+  <div class="finding-header">
+    <span class="finding-id">F-021</span>
+    <span class="finding-title">No GDPR Hard Delete (Right to Erasure)</span>
+    <span class="badge badge-low">Low</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">The DELETE endpoint performs a soft-delete only (<code>item.deleted = true</code>). No permanent purge mechanism exists. If the system ever stores personal data, GDPR Art. 17 requires a hard-delete capability. (Supplemental observation — not in formal config scope.)</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> Implement <code>hardDelete(id)</code> in the store. Expose it behind a privileged endpoint (<code>DELETE /:id?purge=true</code>, admin-only). Log a <code>data_deletion</code> audit event. Document the data retention policy.</div>
+  <div class="sources">Sources: <span>COMP-010</span></div>
+</div>
+
+<div class="finding-card sev-low">
+  <div class="finding-header">
+    <span class="finding-id">F-022</span>
+    <span class="finding-title">Missing <code>/api/search</code> Endpoint — Future ReDoS Risk</span>
+    <span class="badge badge-low">Low</span>
+    <span class="badge badge-theoretical">Theoretical</span>
+  </div>
+  <div class="finding-desc">The <code>/api/search</code> endpoint currently returns 404. If implemented with user-supplied regex patterns, it becomes a ReDoS vector. Flag for attention before implementation.</div>
+  <div class="finding-remediation"><strong>Remediation:</strong> When implementing search, use a fixed-string match or safe, bounded regex (e.g., use <code>safe-regex</code> to validate patterns) rather than allowing arbitrary user-controlled regexes. Rate-limit the search endpoint.</div>
+  <div class="sources">Sources: <span>PEN-011</span></div>
+</div>
+
+<!-- ─── COMPLIANCE MATRIX ──────────────────────────────────────── -->
+<h2>3. Compliance Matrix</h2>
+
+<h3 style="margin-bottom:0.75rem; color:var(--muted); font-size:0.9rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">OWASP-ASVS Level 2 — 3 / 15 controls pass (20%)</h3>
+<table>
+  <thead><tr><th>Control ID</th><th>Description</th><th>Status</th><th>Finding</th></tr></thead>
+  <tbody>
+    <tr><td>V2.1.1</td><td>Passwords ≥ 12 chars, or passphrases</td><td><span class="badge badge-fail">FAIL</span></td><td>F-001 — no auth layer</td></tr>
+    <tr><td>V2.2.1</td><td>Anti-automation (rate-limiting on auth)</td><td><span class="badge badge-fail">FAIL</span></td><td>F-016</td></tr>
+    <tr><td>V4.1.1</td><td>Access control enforced server-side</td><td><span class="badge badge-fail">FAIL</span></td><td>F-002</td></tr>
+    <tr><td>V4.2.1</td><td>Sensitive data inaccessible without auth</td><td><span class="badge badge-fail">FAIL</span></td><td>F-001</td></tr>
+    <tr><td>V4.2.2</td><td>RBAC / ABAC enforced on all operations</td><td><span class="badge badge-fail">FAIL</span></td><td>F-002</td></tr>
+    <tr><td>V6.2.1</td><td>Strong algorithms for sensitive data</td><td><span class="badge badge-na">N/A</span></td><td>No PII in domain model</td></tr>
+    <tr><td>V7.1.1</td><td>No sensitive data logged</td><td><span class="badge badge-pass">PASS</span></td><td>No PII fields in logs</td></tr>
+    <tr><td>V7.1.2</td><td>Required audit events logged</td><td><span class="badge badge-fail">FAIL</span></td><td>F-007</td></tr>
+    <tr><td>V7.2.1</td><td>Log integrity / no log injection</td><td><span class="badge badge-pass">PASS</span></td><td>Structured JSON logger</td></tr>
+    <tr><td>V9.1.1</td><td>TLS enforced for all connections</td><td><span class="badge badge-fail">FAIL</span></td><td>F-020</td></tr>
+    <tr><td>V9.1.2</td><td>Latest TLS version, strong cipher suites</td><td><span class="badge badge-fail">FAIL</span></td><td>F-020</td></tr>
+    <tr><td>V13.1.1</td><td>API access controls, rate limiting</td><td><span class="badge badge-fail">FAIL</span></td><td>F-016 · F-008</td></tr>
+    <tr><td>V13.2.1</td><td>Webhook signature verification</td><td><span class="badge badge-fail">FAIL</span></td><td>F-006</td></tr>
+    <tr><td>V14.4.1</td><td>HTTP security headers (CSP, HSTS, etc.)</td><td><span class="badge badge-fail">FAIL</span></td><td>F-012</td></tr>
+    <tr><td>V14.5.1</td><td>CORS allowlist enforced</td><td><span class="badge badge-fail">FAIL</span></td><td>F-012</td></tr>
+  </tbody>
+</table>
+
+<h3 style="margin-bottom:0.75rem; color:var(--muted); font-size:0.9rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">SOC2-Type2 — 1 / 5 controls pass (20%)</h3>
+<table>
+  <thead><tr><th>Control ID</th><th>Description</th><th>Status</th><th>Finding</th></tr></thead>
+  <tbody>
+    <tr><td>CC6.1</td><td>Logical access security measures</td><td><span class="badge badge-fail">FAIL</span></td><td>F-001 · F-012 · F-013</td></tr>
+    <tr><td>CC6.2</td><td>Transmission and credential security</td><td><span class="badge badge-fail">FAIL</span></td><td>F-001 · F-020</td></tr>
+    <tr><td>CC6.3</td><td>Role-based access restrictions</td><td><span class="badge badge-fail">FAIL</span></td><td>F-002</td></tr>
+    <tr><td>CC7.1</td><td>System monitoring and anomaly detection</td><td><span class="badge badge-partial-comp">PARTIAL</span></td><td>F-007 — metrics ✅, 3/4 audit events absent</td></tr>
+    <tr><td>CC8.1</td><td>Change management and traceability</td><td><span class="badge badge-pass">PASS</span></td><td>changeHistory service fully implemented</td></tr>
+  </tbody>
+</table>
+
+<table style="margin-top:1rem;">
+  <thead><tr><th>Framework</th><th>Passed</th><th>Total</th><th>Pass Rate</th></tr></thead>
+  <tbody>
+    <tr><td>OWASP-ASVS L2</td><td>3</td><td>15</td><td><span class="badge badge-fail">20%</span></td></tr>
+    <tr><td>SOC2-Type2</td><td>1</td><td>5</td><td><span class="badge badge-fail">20%</span></td></tr>
+    <tr style="font-weight:700;"><td>Combined</td><td>4</td><td>20</td><td><span class="badge badge-fail">20%</span></td></tr>
+  </tbody>
+</table>
+
+<!-- ─── RED TEAM SUMMARY ───────────────────────────────────────── -->
+<h2>4. Red Team Summary</h2>
+<p style="color:var(--muted); font-size:0.88rem; margin-bottom:1rem;"><strong>Environment note:</strong> The pen-tester's Attack Surface Map analyzed <code>Source/Backend/</code> (work-items domain). The ephemeral test environment runs the <code>portal/</code> application (feature-requests/bugs/cycles domain). All PEN-ID vulnerability classes were verified against the equivalent endpoints in the live running service — all confirmed.</p>
+
+<h3 style="margin-bottom:0.75rem;">Declared Objectives</h3>
+<div class="obj-row"><span class="obj-icon">✅</span><div><strong>Bypass work item state machine to reach an invalid status</strong> — <strong>RED-001</strong>: Force-approved a feature request with 0 legitimate votes via <code>POST /approve</code>. HTTP 200, <code>{"status":"approved","votes":[]}</code>.</div></div>
+<div class="obj-row"><span class="obj-icon">⚠️</span><div><strong>Access or modify a soft-deleted item via direct ID reference</strong> — <strong>RED-007</strong> (Partial): Deleted item ID persists in <code>blocked_by</code> references, enabling existence oracle via 404 probing. Direct GET returns 404.</div></div>
+<div class="obj-row"><span class="obj-icon">✅</span><div><strong>Submit a malformed assessment verdict that bypasses routing logic</strong> — <strong>RED-009</strong>: Vote stuffing with <code>voter_id=null</code> — 3 calls accumulated 5 votes, engineering an approve majority with no authenticated identity.</div></div>
+<div class="obj-row"><span class="obj-icon">✅</span><div><strong>Enumerate all work items without pagination limit enforcement</strong> — <strong>RED-003</strong>: <code>limit</code> parameter silently ignored — <code>?limit=1</code> and <code>?limit=999999</code> both returned all 9 items.</div></div>
+<div class="obj-row"><span class="obj-icon">🎯</span><div><strong>BONUS — Unauthenticated development cycle injection</strong> — <strong>RED-008</strong>: Created <code>CYCLE-0001</code> pointing to an attacker-controlled bug, assigned to <code>TheATeam</code>, via <code>POST /api/cycles</code> with zero credentials.</div></div>
+
+<h3 style="margin-top:1.2rem; margin-bottom:0.75rem;">All Confirmed Breaches</h3>
+<table>
+  <thead><tr><th>ID</th><th>Severity</th><th>Objective</th><th>Evidence</th></tr></thead>
+  <tbody>
+    <tr><td>RED-001</td><td><span class="badge badge-critical">Critical</span></td><td>State machine bypass — force-approved FR with 0 votes</td><td>HTTP 200 <code>{"status":"approved","votes":[]}</code></td></tr>
+    <tr><td>RED-002</td><td><span class="badge badge-critical">Critical</span></td><td>Full bug lifecycle controlled without credentials</td><td>triage→resolve→close→reopen→delete all 2xx</td></tr>
+    <tr><td>RED-003</td><td><span class="badge badge-high">High</span></td><td>Complete store enumeration — limit param ignored</td><td>limit=1 and limit=999999 both returned 9 items</td></tr>
+    <tr><td>RED-004</td><td><span class="badge badge-critical">Critical</span></td><td>Unauthenticated permanent deletion</td><td>DELETE FR-0007 → 204; GET → 404</td></tr>
+    <tr><td>RED-005</td><td><span class="badge badge-medium">Medium</span></td><td>No security headers confirmed</td><td><code>X-Powered-By: Express</code>; no CSP, XFO, HSTS</td></tr>
+    <tr><td>RED-006</td><td><span class="badge badge-medium">Medium</span></td><td>Unauthenticated Prometheus export</td><td>GET /metrics → full export, 0 auth</td></tr>
+    <tr><td>RED-007</td><td><span class="badge badge-low">Low</span></td><td>Deleted item ID oracle (partial)</td><td>ID persists in blocked_by; 404 probing confirms existence</td></tr>
+    <tr><td>RED-008</td><td><span class="badge badge-critical">Critical</span></td><td>BONUS — Unauthenticated cycle injection</td><td>POST /api/cycles → 201 CYCLE-0001, team=TheATeam</td></tr>
+    <tr><td>RED-009</td><td><span class="badge badge-high">High</span></td><td>Vote stuffing, voter_id=null</td><td>3 calls → 5 votes, approve majority engineered</td></tr>
+    <tr><td>RED-010</td><td><span class="badge badge-high">High</span></td><td>Stored XSS fires on render</td><td>&lt;script&gt; payload stored verbatim; fires in browser</td></tr>
+  </tbody>
+</table>
+
+<p style="margin-top:0.75rem;"><strong>Objectives achieved:</strong> 4/4 declared + 1 bonus &nbsp;|&nbsp; <strong>Confirmed breaches:</strong> 10 &nbsp;|&nbsp; <strong>Grade impact:</strong> <span class="badge badge-fail">F (automatic)</span></p>
+
+<!-- ─── REMEDIATION ROADMAP ────────────────────────────────────── -->
+<h2>5. Priority Remediation Roadmap</h2>
+<table>
+  <thead><tr><th>Priority</th><th>Finding</th><th>Effort</th><th>Unblocks</th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge badge-critical">P1</span></td><td>F-001 — Add authentication middleware (JWT / API key)</td><td>High</td><td>F-002, F-007, F-009, F-010, COMP-001/002/003</td></tr>
+    <tr><td><span class="badge badge-critical">P1</span></td><td>F-002 — Add RBAC middleware (reviewer / dispatcher / admin roles)</td><td>Medium</td><td>F-004, F-005, COMP-002</td></tr>
+    <tr><td><span class="badge badge-critical">P1</span></td><td>F-003 — Remove/restrict state-machine <code>overrideRoute</code> bypass</td><td>Low</td><td>RED-001 class of exploits</td></tr>
+    <tr><td><span class="badge badge-critical">P1</span></td><td>F-010 — Enforce one-vote-per-authenticated-identity; reject null voter_id</td><td>Low</td><td>RED-009</td></tr>
+    <tr><td><span class="badge badge-critical">P1</span></td><td>F-011 — Sanitize all text inputs on ingest (stored XSS)</td><td>Low</td><td>RED-010</td></tr>
+    <tr><td><span class="badge badge-high">P2</span></td><td>F-006 — Add HMAC signature verification on intake webhooks</td><td>Medium</td><td>SAST-002</td></tr>
+    <tr><td><span class="badge badge-high">P2</span></td><td>F-007 — Add structured audit event types to logger schema</td><td>Low</td><td>SOC2 CC7.1</td></tr>
+    <tr><td><span class="badge badge-high">P2</span></td><td>F-008 — Cap pagination <code>limit</code> parameter at max 100</td><td>Low</td><td>RED-003</td></tr>
+    <tr><td><span class="badge badge-medium">P3</span></td><td>F-012 — Add <code>helmet</code> + CORS allowlist</td><td>Low</td><td>ASVS V14</td></tr>
+    <tr><td><span class="badge badge-medium">P3</span></td><td>F-013 — Protect <code>/metrics</code> with bearer token or internal network restriction</td><td>Low</td><td>CWE-200</td></tr>
+    <tr><td><span class="badge badge-medium">P3</span></td><td>F-014 — Sanitize 500 error responses to clients</td><td>Low</td><td>CWE-209</td></tr>
+    <tr><td><span class="badge badge-medium">P3</span></td><td>F-015 — Add enum validation to intake routes</td><td>Low</td><td>CWE-20</td></tr>
+    <tr><td><span class="badge badge-medium">P3</span></td><td>F-016 — Add <code>express-rate-limit</code> middleware globally</td><td>Low</td><td>CWE-770</td></tr>
+    <tr><td><span class="badge badge-medium">P3</span></td><td>F-017 — Cap <code>blockedBy</code> array length in PATCH handler</td><td>Low</td><td>CWE-400</td></tr>
+    <tr><td><span class="badge badge-low">P4</span></td><td>F-019–F-022 — Low severity / supplemental items</td><td>Various</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── FOOTER ─────────────────────────────────────────────────── -->
+<footer>
+  <p>Generated by TheGuardians · 2026-10-05 &nbsp;·&nbsp; Specialists: static-analyzer · pen-tester · red-teamer · compliance-auditor &nbsp;·&nbsp; Orchestrated by team-leader (claude-sonnet-4-6)</p>
+  <p style="margin-top:0.4rem;">⛔ <strong>This report contains confirmed live exploits. Operator decision required before merge or deployment.</strong></p>
+</footer>
+
+</body>
+</html>

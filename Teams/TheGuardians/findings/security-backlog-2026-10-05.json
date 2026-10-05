@@ -1,0 +1,260 @@
+{
+  "generated": "2026-10-05",
+  "grade": "F",
+  "summary": {
+    "critical": 5,
+    "high": 6,
+    "medium": 7,
+    "low": 4,
+    "compliance_pass_rate_pct": 20,
+    "red_team_objectives_achieved": 4,
+    "red_team_bonus_objectives": 1,
+    "confirmed_breaches": 10,
+    "theoretical_findings": 12,
+    "grade_trigger": "Automatic F — confirmed red-team breach of multiple critical objectives (RED-001, RED-002, RED-004, RED-008, RED-009)"
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "No Authentication on Any API Endpoint",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, compliance-auditor, red-teamer",
+      "source_ids": ["SAST-001", "PEN-001", "COMP-001", "RED-001", "RED-002", "RED-004", "RED-008"],
+      "cwe": "CWE-306",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Add JWT Bearer or API-key authentication middleware before all /api/* route mounts in app.ts. Return 401 on missing/invalid credentials. Add HMAC validation for intake webhook endpoints separately."
+    },
+    {
+      "id": "F-002",
+      "title": "No Authorization / Role-Based Access Control on Any Endpoint",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "compliance-auditor, pen-tester, red-teamer",
+      "source_ids": ["COMP-002", "PEN-001", "RED-002", "RED-009"],
+      "cwe": "CWE-285",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Implement RBAC middleware with roles (reviewer, dispatcher, admin). Apply role checks to sensitive endpoints. Return 403 on privilege violation and emit permission_denied audit events."
+    },
+    {
+      "id": "F-003",
+      "title": "State Machine Bypass via Unauthenticated overrideRoute Parameter",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "source_ids": ["PEN-003", "RED-001"],
+      "cwe": "CWE-284",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Remove the overrideRoute bypass parameter or restrict it to admin role with full audit logging. Enforce state-machine transitions using an allowlist of valid source→target pairs per role."
+    },
+    {
+      "id": "F-004",
+      "title": "Unauthenticated Permanent Deletion of Any Work Item",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-004"],
+      "cwe": "CWE-306",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Gate all DELETE endpoints behind authentication (F-001) and an admin/owner role check (F-002). Log a data_deletion audit event on every successful delete."
+    },
+    {
+      "id": "F-005",
+      "title": "Unauthenticated Development Cycle Injection",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-008"],
+      "cwe": "CWE-306",
+      "file": "Source/Backend/src/routes/cycles.ts",
+      "remediation": "Require authentication and an admin/planner role on all /api/cycles mutation endpoints. Validate referenced bug/feature-request IDs exist and belong to the actor's scope."
+    },
+    {
+      "id": "F-006",
+      "title": "Webhook Intake Endpoints Lack HMAC Signature Verification",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "static-analyzer, pen-tester, compliance-auditor",
+      "source_ids": ["SAST-002", "PEN-002", "COMP-007"],
+      "cwe": "CWE-345",
+      "file": "Source/Backend/src/routes/intake.ts",
+      "remediation": "Validate X-Zendesk-Webhook-Signature using HMAC-SHA256 against ZENDESK_WEBHOOK_SECRET env variable. Require a bearer API key for /automated endpoint. Return 401 on mismatch."
+    },
+    {
+      "id": "F-007",
+      "title": "Required Audit Events Missing — login_attempt, permission_denied, data_export",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-003"],
+      "cwe": "CWE-778",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "remediation": "Add event_type field to logger schema. Emit structured login_attempt, permission_denied, and state_transition audit events. Standardize all workflow state-change log lines."
+    },
+    {
+      "id": "F-008",
+      "title": "Full Store Enumeration via Unbounded ?limit Parameter",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer, pen-tester, compliance-auditor, red-teamer",
+      "source_ids": ["SAST-005", "PEN-004", "COMP-008", "RED-003"],
+      "cwe": "CWE-400",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Clamp limit: const limit = Math.min(parseInt(req.query.limit) || 20, 100). Apply same cap in dashboard.ts. Return 400 if requested limit exceeds the cap."
+    },
+    {
+      "id": "F-009",
+      "title": "Unauthenticated Dashboard Exposes Full System State",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "source_ids": ["PEN-005", "RED-002"],
+      "cwe": "CWE-306",
+      "file": "Source/Backend/src/routes/dashboard.ts",
+      "remediation": "Apply the same authentication middleware (F-001) to all /api/dashboard routes. Scope dashboard views by role."
+    },
+    {
+      "id": "F-010",
+      "title": "Vote Stuffing — Unlimited Anonymous Votes, voter_id=null",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "source_ids": ["PEN-006", "RED-009"],
+      "cwe": "CWE-284",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Require authenticated identity for vote submission. Enforce one-vote-per-authenticated-identity server-side. Reject voter_id=null with 400 Bad Request."
+    },
+    {
+      "id": "F-011",
+      "title": "Stored XSS — Script Payloads Persisted Verbatim",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-010"],
+      "cwe": "CWE-79",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Sanitize all text inputs server-side on ingest using DOMPurify or reject HTML-containing inputs. Set strict Content-Security-Policy header as a second layer of defence."
+    },
+    {
+      "id": "F-012",
+      "title": "No HTTP Security Headers or CORS Policy",
+      "severity": "Medium",
+      "status": "Confirmed",
+      "source": "static-analyzer, pen-tester, compliance-auditor, red-teamer",
+      "source_ids": ["SAST-006", "PEN-007", "COMP-004", "COMP-005", "RED-005"],
+      "cwe": "CWE-693",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "npm install helmet cors. Add app.use(helmet()) and app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') })) at the top of the middleware chain."
+    },
+    {
+      "id": "F-013",
+      "title": "Prometheus /metrics Endpoint Unauthenticated",
+      "severity": "Medium",
+      "status": "Confirmed",
+      "source": "static-analyzer, pen-tester, compliance-auditor, red-teamer",
+      "source_ids": ["SAST-007", "PEN-008", "COMP-009", "RED-006"],
+      "cwe": "CWE-200",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Add bearer token check (METRICS_TOKEN env var) or restrict to internal network range/port."
+    },
+    {
+      "id": "F-014",
+      "title": "Internal Error Messages Returned to Clients",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "source_ids": ["SAST-003"],
+      "cwe": "CWE-209",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "In all catch blocks, log full message server-side and return res.status(500).json({ error: 'Internal server error' })."
+    },
+    {
+      "id": "F-015",
+      "title": "Intake Routes Accept Unvalidated type / priority Values",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "source_ids": ["SAST-004"],
+      "cwe": "CWE-20",
+      "file": "Source/Backend/src/routes/intake.ts",
+      "remediation": "Apply same enum guard used in workItems.ts:29-40 to both intake routes."
+    },
+    {
+      "id": "F-016",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer, compliance-auditor",
+      "source_ids": ["SAST-008", "COMP-006"],
+      "cwe": "CWE-770",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "npm install express-rate-limit. Apply global limiter (100 req/15 min per IP). Apply stricter limit on intake routes (20 req/min)."
+    },
+    {
+      "id": "F-017",
+      "title": "Computational DoS via Unbounded blockedBy Array in PATCH",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-009"],
+      "cwe": "CWE-400",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Validate and cap blockedBy array length (max 50). Return 400 Bad Request if exceeded."
+    },
+    {
+      "id": "F-018",
+      "title": "NeedsClarification Assessment Verdict Silently Mapped to Rejected",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-006"],
+      "cwe": "CWE-440",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Handle NeedsClarification as a distinct PendingClarification state. Return clear response indicating the specific status."
+    },
+    {
+      "id": "F-019",
+      "title": "Soft-Deleted Item IDs Enumerable via 404 Oracle",
+      "severity": "Low",
+      "status": "Partial",
+      "source": "pen-tester, red-teamer",
+      "source_ids": ["PEN-010", "RED-007"],
+      "cwe": "CWE-203",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "remediation": "Purge soft-deleted item IDs from all blockedBy arrays on deletion. Return consistent 404 for all missing items."
+    },
+    {
+      "id": "F-020",
+      "title": "No TLS Enforcement at Application Layer",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-011"],
+      "cwe": "CWE-319",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Add HTTPS redirect middleware for production. Add helmet.hsts(). Document TLS-terminating reverse proxy requirement."
+    },
+    {
+      "id": "F-021",
+      "title": "No GDPR Hard Delete (Right to Erasure)",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-010"],
+      "cwe": "CWE-212",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "remediation": "Implement hardDelete(id) store function. Expose behind privileged DELETE /:id?purge=true (admin only). Log data_deletion audit event."
+    },
+    {
+      "id": "F-022",
+      "title": "Missing /api/search Endpoint — Future ReDoS Risk",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-011"],
+      "cwe": "CWE-400",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "When implementing search, use fixed-string or safe bounded regex. Rate-limit the search endpoint."
+    }
+  ]
+}

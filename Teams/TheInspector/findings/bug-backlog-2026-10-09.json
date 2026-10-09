@@ -1,0 +1,288 @@
+{
+  "audit_meta": {
+    "run_id": "run-20261009-085512",
+    "date": "2026-10-09",
+    "grade": "D",
+    "grade_reason": "5 P1 findings (threshold: ≤2 for C), 24% spec coverage (threshold: ≥40% for C). All findings are NEW — first audit baseline.",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Backend service not running at http://localhost:3001"
+  },
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 6,
+    "p3_total": 7,
+    "p4_total": 0,
+    "total_findings": 18,
+    "security_escalations": 5,
+    "spec_coverage_pct": 24,
+    "fixed_vs_prior": 0,
+    "prior_audit": null
+  },
+  "escalations": [
+    {
+      "id": "DEP-P1-001",
+      "severity": "P1",
+      "category": "CVE / injection",
+      "title": "Handlebars ≤4.7.9 — 11 JS Injection / XSS CVEs (RCE risk)",
+      "file": "Source/Backend/package-lock.json",
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "injection",
+      "finding_summary": "Handlebars ≤4.7.9 carries 11 injection/XSS CVEs with RCE risk if templates render user-supplied data. Source/Backend must upgrade to ≥4.8.0.",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "cves": ["GHSA-3mfm-83xf-c92r", "GHSA-2w6w-674q-4c4q", "GHSA-2qvq-rjwj-gvw9", "GHSA-7rx3-28cr-v5wh", "GHSA-442j-39wm-28r2"],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P1-002",
+      "severity": "P1",
+      "category": "CVE / missing access control / IP spoofing",
+      "title": "proxy-addr ≤2.0.7 — IPv4-Mapped IPv6 IP Spoofing (CVSS 9.1)",
+      "file": "Source/Backend/package-lock.json",
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "missing access control",
+      "finding_summary": "proxy-addr ≤2.0.7 allows IP spoofing via IPv4-mapped IPv6 trust (CVSS 9.1). Any IP-based ACL or rate limiting in the Backend can be bypassed.",
+      "fix": "cd Source/Backend && npm update proxy-addr",
+      "cves": ["GHSA-jqcg-44mw-7w3h"],
+      "cvss": 9.1,
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P1-003",
+      "severity": "P1",
+      "category": "CVE / injection / prototype pollution",
+      "title": "tinypool ≤2.1.1 — Prototype Pollution → RCE (via vitest)",
+      "file": "Source/Frontend/package-lock.json",
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "injection",
+      "finding_summary": "tinypool ≤2.1.1 has prototype pollution gadget chains enabling RCE in test worker processes. Fixed by upgrading vitest to ≥5.0.3.",
+      "fix": "cd Source/Frontend && npm update vitest",
+      "cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P1-004",
+      "severity": "P1",
+      "category": "CVE / critical / test sandbox",
+      "title": "vitest ≤4.1.10 — Critical Vulnerability (direct Frontend dependency)",
+      "file": "Source/Frontend/package.json",
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "injection",
+      "finding_summary": "vitest v4 (direct Frontend dependency) carries a critical vulnerability enabling test sandbox bypass or prototype pollution RCE. Upgrade to ≥5.0.0.",
+      "fix": "cd Source/Frontend && npm update vitest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-007",
+      "severity": "P2",
+      "category": "CVE / sensitive data exposed",
+      "title": "@vitest/mocker path traversal — arbitrary file read during test mocking",
+      "file": "Source/Frontend/package-lock.json",
+      "escalate_to": "TheGuardians",
+      "escalate_trigger": "sensitive data exposed",
+      "finding_summary": "@vitest/mocker <4.1.11 allows path traversal during mock redirect, enabling arbitrary file read from the filesystem. Fixed via vitest ≥4.1.11.",
+      "fix": "cd Source/Frontend && npm update vitest",
+      "cves": ["GHSA-82fw-gwwq-j7x9"],
+      "cvss": 5.9,
+      "status": "NEW"
+    }
+  ],
+  "findings": {
+    "p1": [
+      {
+        "id": "QO-001",
+        "severity": "P1",
+        "category": "implementation-gap",
+        "title": "GET /api/search not wired into app.ts — intentionally failing tests",
+        "file": "Source/Backend/src/app.ts",
+        "test_file": "Source/Backend/tests/routes/search.test.ts",
+        "detail": "The GET /api/search route is tested (5 cases) and called by DependencyPicker.tsx but never registered in app.ts. Every search call returns 404.",
+        "recommendation": "Implement GET /api/search?q= in workflow.ts or search.ts, register in app.ts, remove intentional-failure note.",
+        "route_to": "TheFixer",
+        "cross_ref": ["quality-oracle", "TheGuardians (unbounded scan risk)"],
+        "status": "NEW"
+      }
+    ],
+    "p2": [
+      {
+        "id": "QO-002",
+        "severity": "P2",
+        "category": "architecture-violation",
+        "title": "Route handlers call workItemStore directly, bypassing service layer",
+        "files": [
+          "Source/Backend/src/routes/workItems.ts:12",
+          "Source/Backend/src/routes/intake.ts:4",
+          "Source/Backend/src/routes/workflow.ts:15"
+        ],
+        "detail": "Three route files import and call workItemStore directly. CLAUDE.md mandates a service layer. Only dashboard.ts uses a service correctly.",
+        "recommendation": "Create workItemService.ts; route handlers import the service, not the store.",
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-003",
+        "severity": "P2",
+        "category": "spec-drift",
+        "title": "Traceability enforcer only checks most-recent plan — structurally blind",
+        "file": "tools/traceability-enforcer.py:57",
+        "detail": "get_active_requirements() uses max(req_files, key=os.path.getmtime) — only one plan checked. 80+ FRs go unchecked while CI reports PASSED.",
+        "recommendation": "Add --all-plans flag; add --spec-file path for Specifications/.",
+        "route_to": "Solo-session",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-004",
+        "severity": "P2",
+        "category": "spec-drift",
+        "title": "77 Specifications/dev-workflow-platform.md FRs have zero implementation",
+        "file": "Specifications/dev-workflow-platform.md",
+        "detail": "Domain spec defines a full platform (FR-001..FR-069 plus FR-0002..FR-0007). Current Source/ implements none of it.",
+        "recommendation": "Decide status of the spec (roadmap / archived / parallel product) and annotate accordingly.",
+        "route_to": "Requirements-reviewer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-P2-005",
+        "severity": "P2",
+        "category": "CVE",
+        "title": "Jest 29.7.0 — 33 high-severity vulnerabilities (braces DoS, micromatch)",
+        "file": "Source/Backend/package.json",
+        "detail": "Jest 29 dependency tree carries 33 high CVEs including catastrophic backtracking in braces/micromatch. Fix requires major version bump to ≥30.5.2.",
+        "fix": "cd Source/Backend && npm update jest (breaking — test compatibility review required)",
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-P2-006",
+        "severity": "P2",
+        "category": "CVE",
+        "title": "@remix-run/router open redirect via protocol-relative URLs (GHSA-2j2x-hqr9-3h42)",
+        "file": "Source/Frontend/package-lock.json",
+        "detail": "Same-origin redirect with path starting // causes open redirect. Allows attacker to redirect users to attacker-controlled domains.",
+        "fix": "cd Source/Frontend && npm update react-router-dom (→ ≥6.28.0)",
+        "route_to": "TheFixer",
+        "cves": ["GHSA-2j2x-hqr9-3h42"],
+        "status": "NEW"
+      }
+    ],
+    "p3": [
+      {
+        "id": "QO-005",
+        "severity": "P3",
+        "category": "test-coverage",
+        "title": "Duplicate frontend test files with divergent mocks",
+        "files": [
+          "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+          "Source/Frontend/tests/WorkItemListPage.test.tsx"
+        ],
+        "detail": "Two test files per page with different mock setups. Root-level versions are shallower; tests/pages/ versions are more complete. Risk of silent divergence.",
+        "recommendation": "Remove root-level duplicates; keep tests/pages/ versions.",
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-006",
+        "severity": "P3",
+        "category": "spec-drift",
+        "title": "FR-dependency-* requirements invisible to enforcer; 3 still incomplete",
+        "file": "Plans/dependency-linking/requirements.md",
+        "detail": "FR-dependency-api-types (missing blocked_by fields), FR-dependency-seed (no seed data), FR-dependency-frontend-tests (no test files) all incomplete but enforcer never sees this plan.",
+        "recommendation": "Update plan paths (portal/ → Source/); implement or defer the 3 incomplete FRs.",
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-007",
+        "severity": "P3",
+        "category": "pattern-violation",
+        "title": "eslint-disable suppresses react-hooks/exhaustive-deps without documented rationale",
+        "files": [
+          "Source/Frontend/src/components/DependencyPicker.tsx:82",
+          "Source/Frontend/src/hooks/useWorkItems.ts:63"
+        ],
+        "detail": "Two production files suppress react-hooks/exhaustive-deps without inline explanation. Risk of stale-closure bugs going undetected.",
+        "recommendation": "Fix dependency arrays or add explicit rationale comments.",
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-P3-008",
+        "severity": "P3",
+        "category": "CVE / DoS",
+        "title": "qs ≤6.15.3 — 3 DoS vulnerabilities via malformed query parameters",
+        "file": "Source/Backend/package-lock.json",
+        "fix": "npm update qs (→ ≥6.16.0)",
+        "cves": ["GHSA-q8mj-m7cp-5q26", "GHSA-x5fp-wj9c-mxmx", "GHSA-4mjr-xmp4-gh2g"],
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-P3-009",
+        "severity": "P3",
+        "category": "CVE / memory",
+        "title": "uuid 9.0.0–9.0.1 — buffer bounds check missing (CVSS 7.5)",
+        "file": "Source/Backend/package.json",
+        "fix": "cd Source/Backend && npm update uuid (→ ≥11.1.1)",
+        "cves": ["GHSA-w5hq-g745-h8pq"],
+        "cvss": 7.5,
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-P3-010",
+        "severity": "P3",
+        "category": "CVE / DoS",
+        "title": "sprintf-js ≤1.1.3 — unbounded precision specifiers cause CPU DoS",
+        "file": "Source/Backend/package-lock.json",
+        "fix": "npm update sprintf-js (→ ≥1.1.4)",
+        "cves": ["GHSA-hp3w-g68c-fv3c"],
+        "route_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DEP-P3-011",
+        "severity": "P3",
+        "category": "CVE / file-read",
+        "title": "@babel/core ≤7.29.0 — arbitrary file read via sourceMappingURL (CVSS 3.2)",
+        "files": [
+          "Source/Backend/package-lock.json",
+          "Source/Frontend/package-lock.json"
+        ],
+        "fix": "npm update @babel/core (→ ≥7.30.0)",
+        "cves": ["GHSA-4x5r-pxfx-6jf8"],
+        "cvss": 3.2,
+        "route_to": "TheFixer",
+        "status": "NEW"
+      }
+    ],
+    "p4": []
+  },
+  "cross_reference_map": [
+    {
+      "root_cause": "Stale npm dependency tree across all 5 projects",
+      "affected_findings": ["DEP-P1-001", "DEP-P1-002", "DEP-P1-003", "DEP-P1-004", "DEP-P2-005", "DEP-P2-006", "DEP-P2-007", "DEP-P3-008", "DEP-P3-009", "DEP-P3-010", "DEP-P3-011"],
+      "single_fix": "npm audit fix + targeted major upgrades per remediation plan (Phase 1/2/3)"
+    },
+    {
+      "root_cause": "Missing service layer between routes and data store",
+      "affected_findings": ["QO-001", "QO-002"],
+      "single_fix": "Create workItemService.ts; wire GET /api/search through it; refactor route handlers"
+    },
+    {
+      "root_cause": "Traceability enforcer checks only one plan",
+      "affected_findings": ["QO-003", "QO-004", "QO-006"],
+      "single_fix": "Add --all-plans + --spec-file flags to tools/traceability-enforcer.py"
+    },
+    {
+      "root_cause": "Duplicate/incomplete test scaffolding",
+      "affected_findings": ["QO-005", "QO-007"],
+      "single_fix": "Remove duplicate test files; fix hook dependency arrays in same PR"
+    }
+  ],
+  "action_plan": {
+    "block_deployment": ["DEP-P1-001", "DEP-P1-002", "DEP-P1-003", "DEP-P1-004"],
+    "this_sprint": ["QO-001", "QO-002", "DEP-P2-005", "DEP-P2-006", "DEP-P3-009"],
+    "next_sprint": ["QO-003", "QO-004", "QO-005", "QO-006", "QO-007"],
+    "backlog": ["DEP-P3-008", "DEP-P3-010", "DEP-P3-011"]
+  }
+}

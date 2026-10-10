@@ -1,0 +1,318 @@
+{
+  "meta": {
+    "audit_id": "run-20261010-082137",
+    "audit_date": "2026-10-10",
+    "branch": "audit/inspector-2026-10-10-bb0d3a",
+    "grade": "D",
+    "generated_by": "TheInspector / team-leader",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_not_run": ["performance-profiler", "chaos-monkey"],
+    "not_run_reason": "Services offline — static-mode only audit"
+  },
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 10,
+    "p3_total": 8,
+    "p4_total": 2,
+    "total_findings": 25,
+    "fixed_since_prior": 0,
+    "still_open": 0,
+    "new": 25,
+    "first_audit": true,
+    "spec_coverage_pct": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read/Execution (CVSS 9.8)",
+      "route_to": "TheGuardians",
+      "reason": "Remote code execution in dev environment — CVSS 9.8, AV:N, no auth required",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "file": "Source/Frontend/package.json",
+      "fix": "cd Source/Frontend && npm install vitest@^5.0.3",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "title": "gRPC Certificate Validation Bypass (Platform Orchestrator)",
+      "route_to": "TheGuardians",
+      "reason": "Certificate authentication bypass allows unauthorized gRPC calls to platform orchestrator",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "file": "platform/orchestrator/package-lock.json",
+      "fix": "Upgrade @grpc/grpc-js to >=1.14.4",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "route_to": "TheGuardians",
+      "reason": "Routing layer open redirect enables phishing attacks",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "file": "Source/Frontend/package.json",
+      "fix": "cd Source/Frontend && npm install react-router-dom@^7.0.0",
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "status": "NEW",
+      "title": "Canonical platform spec (~85 FRs) entirely unimplemented — domain pivot not retired",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "85 FRs in Specifications/ have zero Verifies: references in Source/. Domain pivot from dev-workflow-platform to workflow-engine occurred without retiring the stale spec.",
+      "recommendation": "Move dev-workflow-platform.md to docs/archive/ if superseded, or add PLANNED status marker. Canonicalize which spec is authoritative.",
+      "route_to": "TheFixer (spec hygiene) / requirements-reviewer (spec ownership)",
+      "cross_refs": [],
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "status": "NEW",
+      "title": "Traceability enforcer blind to Specifications/ — false-positive PASSED signal",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "Enforcer auto-selects Plans/self-judging-workflow/requirements.md (13 FRs) and ignores 95+ FRs in Specifications/. CI treats PASSED as full coverage when it is not.",
+      "recommendation": "Add --specs-dir Specifications/ mode or update auto-detect logic to scan all Specifications/*.md files.",
+      "route_to": "TheFixer",
+      "cross_refs": ["QO-001", "QO-004", "QO-007"],
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P1",
+      "category": "implementation-gap",
+      "status": "NEW",
+      "title": "GET /api/search not wired — 5 tests documented as intentionally failing",
+      "file": "Source/Backend/tests/routes/search.test.ts",
+      "detail": "Test file explicitly documents that the route is not in app.ts. Five tests covering FR-dependency-search fail on every CI run. Violates zero-new-failures gate.",
+      "recommendation": "Implement Source/Backend/src/routes/search.ts and register in app.ts, OR convert tests to test.todo() markers until feature is prioritised.",
+      "route_to": "TheFixer",
+      "cross_refs": ["QO-004"],
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE-RCE",
+      "status": "NEW",
+      "escalated": true,
+      "escalated_to": "TheGuardians",
+      "title": "Vitest UI Server Arbitrary File Read/Execution (CVSS 9.8)",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "detail": "vitest <=2.0.5 — when UI server is accessible, arbitrary files can be read and executed. No authentication required. Affects dev environment.",
+      "recommendation": "cd Source/Frontend && npm install vitest@^5.0.3",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE-PathTraversal",
+      "status": "NEW",
+      "title": "Vitest @vitest/mocker Path Traversal (CVSS 5.9)",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "cvss": 5.9,
+      "detail": "vitest/mocker redirect mock can bypass path restrictions, allowing arbitrary file reads. Fixed by upgrading vitest to >=4.1.11.",
+      "recommendation": "cd Source/Frontend && npm install vitest@^5.0.3 (covers both DEP-001 and DEP-002)",
+      "cross_refs": ["DEP-001"],
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "status": "NEW",
+      "title": "FR-dependency-* IDs (13 instances) have no backing specification document",
+      "file": "Source/Backend/src/services/dependency.ts",
+      "detail": "Custom requirement IDs invented during implementation — not in any Specifications/ document. Violates specs-first architecture rule.",
+      "recommendation": "Create Plans/dependency-feature/requirements.md with formal FR definitions.",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "status": "NEW",
+      "title": "eslint-disable react-hooks/exhaustive-deps without rationale (2 locations)",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "detail": "Lint suppressions with no explanatory comment. Future maintainers cannot distinguish intentional omission from bugs.",
+      "recommendation": "Add inline comments explaining intentional dependency omissions.",
+      "specialist": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "CVE-PathTraversal",
+      "status": "NEW",
+      "title": "Vite Server FS Deny Bypass on Windows (CVSS 7.5)",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "cvss": 7.5,
+      "detail": "server.fs.deny can be bypassed on Windows via alternate path representations.",
+      "recommendation": "cd Source/Frontend && npm install vite@^6.5.0",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "status": "NEW",
+      "title": "Browserslist Unbounded Memory Growth / OOM DoS (CVSS 7.5)",
+      "file": "Source/Frontend/package-lock.json (transitive)",
+      "cve": "GHSA-c83g-rgw3-j3cx",
+      "cvss": 7.5,
+      "detail": "No cache eviction causes unbounded memory growth; build/dev server crashes on crafted queries.",
+      "recommendation": "Resolved by upgrading vite@^6.5.0 (pulls in browserslist >=4.28.7)",
+      "cross_refs": ["DEP-003"],
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "status": "NEW",
+      "title": "Browserslist Prototype Pollution via Stats File (CVSS 7.5)",
+      "file": "Source/Frontend/package-lock.json (transitive)",
+      "cve": "GHSA-73wf-gq98-2v4g",
+      "cvss": 7.5,
+      "detail": "normalizeStats() can be prototype-polluted by a crafted browserslist-stats.json; causes unhandled crash.",
+      "recommendation": "Resolved by upgrading vite@^6.5.0",
+      "cross_refs": ["DEP-003", "DEP-004"],
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "status": "NEW",
+      "title": "Jest Ecosystem High-Severity Vulnerabilities (micromatch ReDoS cascade)",
+      "file": "Source/Backend/package.json",
+      "root_cve": "micromatch ReDoS / path traversal",
+      "detail": "jest 29.7.0 pulls in vulnerable micromatch, causing ReDoS and path traversal risks across @jest/core, runners, reporters.",
+      "recommendation": "cd Source/Backend && npm install jest@^30.5.2",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE-AuthBypass",
+      "status": "NEW",
+      "escalated": true,
+      "escalated_to": "TheGuardians",
+      "title": "gRPC Certificate Validation Bypass + Server Crash (platform/orchestrator)",
+      "file": "platform/orchestrator/package-lock.json (transitive)",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "detail": "Three CVEs: server crash from malformed compressed messages, and certificate validation returning unauthorized certs as authorized.",
+      "recommendation": "cd platform/orchestrator && npm install @grpc/grpc-js@^1.14.4",
+      "specialist": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE-DoS",
+      "status": "NEW",
+      "title": "Ws WebSocket Memory Exhaustion DoS (CVSS 7.5)",
+      "file": "Source/Frontend/package-lock.json (transitive via Vite)",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "cvss": 7.5,
+      "detail": "ws <8.21.0 can be exhausted by sending many tiny frames, causing OOM in Vite dev server.",
+      "recommendation": "Resolved by upgrading vite@^6.5.0 (pulls in ws >=8.21.0)",
+      "cross_refs": ["DEP-003"],
+      "specialist": "dependency-auditor"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Swallowed JSON parse error missing mandatory suppression comment",
+      "file": "Source/Frontend/src/api/client.ts:26",
+      "recommendation": "Add: // Intentionally suppress parse error — non-JSON error body; fall back to HTTP status"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "spec-drift",
+      "title": "FR-TMP-001–FR-TMP-010 (tiered-merge-pipeline) have zero source Verifies",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "recommendation": "Add Verifies: FR-TMP-* comments in platform/ scripts, or add PLANNED/PLATFORM status marker to spec."
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P3",
+      "category": "CVE-OpenRedirect",
+      "escalated": true,
+      "escalated_to": "TheGuardians",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "recommendation": "cd Source/Frontend && npm install react-router-dom@^7.0.0"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P3",
+      "category": "CVE-InfoDisclosure",
+      "title": "@babel/core Arbitrary File Read via SourceMap (CVSS 3.2, local)",
+      "file": "Source/Backend/package.json, Source/Frontend/package.json",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "recommendation": "npm install @babel/core@^7.30.0 across workspaces"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P3",
+      "category": "CVE-DoS",
+      "title": "baseline-browser-mapping Process Termination on Invalid Input",
+      "file": "Source/Frontend/package-lock.json (transitive)",
+      "cve": "GHSA-w5vr-8v7q-w6rv",
+      "recommendation": "Resolved by upgrading vite@^6.5.0"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P3",
+      "category": "CVE-PathTraversal",
+      "title": "Vite NTLMv2 Hash Disclosure on Windows (launch-editor)",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "Resolved by upgrading vite@^6.5.0"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Backend Dependencies 1-5 Major Versions Behind (express, pino, uuid)",
+      "file": "Source/Backend/package.json",
+      "recommendation": "cd Source/Backend && npm install express@latest pino@latest uuid@latest (check pino 10.x breaking changes)"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P3",
+      "category": "outdated",
+      "title": "Frontend Dependencies 1 Major Version Behind (react, react-dom, react-router-dom)",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "cd Source/Frontend && npm install react@19 react-dom@19 react-router-dom@7"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-015",
+      "severity": "P4",
+      "category": "supply-chain",
+      "title": "Large Transitive Dependency Tree (~450 transitive deps)",
+      "recommendation": "Consider jest→vitest migration to reduce footprint"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P4",
+      "category": "supply-chain",
+      "title": "Post-Install Scripts Check",
+      "status": "PASS — no malicious scripts detected"
+    }
+  ]
+}

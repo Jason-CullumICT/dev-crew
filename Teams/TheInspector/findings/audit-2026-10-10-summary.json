@@ -1,0 +1,302 @@
+{
+  "audit_date": "2026-10-10",
+  "audit_time": "08:22:00Z",
+  "auditor": "dependency_auditor",
+  "auditor_model": "haiku",
+  "status": "CRITICAL",
+  "summary": {
+    "package_managers_detected": ["npm"],
+    "workspaces_scanned": 7,
+    "total_direct_dependencies": 23,
+    "estimated_total_transitive": 450,
+    "vulnerabilities_found": {
+      "critical": 2,
+      "high": 8,
+      "moderate": 7,
+      "low": 1,
+      "total": 18
+    },
+    "outdated_packages": {
+      "major_versions_behind": 7,
+      "by_workspace": {
+        "Source/Backend": 3,
+        "Source/Frontend": 3,
+        "Source/E2E": 0
+      }
+    },
+    "license_compliance": "PASS",
+    "post_install_scripts": "PASS"
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Vitest UI Server Arbitrary File Read/Execution",
+      "package": "vitest",
+      "version_affected": "<=2.0.5",
+      "version_current": "2.0.5",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "workspace": "Source/Frontend",
+      "impact": "Remote code execution in dev environment; sensitive file exfiltration",
+      "fix": "npm install vitest@^5.0.3"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest @vitest/mocker Path Traversal",
+      "package": "vitest",
+      "version_affected": ">=2.1.0 <4.1.11",
+      "severity": "P1",
+      "cvss": 5.9,
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "workspace": "Source/Frontend",
+      "impact": "Path traversal allowing arbitrary file read",
+      "fix": "npm install vitest@^4.1.11 or later"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-003",
+      "title": "Vite Server FS Deny Bypass on Windows",
+      "package": "vite",
+      "version_affected": "<=6.4.2",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "workspace": "Source/Frontend",
+      "impact": "Path traversal; access to restricted files on Windows",
+      "fix": "npm install vite@^6.5.0"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Browserslist Unbounded Memory Growth",
+      "package": "browserslist",
+      "version_affected": "<=4.28.6",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve": "GHSA-c83g-rgw3-j3cx",
+      "workspace": "Source/Frontend (transitive)",
+      "impact": "Out of memory denial of service; build pipeline crash",
+      "fix": "Update vite/transitive deps to latest"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Browserslist Prototype Pollution via Stats File",
+      "package": "browserslist",
+      "version_affected": "<=4.28.6",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve": "GHSA-73wf-gq98-2v4g",
+      "workspace": "Source/Frontend (transitive)",
+      "impact": "Process crash if stats file controlled by attacker",
+      "fix": "Update to browserslist >=4.28.7"
+    },
+    {
+      "id": "DEP-006",
+      "title": "Jest Ecosystem High-Severity Vulnerabilities",
+      "package": "jest",
+      "version_affected": "<=30.2.0",
+      "version_current": "29.7.0",
+      "severity": "P2",
+      "affected_components": ["@jest/core", "@jest/console", "@jest/reporters", "jest-runner", "jest-haste-map", "jest-message-util", "jest-resolve", "jest-snapshot", "jest-watcher", "micromatch"],
+      "root_cause": "micromatch ReDoS and path traversal",
+      "workspace": "Source/Backend",
+      "impact": "Test infrastructure denial of service via crafted paths",
+      "fix": "npm install jest@^30.5.2"
+    },
+    {
+      "id": "DEP-007",
+      "title": "@grpc/grpc-js Server Crash and Certificate Validation Bypass",
+      "package": "@grpc/grpc-js",
+      "version_affected": ">=1.14.0 <1.14.4",
+      "severity": "P2",
+      "cves": [
+        "GHSA-5375-pq7m-f5r2",
+        "GHSA-99f4-grh7-6pcq",
+        "GHSA-m9gg-hp2v-232j"
+      ],
+      "workspace": "platform/orchestrator (transitive)",
+      "impact": "Server crash from malformed messages; authentication bypass via certificate validation",
+      "fix": "Upgrade @grpc/grpc-js to >=1.14.4",
+      "escalation": "TheGuardians (certificate validation bypass is critical)"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Ws WebSocket Memory Exhaustion DoS",
+      "package": "ws",
+      "version_affected": ">=8.0.0 <8.21.0",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "workspace": "Source/Frontend (transitive via Vite)",
+      "impact": "Denial of service via memory exhaustion from small fragments",
+      "fix": "Upgrade ws to >=8.21.0"
+    }
+  ],
+  "action_plan": {
+    "phase_1_immediate": {
+      "timeline": "Today",
+      "actions": [
+        {
+          "action": "Upgrade Frontend vitest",
+          "command": "cd Source/Frontend && npm install vitest@^5.0.3",
+          "justification": "CRITICAL - arbitrary file read/execution risk",
+          "dep": "DEP-001"
+        }
+      ]
+    },
+    "phase_2_urgent": {
+      "timeline": "This week",
+      "actions": [
+        {
+          "action": "Upgrade Frontend vite",
+          "command": "cd Source/Frontend && npm install vite@^6.5.0",
+          "justification": "HIGH - path traversal and fs.deny bypass",
+          "dep": "DEP-003"
+        },
+        {
+          "action": "Upgrade Backend jest",
+          "command": "cd Source/Backend && npm install jest@^30.5.2",
+          "justification": "HIGH - test infrastructure DoS",
+          "dep": "DEP-006"
+        },
+        {
+          "action": "Verify platform/orchestrator @grpc/grpc-js",
+          "command": "cd platform/orchestrator && npm outdated @grpc/grpc-js",
+          "justification": "HIGH - server crash and cert validation bypass",
+          "dep": "DEP-007"
+        },
+        {
+          "action": "Upgrade Frontend react-router-dom",
+          "command": "cd Source/Frontend && npm install react-router-dom@^7.0.0",
+          "justification": "MODERATE - open redirect via protocol-relative URLs",
+          "dep": "DEP-009"
+        }
+      ]
+    },
+    "phase_3_important": {
+      "timeline": "This month",
+      "actions": [
+        {
+          "action": "Update Backend dependencies",
+          "command": "cd Source/Backend && npm install express@latest pino@latest uuid@latest",
+          "justification": "Outdated major versions",
+          "note": "Check pino 10.x breaking changes"
+        },
+        {
+          "action": "Update Frontend dependencies",
+          "command": "cd Source/Frontend && npm install react@19 react-dom@19",
+          "justification": "Outdated major versions"
+        },
+        {
+          "action": "Run full test suite",
+          "command": "npm test --workspaces --if-present",
+          "justification": "Verify no regressions from upgrades"
+        },
+        {
+          "action": "Escalate to TheGuardians",
+          "items": [
+            "Vitest UI server RCE (GHSA-5xrq-8626-4rwp)",
+            "gRPC certificate validation bypass (GHSA-m9gg-hp2v-232j)",
+            "React Router open redirect (GHSA-2j2x-hqr9-3h42)"
+          ],
+          "justification": "Security-critical findings for authentication/authorization"
+        },
+        {
+          "action": "Escalate to performance-profiler",
+          "items": [
+            "Browserslist OOM DoS (GHSA-c83g-rgw3-j3cx)",
+            "Ws memory exhaustion (GHSA-96hv-2xvq-fx4p)",
+            "Vite dev server DoS vectors"
+          ],
+          "justification": "Performance and DoS risks in build/dev pipeline"
+        }
+      ]
+    }
+  },
+  "cross_team_escalations": [
+    {
+      "team": "TheGuardians",
+      "severity": "CRITICAL",
+      "findings": [
+        "GHSA-5xrq-8626-4rwp (Vitest UI server RCE)",
+        "GHSA-m9gg-hp2v-232j (gRPC cert validation bypass)"
+      ],
+      "reason": "Security-critical vulnerabilities in authentication and development infrastructure"
+    },
+    {
+      "team": "TheGuardians",
+      "severity": "HIGH",
+      "findings": [
+        "GHSA-2j2x-hqr9-3h42 (React Router open redirect)"
+      ],
+      "reason": "Authentication/authorization layer vulnerability"
+    },
+    {
+      "team": "performance-profiler",
+      "severity": "HIGH",
+      "findings": [
+        "GHSA-c83g-rgw3-j3cx (Browserslist OOM)",
+        "GHSA-96hv-2xvq-fx4p (Ws memory exhaustion)",
+        "DoS vectors in build pipeline"
+      ],
+      "reason": "Denial of service risks affecting development infrastructure"
+    }
+  ],
+  "watch_list": [
+    {
+      "package": "jest",
+      "reason": "Recurring high-severity vulns in micromatch ecosystem; consider migration to vitest",
+      "frequency": "High"
+    },
+    {
+      "package": "vitest",
+      "reason": "Recently had critical RCE; recommend staying current",
+      "frequency": "Medium"
+    },
+    {
+      "package": "vite",
+      "reason": "Multiple path traversal and fs.deny bypasses; security-sensitive",
+      "frequency": "Medium"
+    },
+    {
+      "package": "browserslist",
+      "reason": "Multiple DoS vectors (OOM, crash); ensure latest",
+      "frequency": "High"
+    },
+    {
+      "package": "ws",
+      "reason": "Memory exhaustion from small packets; keep up-to-date",
+      "frequency": "Medium"
+    }
+  ],
+  "license_audit": {
+    "total_direct_deps": 23,
+    "by_license": {
+      "MIT": 22,
+      "Apache-2.0": 1
+    },
+    "compliance_status": "PASS",
+    "violations": []
+  },
+  "supply_chain_analysis": {
+    "post_install_scripts": "PASS (none detected)",
+    "dependency_tree_size_backend": 232,
+    "dependency_tree_size_frontend": 230,
+    "total_transitive": 450,
+    "risk_assessment": "MODERATE - large transitive dependency tree increases attack surface; recommend monitoring",
+    "recommendations": [
+      "Consider migration from jest to vitest for lighter footprint",
+      "Monitor all packages on watch list for new CVEs",
+      "Ensure CI/CD includes `npm audit` in security gates"
+    ]
+  },
+  "grading": {
+    "preliminary_grade": "F",
+    "reasoning": "2 critical + 8 high CVEs exceed acceptable thresholds",
+    "target_grade": "B-C",
+    "target_requirements": "Resolve all critical and high CVEs; keep <=8 high vulnerabilities"
+  },
+  "report_file": "audit-2026-10-10-critical.md",
+  "findings_dir": "Teams/TheInspector/findings/"
+}

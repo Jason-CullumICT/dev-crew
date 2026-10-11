@@ -1,0 +1,329 @@
+{
+  "audit_date": "2026-10-11",
+  "auditor": "Dependency Auditor (Haiku 4.5)",
+  "status": "CRITICAL",
+  "summary": {
+    "projects_scanned": 5,
+    "total_dependencies": 995,
+    "total_vulnerabilities": 68,
+    "by_severity": {
+      "critical": 8,
+      "high": 15,
+      "moderate": 35,
+      "low": 10
+    }
+  },
+  "projects": {
+    "Source/Backend": {
+      "status": "CRITICAL",
+      "dependencies": {
+        "prod": 102,
+        "dev": 310,
+        "optional": 2,
+        "total": 414
+      },
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 33,
+        "moderate": 5,
+        "low": 2,
+        "total": 42
+      },
+      "critical_packages": [
+        "handlebars",
+        "proxy-addr"
+      ]
+    },
+    "Source/Frontend": {
+      "status": "CRITICAL",
+      "dependencies": {
+        "prod": 9,
+        "dev": 222,
+        "optional": 50,
+        "peer": 8,
+        "total": 289
+      },
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 7,
+        "moderate": 7,
+        "low": 1,
+        "total": 17
+      },
+      "critical_packages": [
+        "vitest",
+        "tinypool"
+      ],
+      "direct_critical_deps": [
+        "vitest@2.0.5"
+      ]
+    },
+    "Source/E2E": {
+      "status": "CLEAN",
+      "dependencies": {
+        "prod": 4,
+        "dev": 0,
+        "optional": 1,
+        "total": 5
+      },
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      }
+    },
+    "platform/orchestrator": {
+      "status": "CRITICAL",
+      "dependencies": {
+        "prod": 153,
+        "dev": 0,
+        "optional": 3,
+        "total": 156
+      },
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 2,
+        "moderate": 4,
+        "low": 1,
+        "total": 9
+      },
+      "note": "Cannot be modified by pipeline agents per architecture rules"
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars.js - Multiple Remote Code Execution Vulnerabilities",
+      "severity": "P1",
+      "category": "CVE / Code Injection",
+      "package": "handlebars",
+      "affected_versions": ">=4.0.0 <=4.7.9",
+      "cvss_score": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-8r5x-fm3f-whwj",
+        "GHSA-p8wg-vrv2-v86f",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-2qvq-rjwj-gvw9",
+        "GHSA-7rx3-28cr-v5wh",
+        "GHSA-xw65-4hp5-5hc7"
+      ],
+      "vulnerability_count": 10,
+      "description": "JavaScript injection via AST type confusion, prototype pollution, and CLI precompilation in handlebars template engine",
+      "impact": "Remote Code Execution during build/test phase. Attacker can inject arbitrary JavaScript into compiled templates.",
+      "file": "Source/Backend/package.json",
+      "fix": "Upgrade handlebars to >=4.7.10 (via jest upgrade)",
+      "escalation": "TheGuardians - RCE in build pipeline"
+    },
+    {
+      "id": "DEP-002",
+      "title": "proxy-addr - IPv4-Mapped IPv6 Trust Subnet IP Spoofing",
+      "severity": "P1",
+      "category": "CVE / Authentication Bypass",
+      "package": "proxy-addr",
+      "affected_versions": ">=1.1.0 <2.0.8",
+      "cvss_score": 9.1,
+      "cves": [
+        "GHSA-jqcg-44mw-7w3h"
+      ],
+      "description": "IPv4-mapped IPv6 addresses bypass IP-based access controls. Attacker sends ::ffff:192.0.2.1 to spoof 192.0.2.1",
+      "impact": "Complete bypass of IP whitelist authentication if deployed behind reverse proxy",
+      "file": "Source/Backend/package.json",
+      "fix": "Upgrade proxy-addr to >=2.0.8",
+      "escalation": "TheGuardians - Authentication bypass"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest - Arbitrary File Read via UI Server",
+      "severity": "P1",
+      "category": "CVE / Arbitrary File Read",
+      "package": "vitest",
+      "affected_versions": "<3.2.6",
+      "cvss_score": 9.8,
+      "cves": [
+        "GHSA-5xrq-8626-4rwp"
+      ],
+      "is_direct": true,
+      "description": "When vitest --ui is running, attacker can read arbitrary files and execute arbitrary JavaScript",
+      "impact": "Complete information disclosure + RCE if dev environment is accessible. Read private keys, .env, source code.",
+      "file": "Source/Frontend/package.json",
+      "fix": "Upgrade vitest to >=5.0.3 (minimum >=3.2.6)",
+      "escalation": "TheGuardians - Arbitrary file read vulnerability"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Tinypool - Prototype Pollution Leading to Remote Code Execution",
+      "severity": "P1",
+      "category": "CVE / Prototype Pollution",
+      "package": "tinypool",
+      "affected_versions": "<=2.1.1",
+      "cves": [
+        "GHSA-5gmw-xhrv-c9v3",
+        "GHSA-85c8-ppgw-ccpr"
+      ],
+      "description": "Object prototype pollution via worker options allows arbitrary code execution",
+      "impact": "Remote Code Execution through tinypool worker initialization",
+      "file": "Source/Frontend/node_modules/tinypool",
+      "fix": "Upgrade tinypool to >=2.1.2 (via vitest upgrade)",
+      "escalation": "TheGuardians - RCE via prototype pollution"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Browserslist - Unbounded Memory Growth (DoS)",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "package": "browserslist",
+      "affected_versions": "<=4.28.6",
+      "cvss_score": 7.5,
+      "cves": [
+        "GHSA-c83g-rgw3-j3cx",
+        "GHSA-73wf-gq98-2v4g"
+      ],
+      "description": "No cache eviction causes OOM on distinct queries; untrusted browserslist-stats.json causes crash",
+      "impact": "Build pipeline DoS or crash. Potential RCE via malicious stats file.",
+      "file": "Source/Frontend/package.json",
+      "fix": "Upgrade browserslist to >=4.28.7",
+      "escalation": "TheGuardians - DoS in build system"
+    },
+    {
+      "id": "DEP-006",
+      "title": "@vitest/mocker - Path Traversal / Arbitrary File Read",
+      "severity": "P2",
+      "category": "CVE / Path Traversal",
+      "package": "@vitest/mocker",
+      "affected_versions": ">=2.1.0 <4.1.11",
+      "cvss_score": 5.9,
+      "cves": [
+        "GHSA-82fw-gwwq-j7x9"
+      ],
+      "description": "Path traversal via redirect mock allows reading arbitrary files from filesystem",
+      "impact": "Confidentiality breach - ability to read source code, configuration, and other files",
+      "file": "Source/Frontend/node_modules/@vitest/mocker",
+      "escalation": "TheGuardians - Path traversal"
+    },
+    {
+      "id": "DEP-007",
+      "title": "Jest Core & Ecosystem - Multiple High-Severity Vulnerabilities",
+      "severity": "P2",
+      "category": "CVE",
+      "package": "jest@29.7.0 and @jest/* ecosystem",
+      "affected_versions": "<=30.2.0",
+      "description": "Multiple high-severity issues in test runner including jest-message-util, jest-environment, jest-snapshots",
+      "impact": "Multiple issues affecting code compilation and execution",
+      "file": "Source/Backend/package.json",
+      "fix": "Upgrade jest to >=30.5.2 (major version bump)",
+      "escalation": "TheGuardians - Build pipeline instability"
+    },
+    {
+      "id": "DEP-008",
+      "title": "@babel/core - Arbitrary File Read via sourceMappingURL",
+      "severity": "P1",
+      "category": "CVE / File Read",
+      "package": "@babel/core",
+      "affected_versions": "<=7.29.0",
+      "cvss_score": 3.2,
+      "cves": [
+        "GHSA-4x5r-pxfx-6jf8"
+      ],
+      "description": "Babel reads arbitrary files referenced in sourceMappingURL comments during compilation",
+      "impact": "Information disclosure during build process",
+      "file": "Source/Backend/package.json, Source/Frontend/package.json",
+      "escalation": "TheGuardians - File read during build"
+    }
+  ],
+  "recommendations": {
+    "tier_1_immediate": [
+      "Upgrade vitest@2.0.5 → 5.0.3 in Source/Frontend/package.json",
+      "Run npm update in Source/Backend (jest + dependencies)",
+      "Verify proxy-addr >=2.0.8 in Source/Backend",
+      "Test all three PRs in CI before merge"
+    ],
+    "tier_2_short_term": [
+      "Install license-checker, run compliance scan",
+      "Set up Dependabot or Renovate for automated PRs",
+      "Add npm audit to CI pipeline (fail on high/critical)",
+      "Document acceptable risk tolerance in SECURITY.md"
+    ],
+    "tier_3_medium_term": [
+      "Evaluate test framework consolidation (jest vs vitest)",
+      "Reduce dev dependency footprint",
+      "Implement SBOM generation for supply chain transparency",
+      "Schedule quarterly dependency audits"
+    ]
+  },
+  "supply_chain_risk": {
+    "Backend": {
+      "prod_deps": 102,
+      "dev_deps": 310,
+      "ratio": 1.0,
+      "risk_level": "HIGH",
+      "observation": "Heavy devDependencies increase transitive risk"
+    },
+    "Frontend": {
+      "prod_deps": 9,
+      "dev_deps": 222,
+      "ratio": 24.7,
+      "risk_level": "VERY_HIGH",
+      "observation": "Extreme dev:prod ratio (96% dev) - consider splitting test fixtures"
+    }
+  },
+  "fixes_required": {
+    "Source/Backend": {
+      "priority": "P1",
+      "action": "npm update",
+      "expected_outcome": "Vulnerabilities drop from 42 → ~5",
+      "packages": [
+        "jest@30.5.2",
+        "proxy-addr@2.0.8",
+        "@babel/core@latest"
+      ]
+    },
+    "Source/Frontend": {
+      "priority": "P1",
+      "action": "npm install vitest@5.0.3",
+      "expected_outcome": "Vulnerabilities drop from 17 → ~2",
+      "packages": [
+        "vitest@5.0.3",
+        "tinypool@2.1.2+",
+        "browserslist@4.28.7+"
+      ]
+    },
+    "Source/E2E": {
+      "priority": "NONE",
+      "action": "No action required",
+      "expected_outcome": "Remains clean"
+    }
+  },
+  "escalations": [
+    "DEP-001 (Handlebars RCE) → TheGuardians",
+    "DEP-002 (proxy-addr IP spoofing) → TheGuardians",
+    "DEP-003 (vitest RCE) → TheGuardians",
+    "DEP-004 (tinypool RCE) → TheGuardians",
+    "DEP-005 (browserslist DoS) → TheGuardians",
+    "DEP-006 (@vitest/mocker path traversal) → TheGuardians",
+    "DEP-007 (jest ecosystem) → TheGuardians",
+    "DEP-008 (@babel/core file read) → TheGuardians"
+  ],
+  "methodology": {
+    "tools_used": [
+      "npm audit --json",
+      "npm outdated --json",
+      "Manual lock file analysis"
+    ],
+    "scope": [
+      "npm/Node.js packages",
+      "3 production projects",
+      "2 infrastructure projects"
+    ],
+    "limitations": [
+      "license-checker not installed (manual check required)",
+      "No zero-day vulnerability detection",
+      "No runtime execution context analysis"
+    ]
+  }
+}

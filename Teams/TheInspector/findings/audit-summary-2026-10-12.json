@@ -1,0 +1,202 @@
+{
+  "audit_date": "2026-10-12T09:01:00Z",
+  "audit_run_id": "dep-audit-20261012-001",
+  "overall_status": "URGENT",
+  "overall_risk_grade": "F",
+  "auditor": "dependency-auditor",
+  "model": "haiku",
+  
+  "vulnerability_summary": {
+    "total": 59,
+    "critical": 4,
+    "high": 40,
+    "moderate": 12,
+    "low": 3
+  },
+  
+  "by_component": {
+    "Source/Backend": {
+      "vulnerabilities": 42,
+      "critical": 2,
+      "high": 33,
+      "moderate": 5,
+      "low": 2,
+      "direct_dependencies": 13,
+      "estimated_transitive": 500
+    },
+    "Source/Frontend": {
+      "vulnerabilities": 17,
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "direct_dependencies": 13,
+      "estimated_transitive": 400
+    },
+    "Source/E2E": {
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "direct_dependencies": 4,
+      "estimated_transitive": 20
+    }
+  },
+  
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars - Arbitrary Code Execution",
+      "package": "handlebars",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "is_direct": false,
+      "affected_component": "Source/Backend",
+      "fix_command": "npm install jest@30.5.2 --save-dev",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Proxy-addr - IP Spoofing / Request Smuggling",
+      "package": "proxy-addr",
+      "severity": "CRITICAL",
+      "cvss_score": 9.1,
+      "cwe": ["CWE-290", "CWE-348"],
+      "is_direct": false,
+      "affected_component": "Source/Backend",
+      "fix_command": "npm audit fix --force",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vite - Path Traversal + Source Map Exposure",
+      "package": "vite",
+      "severity": "CRITICAL",
+      "cvss_score": 7.5,
+      "cwe": ["CWE-22", "CWE-200"],
+      "is_direct": true,
+      "affected_component": "Source/Frontend",
+      "fix_command": "npm install vite@latest --save-dev",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Tinypool - Arbitrary Code Execution",
+      "package": "tinypool",
+      "severity": "CRITICAL",
+      "cvss_score": null,
+      "cwe": ["CWE-94", "CWE-1321"],
+      "is_direct": false,
+      "affected_component": "Source/Frontend",
+      "fix_command": "npm install vitest@2.0.5 --save-dev",
+      "escalation": "TheGuardians"
+    }
+  ],
+  
+  "outdated_packages": [
+    {
+      "id": "DEP-009",
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "major_versions_behind": 1,
+      "component": "Source/Frontend",
+      "risk_level": "P3"
+    },
+    {
+      "id": "DEP-010",
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.4",
+      "major_versions_behind": 1,
+      "component": "Source/Frontend",
+      "risk_level": "P3"
+    },
+    {
+      "id": "DEP-011",
+      "package": "jest",
+      "current": "29.7.0",
+      "latest": "30.5.2",
+      "major_versions_behind": 1,
+      "component": "Source/Backend",
+      "risk_level": "P2",
+      "note": "Has 42 known vulnerabilities including 2 critical"
+    }
+  ],
+  
+  "supply_chain_risks": {
+    "duplicate_packages": 0,
+    "post_install_scripts": 0,
+    "abandoned_packages": 0,
+    "unknown_licenses": 0,
+    "high_risk_patterns": [
+      "Jest ecosystem bloat (40+ transitive deps with security issues)",
+      "Vite dev server path traversal in CI/CD pipelines",
+      "Express middleware chain with critical proxy-addr vulnerability",
+      "React framework lag (1 major version behind, EOL-approaching)"
+    ]
+  },
+  
+  "remediation_plan": {
+    "phase_1_immediate": {
+      "timeline": "This week",
+      "actions": [
+        "npm install jest@30.5.2 --save-dev (Backend)",
+        "npm install vite@latest vitest@latest --save-dev (Frontend)",
+        "npm install react-router-dom@latest --save (Frontend)"
+      ],
+      "expected_cves_fixed": "4 critical + 8 high"
+    },
+    "phase_2_short_term": {
+      "timeline": "Next sprint",
+      "actions": [
+        "npm audit fix (all projects)",
+        "npm install react@19.3.0 react-dom@19.3.0 --save (Frontend, with testing)",
+        "Add npm audit gate to CI/CD pipeline"
+      ],
+      "expected_cves_fixed": "30+ high and moderate"
+    },
+    "phase_3_ongoing": {
+      "timeline": "Continuous",
+      "actions": [
+        "Set up Dependabot or Snyk for automated monitoring",
+        "Quarterly license-checker audit",
+        "Semi-annual dependency tree review"
+      ]
+    }
+  },
+  
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: Handlebars RCE in build pipeline",
+      "DEP-002: Proxy-addr IP spoofing in Express",
+      "DEP-003: Vite path traversal + source exposure",
+      "DEP-007: React Router open redirect",
+      "DEP-004: Tinypool code execution"
+    ],
+    "TheFixer": [
+      "DEP-009 through DEP-011: Outdated dependencies",
+      "License compliance audit"
+    ]
+  },
+  
+  "metrics": {
+    "cves_critical": 4,
+    "cves_high": 40,
+    "cves_moderate": 12,
+    "cves_low": 3,
+    "npm_projects_scanned": 3,
+    "direct_dependencies": 26,
+    "estimated_transitive": 920,
+    "outdated_major_versions": 3,
+    "abandoned_packages": 0,
+    "unknown_licenses": 0,
+    "post_install_scripts": 0,
+    "duplicate_packages": 0
+  },
+  
+  "report_location": "/Teams/TheInspector/findings/audit-2026-10-12-urgent.md",
+  "learnings_updated": "/Teams/TheInspector/learnings/dependency-auditor.md"
+}

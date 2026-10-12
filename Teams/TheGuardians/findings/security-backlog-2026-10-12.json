@@ -1,0 +1,260 @@
+{
+  "generated": "2026-10-12",
+  "grade": "F",
+  "summary": {
+    "critical": 3,
+    "high": 8,
+    "medium": 9,
+    "low": 2,
+    "total": 22,
+    "confirmed_live": 7,
+    "theoretical": 15,
+    "compliance_pass_rate_pct": 17,
+    "red_team_objectives_achieved": 4,
+    "red_team_objectives_total": 4
+  },
+  "findings": [
+    {
+      "id": "C-001",
+      "title": "No Authentication or Authorization on Entire API",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer, static-analyzer, compliance-auditor",
+      "merged_from": ["PEN-001", "RED-001", "SAST-001", "COMP-001", "COMP-004"],
+      "cwe": "CWE-306, CWE-862",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Add global JWT authentication middleware before all route handlers. Implement login endpoint. Add RBAC requireRole() middleware per route. Thread actor identity from token through all mutating operations."
+    },
+    {
+      "id": "C-002",
+      "title": "State Machine Bypass — Multiple Paths to Approve Without Assessment",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "merged_from": ["PEN-002", "PEN-003", "RED-002", "RED-007"],
+      "cwe": "CWE-284",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Remove status from PATCH-able fields. Gate force-approve behind admin role with precondition (min 1 completed voting round). Gate overrideRoute on privilege check. Add invariant tests for assessment pod bypass detection."
+    },
+    {
+      "id": "C-003",
+      "title": "Unauthenticated Bulk Data Deletion (Permanent, No Recovery)",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer, pen-tester",
+      "merged_from": ["RED-008"],
+      "cwe": "CWE-306",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Require authentication on all DELETE operations. Implement soft-delete with deleted_at column. Add privileged hard-purge endpoint behind admin role. Add rate limiting on DELETE routes."
+    },
+    {
+      "id": "H-001",
+      "title": "Ghost-Blocker DoS — Deleted Blocker Permanently Freezes Dependent Item",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer",
+      "merged_from": ["PEN-006", "RED-003"],
+      "cwe": "CWE-672",
+      "file": "Source/Backend/src/services/dependency.ts",
+      "remediation": "On item deletion, cascade-remove all dependency edges where item is a blocker. Fix computeHasUnresolvedBlockers() to treat undefined blocker as resolved. Add periodic dependency audit job for orphaned references."
+    },
+    {
+      "id": "H-002",
+      "title": "No Pagination Enforcement — Full Dataset Extraction in Single Request",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer, static-analyzer, compliance-auditor",
+      "merged_from": ["PEN-004", "RED-004", "SAST-005", "COMP-006"],
+      "cwe": "CWE-400",
+      "file": "Source/Backend/src/routes/workItems.ts, Source/Backend/src/routes/dashboard.ts",
+      "remediation": "Clamp limit: Math.min(Math.max(1, parseInt(...) || 20), 100). Add LIMIT/OFFSET to all SQL list queries in portal/Backend. Return {data, total, page, limit, totalPages} for all list endpoints."
+    },
+    {
+      "id": "H-003",
+      "title": "Stored XSS — HTML/Script Payloads Stored Verbatim",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer, pen-tester",
+      "merged_from": ["RED-006", "PEN-012"],
+      "cwe": "CWE-79",
+      "file": "Source/Backend/src/routes/workItems.ts, portal/Backend",
+      "remediation": "Sanitize all free-text inputs server-side using isomorphic-dompurify or strict character allowlist. Ensure frontend HTML-encodes dynamic content before DOM insertion. Add Content-Security-Policy header via helmet()."
+    },
+    {
+      "id": "H-004",
+      "title": "Unauthenticated Bulk Dependency Replacement via PATCH",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "merged_from": ["PEN-007"],
+      "cwe": "CWE-284",
+      "file": "Source/Backend/src/routes/workItems.ts",
+      "remediation": "Require authentication. Gate dependency modification behind reviewer/dispatcher role. Separate blockedBy mutation into a dedicated, audited endpoint."
+    },
+    {
+      "id": "H-005",
+      "title": "Cascade Dispatch Exploit — Force Auto-Dispatch via Reject-After-Approve",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "merged_from": ["PEN-009"],
+      "cwe": "CWE-284",
+      "file": "Source/Backend/src/services/dependency.ts",
+      "remediation": "onItemResolved() cascade dispatch must validate team name and require same authorization checks as explicit /dispatch endpoint."
+    },
+    {
+      "id": "H-006",
+      "title": "Unauthenticated Intake Webhooks — No HMAC Verification",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "static-analyzer, compliance-auditor",
+      "merged_from": ["SAST-002", "COMP-005"],
+      "cwe": "CWE-345",
+      "file": "Source/Backend/src/routes/intake.ts",
+      "remediation": "Verify X-Zendesk-Webhook-Signature HMAC-SHA256 against shared secret in env var. Add Authorization: Bearer <INTAKE_API_KEY> check on /automated. Reject non-matching requests with 401."
+    },
+    {
+      "id": "H-007",
+      "title": "Required SOC2 Audit Events Not Emitted",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "merged_from": ["COMP-002"],
+      "framework": "SOC2-Type2 CC7.1, OWASP-ASVS 7.2.1",
+      "file": "Source/Backend/src/routes/, Source/Backend/src/utils/logger.ts",
+      "remediation": "Create auditLog({event, actor, target, timestamp, outcome, ip}) function. Emit login_attempt, permission_denied, state_transition (with real actor from token), and data_export events."
+    },
+    {
+      "id": "H-008",
+      "title": "No TLS/HTTPS Enforcement",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "merged_from": ["COMP-003"],
+      "framework": "OWASP-ASVS 9.1.1, 9.1.2, SOC2-Type2 CC6.1",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Install helmet, add app.use(helmet()). Document TLS at infra layer in CLAUDE.md. Add middleware rejecting requests where X-Forwarded-Proto !== https in production."
+    },
+    {
+      "id": "M-001",
+      "title": "Prometheus /metrics Publicly Accessible",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester, red-teamer, static-analyzer",
+      "merged_from": ["PEN-008", "RED-005", "SAST-006"],
+      "cwe": "CWE-200",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Restrict to internal network via reverse proxy, or add bearer token check (METRICS_TOKEN env var), or expose on separate non-public port."
+    },
+    {
+      "id": "M-002",
+      "title": "Internal Error Messages Leaked to API Clients",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "merged_from": ["SAST-003"],
+      "cwe": "CWE-209",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Replace res.status(500).json({ error: message }) with res.status(500).json({ error: 'Internal server error' }) in all catch blocks."
+    },
+    {
+      "id": "M-003",
+      "title": "Intake Webhook Enum Validation Bypass",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer, pen-tester",
+      "merged_from": ["SAST-004", "PEN-005"],
+      "cwe": "CWE-20",
+      "file": "Source/Backend/src/routes/intake.ts",
+      "remediation": "Add enum validation in both intake routes before createWorkItem(), mirroring pattern in workItems.ts lines 29-41."
+    },
+    {
+      "id": "M-004",
+      "title": "No CORS Policy / Missing Security Headers",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester, static-analyzer",
+      "merged_from": ["PEN-010", "SAST-007"],
+      "cwe": "CWE-693",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "npm install helmet cors; add app.use(helmet()); app.use(cors({ origin: 'http://localhost:5173' })); before route registration."
+    },
+    {
+      "id": "M-005",
+      "title": "Sequential Predictable Document IDs Enable Enumeration",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "merged_from": ["PEN-011"],
+      "cwe": "CWE-330",
+      "file": "Source/Backend/src/utils/id.ts",
+      "remediation": "Use random suffixes for docId generation, or accept and document the information-disclosure risk."
+    },
+    {
+      "id": "M-006",
+      "title": "NaN/Negative Pagination — Response Oracle",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester, static-analyzer",
+      "merged_from": ["PEN-013", "SAST-008"],
+      "cwe": "CWE-20",
+      "file": "Source/Backend/src/routes/workItems.ts, Source/Backend/src/routes/dashboard.ts",
+      "remediation": "Add isNaN guard: const page = isNaN(rawPage) || rawPage < 1 ? 1 : rawPage; const limit = Math.min(Math.max(1, rawLimit || 20), 100)."
+    },
+    {
+      "id": "M-007",
+      "title": "No Actor Identity in Operational Logs or Change History",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "merged_from": ["COMP-007"],
+      "framework": "OWASP-ASVS 7.1.1, 7.2.1, SOC2-Type2 CC7.1",
+      "file": "Source/Backend/src/routes/workflow.ts",
+      "remediation": "Thread real actor identity from auth token through all service calls. Add requestId middleware via AsyncLocalStorage. Replace hardcoded actor strings with authenticated user ID."
+    },
+    {
+      "id": "M-008",
+      "title": "No Hard Delete / Right to Erasure Mechanism",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "merged_from": ["COMP-008"],
+      "framework": "GDPR Art. 17, OWASP-ASVS 8.3.4",
+      "file": "Source/Backend/src/store/workItemStore.ts",
+      "remediation": "Implement purgeWorkItem(id) removing item from Map entirely. Expose as privileged admin endpoint behind RBAC. Document retention policy."
+    },
+    {
+      "id": "M-009",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "merged_from": ["COMP-009"],
+      "framework": "OWASP-ASVS 2.2.1, SOC2-Type2 CC6.1",
+      "file": "Source/Backend/src/app.ts",
+      "remediation": "Install express-rate-limit. Apply global limiter (100 req/min per IP) and tighter limiter on intake and state-transition endpoints (10 req/min per IP)."
+    },
+    {
+      "id": "L-001",
+      "title": "No Length Validation on Free-Text Fields",
+      "severity": "Low",
+      "status": "Confirmed (via RED-006 extension)",
+      "source": "pen-tester, red-teamer",
+      "merged_from": ["PEN-012"],
+      "cwe": "CWE-20",
+      "file": "Source/Backend/src/routes/workItems.ts, Source/Backend/src/routes/workflow.ts",
+      "remediation": "Add maxLength validation: title <= 200, description <= 10000 chars in all creation and update routes."
+    },
+    {
+      "id": "L-002",
+      "title": "No Correlation/Trace IDs in Log Entries",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "merged_from": ["COMP-010"],
+      "framework": "OWASP-ASVS 7.1.3",
+      "file": "Source/Backend/src/utils/logger.ts",
+      "remediation": "Integrate @opentelemetry/sdk-node or pino serializers. Add request middleware that extracts/generates traceparent and injects traceId/spanId into all log entries via AsyncLocalStorage."
+    }
+  ]
+}

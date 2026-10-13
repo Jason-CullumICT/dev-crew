@@ -1,0 +1,280 @@
+{
+  "metadata": {
+    "audit_date": "2026-10-13",
+    "auditor": "dependency_auditor",
+    "scope": "npm packages across dev-crew project",
+    "package_managers_scanned": ["npm"],
+    "total_manifests": 6
+  },
+  "summary": {
+    "total_vulnerabilities": 85,
+    "critical": 10,
+    "high": 40,
+    "moderate": 30,
+    "low": 5,
+    "overall_grade": "F",
+    "requires_escalation": true,
+    "escalation_target": "TheGuardians"
+  },
+  "vulnerabilities_by_severity": {
+    "critical": [
+      {
+        "id": "DEP-001",
+        "package": "handlebars",
+        "severity": "CRITICAL",
+        "title": "JavaScript Injection via AST Type Confusion",
+        "cve": "GHSA-2w6w-674q-4c4q",
+        "cvss_score": 9.8,
+        "affected_versions": ">=4.0.0 <=4.7.8",
+        "transitive_path": "jest -> jest-snapshot -> handlebars",
+        "affected_manifests": ["Source/Backend/package.json"],
+        "cwe": ["CWE-94", "CWE-843"],
+        "description": "Arbitrary code execution via AST type confusion in Handlebars template processing",
+        "fix": "npm update jest to >=30.5.2",
+        "effort": "HIGH (major version bump)",
+        "escalate_to": "TheGuardians"
+      },
+      {
+        "id": "DEP-002",
+        "package": "tinypool",
+        "severity": "CRITICAL",
+        "title": "RCE via Prototype Pollution in Worker Options",
+        "cve": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+        "cvss_score": 0,
+        "affected_versions": "<2.1.2",
+        "transitive_path": "vitest -> tinypool",
+        "affected_manifests": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+        "cwe": ["CWE-94", "CWE-1321"],
+        "description": "Prototype pollution gadget chain allows RCE through worker thread options",
+        "fix": "npm update vitest to >=5.0.4",
+        "effort": "VERY HIGH (major version bump, test rewrite)",
+        "escalate_to": "TheGuardians"
+      },
+      {
+        "id": "DEP-003",
+        "package": "vitest",
+        "severity": "CRITICAL",
+        "title": "Arbitrary File Read/Execute via UI Server",
+        "cve": "GHSA-5xrq-8626-4rwp",
+        "cvss_score": 9.8,
+        "affected_versions": "<3.2.6, <=4.0.0-beta.19",
+        "affected_manifests": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+        "cwe": ["CWE-22", "CWE-862"],
+        "description": "When Vitest UI server is listening, any file can be read and executed without authentication",
+        "fix": "npm update vitest to >=5.0.4",
+        "effort": "VERY HIGH (major version bump)",
+        "escalate_to": "TheGuardians",
+        "implications": ["Source code disclosure", "Credentials exposure via .env files", "Code execution in development/CI"]
+      },
+      {
+        "id": "DEP-004",
+        "package": "protobufjs",
+        "severity": "CRITICAL",
+        "title": "Arbitrary Code Execution in Schema Processing",
+        "cve": "GHSA-xq3m-2v4x-88gg",
+        "cvss_score": 9.8,
+        "affected_versions": "<7.5.5",
+        "affected_manifests": ["platform/orchestrator/package.json"],
+        "cwe": ["CWE-94"],
+        "description": "Arbitrary code execution through malformed protobuf schema processing",
+        "fix": "npm update protobufjs to >=7.7.0+ (verify version)",
+        "effort": "MEDIUM",
+        "escalate_to": "TheGuardians",
+        "additional_cves": 11,
+        "additional_cves_note": "GHSA-66ff-xgx4-vchm (code injection), GHSA-75px-5xx7-5xc7 (code gen gadget), GHSA-j3f2-48v5-ccww (DoS)"
+      },
+      {
+        "id": "DEP-005",
+        "package": "proxy-addr",
+        "severity": "CRITICAL",
+        "title": "IPv4-mapped IPv6 IP Spoofing / Trust Bypass",
+        "cve": "GHSA-jqcg-44mw-7w3h",
+        "cvss_score": 9.1,
+        "affected_versions": ">=1.1.0 <2.0.8",
+        "affected_manifests": ["Source/Backend/package.json", "platform/orchestrator/package.json"],
+        "cwe": ["CWE-290", "CWE-348", "CWE-697"],
+        "description": "Trust subnet bypass via IPv4-mapped IPv6 addresses; can spoof ::ffff:127.0.0.1 to bypass IP-based access control",
+        "current_version": "2.0.7 (via express 4.18.2)",
+        "fix": "npm update express to >=4.22.3",
+        "effort": "LOW (minor update)",
+        "escalate_to": "TheGuardians",
+        "implications": ["Access control bypass", "Trust boundary violation", "Trusted IP spoofing"]
+      }
+    ],
+    "high": [
+      {
+        "id": "DEP-006",
+        "package": "@jest/core, @jest/console, @jest/environment, @jest/expect, et al",
+        "severity": "HIGH",
+        "title": "Jest Ecosystem Vulnerability Cascade (jest-message-util root)",
+        "cve": "Multiple (GHSA-* family)",
+        "affected_count": 33,
+        "affected_manifests": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+        "description": "jest-message-util has vulnerability that cascades to 33 HIGH-severity issues across entire @jest/* ecosystem",
+        "current_version": "jest@29.7.0",
+        "fix": "npm update jest to >=30.5.2",
+        "effort": "HIGH (major version, full test suite validation)",
+        "implies": ["Test framework compromise", "CI/CD pipeline risk", "Code execution during test runs"]
+      },
+      {
+        "id": "DEP-007",
+        "package": "@remix-run/router",
+        "severity": "MODERATE",
+        "severity_adjusted_to": "HIGH",
+        "title": "Same-Origin Open Redirect via Protocol-Relative URL",
+        "cve": "GHSA-2j2x-hqr9-3h42",
+        "affected_versions": ">=1.3.0 <1.23.3",
+        "affected_manifests": ["Source/Frontend/package.json"],
+        "cwe": ["CWE-601"],
+        "description": "Paths starting with // are interpreted as protocol-relative URLs, enabling open redirect attacks",
+        "fix": "npm update react-router-dom to >=6.27.0",
+        "effort": "LOW (minor update)",
+        "escalate_to": "TheGuardians"
+      },
+      {
+        "id": "DEP-008",
+        "package": "@vitest/mocker",
+        "severity": "MODERATE",
+        "severity_adjusted_to": "HIGH",
+        "title": "Path Traversal / Arbitrary File Read via Redirect Mock",
+        "cve": "GHSA-82fw-gwwq-j7x9",
+        "cvss_score": 5.9,
+        "affected_versions": ">=2.1.0 <4.1.11",
+        "affected_manifests": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+        "cwe": ["CWE-22"],
+        "description": "Path traversal in vitest mock redirect functionality allows reading files outside intended scope",
+        "fix": "npm update vitest to >=5.0.4 (fixes multiple vitest issues)",
+        "effort": "VERY HIGH (major version bump)"
+      }
+    ],
+    "moderate": [
+      {
+        "id": "DEP-009",
+        "package": "@babel/core",
+        "severity": "LOW",
+        "title": "Arbitrary File Read via sourceMappingURL Comment",
+        "cve": "GHSA-4x5r-pxfx-6jf8",
+        "cvss_score": 3.2,
+        "affected_versions": "<=7.29.0",
+        "affected_manifests": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+        "cwe": ["CWE-22", "CWE-200"],
+        "description": "Babel can be tricked via sourceMappingURL comment to read arbitrary files",
+        "fix": "npm update @babel/core to >=7.30.0+",
+        "effort": "LOW (likely transitive, via jest or build tools)"
+      }
+    ]
+  },
+  "outdated_packages": [
+    {
+      "id": "DEP-010",
+      "package": "express",
+      "severity": "P3",
+      "current": "4.18.2",
+      "wanted": "4.22.3",
+      "latest": "5.3.0",
+      "file": "Source/Backend/package.json",
+      "versions_behind": "4 minor versions",
+      "implication": "Missed security and bug fixes",
+      "recommendation": "Update to 4.22.3 (includes proxy-addr 2.0.8+ fix)"
+    },
+    {
+      "id": "DEP-011",
+      "package": "pino",
+      "severity": "P3",
+      "current": "8.17.0",
+      "wanted": "8.21.0",
+      "latest": "10.4.0",
+      "file": "Source/Backend/package.json",
+      "versions_behind": "2 major versions",
+      "implication": "Missed security, performance, and structured logging improvements"
+    },
+    {
+      "id": "DEP-012",
+      "package": "uuid",
+      "severity": "P3",
+      "current": "9.0.0",
+      "wanted": "9.0.1",
+      "latest": "14.0.3",
+      "file": "Source/Backend/package.json",
+      "versions_behind": "Multiple major versions",
+      "implication": "Missed reliability and performance fixes"
+    },
+    {
+      "id": "DEP-013",
+      "package": "react-router-dom",
+      "severity": "P2",
+      "current": "6.26.0",
+      "wanted": "6.27.0+",
+      "latest": "6.27.0+",
+      "file": "Source/Frontend/package.json",
+      "versions_behind": "1 minor version",
+      "implication": "Open redirect vulnerability (CVE)",
+      "recommendation": "PRIORITY: Update to >=6.27.0"
+    },
+    {
+      "id": "DEP-014",
+      "package": "vitest",
+      "severity": "P1",
+      "current": "2.0.5",
+      "wanted": "5.0.4+",
+      "latest": "5.0.4+",
+      "file": "Source/Frontend/package.json",
+      "versions_behind": "3 major versions",
+      "implication": "Multiple CRITICAL CVEs",
+      "recommendation": "PRIORITY: Upgrade to >=5.0.4 (major version, test rewrite needed)"
+    }
+  ],
+  "license_compliance": {
+    "status": "NOT_AUDITED",
+    "reason": "license-checker tool not available in environment",
+    "recommendation": "Install license-checker globally and re-run audit",
+    "command": "npm install -g license-checker && license-checker --json"
+  },
+  "remediation_timeline": {
+    "immediate_week": [
+      "Source/Backend: jest 29.7.0 -> 30.5.2",
+      "Source/Backend: express 4.18.2 -> 4.22.3",
+      "Source/Frontend: vitest 2.0.5 -> 5.0.4",
+      "platform/orchestrator: protobufjs upgrade"
+    ],
+    "this_sprint": [
+      "Source/Frontend: react-router-dom 6.26.0 -> 6.27.0+",
+      "Outdated package updates (express, pino, uuid)"
+    ],
+    "next_sprint": [
+      "React upgrade evaluation (18.x -> 19.x)",
+      "License compliance audit",
+      "Testing framework migration path evaluation"
+    ]
+  },
+  "cross_references": [
+    {
+      "type": "ESCALATE",
+      "target": "TheGuardians",
+      "findings": [
+        "DEP-001 (handlebars code injection)",
+        "DEP-002 (tinypool RCE)",
+        "DEP-003 (vitest file read/exec)",
+        "DEP-004 (protobufjs RCE)",
+        "DEP-005 (proxy-addr IP spoofing)",
+        "DEP-007 (react-router open redirect)"
+      ],
+      "reason": "Security vulnerabilities requiring security team assessment"
+    },
+    {
+      "type": "COORD",
+      "target": "TheFixer",
+      "findings": [
+        "DEP-006 (Jest outdated)",
+        "DEP-010-014 (Outdated packages)"
+      ],
+      "reason": "Dependency updates for code quality/performance"
+    }
+  ],
+  "notes": {
+    "supply_chain_surface": "Frontend transitive dependency count >500; exceeds typical audit surface",
+    "jest_ecosystem": "33 high-severity CVEs in Jest backend; indicates systemic issue requiring major version bump",
+    "vitest_critical": "3 separate critical findings; major version required but likely worth it for migration from Jest",
+    "no_production_deployment": "Recommendation: Do not deploy without addressing P1 critical findings"
+  }
+}

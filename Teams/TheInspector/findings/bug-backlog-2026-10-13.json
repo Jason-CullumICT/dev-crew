@@ -1,0 +1,278 @@
+{
+  "audit_id": "inspector-2026-10-13-095291",
+  "audit_date": "2026-10-13",
+  "branch": "audit/inspector-2026-10-13-095291",
+  "overall_grade": "D",
+  "spec_coverage_pct": 97.8,
+  "services_mode": "static (all services offline)",
+  "prior_audit": null,
+  "summary": {
+    "p1_total": 7,
+    "p2_total": 7,
+    "p3_total": 10,
+    "p4_total": 1,
+    "escalations_total": 7,
+    "fixed_total": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE / Code Injection",
+      "title": "Handlebars.js JavaScript Injection via AST Type Confusion",
+      "cvss": 9.8,
+      "cve": "GHSA-2w6w-674q-4c4q",
+      "package": "handlebars (via jest@29.7.0)",
+      "affected_files": ["Source/Backend/package-lock.json"],
+      "fix": "Upgrade jest to >=30.5.2",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE / Remote Code Execution",
+      "title": "Tinypool RCE via Prototype Pollution Gadget",
+      "cvss": 9.8,
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "package": "tinypool <=2.1.1 (via vitest@2.0.5)",
+      "affected_files": ["portal/Frontend/package-lock.json", "Source/Frontend/package-lock.json"],
+      "fix": "Upgrade vitest to >=5.0.4",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE / Arbitrary File Read + Code Execution",
+      "title": "Vitest UI Server Arbitrary File Read/Execute",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest <3.2.6",
+      "affected_files": ["portal/Frontend/package-lock.json", "Source/Frontend/package-lock.json"],
+      "fix": "Upgrade vitest to >=3.2.6 or >=5.0.4",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "CVE / Arbitrary Code Execution",
+      "title": "protobufjs Arbitrary Code Execution via Schema Processing",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs <=7.6.4",
+      "affected_files": ["platform/orchestrator/package-lock.json"],
+      "fix": "Upgrade protobufjs to >=7.7.0",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "CVE / IP Spoofing / Access Control Bypass",
+      "title": "proxy-addr IPv4-mapped IPv6 IP Spoofing — Trust Boundary Bypass",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr 1.1.0-2.0.7 (via express@4.18.2)",
+      "affected_files": ["Source/Backend/package-lock.json", "platform/orchestrator/package-lock.json"],
+      "fix": "Upgrade express to >=4.22.3 (pulls proxy-addr >=2.0.8)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE / Open Redirect",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "cvss": null,
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "package": "@remix-run/router 1.3.0-1.23.2 (via react-router-dom@6.26.0)",
+      "affected_files": ["Source/Frontend/package-lock.json"],
+      "fix": "Upgrade react-router-dom to >=6.27.0",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE / Path Traversal / Information Disclosure",
+      "title": "Vite/Vitest Mocker Path Traversal — File Disclosure",
+      "cvss": 5.9,
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "package": "@vitest/mocker >=2.1.0 <4.1.11 (via vitest)",
+      "affected_files": ["portal/Frontend/package-lock.json", "Source/Frontend/package-lock.json"],
+      "fix": "Upgrade vitest to >=5.0.4",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "Traceability Enforcer Blind Spot — portal/ Excluded",
+      "file": "tools/traceability-enforcer.py",
+      "line": 71,
+      "detail": "Enforcer hardcodes source_dirs=[\"Source\",\"E2E\"], missing portal/ which contains 1,074 Verifies: comments.",
+      "fix": "Add \"portal\" to source_dirs list at line 71.",
+      "route_to": "solo-session",
+      "effort": "XS",
+      "status": "NEW",
+      "cross_ref": ["QO-002"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "Inspector Config Excludes portal/ From source.dirs",
+      "file": "Teams/TheInspector/inspector.config.yml",
+      "detail": "inspector.config.yml source.dirs=[\"Source/\"] omits portal/ — all inspector audits blind to primary product implementation.",
+      "fix": "Add \"portal/\" to source.dirs and test_dirs in inspector.config.yml.",
+      "route_to": "solo-session",
+      "effort": "XS",
+      "status": "NEW",
+      "cross_ref": ["QO-001"]
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-api-types Unimplemented — blocked_by Missing From Update Types",
+      "file": "portal/Shared/api.ts",
+      "fix": "Add blocked_by?: string[] to UpdateBugInput and UpdateFeatureRequestInput, remove as any cast in DependencyPicker.tsx.",
+      "route_to": "TheFixer",
+      "agent": "backend-coder",
+      "effort": "S",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed Unimplemented — No seed.ts",
+      "file": "portal/Backend/src/database/",
+      "fix": "Create portal/Backend/src/database/seed.ts with idempotent dependency insertion; wire into startup.",
+      "route_to": "TheFixer",
+      "agent": "backend-coder",
+      "effort": "S",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-DUP-06 Untraced — No Verifies Comment on Detail Endpoint Invariant",
+      "file": "portal/Backend/src/routes/bugs.ts",
+      "fix": "Add // Verifies: FR-DUP-06 to GET /:id handlers in bugs.ts and featureRequests.ts; add corresponding test cases.",
+      "route_to": "TheFixer",
+      "agent": "backend-coder",
+      "effort": "XS",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "doc-stale",
+      "title": "CLAUDE.md Mislabels portal/ as 'Debug portal UI'",
+      "file": "CLAUDE.md",
+      "fix": "Split portal/ in module table: portal/Backend/ → backend-coder, portal/Frontend/ → frontend-coder, portal/Shared/ → api-contract.",
+      "route_to": "solo-session",
+      "effort": "XS",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE / Multiple",
+      "title": "Jest 29.7.0 — 33 High-Severity CVEs in @jest/* Ecosystem",
+      "file": "Source/Backend/package.json",
+      "fix": "Upgrade jest to >=30.5.2 (major bump; run full test suite after).",
+      "route_to": "TheFixer",
+      "agent": "backend-coder",
+      "effort": "M",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007", "severity": "P3", "category": "spec-drift",
+      "title": "workflow-engine.md Has No FR IDs — Cannot Be Enforced",
+      "file": "Specifications/workflow-engine.md",
+      "fix": "Add FR-WF-001 through FR-WF-013 IDs to relevant spec sections.",
+      "route_to": "solo-session", "effort": "S", "status": "NEW"
+    },
+    {
+      "id": "QO-008", "severity": "P3", "category": "pattern-violation",
+      "title": "3× eslint-disable react-hooks/exhaustive-deps — Potential Stale Closure Bugs",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts", "Source/Frontend/src/components/DependencyPicker.tsx", "portal/Frontend/src/hooks/useApi.ts"],
+      "fix": "Refactor each useEffect or add inline comment documenting why dep is intentionally omitted.",
+      "route_to": "TheFixer", "agent": "frontend-coder", "effort": "S", "status": "NEW"
+    },
+    {
+      "id": "QO-009", "severity": "P3", "category": "pattern-violation",
+      "title": "Two Service Files Exceed 500 Lines",
+      "files": ["portal/Backend/src/services/cycleService.ts (526 lines)", "portal/Backend/src/services/featureRequestService.ts (506 lines)"],
+      "fix": "Extract sub-concerns into smaller service modules.",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "M", "status": "NEW"
+    },
+    {
+      "id": "DEP-009", "severity": "P3", "category": "CVE / Info Disclosure",
+      "title": "@babel/core Arbitrary File Read via sourceMappingURL",
+      "file": "Source/Backend/package-lock.json",
+      "fix": "Upgrade @babel/core to >=7.30.0 (transitive via jest).",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "XS", "status": "NEW"
+    },
+    {
+      "id": "DEP-010", "severity": "P3", "category": "outdated",
+      "title": "Express 4.18.2 — 4 Minor Versions Behind (4.22.3 available)",
+      "file": "Source/Backend/package.json",
+      "fix": "npm install express@^4.22.3 (also fixes proxy-addr DEP-005).",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "S", "status": "NEW"
+    },
+    {
+      "id": "DEP-011", "severity": "P3", "category": "outdated",
+      "title": "pino 8.17.0 — 2 Major Versions Behind (latest 10.4.0)",
+      "file": "Source/Backend/package.json",
+      "fix": "npm update pino -> 8.21.0 minimum; evaluate 10.x migration.",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "S", "status": "NEW"
+    },
+    {
+      "id": "DEP-012", "severity": "P3", "category": "outdated",
+      "title": "uuid 9.0.0 — Many Major Versions Behind (latest 14.0.3)",
+      "file": "Source/Backend/package.json",
+      "fix": "npm update uuid -> 9.0.1 minimum.",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "XS", "status": "NEW"
+    },
+    {
+      "id": "DEP-013", "severity": "P3", "category": "outdated",
+      "title": "Multiple Frontend Dev Dependencies Outdated",
+      "file": "Source/Frontend/package.json",
+      "fix": "Update react-router-dom to 6.27.0+, vitest to 5.0.4; evaluate React 19 migration.",
+      "route_to": "TheFixer", "agent": "frontend-coder", "effort": "M", "status": "NEW"
+    },
+    {
+      "id": "DEP-014", "severity": "P3", "category": "supply-chain",
+      "title": "High Dependency Count — 500+ Transitive in Frontend",
+      "fix": "Segregate dev deps; use npm ci --production in deployments; audit prod-only dependency tree.",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "L", "status": "NEW"
+    },
+    {
+      "id": "DEP-015", "severity": "P3", "category": "supply-chain",
+      "title": "Jest Ecosystem Fragmentation — 33 HIGH CVEs from Single Cascade",
+      "fix": "Upgrade to jest 30.x or evaluate migration to vitest (already used in frontend).",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "M", "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-016", "severity": "P4", "category": "compliance",
+      "title": "License Compliance Audit Not Run",
+      "fix": "npm install -g license-checker && license-checker --json; flag GPL/AGPL transitive deps.",
+      "route_to": "TheFixer", "agent": "backend-coder", "effort": "S", "status": "NEW"
+    }
+  ]
+}

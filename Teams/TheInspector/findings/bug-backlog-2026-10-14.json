@@ -1,0 +1,214 @@
+{
+  "audit_id": "inspector-2026-10-14",
+  "audit_date": "2026-10-14",
+  "overall_grade": "C",
+  "grade_rationale": "2 P1 security CVEs (proxy-addr CVSS 9.1, protobufjs CVSS 9.8) push below B threshold (max_p1: 0). 7 P2 findings within C limit (max_p2: 15). Spec coverage 97% on active in-flight work (26% nominal including roadmap specs).",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_absent": ["performance-profiler", "chaos-monkey"],
+  "summary": {
+    "p1_total": 2,
+    "p2_total": 7,
+    "p3_total": 5,
+    "p4_total": 1,
+    "total_findings": 15,
+    "escalations_to_guardians": 5,
+    "escalations_to_fixer": 7
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "priority": "P1",
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "title": "proxy-addr IPv4-mapped IPv6 IP Spoofing — Authentication Bypass",
+      "package": "proxy-addr",
+      "affected_versions": "1.1.0 - 2.0.7",
+      "fix_version": "2.0.8+",
+      "files": ["Source/Backend/package.json", "platform/orchestrator/package.json"],
+      "exploit_scenario": "Network-adjacent attacker sends IPv4-mapped IPv6 address to bypass IP-based access controls",
+      "route_to": "TheGuardians",
+      "action": "Block deployment until patched"
+    },
+    {
+      "id": "DEP-005",
+      "priority": "P1",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "title": "protobufjs Arbitrary Code Execution — Orchestrator RCE",
+      "package": "protobufjs",
+      "affected_versions": "< 7.5.5",
+      "fix_version": "7.5.5+",
+      "files": ["platform/orchestrator/package.json"],
+      "exploit_scenario": "Crafted protobuf message from compromised gRPC client triggers RCE on Orchestrator host",
+      "route_to": "TheGuardians",
+      "action": "Block deployment until patched"
+    },
+    {
+      "id": "DEP-003",
+      "priority": "P2",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "Vitest UI Server Arbitrary File Read",
+      "package": "vitest",
+      "current_version": "2.0.5",
+      "fix_version": "3.2.6+",
+      "files": ["Source/Frontend/package.json"],
+      "exploit_scenario": "Vitest UI server in CI allows attacker to read .env files and secrets if --ui flag used",
+      "route_to": "TheGuardians",
+      "action": "This sprint"
+    },
+    {
+      "id": "DEP-007",
+      "priority": "P2",
+      "severity": "HIGH",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "package": "@remix-run/router",
+      "affected_versions": "1.3.0 - 1.23.2",
+      "fix_version": "react-router-dom v7.x",
+      "files": ["Source/Frontend/package.json"],
+      "exploit_scenario": "Attacker crafts a link with protocol-relative URL that redirects users to malicious site",
+      "route_to": "TheGuardians",
+      "action": "This sprint"
+    },
+    {
+      "id": "DEP-009",
+      "priority": "P2",
+      "severity": "HIGH",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "title": "@grpc/grpc-js Certificate Validation Bypass + Crash",
+      "package": "@grpc/grpc-js",
+      "affected_versions": "1.14.0 - 1.14.4",
+      "fix_version": "1.14.5+",
+      "files": ["platform/orchestrator/package.json"],
+      "exploit_scenario": "MITM attacker presents unauthorized TLS certificate accepted by grpc-js",
+      "route_to": "TheGuardians",
+      "action": "This sprint"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "DEP-006",
+      "priority": "P2",
+      "category": "dep-hygiene",
+      "title": "Jest 33 HIGH CVEs — upgrade from 29.7.0 to 30.5.2",
+      "package": "jest",
+      "current_version": "29.7.0",
+      "fix_version": "30.5.2+",
+      "files": ["Source/Backend/package.json"],
+      "route_to": "TheFixer",
+      "action": "Next sprint"
+    },
+    {
+      "id": "QO-001",
+      "priority": "P2",
+      "category": "spec-drift",
+      "spec": "FR-dependency-search",
+      "title": "GET /api/search not wired in app.ts — DependencyPicker silently broken",
+      "file": "Source/Backend/src/app.ts",
+      "recommendation": "Add searchRouter and register app.use('/api/search', searchRouter) in app.ts",
+      "route_to": "TheFixer",
+      "action": "This sprint"
+    },
+    {
+      "id": "QO-002",
+      "priority": "P2",
+      "category": "spec-drift",
+      "spec": "FR-dependency-dispatch-gating",
+      "title": "pending_dependencies status missing from WorkItemStatus enum and state machine",
+      "files": [
+        "Source/Shared/types/workflow.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Frontend/src/components/BlockedBadge.tsx"
+      ],
+      "recommendation": "Add PendingDependencies to WorkItemStatus enum, add to VALID_STATUS_TRANSITIONS, implement auto-transition in dispatch route, update BlockedBadge with amber state",
+      "route_to": "TheFixer",
+      "action": "This sprint"
+    },
+    {
+      "id": "QO-003",
+      "priority": "P2",
+      "category": "spec-drift",
+      "spec": "FR-dependency-metrics",
+      "title": "dependencyCheckDuration Histogram missing from metrics.ts",
+      "file": "Source/Backend/src/metrics.ts",
+      "recommendation": "Add dependencyCheckDurationHistogram and instrument computeHasUnresolvedBlockers/isReady call paths",
+      "route_to": "TheFixer",
+      "action": "This sprint"
+    },
+    {
+      "id": "DEP-002",
+      "priority": "P3",
+      "category": "security/dep",
+      "title": "Handlebars Code Injection — dev dependency (CVSS 9.8)",
+      "package": "handlebars",
+      "fix_version": "4.7.10+",
+      "files": ["Source/Backend/package.json"],
+      "note": "Dev-only transitive; resolved by jest upgrade",
+      "route_to": "TheFixer",
+      "action": "Next sprint"
+    },
+    {
+      "id": "DEP-004",
+      "priority": "P3",
+      "category": "security/dep",
+      "title": "Tinypool Prototype Pollution RCE — dev dependency",
+      "package": "tinypool",
+      "fix_version": "2.1.2+",
+      "files": ["Source/Frontend/package.json"],
+      "note": "Transitive via vitest; dev-only; resolved by vitest upgrade",
+      "route_to": "TheFixer",
+      "action": "Next sprint"
+    },
+    {
+      "id": "DEP-008",
+      "priority": "P3",
+      "category": "dep-hygiene",
+      "title": "Browserslist DoS + Prototype Pollution (CVSS 7.5)",
+      "package": "browserslist",
+      "affected_versions": "<= 4.28.6",
+      "fix_version": "4.28.7+",
+      "files": ["Source/Frontend/package.json"],
+      "route_to": "TheFixer",
+      "action": "Next sprint"
+    },
+    {
+      "id": "QO-004",
+      "priority": "P3",
+      "category": "spec-drift",
+      "spec": "FR-dependency-seed",
+      "title": "No seed data implemented — store starts empty on every restart",
+      "file": "Source/Backend/src/",
+      "recommendation": "Add idempotent seedStore() function at server startup with spec-defined work items and dependency links",
+      "route_to": "TheFixer",
+      "action": "Next sprint"
+    },
+    {
+      "id": "QO-005",
+      "priority": "P3",
+      "category": "pattern-violation",
+      "title": "Traceability enforcer only covers 13 of 109 FRs — 80 roadmap FRs invisible",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Expand enforcer to scan full Specifications/ directory; add roadmap exclusion list",
+      "route_to": "solo-session",
+      "action": "Backlog"
+    },
+    {
+      "id": "QO-006",
+      "priority": "P4",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppressions in 2 production files risk stale-closure bugs",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Refactor to use useCallback/useRef or correct dependency arrays",
+      "route_to": "TheFixer",
+      "action": "Backlog"
+    }
+  ],
+  "next_audit": "2026-11-14"
+}

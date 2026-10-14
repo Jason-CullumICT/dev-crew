@@ -1,0 +1,319 @@
+{
+  "audit_timestamp": "2026-10-14T00:00:00Z",
+  "audit_type": "dependency-scan",
+  "project_name": "dev-crew",
+  "overall_grade": "C",
+  "summary": {
+    "total_vulnerabilities": 68,
+    "critical_count": 6,
+    "high_count": 42,
+    "moderate_count": 16,
+    "low_count": 4,
+    "package_managers": ["npm"],
+    "direct_dependencies": 264,
+    "transitive_dependencies": 796,
+    "outdated_major_versions": 13,
+    "license_violations": 0
+  },
+  "directories_audited": [
+    {
+      "path": "Source/Backend",
+      "package_manager": "npm",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 33,
+        "moderate": 5,
+        "low": 2,
+        "total": 42
+      },
+      "dependencies": {
+        "direct": 29,
+        "total": 411
+      },
+      "critical_packages": ["handlebars", "proxy-addr"],
+      "outdated_majors": [
+        "jest@29.7.0 -> 30.5.2",
+        "express@4.18.2 -> 5.3.0",
+        "pino@8.17.0 -> 10.4.0",
+        "uuid@9.0.0 -> 14.0.3"
+      ]
+    },
+    {
+      "path": "Source/Frontend",
+      "package_manager": "npm",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 7,
+        "moderate": 7,
+        "low": 1,
+        "total": 17
+      },
+      "dependencies": {
+        "direct": 3,
+        "total": 230
+      },
+      "critical_packages": ["vitest", "tinypool"],
+      "outdated_majors": [
+        "react@18.3.1 -> 19.3.0",
+        "react-dom@18.3.1 -> 19.3.0",
+        "react-router-dom@6.26.0 -> 7.18.4"
+      ]
+    },
+    {
+      "path": "platform/orchestrator",
+      "package_manager": "npm",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 2,
+        "moderate": 4,
+        "low": 1,
+        "total": 9
+      },
+      "dependencies": {
+        "direct": 3,
+        "total": 155
+      },
+      "critical_packages": ["protobufjs", "proxy-addr"],
+      "outdated_majors": [
+        "dockerode@4.0.4 -> 5.0.1",
+        "express@4.21.0 -> 5.3.0",
+        "multer@1.4.5-lts.1 -> 2.4.0"
+      ]
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IPv4-mapped IPv6 IP Spoofing",
+      "severity": "CRITICAL",
+      "cvss_score": 9.1,
+      "cve_id": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr",
+      "affected_range": "1.1.0 - 2.0.7",
+      "directories": ["Source/Backend", "platform/orchestrator"],
+      "fix_version": "2.0.8+",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_ids": ["GHSA-2w6w-674q-4c4q", "GHSA-8r5x-fm3f-whwj"],
+      "package": "handlebars",
+      "affected_range": "3.0.0 - 4.7.9",
+      "directories": ["Source/Backend"],
+      "fix_version": "4.7.10+",
+      "note": "Dev dependency only; dev-time impact"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest UI Server Arbitrary File Read",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest",
+      "current_version": "2.0.5",
+      "directories": ["Source/Frontend"],
+      "fix_version": "3.2.6+",
+      "note": "Direct dependency; dev-time only; CI-exposed risk"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Tinypool Prototype Pollution RCE",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_ids": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "package": "tinypool",
+      "affected_range": "≤ 2.1.1",
+      "directories": ["Source/Frontend"],
+      "fix_version": "2.1.2+",
+      "note": "Transitive via vitest; dev-time only"
+    },
+    {
+      "id": "DEP-005",
+      "title": "protobufjs Arbitrary Code Execution",
+      "severity": "CRITICAL",
+      "cvss_score": 9.8,
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "affected_range": "< 7.5.5",
+      "directories": ["platform/orchestrator"],
+      "fix_version": "7.5.5+",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-006",
+      "title": "Jest Framework High-Severity CVEs (Cascade)",
+      "severity": "HIGH",
+      "cve_count": 33,
+      "package": "jest (and @jest/* modules)",
+      "current_version": "29.7.0",
+      "directories": ["Source/Backend"],
+      "fix_version": "30.5.2+",
+      "note": "Major version bump required; comprehensive test re-baseline needed"
+    },
+    {
+      "id": "DEP-007",
+      "title": "React Router Open Redirect via Protocol-Relative URL",
+      "severity": "HIGH",
+      "cve_id": "GHSA-2j2x-hqr9-3h42",
+      "package": "@remix-run/router",
+      "affected_range": "1.3.0 - 1.23.2",
+      "directories": ["Source/Frontend"],
+      "fix_version": "1.23.3+",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-008",
+      "title": "Browserslist DoS and Prototype Pollution",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "cve_ids": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "package": "browserslist",
+      "affected_range": "≤ 4.28.6",
+      "directories": ["Source/Frontend"],
+      "fix_version": "4.28.7+"
+    },
+    {
+      "id": "DEP-009",
+      "title": "@grpc/grpc-js Crash and Certificate Validation Bypass",
+      "severity": "HIGH",
+      "cve_ids": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "package": "@grpc/grpc-js",
+      "affected_range": "1.14.0 - 1.14.4",
+      "directories": ["platform/orchestrator"],
+      "fix_version": "1.14.5+",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "outdated_major_versions": [
+    {
+      "package": "jest",
+      "current": "29.7.0",
+      "latest": "30.5.2",
+      "gap": "1 major",
+      "directory": "Source/Backend",
+      "urgency": "HIGH"
+    },
+    {
+      "package": "react",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "gap": "1 major",
+      "directory": "Source/Frontend",
+      "urgency": "MEDIUM"
+    },
+    {
+      "package": "react-dom",
+      "current": "18.3.1",
+      "latest": "19.3.0",
+      "gap": "1 major",
+      "directory": "Source/Frontend",
+      "urgency": "MEDIUM"
+    },
+    {
+      "package": "react-router-dom",
+      "current": "6.26.0",
+      "latest": "7.18.4",
+      "gap": "1 major",
+      "directory": "Source/Frontend",
+      "urgency": "HIGH"
+    },
+    {
+      "package": "express",
+      "current": "4.18.2",
+      "latest": "5.3.0",
+      "gap": "1 major",
+      "directory": "Source/Backend",
+      "urgency": "MEDIUM"
+    },
+    {
+      "package": "pino",
+      "current": "8.17.0",
+      "latest": "10.4.0",
+      "gap": "2 major",
+      "directory": "Source/Backend",
+      "urgency": "MEDIUM"
+    },
+    {
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.3",
+      "gap": "5 major",
+      "directory": "Source/Backend",
+      "urgency": "LOW"
+    },
+    {
+      "package": "dockerode",
+      "current": "4.0.4",
+      "latest": "5.0.1",
+      "gap": "1 major",
+      "directory": "platform/orchestrator",
+      "urgency": "MEDIUM"
+    },
+    {
+      "package": "express",
+      "current": "4.21.0",
+      "latest": "5.3.0",
+      "gap": "1 major",
+      "directory": "platform/orchestrator",
+      "urgency": "MEDIUM"
+    },
+    {
+      "package": "multer",
+      "current": "1.4.5-lts.1",
+      "latest": "2.4.0",
+      "gap": "1 major",
+      "directory": "platform/orchestrator",
+      "urgency": "MEDIUM"
+    }
+  ],
+  "license_compliance": {
+    "status": "PASS",
+    "gpl_violations": 0,
+    "agpl_violations": 0,
+    "note": "All detected licenses compatible with MIT"
+  },
+  "supply_chain_risk": {
+    "post_install_scripts": 0,
+    "single_maintainer_packages": 0,
+    "low_download_packages": 0,
+    "risk_score": "MEDIUM",
+    "note": "796 transitive dependencies is high surface area; monitor for abandoned packages"
+  },
+  "action_plan": {
+    "immediate": [
+      "Update proxy-addr@2.0.8+ (Backend and Orchestrator)",
+      "Update vitest@5.0.4 (Frontend; major version bump, test compatibility)",
+      "Update @grpc/grpc-js@1.14.5+ (Orchestrator)"
+    ],
+    "week_1": [
+      "Update jest@30.5.2+ (Backend; 33 HIGH CVEs)",
+      "Update React@19.3.0 + react-dom@19.3.0 (Frontend; optional but recommended)"
+    ],
+    "week_2": [
+      "Update handlebars, browserslist, react-router-dom, protobufjs",
+      "Run full verification gates",
+      "Re-baseline test suites"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "proxy-addr IP spoofing (authentication bypass)",
+      "Vitest file read (CI/CD security)",
+      "React Router open redirect (user-facing)",
+      "protobufjs RCE (external service boundary)"
+    ]
+  },
+  "recommendations": [
+    "Establish monthly dependency update schedule; jest and vitest have high CVE churn",
+    "Consider vitest migration for new test suites; jest ecosystem has recurring CVE patterns",
+    "Implement automated dependency scanning in CI/CD pipeline",
+    "Review proxy trust configuration after proxy-addr update",
+    "Schedule React v19 migration for Q1 2027"
+  ],
+  "next_audit": "2026-11-14"
+}

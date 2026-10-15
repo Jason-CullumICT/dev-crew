@@ -1,0 +1,421 @@
+{
+  "audit_id": "inspector-2026-10-15",
+  "date": "2026-10-15",
+  "branch": "audit/inspector-2026-10-15-9f0050",
+  "overall_grade": "D",
+  "grade_rationale": "6 P1 findings exceed the C-grade threshold (max_p1: 2). Spec coverage 67% is above the C floor (40%) but P1 count forces D.",
+  "projected_grade_after_remediation": "B",
+  "specialists": {
+    "quality-oracle": { "mode": "static", "standalone_grade": "C", "p1": 2, "p2": 4, "p3": 2, "p4": 1 },
+    "dependency-auditor": { "mode": "static", "standalone_grade": "C", "p1": 4, "p2": 42, "p3": 12, "p4": 3 },
+    "performance-profiler": { "mode": "skipped", "reason": "service offline" },
+    "chaos-monkey": { "mode": "skipped", "reason": "service offline" }
+  },
+  "totals": {
+    "p1": 6,
+    "p2": 46,
+    "p3": 14,
+    "p4": 4,
+    "spec_coverage_pct": 67,
+    "escalations_to_guardians": 3,
+    "fixed": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "Proxy-Addr IPv4-Mapped IPv6 IP Spoofing",
+      "severity": "P1",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr",
+      "location": "Source/Backend",
+      "trigger": "auth bypass",
+      "escalate_to": "TheGuardians",
+      "remediation": "Audit Express trust-proxy config; npm update express",
+      "timeline": "this_sprint"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars AST Type Confusion RCE",
+      "severity": "P1",
+      "cvss": 8.1,
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "package": "handlebars",
+      "location": "Source/Backend",
+      "trigger": "injection",
+      "escalate_to": "TheGuardians",
+      "remediation": "npm update jest@30.5.2 (pulls in fixed Handlebars)",
+      "timeline": "this_week"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Vitest / Tinypool Prototype Pollution RCE",
+      "severity": "P1",
+      "cvss": 9.0,
+      "cve": "tinypool prototype pollution",
+      "package": "vitest@^2.0.5 -> tinypool",
+      "location": "Source/Frontend",
+      "trigger": "injection",
+      "escalate_to": "TheGuardians",
+      "remediation": "npm update vitest@5.0.4",
+      "timeline": "this_week"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "specialist": "quality-oracle",
+      "title": "/api/search not wired — FR-dependency-search unimplemented",
+      "severity": "P1",
+      "category": "missing-feature",
+      "file": "Source/Backend/src/app.ts",
+      "status": "NEW",
+      "xref": "XREF-C",
+      "escalate_to": "TheFixer",
+      "remediation": "Create Source/Backend/src/routes/search.ts; register in app.ts; add // Verifies: FR-dependency-search",
+      "timeline": "this_sprint"
+    },
+    {
+      "id": "QO-002",
+      "specialist": "quality-oracle",
+      "title": "Spec corpus mismatch: dev-workflow-platform.md describes a different application",
+      "severity": "P1",
+      "category": "governance",
+      "file": "Specifications/dev-workflow-platform.md",
+      "status": "NEW",
+      "xref": "XREF-B",
+      "escalate_to": "TheFixer",
+      "remediation": "Spec reconciliation session: rewrite spec to match implementation OR implement missing FRs; fix traceability-enforcer.py to cover Specifications/",
+      "timeline": "this_sprint"
+    },
+    {
+      "id": "DEP-001",
+      "specialist": "dependency-auditor",
+      "title": "Proxy-Addr IPv4-Mapped IPv6 IP Spoofing (CVSS 9.1)",
+      "severity": "P1",
+      "category": "security-cve",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "cvss": 9.1,
+      "file": "Source/Backend/package.json",
+      "package": "proxy-addr (transitive via Express)",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "remediation": "npm update express; audit trust proxy config",
+      "timeline": "this_sprint"
+    },
+    {
+      "id": "DEP-002",
+      "specialist": "dependency-auditor",
+      "title": "Handlebars AST Type Confusion RCE (CVSS 8.1)",
+      "severity": "P1",
+      "category": "security-cve",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "cvss": 8.1,
+      "file": "Source/Backend/package.json",
+      "package": "handlebars (transitive via jest)",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "remediation": "npm update jest@30.5.2",
+      "timeline": "this_week"
+    },
+    {
+      "id": "DEP-003",
+      "specialist": "dependency-auditor",
+      "title": "Vitest RCE via Tinypool Prototype Pollution (CVSS 9.0)",
+      "severity": "P1",
+      "category": "security-cve",
+      "cve": "tinypool prototype pollution",
+      "cvss": 9.0,
+      "file": "Source/Frontend/package.json",
+      "package": "vitest@^2.0.5 -> tinypool",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "remediation": "npm update vitest@5.0.4",
+      "timeline": "this_week"
+    },
+    {
+      "id": "DEP-004",
+      "specialist": "dependency-auditor",
+      "title": "Tinypool Prototype Pollution (secondary component of DEP-003)",
+      "severity": "P1",
+      "category": "security-cve",
+      "cvss": 9.0,
+      "file": "Source/Frontend/package.json",
+      "package": "tinypool (transitive via vitest)",
+      "status": "NEW",
+      "note": "Consolidated with DEP-003 — same attack vector, resolved by same fix",
+      "escalate_to": "TheGuardians",
+      "remediation": "npm update vitest@5.0.4",
+      "timeline": "this_week"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "specialist": "quality-oracle",
+      "title": "dependency_check_duration_seconds histogram missing (FR-dependency-metrics)",
+      "severity": "P2",
+      "category": "observability",
+      "file": "Source/Backend/src/metrics.ts",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "remediation": "Add Prometheus histogram for BFS dependency check latency; add test with // Verifies: FR-dependency-metrics"
+    },
+    {
+      "id": "QO-004",
+      "specialist": "quality-oracle",
+      "title": "FR-TMP-001..FR-TMP-010 Tiered Merge Pipeline: 0% implementation in Source/",
+      "severity": "P2",
+      "category": "spec-coverage",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "status": "NEW",
+      "xref": "XREF-B",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer validates Plans/ only — Specifications/ never enforced",
+      "severity": "P2",
+      "category": "governance",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW",
+      "xref": "XREF-B",
+      "escalate_to": "TheFixer",
+      "remediation": "Update traceability-enforcer.py to scan Specifications/ directory and enforce // Verifies: comments against spec FRs"
+    },
+    {
+      "id": "QO-006",
+      "specialist": "quality-oracle",
+      "title": "FR-dependency-seed never implemented — no seed file exists",
+      "severity": "P2",
+      "category": "missing-feature",
+      "file": "Source/Backend/",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "remediation": "Create seed file with known dependency relationships; add acceptance test // Verifies: FR-dependency-seed"
+    },
+    {
+      "id": "DEP-005",
+      "specialist": "dependency-auditor",
+      "title": "Jest ecosystem CVE cascade — 33 high-severity CVEs in transitive chain",
+      "severity": "P2",
+      "category": "security-cve-cascade",
+      "file": "Source/Backend/package.json",
+      "package": "jest@^29.7.0",
+      "affected_packages_count": 19,
+      "cve_count": 33,
+      "status": "NEW",
+      "xref": "XREF-A",
+      "escalate_to": "TheFixer",
+      "remediation": "npm update jest@30.5.2 (major version bump, validate test suite after)"
+    },
+    {
+      "id": "DEP-006",
+      "specialist": "dependency-auditor",
+      "title": "React Router open redirect (GHSA-2j2x-hqr9-3h42)",
+      "severity": "P2",
+      "category": "security-cve",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "file": "Source/Frontend/package.json",
+      "package": "@remix-run/router (via react-router-dom@6.30.6)",
+      "status": "NEW",
+      "xref": "XREF-C",
+      "escalate_to": "TheGuardians",
+      "remediation": "npm update react-router-dom@7.18.4 (major version bump, validate routing after)"
+    },
+    {
+      "id": "DEP-007",
+      "specialist": "dependency-auditor",
+      "title": "Vitest path traversal via @vitest/mocker (GHSA-82fw-gwwq-j7x9, CVSS 5.9)",
+      "severity": "P2",
+      "category": "security-cve",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "cvss": 5.9,
+      "file": "Source/Frontend/package.json",
+      "package": "@vitest/mocker (transitive via vitest)",
+      "status": "NEW",
+      "xref": "XREF-A",
+      "escalate_to": "TheFixer",
+      "remediation": "npm update vitest@5.0.4 (resolves via DEP-003 fix)"
+    },
+    {
+      "id": "DEP-041",
+      "specialist": "dependency-auditor",
+      "title": "react-router-dom v6 → v7 outdated (contains security fix)",
+      "severity": "P2",
+      "category": "outdated",
+      "file": "Source/Frontend/package.json",
+      "current": "6.30.6",
+      "latest": "7.18.4",
+      "status": "NEW",
+      "xref": "XREF-C",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-042",
+      "specialist": "dependency-auditor",
+      "title": "jest v29 → v30 outdated (fixes 33 CVEs)",
+      "severity": "P2",
+      "category": "outdated",
+      "file": "Source/Backend/package.json",
+      "current": "29.7.0",
+      "latest": "30.5.2",
+      "status": "NEW",
+      "xref": "XREF-A",
+      "escalate_to": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "specialist": "quality-oracle",
+      "title": "Inconsistent @shared vs relative imports",
+      "severity": "P3",
+      "file": "Source/Backend/src/WorkItem.ts",
+      "status": "NEW",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable in production frontend code (stale closure risk)",
+      "severity": "P3",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:82, Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "status": "NEW",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-P3-001",
+      "specialist": "dependency-auditor",
+      "title": "@babel/core arbitrary file read via source maps (GHSA-4x5r-pxfx-6jf8, CVSS 3.2)",
+      "severity": "P3",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "cvss": 3.2,
+      "file": "Source/Backend + Source/Frontend (transitive)",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "remediation": "Resolved automatically by jest and vitest upgrades"
+    },
+    {
+      "id": "DEP-P3-002-012",
+      "specialist": "dependency-auditor",
+      "title": "11 moderate CVEs in vite and vitest ecosystem transitive deps",
+      "severity": "P3",
+      "file": "Source/Frontend",
+      "cve_count": 11,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "remediation": "Resolved by vitest@5.0.4 upgrade"
+    },
+    {
+      "id": "DEP-P3-013",
+      "specialist": "dependency-auditor",
+      "title": "react v18.3.1 → v19.3.1 (1 major version behind, no security fix)",
+      "severity": "P3",
+      "category": "outdated",
+      "file": "Source/Frontend/package.json",
+      "current": "18.3.1",
+      "latest": "19.3.1",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "timeline": "next_sprint"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-009",
+      "specialist": "quality-oracle",
+      "title": "Duplicate logger barrel — src/logger.ts re-exports utils/logger.ts",
+      "severity": "P4",
+      "file": "Source/Backend/src/logger.ts",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "remediation": "Delete src/logger.ts; standardize all imports to src/utils/logger.ts"
+    },
+    {
+      "id": "DEP-P4-001-003",
+      "specialist": "dependency-auditor",
+      "title": "3 low-severity CVEs in transitive dependencies",
+      "severity": "P4",
+      "file": "Source/Backend (×2), Source/Frontend (×1)",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "remediation": "Monitor; resolved by scheduled dependency upgrades"
+    }
+  ],
+  "cross_references": [
+    {
+      "id": "XREF-A",
+      "title": "Testing framework vulnerabilities",
+      "root_cause": "Outdated jest@29 and vitest@2",
+      "affected_findings": ["DEP-003", "DEP-004", "DEP-005", "DEP-007", "DEP-008-040"],
+      "single_fix": "npm update jest@30.5.2 && npm update vitest@5.0.4",
+      "fix_impact": "Resolves 36+ CVEs in one pass",
+      "specialists": ["dependency-auditor", "quality-oracle"]
+    },
+    {
+      "id": "XREF-B",
+      "title": "Spec-to-implementation drift",
+      "root_cause": "Specifications/ not enforced by traceability tooling",
+      "affected_findings": ["QO-002", "QO-004", "QO-005"],
+      "single_fix": "Spec reconciliation + traceability-enforcer.py update to cover Specifications/",
+      "fix_impact": "Closes 3 findings; raises spec coverage from 67% to 85%+",
+      "specialists": ["quality-oracle"]
+    },
+    {
+      "id": "XREF-C",
+      "title": "React Router open redirect + missing frontend route",
+      "root_cause": "React Router major version lag affecting both security and feature routing",
+      "affected_findings": ["DEP-006", "DEP-041", "QO-001"],
+      "single_fix": "npm update react-router-dom@7.18.4 + implement search route in one frontend sprint",
+      "fix_impact": "Closes 1 CVE + 1 P1 feature gap; reduces test regression surface",
+      "specialists": ["dependency-auditor", "quality-oracle"]
+    }
+  ],
+  "remediation_phases": {
+    "phase_1_block_deployment": {
+      "label": "Block Deployment",
+      "timeline": "immediately",
+      "tasks": [
+        "Escalate DEP-001, DEP-002, DEP-003 to TheGuardians for security review",
+        "cd Source/Frontend && npm update vitest@5.0.4 react-router-dom@7.18.4",
+        "cd Source/Backend && npm update jest@30.5.2",
+        "npm test --workspaces (validate zero regressions)",
+        "Deploy to staging only after TheGuardians sign-off"
+      ]
+    },
+    "phase_2_this_sprint": {
+      "label": "This Sprint",
+      "tasks": [
+        "Implement /api/search route (QO-001)",
+        "Spec reconciliation session (QO-002, QO-004, QO-005)",
+        "Add dependency_check_duration_seconds histogram (QO-003)",
+        "Audit Express trust-proxy configuration (DEP-001 mitigation)"
+      ]
+    },
+    "phase_3_next_sprint": {
+      "label": "Next Sprint",
+      "tasks": [
+        "Implement FR-dependency-seed (QO-006)",
+        "npm update react@19.3.1 (Frontend)",
+        "Run dynamic audit with services online"
+      ]
+    },
+    "phase_4_backlog": {
+      "label": "Backlog",
+      "tasks": [
+        "Standardize @shared imports (QO-007)",
+        "Fix eslint-disable suppressions (QO-008)",
+        "Remove duplicate logger barrel (QO-009)"
+      ]
+    }
+  },
+  "next_audit": {
+    "target_date": "2026-10-22",
+    "trigger": "After Phase 1 remediation completion",
+    "expected_grade": "B",
+    "required_services": ["backend (port 3001)", "frontend (port 5173)"],
+    "dynamic_specialists": ["performance-profiler", "chaos-monkey"]
+  }
+}

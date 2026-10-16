@@ -1,0 +1,199 @@
+{
+  "audit_id": "run-20261016-070628",
+  "audit_date": "2026-10-16",
+  "branch": "audit/inspector-2026-10-16-aee5bc",
+  "grade": "D",
+  "grade_rationale": "8 P1 findings (threshold: C=max 2, D=any higher). Spec coverage ~15% (threshold: C=40%). Performance and chaos reports absent (static-only audit).",
+  "totals": {
+    "p1": 8,
+    "p2": 4,
+    "p3": 2,
+    "p4": 1,
+    "escalations_to_guardians": 5
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Handlebars.js — RCE via AST Type Confusion (CVSS 9.8)",
+      "specialist": "dependency-auditor",
+      "affected": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-8r5x-fm3f-whwj", "GHSA-p8wg-vrv2-v86f"],
+      "fix": "npm update handlebars@^4.7.10 in all workspaces",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Active RCE if handlebars processes untrusted input — exploitability must be confirmed by security team",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "proxy-addr — IP Spoofing via IPv4-mapped IPv6 (CVSS 9.1)",
+      "specialist": "dependency-auditor",
+      "affected": ["Source/Backend", "platform/orchestrator", "portal/Backend", "portal/Frontend"],
+      "cves": ["GHSA-jqcg-44mw-7w3h"],
+      "fix": "npm update proxy-addr@^2.0.8; verify Express trust proxy config",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "IP spoofing bypasses access control; Express trust proxy config must be audited",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "protobufjs — Arbitrary Code Execution",
+      "specialist": "dependency-auditor",
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "cves": [],
+      "fix": "npm update protobufjs to latest",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Direct RCE risk in gRPC/protobuf services; attack surface must be confirmed",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Tinypool — Prototype Pollution → RCE",
+      "specialist": "dependency-auditor",
+      "affected": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "fix": "npm update tinypool@^2.1.2 (via vitest upgrade)",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Prototype pollution enabling RCE in Vitest worker pool — exploitable if worker pool reachable",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "title": "Vitest — Arbitrary File Read/Execute via UI Server (CVSS 9.8)",
+      "specialist": "dependency-auditor",
+      "affected": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "cves": ["GHSA-5xrq-8626-4rwp", "GHSA-82fw-gwwq-j7x9"],
+      "fix": "npm update vitest@^3.2.6 or ^4.1.11+",
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Test infrastructure RCE; UI server on port 51204 may be accessible in CI environments",
+      "status": "NEW"
+    }
+  ],
+  "fixer_backlog": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md defines a product that does not exist (FR-001–FR-069: 0% coverage)",
+      "specialist": "quality-oracle",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "failure_scenario": "Traceability enforcer run against this spec reports 76 missing requirements, permanently. No source file will ever satisfy these FRs because the codebase implements a different product.",
+      "recommendation": "Archive/annotate as aspirational or legacy. Add FR-WF-* IDs to Specifications/workflow-engine.md as the active canonical spec.",
+      "cross_refs": ["QO-002", "QO-003"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer only checks Plans/ — Specifications/ never validated (false-green gate)",
+      "specialist": "quality-oracle",
+      "files": ["tools/traceability-enforcer.py"],
+      "failure_scenario": "npm run gates reports PASS while 89 Specification requirements are completely unimplemented. Developers receive a false signal of compliance.",
+      "recommendation": "Extend enforcer to scan active Specifications/ documents. Add a specifications: list to inspector.config.yml for gate control.",
+      "cross_refs": ["QO-001", "QO-003"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Specifications/tiered-merge-pipeline.md — all 10 FR-TMP-* requirements unimplemented",
+      "specialist": "quality-oracle",
+      "files": ["Specifications/tiered-merge-pipeline.md", "Source/E2E/playwright.config.ts", "Source/E2E/playwright.pipeline.config.ts"],
+      "failure_scenario": "FR-TMP-001 through FR-TMP-010 (risk classification, Playwright E2E, auto-PR, AI review, auto-merge, worker prerequisites) are absent from Source/. E2E files lack any // Verifies: FR-TMP-* comments.",
+      "recommendation": "Implement or formally de-scope. Add traceability comments to E2E files that partially satisfy these requirements.",
+      "cross_refs": ["QO-001", "QO-002"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-WF-001–013 defined only in Plans/ — inverts spec-as-source-of-truth rule",
+      "specialist": "quality-oracle",
+      "files": ["Plans/self-judging-workflow/requirements.md", "Specifications/workflow-engine.md"],
+      "failure_scenario": "All source // Verifies: comments trace to Plan-level IDs, not Specification-level IDs. If the plan file changes or is deleted, all traceability breaks with no Specifications/ anchor.",
+      "recommendation": "Add explicit FR-WF-001–FR-WF-013 requirements table to Specifications/workflow-engine.md.",
+      "cross_refs": ["QO-001"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers call store layer directly — 18 call-sites in workItems.ts, workflow.ts, intake.ts",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "failure_scenario": "When in-memory store is replaced with SQLite (per FR-002), every route file must be rewritten. A service layer would have isolated the change to one file.",
+      "recommendation": "Extract workItemService.ts. Route handlers call service; service calls store.",
+      "cross_refs": [],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "Jest ecosystem — HIGH CVEs across 17+ packages",
+      "specialist": "dependency-auditor",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json", "Source/E2E/package.json"],
+      "failure_scenario": "Test infrastructure with HIGH-severity CVEs; risk depends on whether jest runs in shared/hosted CI environments with untrusted test data.",
+      "recommendation": "Upgrade Jest to latest stable (30.x+). Run full test suite after upgrade. Coordinate with TheFixer for compatibility.",
+      "cross_refs": [],
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "outdated-dependency",
+      "title": "React & React-DOM one major version behind (18.3.1 → 19.3.1)",
+      "specialist": "dependency-auditor",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "Missing security patches and performance improvements in React 19; hook API breaking changes will accumulate the longer migration is deferred.",
+      "recommendation": "Plan React 18→19 migration. Requires design review for breaking hook changes. Coordinate with TheFixer.",
+      "cross_refs": [],
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "2 eslint-disable react-hooks/exhaustive-deps suppressions in production source",
+      "files": ["Source/Frontend/src/components/DependencyPicker.tsx:82", "Source/Frontend/src/hooks/useWorkItems.ts:63"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "observability",
+      "title": "Dashboard routes missing Prometheus metrics (/summary, /activity, /queue)",
+      "files": ["Source/Backend/src/routes/dashboard.ts"],
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "category": "traceability-hygiene",
+      "title": "Source/Frontend/tests/setup.ts missing // Verifies: comment",
+      "files": ["Source/Frontend/tests/setup.ts"],
+      "status": "NEW"
+    }
+  ]
+}

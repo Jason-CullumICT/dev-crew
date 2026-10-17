@@ -1,0 +1,300 @@
+{
+  "audit_id": "run-20261017-065513",
+  "audit_date": "2026-10-17",
+  "branch": "audit/inspector-2026-10-17-9808af",
+  "grade": "D",
+  "generated_by": "TheInspector / team-leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline (backend:3001, frontend:5173 not reachable); static mode only",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 44,
+    "p3_total": 16,
+    "p4_total": 3,
+    "fixed_total": 0,
+    "first_audit": true,
+    "spec_coverage_pct": 12,
+    "escalations_to_guardians": 3
+  },
+  "escalations": [
+    {
+      "id": "DEP-003",
+      "title": "proxy-addr IPv4-Mapped IPv6 IP Spoofing",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "cvss_score": 9.1,
+      "cvss_id": "GHSA-jqcg-44mw-7w3h",
+      "affected_package": "proxy-addr",
+      "via_chain": "express -> proxy-addr",
+      "file": "Source/Backend/package.json",
+      "impact": "Authentication bypass via IP spoofing when running behind a proxy or load balancer. Attacker can forge trusted IP by sending IPv4-mapped IPv6 address.",
+      "fix": "npm update express@latest (→ 5.3.0) in Source/Backend",
+      "production_risk": true,
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass"
+    },
+    {
+      "id": "DEP-001",
+      "title": "Tinypool Remote Code Execution via Prototype Pollution",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "cvss_score": 9.8,
+      "cvss_id": "GHSA-5gmw-xhrv-c9v3",
+      "affected_package": "tinypool",
+      "via_chain": "vitest -> tinypool",
+      "file": "Source/Frontend/package.json",
+      "impact": "Remote Code Execution via prototype pollution in test worker pool. Any CI job running `vitest` is vulnerable.",
+      "fix": "npm audit fix --force in Source/Frontend (→ vitest 5.0.5)",
+      "production_risk": false,
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js JavaScript Injection — Multiple Gadgets",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "cvss_scores": [8.6, 7.5, 8.2],
+      "cvss_ids": ["GHSA-3mfm-83xf-c92r", "GHSA-2w6w-674q-4c4q", "GHSA-2qvq-rjwj-gvw9"],
+      "affected_package": "handlebars",
+      "via_chain": "jest ecosystem (jest, babel, @jest/test-sequencer)",
+      "file": "Source/Backend/package.json",
+      "impact": "AST type confusion, template injection, and prototype pollution in Handlebars allow arbitrary code execution in the Jest test runner.",
+      "fix": "npm audit fix --force in Source/Backend (→ jest 30.5.2)",
+      "production_risk": false,
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "QO-001",
+      "title": "Traceability Enforcer Blind to 87% of Spec Requirements",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "file": "tools/traceability-enforcer.py",
+      "impact": "CI gate exits PASSED while 96 of 109 spec requirements receive zero automated coverage verification. False green on every CI run.",
+      "recommendation": "Add --spec flag to enforcer OR add requirements.md under each plan folder. Add all three enforcer invocations to CLAUDE.md verification gate.",
+      "assigned_to": "requirements-reviewer",
+      "sprint": "this-sprint",
+      "cross_ref": ["QO-004"]
+    },
+    {
+      "id": "QO-002",
+      "title": "Direct DB Calls in Portal Route Handlers",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts",
+        "portal/Backend/src/routes/featureRequests.ts",
+        "portal/Backend/src/routes/bugs.ts",
+        "portal/Backend/src/routes/cycles.ts"
+      ],
+      "impact": "Architecture rule violated. Route handlers cannot be unit-tested without a real DB. Any db initialization change requires modifying route handlers.",
+      "recommendation": "Create teamDispatchService.ts. Move db.prepare() calls into service layer.",
+      "assigned_to": "TheFixer",
+      "sprint": "this-sprint"
+    },
+    {
+      "id": "QO-003",
+      "title": "174 console.* Calls in Platform Orchestrator — No Logger Abstraction",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "file": "platform/orchestrator/lib/workflow-engine.js",
+      "impact": "Unstructured log output cannot be parsed by JSON-aware aggregators, bypasses LOG_LEVEL, and loses trace/span correlation.",
+      "recommendation": "Solo session: introduce logger.js in platform/orchestrator/lib/ and replace all console.* calls.",
+      "assigned_to": "solo-session",
+      "sprint": "next-sprint",
+      "note": "platform/ is solo-session only per CLAUDE.md"
+    },
+    {
+      "id": "QO-004",
+      "title": "FR-dependency-* Traceability IDs Mismatch Spec vs Code",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "portal/Backend/src/services/dependencyService.ts",
+        "portal/Frontend/src/components/shared/DependencySection.tsx"
+      ],
+      "impact": "Future traceability scan shows ~100% unimplemented for dependency requirements, masking substantial working implementation.",
+      "recommendation": "Align // Verifies: comments to canonical spec IDs, or formally amend the spec.",
+      "assigned_to": "requirements-reviewer",
+      "sprint": "this-sprint"
+    },
+    {
+      "id": "QO-005",
+      "title": "FR-073–079 and FR-DUP-* Implemented But Absent From Specifications/",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "portal/Backend/src/routes/featureRequests.ts",
+        "portal/Backend/src/middleware/upload.ts",
+        "portal/Backend/src/services/imageService.ts"
+      ],
+      "impact": "Features have no canonical spec entry. New agents working from Specifications/ will not know these features exist.",
+      "recommendation": "Add FR-073–079 and FR-DUP-* to Specifications/dev-workflow-platform.md.",
+      "assigned_to": "requirements-reviewer",
+      "sprint": "this-sprint"
+    },
+    {
+      "id": "DEP-HIGH-BACKEND",
+      "title": "33 High-Severity Vulnerabilities in Backend Dependencies",
+      "severity": "P2",
+      "category": "CVE-aggregate",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "file": "Source/Backend/package.json",
+      "vulnerability_count": 33,
+      "top_packages": ["jest", "babel", "express"],
+      "impact": "Large attack surface in test and runtime dependencies.",
+      "recommendation": "npm audit fix --force in Source/Backend after DEP-002/DEP-003 resolved.",
+      "assigned_to": "TheFixer",
+      "sprint": "this-sprint"
+    },
+    {
+      "id": "DEP-HIGH-FRONTEND",
+      "title": "7 High-Severity Vulnerabilities in Frontend Dependencies",
+      "severity": "P2",
+      "category": "CVE-aggregate",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "file": "Source/Frontend/package.json",
+      "vulnerability_count": 7,
+      "top_packages": ["vitest", "vite"],
+      "impact": "High-severity issues in build toolchain and test runner.",
+      "recommendation": "npm audit fix --force in Source/Frontend after DEP-001 resolved.",
+      "assigned_to": "TheFixer",
+      "sprint": "this-sprint"
+    },
+    {
+      "id": "QO-006",
+      "title": "Empty Catch Blocks Silently Swallow Errors in Portal Frontend",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "portal/Frontend/src/components/bugs/BugDetail.tsx:82",
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx:80",
+        "portal/Frontend/src/components/common/RepoSelector.tsx:20"
+      ],
+      "recommendation": "Replace .catch(() => {}) with structured error logging or inline error state.",
+      "assigned_to": "TheFixer",
+      "sprint": "next-sprint"
+    },
+    {
+      "id": "QO-007",
+      "title": "Two Portal Service Files Exceed 500-Line Threshold",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "portal/Backend/src/services/cycleService.ts (526 lines)",
+        "portal/Backend/src/services/featureRequestService.ts (506 lines)"
+      ],
+      "recommendation": "Extract ticketService.ts and votingService.ts as separate modules.",
+      "assigned_to": "TheFixer",
+      "sprint": "backlog"
+    },
+    {
+      "id": "QO-008",
+      "title": "FR-TMP-008 Missing Verifies Comment in Dockerfile.worker",
+      "severity": "P3",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "file": "platform/Dockerfile.worker:32-40",
+      "recommendation": "Add # Verifies: FR-TMP-008 comment above gh CLI + Playwright RUN block.",
+      "assigned_to": "solo-session",
+      "sprint": "next-sprint"
+    },
+    {
+      "id": "QO-009",
+      "title": "eslint-disable Comments in Source Frontend Production Code",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "status": "NEW",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Fix dependency arrays in hooks/callbacks so exhaustive-deps rule passes naturally.",
+      "assigned_to": "TheFixer",
+      "sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-MOD-BACKEND",
+      "title": "5 Moderate-Severity Vulnerabilities in Backend Dependencies",
+      "severity": "P3",
+      "category": "CVE-aggregate",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "file": "Source/Backend/package.json",
+      "vulnerability_count": 5,
+      "recommendation": "Resolve after P1/P2 updates; run npm audit to reassess.",
+      "assigned_to": "TheFixer",
+      "sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-MOD-FRONTEND",
+      "title": "7 Moderate-Severity Vulnerabilities in Frontend Dependencies",
+      "severity": "P3",
+      "category": "CVE-aggregate",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "file": "Source/Frontend/package.json",
+      "vulnerability_count": 7,
+      "recommendation": "Resolve after P1/P2 updates; run npm audit to reassess.",
+      "assigned_to": "TheFixer",
+      "sprint": "next-sprint"
+    },
+    {
+      "id": "DEP-OUTDATED",
+      "title": "Major Version Gaps: TypeScript, React, Vitest, Vite, Express, Pino",
+      "severity": "P3",
+      "category": "outdated-deps",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "packages": [
+        "TypeScript 5.9 → 7.0 (both workspaces)",
+        "Vitest 2.1 → 5.0 (Frontend)",
+        "Vite 5.4 → 8.3 (Frontend)",
+        "React 18.3 → 19.3 (Frontend)",
+        "Express 4.22 → 5.3 (Backend)",
+        "Pino 8.21 → 10.4 (Backend)"
+      ],
+      "recommendation": "Plan as single upgrade epic (~20 hours). Coordinate Frontend/Backend TypeScript together.",
+      "assigned_to": "TheFixer",
+      "sprint": "backlog"
+    },
+    {
+      "id": "DEP-LOW",
+      "title": "3 Low-Severity Vulnerabilities (Backend)",
+      "severity": "P4",
+      "category": "CVE-aggregate",
+      "specialist": "dependency-auditor",
+      "status": "NEW",
+      "file": "Source/Backend/package.json",
+      "vulnerability_count": 3,
+      "recommendation": "Address opportunistically during dependency upgrade sprint.",
+      "assigned_to": "TheFixer",
+      "sprint": "backlog"
+    }
+  ]
+}

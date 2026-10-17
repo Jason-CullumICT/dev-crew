@@ -1,0 +1,269 @@
+{
+  "audit_metadata": {
+    "date": "2026-10-17T00:00:00Z",
+    "auditor": "dependency_auditor",
+    "team": "TheInspector",
+    "codebase": "dev-crew",
+    "version": "1.0.0"
+  },
+  "summary": {
+    "overall_grade": "D",
+    "projects_audited": 3,
+    "package_managers_detected": ["npm"],
+    "total_vulnerabilities": 59,
+    "vulnerabilities_by_severity": {
+      "critical": 4,
+      "high": 40,
+      "moderate": 12,
+      "low": 3
+    },
+    "direct_dependencies_total": 8,
+    "transitive_dependencies_estimated": 600,
+    "license_compliance_status": "PASS"
+  },
+  "projects": [
+    {
+      "name": "Backend",
+      "path": "Source/Backend",
+      "package_manager": "npm",
+      "manifest": "package.json",
+      "direct_dependencies": 4,
+      "direct_dependencies_with_dev": 10,
+      "vulnerabilities": {
+        "total": 42,
+        "critical": 2,
+        "high": 33,
+        "moderate": 5,
+        "low": 2
+      },
+      "critical_packages": [
+        {
+          "name": "proxy-addr",
+          "vuln_id": "GHSA-jqcg-44mw-7w3h",
+          "title": "IPv4-Mapped IPv6 IP Spoofing",
+          "severity": "critical",
+          "via": "express"
+        },
+        {
+          "name": "handlebars",
+          "vuln_ids": ["GHSA-3mfm-83xf-c92r", "GHSA-2w6w-674q-4c4q", "GHSA-2qvq-rjwj-gvw9"],
+          "title": "JavaScript Injection (3 gadgets)",
+          "severity": "critical",
+          "via": ["jest", "babel", "@jest/test-sequencer"]
+        }
+      ],
+      "outdated_packages": {
+        "major_version_gaps": {
+          "typescript": {"current": "5.9.3", "latest": "7.0.2", "gap": 2},
+          "jest": {"current": "29.7.0", "latest": "30.5.2", "gap": 1},
+          "pino": {"current": "8.21.0", "latest": "10.4.0", "gap": 2},
+          "express": {"current": "4.22.1", "latest": "5.3.0", "gap": 1}
+        }
+      },
+      "license_summary": {
+        "project_license": "ISC",
+        "dependency_licenses": ["MIT", "ISC", "Apache-2.0", "BSD-3-Clause"],
+        "has_gpl": false,
+        "has_agpl": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "Frontend",
+      "path": "Source/Frontend",
+      "package_manager": "npm",
+      "manifest": "package.json",
+      "direct_dependencies": 3,
+      "direct_dependencies_with_dev": 13,
+      "vulnerabilities": {
+        "total": 17,
+        "critical": 2,
+        "high": 7,
+        "moderate": 7,
+        "low": 1
+      },
+      "critical_packages": [
+        {
+          "name": "tinypool",
+          "vuln_ids": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+          "title": "Prototype Pollution → Remote Code Execution",
+          "severity": "critical",
+          "via": "vitest"
+        }
+      ],
+      "outdated_packages": {
+        "major_version_gaps": {
+          "typescript": {"current": "5.9.3", "latest": "7.0.2", "gap": 2},
+          "vitest": {"current": "2.1.9", "latest": "5.0.5", "gap": 3},
+          "vite": {"current": "5.4.21", "latest": "8.3.4", "gap": 3},
+          "react": {"current": "18.3.1", "latest": "19.3.1", "gap": 1},
+          "react-dom": {"current": "18.3.1", "latest": "19.3.1", "gap": 1},
+          "react-router-dom": {"current": "6.30.3", "latest": "7.18.4", "gap": 1}
+        }
+      },
+      "license_summary": {
+        "project_license": "ISC",
+        "dependency_licenses": ["MIT", "ISC", "Apache-2.0", "BSD-3-Clause"],
+        "has_gpl": false,
+        "has_agpl": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "E2E",
+      "path": "Source/E2E",
+      "package_manager": "npm",
+      "manifest": "package.json",
+      "direct_dependencies": 1,
+      "vulnerabilities": {
+        "total": 0,
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "outdated_packages": {
+        "minor_version_gaps": {
+          "@playwright/test": {"current": "1.58.2", "latest": "1.64.1", "gap": "patch"}
+        }
+      },
+      "license_summary": {
+        "project_license": "ISC",
+        "dependency_licenses": ["MIT"],
+        "has_gpl": false,
+        "has_agpl": false,
+        "status": "PASS"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "Tinypool Remote Code Execution via Prototype Pollution",
+      "severity": "P1",
+      "category": "CVE",
+      "cvss_score": 9.8,
+      "cvss_vector": "GHSA-5gmw-xhrv-c9v3",
+      "affected_package": "tinypool",
+      "version_range": "<=2.1.1",
+      "affected_project": "Frontend",
+      "via_chain": "vitest -> tinypool",
+      "impact": "Remote Code Execution in test runner via prototype pollution gadgets",
+      "blocking": true,
+      "effort_hours": 4,
+      "fix_command": "npm audit fix --force (Frontend)"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js JavaScript Injection (Multiple Gadgets)",
+      "severity": "P1",
+      "category": "CVE",
+      "affected_package": "handlebars",
+      "cvss_scores": [8.6, 7.5, 8.2],
+      "affected_project": "Backend",
+      "via_chain": "jest ecosystem",
+      "injection_types": ["AST Type Confusion", "Template Injection", "Prototype Pollution"],
+      "impact": "Multiple injection vectors affecting Jest test framework",
+      "blocking": true,
+      "effort_hours": 3,
+      "fix_command": "npm audit fix --force (Backend) -> jest 30.5.2"
+    },
+    {
+      "id": "DEP-003",
+      "title": "proxy-addr IPv4-Mapped IPv6 IP Spoofing",
+      "severity": "P1",
+      "category": "CVE",
+      "cvss_score": 9.1,
+      "cvss_vector": "GHSA-jqcg-44mw-7w3h",
+      "affected_package": "proxy-addr",
+      "version_range": "*",
+      "affected_project": "Backend",
+      "via_chain": "express -> proxy-addr",
+      "impact": "Authentication bypass via IP spoofing if behind proxy",
+      "blocking": true,
+      "production_risk": true,
+      "effort_hours": 2,
+      "fix_command": "npm update express@latest (Backend)"
+    }
+  ],
+  "remediation_plan": {
+    "immediate": {
+      "phase": "This Sprint",
+      "priority": "P1 - Critical",
+      "tickets": [
+        {
+          "id": "DEP-001",
+          "title": "Fix Tinypool RCE in Frontend",
+          "effort_hours": 4,
+          "assigned_to": "frontend-coder",
+          "breaking_change": true,
+          "commands": ["cd Source/Frontend && npm audit fix --force"]
+        },
+        {
+          "id": "DEP-002",
+          "title": "Update Jest to 30.5.2 in Backend",
+          "effort_hours": 3,
+          "assigned_to": "backend-coder",
+          "breaking_change": true,
+          "commands": ["cd Source/Backend && npm audit fix --force"]
+        },
+        {
+          "id": "DEP-003",
+          "title": "Update Express to 5.3.0 in Backend",
+          "effort_hours": 2,
+          "assigned_to": "backend-coder",
+          "breaking_change": true,
+          "commands": ["cd Source/Backend && npm update express@latest"]
+        }
+      ]
+    },
+    "short_term": {
+      "phase": "1-2 Weeks",
+      "priority": "P2 - High",
+      "ticket_count": 13,
+      "notes": "Coordinate Frontend/Backend updates; run full test suite after each update"
+    },
+    "medium_term": {
+      "phase": "1 Month",
+      "priority": "P3 - Outdated Versions",
+      "ticket_count": 7,
+      "notes": "Plan TypeScript, React, Vitest, Vite upgrades as single epic (20 hours total)"
+    }
+  },
+  "verification_gates": {
+    "before_remediation": [
+      "python3 tools/traceability-enforcer.py",
+      "npm test --workspaces --if-present"
+    ],
+    "after_each_fix": [
+      "npm audit (project dir)",
+      "npm test (project dir)",
+      "npm run build (if applicable)"
+    ],
+    "final": [
+      "npm audit (all projects)",
+      "npm test --workspaces --if-present",
+      "python3 tools/traceability-enforcer.py"
+    ]
+  },
+  "cross_team_escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": ["DEP-001", "DEP-002", "DEP-003"],
+      "reason": "Critical security vulnerabilities affecting auth bypass and RCE",
+      "urgency": "immediate"
+    }
+  ],
+  "notes": {
+    "tools_used": ["npm audit", "npm outdated", "npm list"],
+    "limitations": [
+      "No license-checker installed; used manual node require() fallback",
+      "No Go/Python/Rust dependencies detected; audit focused on npm only"
+    ],
+    "supply_chain_risks": [
+      "~600+ transitive dependencies create large attack surface",
+      "Multiple major version gaps in core frameworks (Jest, Vitest, Vite, TypeScript)",
+      "Breaking changes in P1/P2 fixes will require significant testing effort"
+    ]
+  }
+}

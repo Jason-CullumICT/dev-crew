@@ -1,0 +1,428 @@
+{
+  "audit_id": "inspector-2026-10-19",
+  "date": "2026-10-19",
+  "grade": "D",
+  "branch": "unknown",
+  "scope": "Full codebase",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "totals": {
+    "p1": 4,
+    "p2": 13,
+    "p3": 8,
+    "p4": 5,
+    "total": 30,
+    "escalations": 4
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "RCE",
+      "title": "Handlebars.js JavaScript Injection (Multiple CVEs)",
+      "specialist": "dependency-auditor",
+      "package": "handlebars@3.0.0–4.7.9",
+      "file": "Source/Backend/package-lock.json",
+      "cve_ids": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-8r5x-fm3f-whwj",
+        "GHSA-p8wg-vrv2-v86f",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-9cx6-37pm-9jff",
+        "GHSA-xjpj-3mr7-gcpf"
+      ],
+      "impact": "Template injection → Remote Code Execution in any system using backend templates",
+      "fix": "Upgrade handlebars to ≥4.7.10; trace transitive chain via Jest ecosystem",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "Access Control Bypass",
+      "title": "proxy-addr IPv4-Mapped IPv6 Spoofing",
+      "specialist": "dependency-auditor",
+      "package": "proxy-addr@1.1.0–2.0.7",
+      "file": "Source/Backend/package-lock.json",
+      "cve_ids": ["GHSA-jqcg-44mw-7w3h"],
+      "impact": "Bypass of IP-based access control → Unauthorized access to admin/internal endpoints",
+      "fix": "Upgrade proxy-addr to ≥2.0.8; review deployed IP allowlists",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "Arbitrary File Read / Secrets Exposure",
+      "title": "Vitest UI Server Arbitrary File Read/Execution",
+      "specialist": "dependency-auditor",
+      "package": "vitest@≤4.1.10",
+      "file": "Source/Frontend/package.json",
+      "cve_ids": ["GHSA-5xrq-8626-4rwp"],
+      "impact": "Local/network exposure of source code, secrets, and arbitrary code execution during testing",
+      "fix": "Upgrade Vitest to ≥5.0.5; disable --ui flag in CI pipelines",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "RCE",
+      "title": "Tinypool Prototype Pollution → Worker RCE",
+      "specialist": "dependency-auditor",
+      "package": "tinypool@≤2.1.1",
+      "file": "Source/Frontend/package-lock.json",
+      "cve_ids": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "impact": "RCE in test worker processes, data exfiltration, build pipeline compromise",
+      "fix": "Upgrade tinypool to ≥2.1.2 (via Vitest ≥5.0.5 upgrade)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "Traceability",
+      "title": "Traceability enforcer blind to Specifications/",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "summary": "Enforcer only scans Plans/*/requirements.md; never validates any Specifications/*.md file. Future specs added with no companion plan will have zero enforcement silently.",
+      "recommendation": "Add --specs mode accepting an explicit spec file + implementation dir pair",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "Documentation / Architecture",
+      "title": "Three-system split (Source/, portal/, platform/) undocumented",
+      "specialist": "quality-oracle",
+      "file": "CLAUDE.md",
+      "summary": "Project silently splits across three implementation targets but CLAUDE.md and specs contain no documentation of this split. New agents risk cross-contamination: implementing portal/ FRs in Source/.",
+      "recommendation": "Add # Implemented-in: portal/ headers to specs; add system topology section to CLAUDE.md",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "Jest ecosystem — multiple cascading CVEs",
+      "specialist": "dependency-auditor",
+      "package": "jest@29.7.0",
+      "file": "Source/Backend/package.json",
+      "affected_packages": ["jest", "@jest/core", "@jest/console", "@jest/reporters", "@jest/transform", "@jest/environment", "jest-message-util", "jest-haste-map", "jest-snapshot", "micromatch", "babel-jest"],
+      "summary": "jest-message-util contains information disclosure; micromatch has DoS via glob expansion",
+      "recommendation": "Upgrade Jest to ≥30.5.2 and @types/jest to ≥30.0.0",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "brace-expansion DoS (multiple variants)",
+      "specialist": "dependency-auditor",
+      "package": "brace-expansion@<1.1.21",
+      "file": "Source/Backend/package-lock.json",
+      "cve_ids": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895", "GHSA-qhr7-859c-m2p7", "GHSA-6j4f-fj2g-mc7p"],
+      "summary": "Multiple DoS vectors: recursion, unbounded expansion, process hang via zero-step sequences",
+      "recommendation": "Upgrade brace-expansion to ≥1.1.21",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "React Router open redirect (multiple XSS/redirect CVEs)",
+      "specialist": "dependency-auditor",
+      "package": "react-router-dom@≤7.17.0",
+      "file": "Source/Frontend/package.json",
+      "cve_ids": ["GHSA-jjmj-jmhj-qwj2", "GHSA-2j2x-hqr9-3h42", "GHSA-wrjc-x8rr-h8h6", "GHSA-337j-9hxr-rhxg"],
+      "summary": "Multiple open redirect vulnerabilities allow phishing redirects and XSS payload injection",
+      "recommendation": "Upgrade react-router-dom to ≥7.18.0",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "PostCSS arbitrary file read via sourceMappingURL",
+      "specialist": "dependency-auditor",
+      "package": "postcss@≤8.5.22",
+      "file": "Source/Frontend/package-lock.json",
+      "cve_ids": ["GHSA-6g55-p6wh-862q", "GHSA-r28c-9q8g-f849", "GHSA-fxqj-rqcc-2cmp"],
+      "summary": "PostCSS follows sourceMappingURL comments allowing attacker-controlled CSS to read arbitrary .map files",
+      "recommendation": "Upgrade PostCSS to ≥8.5.23",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "Browserslist memory DoS / prototype pollution",
+      "specialist": "dependency-auditor",
+      "package": "browserslist@≤4.28.6",
+      "file": "Source/Backend/package-lock.json",
+      "cve_ids": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "summary": "Unbounded cache growth causes OOM crashes; untrusted stats file triggers prototype pollution",
+      "recommendation": "Upgrade browserslist to ≥4.28.7",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "Nanoid loops indefinitely — DoS in ID generation",
+      "specialist": "dependency-auditor",
+      "package": "nanoid@≤3.3.17",
+      "file": "Source/Frontend/package-lock.json",
+      "cve_ids": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+      "summary": "Non-secure generators loop with negative size; integer overflow in ID generation",
+      "recommendation": "Upgrade nanoid to ≥3.3.18",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "form-data CRLF injection",
+      "specialist": "dependency-auditor",
+      "package": "form-data@4.0.0–4.0.5",
+      "file": "Source/Backend/package-lock.json",
+      "cve_ids": ["GHSA-hmw2-7cc7-3qxx"],
+      "summary": "CRLF injection in multipart field names/filenames allows request smuggling and header injection",
+      "recommendation": "Upgrade form-data to ≥4.0.6",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "source-map-js DoS via indexed offsets",
+      "specialist": "dependency-auditor",
+      "package": "source-map-js@1.0.0–1.2.1",
+      "file": "Source/Frontend/package-lock.json",
+      "cve_ids": ["GHSA-68fv-2mgg-jv7q"],
+      "summary": "Event-loop DoS through indexed source-map section offsets blocks build pipeline",
+      "recommendation": "Upgrade source-map-js to ≥1.2.2",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "WebSocket (ws) memory exhaustion DoS",
+      "specialist": "dependency-auditor",
+      "package": "ws@8.0.0–8.20.1",
+      "file": "Source/Frontend/package-lock.json",
+      "cve_ids": ["GHSA-96hv-2xvq-fx4p"],
+      "summary": "Memory exhaustion from tiny fragments/data chunks in WebSocket messages",
+      "recommendation": "Upgrade ws to ≥8.21.0",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "Vite esbuild CORS bypass",
+      "specialist": "dependency-auditor",
+      "package": "vite@≤6.4.2",
+      "file": "Source/Frontend/package.json",
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "summary": "Vite dev server allows any website to bypass CORS and read local dev responses",
+      "recommendation": "Upgrade Vite to ≥8.3.4 (major version bump)",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P2",
+      "category": "CVE",
+      "title": "@vitest/mocker path traversal",
+      "specialist": "dependency-auditor",
+      "package": "@vitest/mocker@≤4.1.10",
+      "file": "Source/Frontend/package-lock.json",
+      "cve_ids": ["GHSA-82fw-gwwq-j7x9"],
+      "summary": "Path traversal in redirect mock allows arbitrary file reads during test execution",
+      "recommendation": "Upgrade Vitest to ≥5.0.5 (resolves this transitively)",
+      "fixer_team": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+
+  "p3_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P3",
+      "category": "Test Quality",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+      "summary": "Root-level and tests/pages/ versions both exist; neither is a strict subset; risk of divergence and false confidence",
+      "recommendation": "Delete root-level versions; keep tests/pages/ versions (newer, more comprehensive)",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "category": "Code Quality",
+      "title": "Undocumented eslint-disable in 2 production files",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "summary": "react-hooks/exhaustive-deps suppressed without rationale in DependencyPicker.tsx and useWorkItems.ts; could mask stale closure bugs",
+      "recommendation": "Replace bare suppression with documented reasoning comment",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "js-yaml RCE / ReDoS",
+      "specialist": "dependency-auditor",
+      "package": "js-yaml@≤3.15.2",
+      "file": "Source/Backend/package-lock.json",
+      "summary": "Contains ReDoS and potential code execution vulnerabilities",
+      "recommendation": "Upgrade js-yaml to ≥4.0.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-017",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "baseline-browser-mapping DoS on invalid input",
+      "specialist": "dependency-auditor",
+      "package": "baseline-browser-mapping@2.0.0–2.10.9",
+      "cve_ids": ["GHSA-w5vr-8v7q-w6rv"],
+      "summary": "Process termination on invalid input causes denial of service in build pipeline",
+      "recommendation": "Upgrade to ≥2.11.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-018",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "esbuild CORS bypass (via Vite)",
+      "specialist": "dependency-auditor",
+      "package": "esbuild@≤0.24.2",
+      "cve_ids": ["GHSA-67mh-4wv8-2f99"],
+      "summary": "esbuild dev server allows cross-origin requests; resolved by Vite upgrade",
+      "recommendation": "Resolved by upgrading Vite to ≥8.3.4",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-019",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "@remix-run/router open redirect",
+      "specialist": "dependency-auditor",
+      "package": "@remix-run/router@1.3.0–1.23.2",
+      "cve_ids": ["GHSA-2j2x-hqr9-3h42"],
+      "summary": "Protocol-relative URL reinterpretation enables open redirect; resolved by React Router upgrade",
+      "recommendation": "Resolved by upgrading react-router-dom to ≥7.18.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-020",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "body-parser silent limit bypass",
+      "specialist": "dependency-auditor",
+      "package": "body-parser@<1.20.6",
+      "cve_ids": ["GHSA-v422-hmwv-36x6"],
+      "summary": "Request body size limits can be bypassed silently; potential DoS / memory exhaustion",
+      "recommendation": "Upgrade body-parser to ≥1.20.6 (via Express ecosystem upgrade)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-021",
+      "severity": "P3",
+      "category": "CVE",
+      "title": "@babel/core arbitrary file read",
+      "specialist": "dependency-auditor",
+      "package": "@babel/core@≤7.29.0",
+      "cve_ids": ["GHSA-4x5r-pxfx-6jf8"],
+      "summary": "Arbitrary file read vulnerability in Babel core; affects build-time processing",
+      "recommendation": "Upgrade @babel/core to ≥7.29.1",
+      "status": "NEW"
+    }
+  ],
+
+  "p4_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P4",
+      "category": "Traceability",
+      "title": "FR-TMP-008 not traced in platform/",
+      "specialist": "quality-oracle",
+      "file": "platform/",
+      "summary": "Dockerfile.worker prerequisites (FR-TMP-008) untraced because Dockerfiles don't carry comments in enforcer scan scope",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P4",
+      "category": "Code Quality",
+      "title": "Silent .catch() in api/client.ts error path",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/api/client.ts",
+      "summary": "response.json().catch(() => ({})) discards parse error context; outer throw propagates failure so acceptable but borderline",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-LOW-01",
+      "severity": "P4",
+      "category": "CVE",
+      "title": "3 low-severity dependency CVEs (informational)",
+      "specialist": "dependency-auditor",
+      "summary": "3 low-severity CVEs across backend and frontend dependency trees; no immediate action required",
+      "status": "NEW"
+    }
+  ],
+
+  "cross_reference_map": [
+    {
+      "root_cause": "Outdated Jest ecosystem (Backend)",
+      "affected_findings": ["DEP-001", "DEP-005", "DEP-006"],
+      "single_fix": "Upgrade Jest to ≥30.5.2 — resolves handlebars transitive pull-in, jest CVEs, brace-expansion DoS",
+      "fix_impact": "3 findings resolved (1 P1, 2 P2)"
+    },
+    {
+      "root_cause": "Outdated Vitest ecosystem (Frontend)",
+      "affected_findings": ["DEP-003", "DEP-004", "DEP-010", "DEP-013", "DEP-015"],
+      "single_fix": "Upgrade vitest to ≥5.0.5 — resolves vitest file read, tinypool RCE, nanoid loops, ws DoS, @vitest/mocker path traversal",
+      "fix_impact": "5 findings resolved (2 P1, 3 P2)"
+    },
+    {
+      "root_cause": "Undocumented project topology (three-system split)",
+      "affected_findings": ["QO-001", "QO-002"],
+      "single_fix": "Add system topology documentation to CLAUDE.md + Implemented-in headers to specs + --specs mode to traceability enforcer",
+      "fix_impact": "2 findings resolved (2 P2)"
+    },
+    {
+      "root_cause": "Build toolchain staleness (Vite/PostCSS/esbuild)",
+      "affected_findings": ["DEP-008", "DEP-014", "DEP-018"],
+      "single_fix": "Upgrade Vite to ≥8.3.4 and PostCSS to ≥8.5.23 — resolves CORS bypass, esbuild CORS, PostCSS file read",
+      "fix_impact": "3 findings resolved (3 P2/P3)"
+    }
+  ],
+
+  "remediation_schedule": {
+    "block_deployment": ["DEP-001", "DEP-002", "DEP-003", "DEP-004"],
+    "this_sprint": ["DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014", "DEP-015", "QO-001", "QO-002"],
+    "next_sprint": ["QO-003", "QO-004", "DEP-016", "DEP-017", "DEP-018", "DEP-019", "DEP-020", "DEP-021"],
+    "backlog": ["QO-005", "QO-006", "DEP-LOW-01"]
+  }
+}

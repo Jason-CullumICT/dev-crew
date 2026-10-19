@@ -1,0 +1,304 @@
+{
+  "generated": "2026-10-19",
+  "run_id": "run-20261019-085235",
+  "grade": "F",
+  "project": "dev-crew Source App",
+  "summary": {
+    "critical_confirmed": 2,
+    "high_confirmed": 3,
+    "high_theoretical": 4,
+    "medium_confirmed": 1,
+    "medium_theoretical": 7,
+    "low_theoretical": 5,
+    "total_findings": 22,
+    "confirmed_breaches": 6,
+    "theoretical_findings": 16,
+    "compliance_pass_rate_pct": 17,
+    "compliance_controls_pass": 4,
+    "compliance_controls_total": 24,
+    "red_team_objectives_total": 4,
+    "red_team_objectives_achieved": 4,
+    "false_positives_removed": 1
+  },
+  "grading_rationale": "Grade F automatic: confirmed red-team breach of two critical objectives (RED-001: state machine bypass; RED-005: cascade auto-dispatch via duplicate status).",
+  "findings": [
+    {
+      "id": "CRIT-001",
+      "title": "Authentication Entirely Absent — State Machine Bypass Confirmed",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-001", "PEN-001", "PEN-002", "PEN-003", "COMP-001", "RED-001"],
+      "cwe": "CWE-306",
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor", "red-teamer"],
+      "description": "No authentication middleware anywhere in the Express app. Every endpoint reachable without credentials. Red team confirmed 3-request unauthenticated chain from creation to in-progress with zero assessment invocations. force-approve confirmed with votes:[].",
+      "remediation": "Add JWT/API-key middleware globally to all /api/* routes before route registration. Privilege-gate approve, dispatch, reject, force-approve, route endpoints with role checks. Remove or admin-gate direct PATCH /status capability."
+    },
+    {
+      "id": "CRIT-002",
+      "title": "Cascade Auto-Dispatch via Duplicate/Terminal Status",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["RED-005", "PEN-007", "PEN-003"],
+      "cwe": "CWE-284",
+      "specialists": ["pen-tester", "red-teamer"],
+      "description": "STATUS_TRANSITIONS allows any item set to duplicate/deprecated from any status, unauthenticated. Triggers onItemCompleted(), auto-promoting all dependents from pending_dependencies to approved bypassing all assessment. Confirmed live: FR-0009 jumped states immediately after blocker marked duplicate. Novel finding from red team.",
+      "remediation": "Restrict duplicate/deprecated transitions to authenticated admin users. Trigger cascade only from privileged-action terminal states."
+    },
+    {
+      "id": "HIGH-001",
+      "title": "Ghost Blocker Permanent Denial of Service",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["PEN-006", "RED-002"],
+      "cwe": "CWE-400",
+      "specialists": ["pen-tester", "red-teamer"],
+      "description": "Deleting a blocker leaves dependency link intact. findById returns undefined for deleted items; computeHasUnresolvedBlockers treats undefined as unresolved blocker. Dependent permanently stuck. Also: denied not in RESOLVED_STATUSES — denying a blocker permanently blocks all dependents.",
+      "remediation": "Cascade-delete dependency links on item deletion. Add denied to RESOLVED_STATUSES. Add cleanup API for orphaned references."
+    },
+    {
+      "id": "HIGH-002",
+      "title": "Stored XSS in Title Fields",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit — storage confirmed; browser execution requires frontend render test)",
+      "sources": ["RED-003", "PEN-010", "PEN-004"],
+      "cwe": "CWE-79",
+      "specialists": ["pen-tester", "red-teamer"],
+      "description": "HTML payloads stored verbatim in feature_requests and bugs tables. Returned in all GET and search responses. Session hijack risk if frontend renders item.title without sanitization.",
+      "remediation": "Sanitize free-text input server-side on ingestion. Add Content-Security-Policy header blocking inline scripts. Verify frontend uses React JSX auto-escaping, never dangerouslySetInnerHTML."
+    },
+    {
+      "id": "HIGH-003",
+      "title": "Pagination Entirely Unenforced — Full Dataset Enumeration",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-004", "PEN-005", "COMP-012", "RED-004"],
+      "cwe": "CWE-770",
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor", "red-teamer"],
+      "description": "limit=999999, limit=0, and NaN all return complete dataset in one unauthenticated response. Red team confirmed: every limit variant returned all items in DB.",
+      "remediation": "const limit = (!isNaN(rawLimit) && rawLimit > 0) ? Math.min(rawLimit, 100) : 20;"
+    },
+    {
+      "id": "HIGH-004",
+      "title": "Webhook Intake — No Authentication or Signature Verification",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["SAST-002", "PEN-004", "COMP-002"],
+      "cwe": "CWE-345",
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor"],
+      "description": "POST /api/intake/zendesk and /api/intake/automated accept work item creation from any unauthenticated caller. No HMAC-SHA256 signature validation. type and priority fields pass through without enum validation.",
+      "remediation": "Validate X-Zendesk-Webhook-Signature via HMAC-SHA256 against pre-shared secret from process.env. Add enum guards identical to workItems.ts."
+    },
+    {
+      "id": "HIGH-005",
+      "title": "Three of Four Required Audit Events Missing",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-003"],
+      "cwe": "CWE-778",
+      "specialists": ["compliance-auditor"],
+      "description": "Required: login_attempt, permission_denied, state_transition, data_export. Only state_transition present via WorkItem.changeHistory. SOC2 CC7.1 failure.",
+      "remediation": "After CRIT-001 fixed, wire audit log entries for auth attempts, authorization denials, and data exports."
+    },
+    {
+      "id": "HIGH-006",
+      "title": "No TLS/HTTPS Enforcement",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-007"],
+      "cwe": "CWE-319",
+      "specialists": ["compliance-auditor"],
+      "description": "Server runs plain HTTP. All API traffic transmitted in cleartext.",
+      "remediation": "TLS termination at reverse proxy (nginx/Caddy). Enforce HSTS once Helmet added."
+    },
+    {
+      "id": "HIGH-007",
+      "title": "No Multi-Factor Authentication Support",
+      "severity": "High",
+      "status": "Theoretical",
+      "sources": ["COMP-010"],
+      "cwe": "CWE-308",
+      "specialists": ["compliance-auditor"],
+      "description": "MFA cannot exist without authentication. Required by OWASP-ASVS L2 and SOC2 CC6.1 for privileged accounts. Cascades from CRIT-001.",
+      "remediation": "Implement TOTP or WebAuthn after CRIT-001 is resolved."
+    },
+    {
+      "id": "MED-001",
+      "title": "Prometheus /metrics Endpoint Unauthenticated",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "sources": ["SAST-007", "PEN-008", "COMP-008", "RED-006"],
+      "cwe": "CWE-200",
+      "specialists": ["static-analyzer", "pen-tester", "compliance-auditor", "red-teamer"],
+      "description": "GET /metrics returns full Prometheus text including route paths, team names, and runtime stats. Invalid Authorization header silently ignored.",
+      "remediation": "Expose on separate internal port or IP allowlist/token auth. Never expose to public internet."
+    },
+    {
+      "id": "MED-002",
+      "title": "Missing HTTP Security Headers (No Helmet)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-005", "COMP-004"],
+      "cwe": "CWE-16",
+      "specialists": ["static-analyzer", "compliance-auditor"],
+      "description": "Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, HSTS, and Referrer-Policy all absent.",
+      "remediation": "app.use(helmet()) as first middleware in app.ts."
+    },
+    {
+      "id": "MED-003",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["COMP-006"],
+      "cwe": "CWE-770",
+      "specialists": ["compliance-auditor"],
+      "description": "No rate limiting applied to any endpoint including intake webhooks. Flooding attack possible.",
+      "remediation": "Apply express-rate-limit globally; tighter limits on intake/mutation/auth endpoints."
+    },
+    {
+      "id": "MED-004",
+      "title": "Cascade Dispatch Triggered by Rejected Items",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["PEN-007"],
+      "cwe": "CWE-284",
+      "specialists": ["pen-tester"],
+      "description": "Rejecting a work item calls onItemResolved() which can auto-dispatch dependent items to in-progress. Attacker can trigger dispatch of target items by rejecting their blockers.",
+      "remediation": "Remove Rejected from DISPATCH_TRIGGER_STATUSES or require confirmation flag before cascade-dispatch on rejection."
+    },
+    {
+      "id": "MED-005",
+      "title": "No GDPR Right-to-Erasure (Soft-Delete Only)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["COMP-009"],
+      "cwe": "CWE-212",
+      "specialists": ["compliance-auditor"],
+      "description": "Only soft-delete implemented. Work items containing PII cannot be permanently erased on request. GDPR Article 17 violation once PII is stored.",
+      "remediation": "Implement hard-delete path or field-level redaction endpoint for data-controller role."
+    },
+    {
+      "id": "MED-006",
+      "title": "Session Timeout Not Implemented",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["COMP-011"],
+      "cwe": "CWE-613",
+      "specialists": ["compliance-auditor"],
+      "description": "No session expiry mechanism. Cascades from CRIT-001.",
+      "remediation": "Configure JWT expiry and refresh-token rotation with server-side revocation after CRIT-001."
+    },
+    {
+      "id": "MED-007",
+      "title": "No Request Body Size Limit",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-006"],
+      "cwe": "CWE-770",
+      "specialists": ["static-analyzer"],
+      "description": "express.json() called without limit option. Large JSON payloads can exhaust heap memory.",
+      "remediation": "app.use(express.json({ limit: '100kb' }))"
+    },
+    {
+      "id": "MED-008",
+      "title": "Unvalidated type/priority in Intake Routes",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "sources": ["SAST-003"],
+      "cwe": "CWE-20",
+      "specialists": ["static-analyzer"],
+      "description": "type and priority fields from request body passed to store.createWorkItem() without enum validation in intake routes, unlike the main /api/work-items route.",
+      "remediation": "Add Object.values(WorkItemType) and Object.values(WorkItemPriority) guards to both intake route handlers."
+    },
+    {
+      "id": "LOW-001",
+      "title": "NaN Injection in Pagination Parameters",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["PEN-009"],
+      "cwe": "CWE-20",
+      "specialists": ["pen-tester"],
+      "description": "parseInt('abc', 10) = NaN; slice(NaN, NaN) = []. Response returns empty data array with non-zero total, potentially misleading callers.",
+      "remediation": "Validate parseInt result for NaN before arithmetic. Return 400 for clearly invalid pagination params."
+    },
+    {
+      "id": "LOW-002",
+      "title": "Unvalidated overrideRoute Stores Arbitrary String",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["PEN-010"],
+      "cwe": "CWE-20",
+      "specialists": ["pen-tester"],
+      "description": "overrideRoute body parameter typed as WorkItemRoute but not validated at runtime. Arbitrary string stored in item's route field.",
+      "remediation": "Validate against Object.values(WorkItemRoute) enum at runtime before calling classifyRoute()."
+    },
+    {
+      "id": "LOW-003",
+      "title": "Internal Error Messages Leaked to API Clients",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["SAST-008"],
+      "cwe": "CWE-209",
+      "specialists": ["static-analyzer"],
+      "description": "Raw err.message from service layer sent verbatim to API clients on 500 errors in workflow route handlers.",
+      "remediation": "Log full error server-side; return generic 'Internal server error' to clients for 500 responses."
+    },
+    {
+      "id": "LOW-004",
+      "title": "Debug Portal iframe Missing sandbox Attribute",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["SAST-009"],
+      "cwe": "CWE-829",
+      "specialists": ["static-analyzer"],
+      "description": "Debug portal iframe has no sandbox attribute. Without sandboxing, embedded page inherits full origin context.",
+      "remediation": "Add sandbox=\"allow-scripts allow-same-origin\" to the iframe element in DebugPortalPage.tsx."
+    },
+    {
+      "id": "LOW-005",
+      "title": "No Encryption-at-Rest Controls Documented",
+      "severity": "Low",
+      "status": "Theoretical",
+      "sources": ["COMP-013"],
+      "cwe": "CWE-312",
+      "specialists": ["compliance-auditor"],
+      "description": "No encryption-at-rest strategy documented for when a durable store replaces the in-memory store.",
+      "remediation": "Document encryption-at-rest strategy in Specifications/ before adding a durable data store."
+    }
+  ],
+  "false_positives": [
+    {
+      "id": "COMP-005",
+      "title": "No CORS Policy — All Origins Accepted",
+      "reason": "Refuted by red team live testing. CORS correctly rejects foreign origins. Static analysis could not detect runtime CORS configuration."
+    }
+  ],
+  "compliance_summary": {
+    "frameworks": ["OWASP-ASVS-L2", "SOC2-Type2"],
+    "pass_rate_pct": 17,
+    "controls_pass": 4,
+    "controls_fail": 20,
+    "controls_partial": 2,
+    "controls_total": 24,
+    "passing_controls": [
+      "V8.1 — Sensitive data not logged",
+      "V8.3 — PII fields handled securely (no hardcoded secrets; env vars used)",
+      "V7.4 — Error messages no internal leak (stack traces not returned to clients)",
+      "CC8.1 — Change management audit trail (WorkItem.changeHistory)"
+    ]
+  },
+  "red_team_summary": {
+    "environment": "docker-compose.test.yml — dev-crew-portal container (ephemeral, isolated)",
+    "target": "http://localhost:3001",
+    "objectives_total": 4,
+    "objectives_achieved": 4,
+    "confirmed_critical": 2,
+    "confirmed_high": 3,
+    "confirmed_medium": 1,
+    "dead_ends": [
+      "SQL injection — parameterized queries; no injection surface",
+      "CORS bypass — correctly rejects foreign origins",
+      "Enum injection on creation (main route) — priority validated; 400 returned",
+      "Direct status jump via PATCH — STATUS_TRANSITIONS enforced for most paths"
+    ]
+  }
+}

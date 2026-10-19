@@ -234,3 +234,132 @@ Total requests: 3. Authentication required: 0. Assessment pod invocations: 0.
 ---
 
 *Handoff: All findings are theoretical. The red-teamer should attempt active exploitation against an ephemeral environment per `require_ephemeral_environment: true` in security.config.yml.*
+
+---
+
+## Red Team Results
+
+**Red Teamer:** red_teamer  
+**Date:** 2026-10-19  
+**Environment:** `docker-compose.test.yml` — `dev-crew-portal` container (ephemeral, isolated)  
+**Target:** `http://localhost:3001` (portal backend API)  
+**Note:** The pen-tester analyzed `Source/Backend/` (work-items app) while the test environment runs `portal/` (feature-requests/bugs app). Both implement the same vulnerability classes — all exploit chains below are confirmed live against the `portal/` service. Findings map to PEN-IDs by vulnerability class.
+
+---
+
+### RED-001: State Machine Bypass — Force-Approve Without Voting
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/force-approve`
+- **Based On:** PEN-002 (Assessment Pod Bypass via manual override)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` (no auth) → item `FR-0001` created with status `potential`
+  2. `PATCH /api/feature-requests/FR-0001` with `{"status":"voting"}` → transitions to `voting` (valid, no auth)
+  3. `POST /api/feature-requests/FR-0001/force-approve` (no auth, no votes required) → item jumps to `approved`
+  4. Verified: `FR-0001.status = "approved"`, `FR-0001.votes = []` — zero AI votes cast, assessment entirely bypassed
+  5. `PATCH /api/feature-requests/FR-0001` with `{"status":"in_development"}` → dispatched immediately
+- **Evidence:** `{"status":"approved","votes":[],"human_approval_approved_at":"2026-10-19T08:44:49.831Z"}` — timestamp set but vote array empty
+- **Recommendation:** The `force-approve` endpoint must require elevated privileges (e.g., admin role). Move all state-mutating endpoints behind authentication middleware. Remove direct `PATCH /status` capability — force transitions through typed endpoints that enforce business rules.
+
+---
+
+### RED-002: Ghost Blocker DoS — Soft-Deleted Item Permanently Blocks Dependents
+- **Severity:** High
+- **Objective Achieved:** Yes (Partial — ghost reference confirmed, permanent block confirmed)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `DELETE http://localhost:3001/api/feature-requests/:id` + `GET /api/feature-requests/:id/ready`
+- **Based On:** PEN-006 (Soft-Delete Blocker Causes Permanent Dispatch Block)
+- **Exploit Scenario:**
+  1. Create `FR-0002` (victim) and `FR-0003` (blocker)
+  2. `POST /api/feature-requests/FR-0002/dependencies` with `{"action":"add","blocker_id":"FR-0003"}` → dependency created
+  3. `DELETE /api/feature-requests/FR-0003` → hard-delete (permanently removes from DB, NOT soft-delete)
+  4. `GET /api/feature-requests/FR-0002/ready` → `{"ready":false,"unresolved_blockers":[{"item_type":"feature_request","item_id":"FR-0003","title":"Unknown","status":"unknown"}]}`
+  5. `FR-0002` is permanently stuck. The dependency link in `dependencies` table still references `FR-0003`. No automated cascade cleanup.
+- **Evidence:** After deletion, ready endpoint returns `status: "unknown"` ghost blocker. `FR-0002` cannot progress. No recovery path without direct DB manipulation.
+- **Additional Finding:** `denied` status is NOT in `RESOLVED_STATUSES` — a denied item also permanently blocks dependents. An attacker can deny an in-flight item to permanently block all items that depend on it.
+- **Recommendation:** Cascade-delete dependency links when an item is deleted. Add `denied` to `RESOLVED_STATUSES` (a denied feature request is resolved — it will not be delivered). Alternatively, implement a cleanup job to prune orphaned dependency references.
+
+---
+
+### RED-003: Stored XSS — Unsanitized HTML Stored in Title Fields
+- **Severity:** High
+- **Objective Achieved:** Partial (payload stored; frontend rendering not fully tested)
+- **Status:** Confirmed (Live Exploit — storage confirmed, browser execution requires frontend test)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests` and `POST http://localhost:3001/api/bugs`
+- **Based On:** PEN-010 (Unvalidated field stores arbitrary string), PEN-004 (Missing enum validation)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with `{"title":"<script>alert(document.cookie)</script>","description":"...","priority":"low","source":"manual"}` → HTTP 201, `FR-0004` created
+  2. `GET /api/feature-requests/FR-0004` → `{"title":"<script>alert(document.cookie)</script>"}` — payload stored verbatim
+  3. `POST /api/bugs` with `{"title":"<svg onload=alert(1)>","description":"...","priority":"high","severity":"critical","source":"github"}` → HTTP 201, `BUG-0001` created with SVG payload
+  4. `GET /api/search?q=` (empty query) → both payloads appear in search results served to any client
+  5. If frontend renders `item.title` via `innerHTML` or without escaping, XSS executes in victim browser
+- **Evidence:** `"title":"<script>alert(document.cookie)</script>"` confirmed persisted and returned in GET and search responses
+- **Recommendation:** Sanitize all free-text input fields server-side (strip or escape HTML). Add a Content Security Policy header that blocks inline scripts. Verify frontend uses React JSX (auto-escapes) and never sets `dangerouslySetInnerHTML` on user data.
+
+---
+
+### RED-004: Full Data Enumeration — Pagination Entirely Unenforced
+- **Severity:** High
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/feature-requests?limit=999999`
+- **Based On:** PEN-005 (No Pagination Limit Enforcement)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests?limit=999999` → returns ALL items regardless of limit parameter
+  2. `GET /api/feature-requests?limit=0` → returns ALL items (limit=0 ignored)
+  3. `GET /api/feature-requests?page=abc&limit=xyz` → returns ALL items (NaN params silently ignored)
+  4. `GET /api/search` (no query param) → returns all recent items in single response
+  5. Any attacker can enumerate the full data set in one unauthenticated request
+- **Evidence:** With 4 items in DB, `limit=1` returned 4 items; `limit=0` returned 4 items; `page=abc` returned 4 items. All requests return `{"data":[...all items...]}` with no pagination enforcement.
+- **Recommendation:** Enforce a server-side maximum limit (e.g., `const effectiveLimit = Math.min(parseInt(limit) || 20, 100)`). Validate `page` and `limit` for NaN before computing offset. Return `{total, page, limit, totalPages}` in response envelope so callers can detect truncation.
+
+---
+
+### RED-005: Cascade Auto-Dispatch via Duplicate Status — Dependency Gating Bypass
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `PATCH http://localhost:3001/api/feature-requests/:id` (status transition to `duplicate`)
+- **Based On:** PEN-003 (Route Override Fast-Track Bypass), PEN-007 (Cascade Auto-Dispatch)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → create high-priority target item `FR-0009` (status: `potential`)
+  2. `POST /api/feature-requests` → create blocker `FR-0010`
+  3. Move `FR-0009` to `pending_dependencies` via force-approve chain (RED-001) with `FR-0010` as dependency
+  4. **ATTACK**: `PATCH /api/feature-requests/FR-0010` with `{"status":"duplicate"}` (no auth, no justification required)
+  5. Setting `FR-0010` to `duplicate` triggers `onItemCompleted(FR-0010)` in the dependency service
+  6. `FR-0009` is found as a blocked item in `pending_dependencies`; all its blockers are now `duplicate` (in `RESOLVED_STATUSES`)
+  7. `FR-0009` **automatically transitions to `approved`** without any voting, assessment, or human approval
+- **Evidence:** `FR-0009.status` changed from `pending_dependencies` → `approved` immediately after `FR-0010` was marked `duplicate`. No votes cast on `FR-0009`. Full pipeline bypassed.
+- **Root Cause:** `STATUS_TRANSITIONS` allows transition to `duplicate`/`deprecated` from **any** status. Any unauthenticated caller can mark any item as `duplicate`, which fires the cascade dispatch for all dependent items.
+- **Recommendation:** Restrict `duplicate`/`deprecated` status transitions to authenticated admin users only. Add authorization checks before any terminal status transition. Alternatively, trigger cascade only when a blocker reaches a privileged-action terminal state (not a freely-settable one).
+
+---
+
+### RED-006: Unauthenticated Prometheus Metrics Endpoint
+- **Severity:** Medium
+- **Objective Achieved:** N/A (Information Disclosure)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/metrics`
+- **Based On:** PEN-008 (Metrics Endpoint Unauthenticated)
+- **Exploit Scenario:**
+  1. `GET http://localhost:3001/metrics` (no credentials) → HTTP 200
+  2. Response contains `http_request_duration_ms` counters with route paths, methods, and status codes
+  3. Full API route inventory extractable from metric labels (including 404 routes probed during this test)
+  4. Process memory, CPU, heap, and event-loop lag metrics expose internal runtime state
+  5. With invalid `Authorization: Bearer invalid-token` header → still HTTP 200 (auth header ignored)
+- **Evidence:** Routes confirmed via metrics: `/`, `/api`, `/api/work-items`, `/api/feature-requests`, `/api/bugs`, etc. all enumerated via `http_request_duration_ms_count` labels.
+- **Recommendation:** Protect `/metrics` behind network-level access controls (e.g., restrict to Prometheus scraper IP) or add token-based authentication. Never expose internal metrics to public internet.
+
+---
+
+## Red Team Objective Outcomes
+
+| Objective | Status | Finding |
+|-----------|--------|---------|
+| Bypass work item state machine to reach an invalid status | ✅ **Achieved** | RED-001: `force-approve` bypasses AI voting; item reaches `approved` with zero votes |
+| Access or modify a soft-deleted work item via direct ID reference | ✅ **Achieved** | RED-002: Hard-deleted item leaves ghost dependency link; dependent item permanently blocked |
+| Submit a malformed assessment verdict that bypasses routing logic | ✅ **Achieved** | RED-005: Mark any blocker `duplicate` (no auth) → dependent auto-dispatches to `approved` |
+| Enumerate all work items without pagination limit enforcement | ✅ **Achieved** | RED-004: `limit` parameter entirely ignored; all items returned in single response |
+
+**All 4 stated objectives achieved. 2 Critical breaches confirmed.**

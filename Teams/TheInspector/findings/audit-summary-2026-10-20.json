@@ -1,0 +1,169 @@
+{
+  "audit_date": "2026-10-20",
+  "auditor": "dependency_auditor",
+  "model": "claude-haiku-4-5",
+  "status": "COMPLETE",
+  "overall_grade": "D",
+  "summary": {
+    "total_vulnerabilities": 68,
+    "critical": 4,
+    "high": 42,
+    "moderate": 16,
+    "low": 6
+  },
+  "by_package": {
+    "Source/Backend": {
+      "vulnerabilities": 42,
+      "critical": 2,
+      "high": 33,
+      "moderate": 5,
+      "low": 2,
+      "status": "FAILING"
+    },
+    "Source/Frontend": {
+      "vulnerabilities": 17,
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "status": "FAILING"
+    },
+    "Source/E2E": {
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "status": "PASSING"
+    },
+    "platform/orchestrator": {
+      "vulnerabilities": 9,
+      "critical": 2,
+      "high": 2,
+      "moderate": 4,
+      "low": 1,
+      "status": "FAILING"
+    }
+  },
+  "critical_issues": [
+    {
+      "id": "DEP-001",
+      "title": "Arbitrary Code Execution in protobufjs",
+      "package": "protobufjs",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "location": "platform/orchestrator",
+      "description": "Arbitrary code execution via crafted .proto files",
+      "exploitable": true
+    },
+    {
+      "id": "DEP-002",
+      "title": "IP Spoofing via IPv4-mapped IPv6 in proxy-addr",
+      "package": "proxy-addr",
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "location": "Source/Backend, platform/orchestrator",
+      "description": "Trust boundary bypass via IPv6-mapped IPv4 notation",
+      "exploitable": true
+    },
+    {
+      "id": "DEP-003",
+      "title": "Prototype Pollution → RCE in tinypool",
+      "package": "tinypool",
+      "severity": "CRITICAL",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "location": "Source/Frontend (via vitest)",
+      "description": "Prototype pollution gadget in worker options",
+      "exploitable": true
+    },
+    {
+      "id": "DEP-004",
+      "title": "Path Traversal in Vitest / @vitest/mocker",
+      "package": "vitest",
+      "severity": "CRITICAL",
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "location": "Source/Frontend",
+      "description": "Arbitrary file read via mock redirect traversal",
+      "exploitable": true
+    }
+  ],
+  "high_priority_issues": [
+    {
+      "id": "DEP-005",
+      "title": "Unbounded Memory Growth in browserslist",
+      "package": "browserslist",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "location": "Source/Frontend"
+    },
+    {
+      "id": "DEP-006",
+      "title": "gRPC Crash + Cert Bypass in @grpc/grpc-js",
+      "package": "@grpc/grpc-js",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "location": "platform/orchestrator"
+    },
+    {
+      "id": "DEP-007",
+      "title": "ReDoS in path-to-regexp",
+      "package": "path-to-regexp",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "location": "platform/orchestrator"
+    },
+    {
+      "id": "DEP-008",
+      "title": "JavaScript Injection in Handlebars",
+      "package": "handlebars",
+      "severity": "HIGH",
+      "cvss": 8.1,
+      "location": "Source/Backend"
+    },
+    {
+      "id": "DEP-009",
+      "title": "CRLF Injection in form-data",
+      "package": "form-data",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "location": "Source/Frontend"
+    },
+    {
+      "id": "DEP-010",
+      "title": "nanoid Infinite Loop DoS",
+      "package": "nanoid",
+      "severity": "HIGH",
+      "cvss": 5.9,
+      "location": "Source/Frontend"
+    }
+  ],
+  "blocking_actions": [
+    "Update protobufjs in platform/orchestrator to >=7.7.0",
+    "Update express in Source/Backend and platform/orchestrator (fixes proxy-addr)",
+    "Update vitest in Source/Frontend (fixes tinypool and @vitest/mocker)",
+    "Escalate all CRITICAL issues to TheGuardians for security review",
+    "Do not deploy until all CRITICAL CVEs are resolved"
+  ],
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "severity": "CRITICAL",
+      "issues": ["DEP-001", "DEP-002", "DEP-003", "DEP-004"],
+      "reason": "RCE, authentication bypass, and supply chain attacks"
+    }
+  ],
+  "recommendations": [
+    "Establish npm audit as CI/CD gate (fail on critical/high)",
+    "Pin express version across all packages (consolidate 4.18.2 vs 4.21.0)",
+    "Subscribe to security advisories for: protobufjs, express, jest, vitest",
+    "Run quarterly dependency tree audits (currently ~480 transitive deps)"
+  ],
+  "metrics": {
+    "packages_scanned": 4,
+    "total_dependencies": 480,
+    "audit_time_minutes": 15,
+    "files_generated": ["dependency-audit-2026-10-20.md", "audit-summary-2026-10-20.json"]
+  }
+}

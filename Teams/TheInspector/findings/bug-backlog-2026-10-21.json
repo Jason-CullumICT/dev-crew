@@ -1,0 +1,309 @@
+{
+  "audit_id": "run-20261021-073213",
+  "audit_date": "2026-10-21",
+  "branch": "audit/inspector-2026-10-21-1c3520",
+  "overall_grade": "D",
+  "summary": {
+    "p1_total": 10,
+    "p2_total": 68,
+    "p3_total": 72,
+    "p4_total": 5,
+    "total_findings": 155,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services unavailable (backend offline, frontend offline) — static-only run"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "escalation_trigger": "sensitive data exposed",
+      "route": "TheGuardians",
+      "title": "Vitest UI Arbitrary File Read & Code Execution",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest",
+      "affected_versions": "<3.2.6 / <4.1.11",
+      "affected_locations": ["portal/Backend", "portal/Frontend", "Source/Frontend"],
+      "detail": "When Vitest UI server is listening, attackers can read arbitrary files and execute code without authentication. Direct dependency in Portal projects.",
+      "fix": "npm update vitest to >=3.2.6 or >=4.1.11",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "escalation_trigger": "injection",
+      "route": "TheGuardians",
+      "title": "Protobufjs Arbitrary Code Execution (transitive via gRPC)",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "affected_locations": ["portal/Backend"],
+      "detail": "Arbitrary code execution via protobufjs pulled transitively through OpenTelemetry gRPC exporters in Portal/Backend.",
+      "fix": "cd portal/Backend && npm update @grpc/grpc-js",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE",
+      "escalation_trigger": "injection",
+      "route": "TheGuardians",
+      "title": "Tinypool Prototype Pollution → Remote Code Execution (2 CVEs)",
+      "cvss": 9.8,
+      "cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "package": "tinypool",
+      "affected_versions": "<=2.1.1",
+      "affected_locations": ["portal/Backend", "portal/Frontend", "Source/Frontend"],
+      "detail": "Two prototype pollution gadgets in tinypool (transitive via vitest) allow RCE when worker options are attacker-controlled. Affects all projects using vitest.",
+      "fix": "npm update vitest (updates tinypool transitively)",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "CVE",
+      "escalation_trigger": "missing access control",
+      "route": "TheGuardians",
+      "title": "Proxy-Addr IPv4-mapped IPv6 IP Spoofing — Access Control Bypass",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr",
+      "affected_locations": ["Source/Backend", "portal/Backend"],
+      "detail": "IP spoofing via IPv4-mapped IPv6 bypass breaks req.ip trust logic in Express. Any rate limiting or access-control logic that trusts req.ip can be circumvented.",
+      "fix": "npm update proxy-addr in Source/Backend and portal/Backend",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "CVE",
+      "escalation_trigger": "injection",
+      "route": "TheGuardians",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion",
+      "cvss": 7.3,
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "package": "handlebars",
+      "affected_locations": ["Source/Backend"],
+      "detail": "Type confusion in AST processing allows JavaScript injection by tampering @partial-block, breaking Handlebars template sandboxing.",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "DEP-001",
+      "ref": "escalations[0]",
+      "note": "See escalations — routed to TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "ref": "escalations[1]",
+      "note": "See escalations — routed to TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "ref": "escalations[2]",
+      "note": "See escalations — routed to TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "ref": "escalations[3]",
+      "note": "See escalations — routed to TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "ref": "escalations[4]",
+      "note": "See escalations — routed to TheGuardians"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P1",
+      "category": "CVE",
+      "route": "TheFixer",
+      "title": "PostCSS Arbitrary File Read via sourceMappingURL (CVSS 7.5)",
+      "cve": "GHSA-6g55-p6wh-862q",
+      "package": "postcss",
+      "affected_versions": "<=8.5.11",
+      "affected_locations": ["Source/Frontend"],
+      "fix": "npm update postcss vite",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P1",
+      "category": "CVE",
+      "route": "TheFixer",
+      "title": "Vite server.fs.deny Bypass on Windows Alternate Paths (CVSS 7.5)",
+      "cve": "GHSA-fx2h-pf6j-xcff",
+      "package": "vite",
+      "affected_versions": "<=6.4.2",
+      "affected_locations": ["Source/Frontend"],
+      "fix": "npm update vite",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P1",
+      "category": "CVE",
+      "route": "TheFixer",
+      "title": "WebSocket (ws) Memory Exhaustion DoS (CVSS 7.5)",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "package": "ws",
+      "affected_versions": "8.0.0–8.20.1",
+      "affected_locations": ["Source/Backend"],
+      "fix": "npm update ws",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P1",
+      "category": "CVE",
+      "route": "TheFixer",
+      "title": "React-Router-DOM Open Redirect → XSS (CVSS 6.9)",
+      "cve": "GHSA-jjmj-jmhj-qwj2",
+      "package": "react-router-dom",
+      "affected_versions": "6.30.2–6.30.5",
+      "affected_locations": ["Source/Frontend"],
+      "fix": "npm update react-router-dom",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P1",
+      "category": "CVE",
+      "route": "TheFixer",
+      "title": "Portal/Backend: 4 additional critical CVEs (cascade from OpenTelemetry transitive chain)",
+      "affected_locations": ["portal/Backend"],
+      "detail": "4 additional critical CVEs in portal/Backend beyond protobufjs — full detail in dependency-audit-2026-10-21.md DEP-010 through DEP-013",
+      "fix": "cd portal/Backend && npm audit fix && npm test",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "title": "FR-dependency-* in Source/ misattributes portal/ system spec IDs",
+      "file": "Source/Backend/src/services/dependency.ts",
+      "detail": "Source/ dependency subsystem borrows portal/ FR IDs with no spec of its own — traceability enforcement for dependency subsystem is semantically meaningless.",
+      "recommendation": "Add new plan section under Plans/dependency-linking/ targeting Source/ paths, or add explicit scope clarification note.",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "title": "Route handlers directly access workItemStore (bypasses service layer)",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/intake.ts:4"
+      ],
+      "detail": "CLAUDE.md rule: no direct store calls from route handlers. All three route files call store.createWorkItem(), store.findAll(), etc. directly. Business logic is embedded in handlers.",
+      "recommendation": "Extract store interactions into workItemService.ts; route handlers call service functions only.",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "title": "Silent JSON parse error suppression in api/client.ts (.catch(() => ({})))",
+      "file": "Source/Frontend/src/api/client.ts:26",
+      "detail": "JSON parse failures in the API client are silently swallowed with no log or comment. Violates CLAUDE.md 'never swallow errors silently' rule.",
+      "recommendation": "Add comment explaining intent, optionally log parse error at debug level.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P2-BULK",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "title": "65 high-severity CVEs across Source/ and Portal/ (bulk)",
+      "breakdown": {
+        "Source/Backend": 33,
+        "Source/Frontend": 7,
+        "Portal/Backend": 10,
+        "Portal/Frontend": 13,
+        "Platform/Orchestrator": 2
+      },
+      "detail": "65 high-severity CVEs. Full detail in Teams/TheInspector/findings/dependency-audit-2026-10-21.md",
+      "recommendation": "Run npm audit fix and targeted npm update per dependency-audit-2026-10-21.md remediation plan. See ranked fix list.",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "category": "test-coverage",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "title": "4 production frontend components have no test files",
+      "files": ["PriorityBadge.tsx", "StatusBadge.tsx", "TypeBadge.tsx", "DebugPortalPage.tsx"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "title": "eslint-disable-next-line without explanatory comments in production source",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "route": "TheFixer",
+      "title": "Traceability enforcer has no visibility into Specifications/ directory",
+      "file": "tools/traceability-enforcer.py",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-BULK",
+      "severity": "P3",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "title": "69 moderate-severity CVEs across all directories (bulk)",
+      "breakdown": {
+        "Source/Backend": 5,
+        "Source/Frontend": 7,
+        "Portal/Backend": 46,
+        "Portal/Frontend": 7,
+        "Platform/Orchestrator": 4
+      },
+      "detail": "Full detail in dependency-audit-2026-10-21.md",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-P4-BULK",
+      "severity": "P4",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "route": "TheFixer",
+      "title": "5 low-severity CVEs across directories (bulk)",
+      "status": "NEW"
+    }
+  ],
+  "fix_backlog_summary": {
+    "block_deployment": ["DEP-001", "DEP-002", "DEP-003", "DEP-004", "DEP-005"],
+    "this_sprint": ["DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "QO-002", "QO-003"],
+    "next_sprint": ["QO-001", "DEP-P2-BULK"],
+    "backlog": ["QO-004", "QO-005", "QO-006", "DEP-P3-BULK", "DEP-P4-BULK"]
+  }
+}

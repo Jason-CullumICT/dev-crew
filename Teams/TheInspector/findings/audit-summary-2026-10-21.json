@@ -1,0 +1,249 @@
+{
+  "timestamp": "2026-10-21T00:00:00Z",
+  "grade": "D",
+  "pass": false,
+  "summary": "Multiple critical CVEs in production paths; 152 total vulnerabilities across 6 npm directories",
+  "scanned_locations": {
+    "Source/Backend": {
+      "critical": 2,
+      "high": 33,
+      "moderate": 5,
+      "low": 2,
+      "total": 42,
+      "dependencies_prod": 9,
+      "dependencies_dev": 222,
+      "dependencies_total": 230
+    },
+    "Source/Frontend": {
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "total": 17,
+      "dependencies_prod": 8,
+      "dependencies_dev": 250,
+      "dependencies_total": 258
+    },
+    "Source/E2E": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "dependencies_prod": 4,
+      "dependencies_dev": 0,
+      "dependencies_total": 4
+    },
+    "Portal/Backend": {
+      "critical": 4,
+      "high": 10,
+      "moderate": 46,
+      "low": 1,
+      "total": 61,
+      "dependencies_prod": 18,
+      "dependencies_dev": 400,
+      "dependencies_total": 418,
+      "risk_level": "critical"
+    },
+    "Portal/Frontend": {
+      "critical": 2,
+      "high": 13,
+      "moderate": 7,
+      "low": 1,
+      "total": 23,
+      "dependencies_prod": 10,
+      "dependencies_dev": 340,
+      "dependencies_total": 350,
+      "risk_level": "high"
+    },
+    "Platform/Orchestrator": {
+      "critical": 2,
+      "high": 2,
+      "moderate": 4,
+      "low": 1,
+      "total": 9,
+      "dependencies_prod": 12,
+      "dependencies_dev": 85,
+      "dependencies_total": 97
+    }
+  },
+  "aggregate": {
+    "total_vulnerabilities": 152,
+    "critical": 10,
+    "high": 65,
+    "moderate": 69,
+    "low": 5,
+    "total_dependencies_prod": 61,
+    "total_dependencies_dev": 1300,
+    "total_dependencies_transitive": 1280
+  },
+  "critical_cves": [
+    {
+      "id": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest",
+      "severity": "critical",
+      "title": "Arbitrary file read and execution when UI server is listening",
+      "affected_versions": "<3.2.6, <4.1.11 (via @vitest/mocker)",
+      "affected_locations": ["Portal/Backend", "Portal/Frontend", "Source/Frontend"],
+      "is_direct": true,
+      "cvss": 9.8,
+      "fix": "npm update vitest"
+    },
+    {
+      "id": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "severity": "critical",
+      "title": "Arbitrary code execution in protobufjs",
+      "affected_locations": ["Portal/Backend"],
+      "is_direct": false,
+      "fix": "npm update @grpc/grpc-js"
+    },
+    {
+      "id": "GHSA-5gmw-xhrv-c9v3",
+      "package": "tinypool",
+      "severity": "critical",
+      "title": "Prototype Pollution gadget in worker options leads to Remote Code Execution",
+      "affected_versions": "<=2.1.1",
+      "affected_locations": ["Portal/Backend", "Portal/Frontend", "Source/Frontend"],
+      "is_direct": false,
+      "cvss": 9.8,
+      "fix": "npm update vitest (transitive)"
+    },
+    {
+      "id": "GHSA-85c8-ppgw-ccpr",
+      "package": "tinypool",
+      "severity": "critical",
+      "title": "Prototype Pollution Gadget to RCE in run() options",
+      "affected_versions": "<2.1.2",
+      "affected_locations": ["Portal/Backend", "Portal/Frontend"],
+      "is_direct": false,
+      "cvss": 9.0,
+      "fix": "npm update vitest"
+    },
+    {
+      "id": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr",
+      "severity": "critical",
+      "title": "IP spoofing via IPv4-mapped IPv6 trust subnet bypass",
+      "affected_locations": ["Source/Backend", "Portal/Backend"],
+      "is_direct": false,
+      "impact": "Access control bypass, rate limiting bypass, geolocation spoofing",
+      "fix": "npm update proxy-addr"
+    },
+    {
+      "id": "GHSA-3mfm-83xf-c92r",
+      "package": "handlebars",
+      "severity": "critical",
+      "title": "JavaScript Injection via AST Type Confusion by tampering @partial-block",
+      "affected_locations": ["Source/Backend"],
+      "is_direct": false,
+      "cvss": 7.3,
+      "fix": "npm update handlebars"
+    },
+    {
+      "id": "GHSA-6g55-p6wh-862q",
+      "package": "postcss",
+      "severity": "high",
+      "title": "Arbitrary file read and information disclosure via sourceMappingURL",
+      "affected_versions": "<=8.5.11",
+      "affected_locations": ["Source/Frontend"],
+      "is_direct": false,
+      "cvss": 7.5,
+      "fix": "npm update postcss vite"
+    },
+    {
+      "id": "GHSA-fx2h-pf6j-xcff",
+      "package": "vite",
+      "severity": "high",
+      "title": "server.fs.deny bypass on Windows alternate paths",
+      "affected_versions": "<=6.4.2",
+      "affected_locations": ["Source/Frontend"],
+      "is_direct": true,
+      "cvss": 7.5,
+      "fix": "npm update vite"
+    },
+    {
+      "id": "GHSA-96hv-2xvq-fx4p",
+      "package": "ws",
+      "severity": "high",
+      "title": "Memory exhaustion DoS from tiny fragments and data chunks",
+      "affected_versions": "8.0.0-8.20.1",
+      "affected_locations": ["Source/Backend"],
+      "is_direct": false,
+      "cvss": 7.5,
+      "fix": "npm update ws"
+    },
+    {
+      "id": "GHSA-jjmj-jmhj-qwj2",
+      "package": "react-router-dom",
+      "severity": "high",
+      "title": "Open redirect leading to XSS",
+      "affected_versions": "6.30.2-6.30.5",
+      "affected_locations": ["Source/Frontend"],
+      "is_direct": true,
+      "cvss": 6.9,
+      "fix": "npm update react-router-dom"
+    }
+  ],
+  "high_severity_count": 65,
+  "moderate_severity_count": 69,
+  "remediation_priority": [
+    {
+      "rank": 1,
+      "action": "Update vitest in Portal and Source Frontend",
+      "impact": "Fixes 2 critical vulnerabilities (file read + tinypool RCE)",
+      "effort": "1 hour"
+    },
+    {
+      "rank": 2,
+      "action": "Update proxy-addr in Backend and Portal/Backend",
+      "impact": "Fixes IP spoofing vulnerability in access control",
+      "effort": "30 minutes"
+    },
+    {
+      "rank": 3,
+      "action": "Update handlebars in Source/Backend",
+      "impact": "Fixes AST injection vulnerability",
+      "effort": "30 minutes"
+    },
+    {
+      "rank": 4,
+      "action": "Run npm update on all directories and test",
+      "impact": "Fixes majority of high/moderate vulnerabilities",
+      "effort": "4 hours (including testing)"
+    },
+    {
+      "rank": 5,
+      "action": "Upgrade React and React Router in Source/Frontend",
+      "impact": "Fixes open redirect + ensures long-term support",
+      "effort": "2 days (major version bump testing)"
+    }
+  ],
+  "supply_chain_risk": {
+    "total_transitive_dependencies": 1280,
+    "risk_level": "high",
+    "concern": "Over 500 transitive dependencies create large audit surface; Portal/Backend especially inflated with OpenTelemetry instrumentation"
+  },
+  "recommendations": [
+    "Set up Renovate or Dependabot for automated weekly updates",
+    "Add GitHub branch protection rule: block merge if npm audit finds critical/high",
+    "Prune unused OpenTelemetry instrumentation plugins from Portal/Backend",
+    "Add license-checker to CI/CD pipeline for GPL/AGPL compliance",
+    "Consider vitest security posture or vendor fixes if upstream stalls",
+    "Audit code using req.ip for trust decisions (proxy-addr bypass)"
+  ],
+  "escalation": {
+    "to_guardians": [
+      "GHSA-5xrq-8626-4rwp (vitest arbitrary file read)",
+      "GHSA-xq3m-2v4x-88gg (protobufjs RCE)",
+      "GHSA-5gmw-xhrv-c9v3 (tinypool RCE)",
+      "GHSA-jqcg-44mw-7w3h (proxy-addr spoofing)",
+      "GHSA-3mfm-83xf-c92r (handlebars injection)"
+    ],
+    "to_fixer": [
+      "npm update automation across all directories",
+      "Portal/Backend build infrastructure refactor"
+    ]
+  },
+  "next_audit": "2026-11-21"
+}

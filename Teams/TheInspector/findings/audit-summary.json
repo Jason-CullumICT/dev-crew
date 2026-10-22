@@ -1,0 +1,243 @@
+{
+  "audit_date": "2026-10-22",
+  "auditor": "dependency-auditor",
+  "status": "completed",
+  "grade": "C",
+  "summary": {
+    "project_count": 10,
+    "direct_dependencies": 50,
+    "transitive_dependencies": 1300,
+    "vulnerabilities": {
+      "critical": 1,
+      "high": 9,
+      "moderate": 6,
+      "low": 3,
+      "total": 19
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "proxy-addr",
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "affected_project": "Source/Backend",
+      "description": "IP spoofing via IPv4-mapped IPv6 addresses",
+      "cross_reference": "TheGuardians",
+      "action": "Update express to >=4.22.3"
+    }
+  ],
+  "high_findings": [
+    {
+      "id": "DEP-002",
+      "package": "braces",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cve": "GHSA-vfj7-8cjw-p6xm",
+      "affected_projects": ["Portal/Frontend", "Source/Backend"],
+      "description": "Stack exhaustion DoS via nested patterns",
+      "action": "Update tailwindcss"
+    },
+    {
+      "id": "DEP-003",
+      "package": "browserslist",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cve": "GHSA-c83g-rgw3-j3cx",
+      "affected_projects": ["Portal/Frontend"],
+      "description": "Memory leak / unbounded cache growth",
+      "action": "Update tailwindcss"
+    },
+    {
+      "id": "DEP-004",
+      "package": "jest",
+      "severity": "HIGH",
+      "cvss": 0,
+      "cve": "Multiple",
+      "affected_projects": ["Source/Backend"],
+      "description": "Multiple vulnerabilities in Jest ecosystem",
+      "action": "Upgrade jest to >=30.5.2"
+    },
+    {
+      "id": "DEP-005",
+      "package": "@grpc/grpc-js",
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "cve": "GHSA-5375-pq7m-f5r2, GHSA-99f4-grh7-6pcq, GHSA-m9gg-hp2v-232j",
+      "affected_projects": ["platform/orchestrator"],
+      "description": "Server crash and certificate bypass vulnerabilities",
+      "action": "Upgrade @grpc/grpc-js to >=1.14.5"
+    }
+  ],
+  "outdated_packages": {
+    "major_version_gaps": [
+      {
+        "project": "Source/Backend",
+        "package": "express",
+        "current": "4.18.2",
+        "latest": "5.3.0",
+        "gap": 1,
+        "risk": "medium"
+      },
+      {
+        "project": "Source/Backend",
+        "package": "pino",
+        "current": "8.17.0",
+        "latest": "10.4.0",
+        "gap": 2,
+        "risk": "high"
+      },
+      {
+        "project": "Source/Frontend",
+        "package": "react",
+        "current": "18.3.1",
+        "latest": "19.3.1",
+        "gap": 1,
+        "risk": "medium"
+      },
+      {
+        "project": "Source/Frontend",
+        "package": "react-router-dom",
+        "current": "6.30.6",
+        "latest": "7.18.4",
+        "gap": 1,
+        "risk": "medium"
+      }
+    ]
+  },
+  "projects_analyzed": {
+    "Source/Backend": {
+      "direct_deps": 4,
+      "transitive": 150,
+      "critical": 1,
+      "high": 5,
+      "moderate": 3,
+      "low": 2,
+      "status": "needs_immediate_patching"
+    },
+    "Source/Frontend": {
+      "direct_deps": 3,
+      "transitive": 200,
+      "critical": 0,
+      "high": 4,
+      "moderate": 2,
+      "low": 1,
+      "status": "needs_update"
+    },
+    "Source/E2E": {
+      "direct_deps": 4,
+      "transitive": 50,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "status": "clean"
+    },
+    "platform/orchestrator": {
+      "direct_deps": 3,
+      "transitive": 50,
+      "critical": 1,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "status": "needs_update"
+    },
+    "portal/Backend": {
+      "direct_deps": 8,
+      "transitive": 100,
+      "critical": 0,
+      "high": 0,
+      "moderate": 1,
+      "low": 0,
+      "status": "needs_update"
+    },
+    "portal/Frontend": {
+      "direct_deps": 3,
+      "transitive": 250,
+      "critical": 0,
+      "high": 4,
+      "moderate": 2,
+      "low": 1,
+      "status": "needs_update"
+    }
+  },
+  "license_compliance": {
+    "status": "unable_to_verify",
+    "reason": "npm install required; running in CI without node_modules",
+    "major_packages_reviewed": {
+      "express": "MIT",
+      "react": "MIT",
+      "@grpc/grpc-js": "Apache-2.0",
+      "pino": "MIT",
+      "vite": "MIT"
+    },
+    "recommendation": "Implement license-checker in CI pipeline after npm install"
+  },
+  "recommendations": [
+    {
+      "priority": "P1",
+      "timeframe": "24 hours",
+      "action": "Update express in Source/Backend",
+      "reason": "proxy-addr CRITICAL vulnerability (CVSS 9.1)",
+      "command": "cd Source/Backend && npm update express"
+    },
+    {
+      "priority": "P2",
+      "timeframe": "1 week",
+      "action": "Update tailwindcss and Jest",
+      "reason": "Multiple HIGH vulnerabilities in braces, browserslist, jest ecosystem",
+      "commands": [
+        "cd portal/Frontend && npm update tailwindcss",
+        "cd Source/Backend && npm update jest"
+      ]
+    },
+    {
+      "priority": "P2",
+      "timeframe": "1 week",
+      "action": "Update React Router",
+      "reason": "Open redirect vulnerability (GHSA-2j2x-hqr9-3h42)",
+      "commands": [
+        "cd Source/Frontend && npm update react-router-dom",
+        "cd portal/Frontend && npm update react-router-dom"
+      ]
+    },
+    {
+      "priority": "P3",
+      "timeframe": "2 weeks",
+      "action": "Plan major version upgrades",
+      "reason": "pino v8 out of support, express/react 1+ major versions behind",
+      "notes": "Requires testing; breaking changes expected"
+    },
+    {
+      "priority": "P4",
+      "timeframe": "before next release",
+      "action": "Address remaining LOW severity CVEs",
+      "reason": "Build-time and informational disclosure issues"
+    },
+    {
+      "priority": "ongoing",
+      "timeframe": "implement in CI",
+      "action": "Add npm audit to CI pipeline",
+      "reason": "Continuous dependency scanning",
+      "command": "npm audit --audit-level=moderate"
+    }
+  ],
+  "supply_chain_assessment": {
+    "post_install_scripts": "none detected",
+    "abandoned_packages": "none obvious; pino v8 out of support",
+    "duplicate_major_versions": "all consistent (no problematic dups)",
+    "largest_transitive_trees": [
+      "portal/Frontend: tailwindcss ecosystem (250+ deps)",
+      "Source/Frontend: vite ecosystem (200+ deps)",
+      "Source/Backend: jest ecosystem (150+ deps)"
+    ]
+  },
+  "next_steps": [
+    "Run npm install + npm audit on main branches before commit",
+    "Evaluate Dependabot or Snyk for continuous monitoring",
+    "Schedule major version upgrade PRs (express 4→5, react 18→19)",
+    "Implement automated license-checker in CI",
+    "Monitor npm registry endpoint changes (bulk advisory endpoint)"
+  ]
+}

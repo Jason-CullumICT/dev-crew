@@ -1,0 +1,290 @@
+{
+  "audit_id": "run-20261022-074013",
+  "audit_date": "2026-10-22",
+  "branch": "audit/inspector-2026-10-22-097031",
+  "grade": "C",
+  "generated_by": "TheInspector team-leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_not_run": ["performance-profiler", "chaos-monkey"],
+  "not_run_reason": "services offline — static mode only; no dynamic reports available",
+
+  "grade_rationale": {
+    "p1_count": 1,
+    "p2_count": 7,
+    "p3_count": 5,
+    "p4_count": 3,
+    "spec_coverage_active_plans": "93.75%",
+    "thresholds_checked": {
+      "A": "FAIL — max_p1=0, actual=1",
+      "B": "FAIL — max_p1=0, actual=1",
+      "C": "PASS — max_p1=2 (1 actual), max_p2=15 (7 actual), min_spec_coverage=40 (93.75% actual)",
+      "D": "not reached"
+    }
+  },
+
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IP Spoofing via IPv4-mapped IPv6 — Authentication Bypass",
+      "severity": "P1",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "category": "CVE / Authentication Bypass",
+      "file": "Source/Backend/package.json (via express dependency chain)",
+      "package": "proxy-addr@1.1.0-2.0.7",
+      "exploit_scenario": "Attacker crafts an IPv4-mapped IPv6 address (::ffff:127.0.0.1) to bypass IP-based access controls in express middleware. No authentication required — any network-adjacent attacker can spoof trusted IPs.",
+      "impact": "Full authentication bypass for IP-restricted routes; access control circumvention.",
+      "fix": "cd Source/Backend && npm update express  # pulls in proxy-addr ≥2.0.8",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "auth bypass",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "@grpc/grpc-js Certificate Authentication Bypass + Server Crash",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "category": "CVE / Authentication Bypass + DoS",
+      "file": "platform/orchestrator (via @grpc/grpc-js dependency chain)",
+      "package": "@grpc/grpc-js@1.14.0-1.14.4",
+      "exploit_scenario": "Remote attacker sends malformed/compressed gRPC requests to crash the server. Certificate auth bypass allows mTLS bypass in certain configurations.",
+      "impact": "Service disruption (crash), potential mTLS authentication bypass if gRPC is used for internal service auth.",
+      "fix": "npm update @grpc/grpc-js  # upgrade to ≥1.14.5",
+      "escalate_to": "TheGuardians",
+      "escalation_trigger": "auth bypass",
+      "status": "NEW"
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer scope gap — platform plans silently excluded",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "The default gate only checks the most recently modified plan. 34 FRs from dev-workflow-platform and tiered-merge-pipeline are never checked. A passing gate gives false confidence.",
+      "recommendation": "Document plan exclusions explicitly in CLAUDE.md, or add per-plan CI steps with --exclude-plan flag.",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration histogram missing from metrics.ts (FR-dependency-metrics)",
+      "file": "Source/Backend/src/metrics.ts",
+      "detail": "FR-dependency-metrics specifies 4 Prometheus instruments; only 3 are implemented. The dependencyCheckDuration histogram is absent. Acceptance criterion 'all 4 metrics visible at GET /metrics' fails.",
+      "recommendation": "Add Histogram for dependency_check_duration_seconds; instrument dependency.ts service methods.",
+      "status": "NEW",
+      "owner": "TheFixer/backend-coder"
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed not implemented — no seed data on startup",
+      "file": "(absent — Source/Backend/src/store/seed.ts does not exist)",
+      "detail": "FR-dependency-seed requires idempotent seed relationships on startup (BUG-0010 blocked_by BUG-0003/0004/0005/0006/0007 etc.). No seed file anywhere in Source/. Acceptance criterion 'GET /api/bugs/BUG-0010 returns 5 items in blocked_by' cannot be met.",
+      "recommendation": "Create Source/Backend/src/store/seed.ts with idempotent seed; call from app.ts startup.",
+      "status": "NEW",
+      "owner": "TheFixer/backend-coder"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "title": "braces — Stack exhaustion DoS via deeply nested glob patterns (CVSS 7.5)",
+      "file": "portal/Frontend/package.json (via tailwindcss → micromatch → braces)",
+      "cve": "GHSA-vfj7-8cjw-p6xm",
+      "detail": "Malicious or crafted file names/patterns can exhaust the call stack and crash the process.",
+      "recommendation": "cd portal/Frontend && npm update tailwindcss",
+      "cross_ref": "[CROSS-REF: DEP-007 — same root cause]",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Denial of Service",
+      "title": "browserslist — Unbounded memory growth / OOM (CVSS 7.5)",
+      "file": "portal/Frontend/package.json (via tailwindcss → browserslist)",
+      "cve": "GHSA-c83g-rgw3-j3cx",
+      "detail": "No cache eviction: repeated queries accumulate in memory until OOM crash. Affects long-running server processes.",
+      "recommendation": "cd portal/Frontend && npm update tailwindcss  # pulls browserslist ≥4.28.7",
+      "cross_ref": "[CROSS-REF: DEP-002 — same tailwindcss upgrade fixes both]",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Build Infrastructure",
+      "title": "Jest ecosystem — Multiple HIGH vulnerabilities (stack traces, env var leakage)",
+      "file": "Source/Backend/package.json",
+      "cve": "Multiple (jest@30.2.0 and below)",
+      "detail": "jest, @jest/core, jest-message-util, @jest/transform can leak stack traces or env vars during test execution. Also included: DEP-006 (jest-message-util sub-finding).",
+      "recommendation": "cd Source/Backend && npm update jest  # upgrade to ≥30.5.2",
+      "merged_findings": ["DEP-006"],
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "CVE / Transitive DoS",
+      "title": "micromatch — Inherits braces ReDoS vulnerability",
+      "file": "Source/Backend/package.json (via jest → micromatch → braces), portal/Frontend/package.json",
+      "detail": "micromatch uses braces; patched by updating jest (Backend) and tailwindcss (Portal).",
+      "recommendation": "Fix via DEP-004 (jest update) and DEP-002 (tailwindcss update).",
+      "cross_ref": "[CROSS-REF: DEP-002, DEP-004 — same root cause, different paths]",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "RouteResult / AssessmentResult exported from service files instead of Shared/",
+      "file": "Source/Backend/src/services/router.ts:60",
+      "detail": "Two exported interfaces live in backend service files. Should live in Source/Shared/types/workflow.ts per CLAUDE.md architecture rule.",
+      "recommendation": "Move RouteResult and AssessmentResult to Source/Shared/types/workflow.ts; update imports.",
+      "status": "NEW",
+      "owner": "TheFixer/api-contract"
+    },
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "Two eslint-disable suppressions in production code without documented rationale",
+      "file": "Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "detail": "react-hooks/exhaustive-deps suppressed in DependencyPicker.tsx:82 and useWorkItems.ts:63 without explanation. Hides potential stale-closure bugs.",
+      "recommendation": "Replace with useCallback/useMemo stabilization or add inline rationale comments.",
+      "status": "NEW",
+      "owner": "TheFixer/frontend-coder"
+    },
+    {
+      "id": "DEP-008",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE / Query String Parsing",
+      "title": "qs — DoS via array limit bypass (CVSS 3.7–5.3)",
+      "file": "Source/Backend/package.json (via express → qs)",
+      "cves": ["GHSA-q6x5-8v7m-xcrf", "GHSA-x5fp-wj9c-mxmx", "GHSA-4mjr-xmp4-gh2g"],
+      "detail": "Crafted query string parameters can crash or cause excessive processing. Fixed by express update.",
+      "recommendation": "cd Source/Backend && npm update express  # also fixes DEP-001",
+      "cross_ref": "[CROSS-REF: DEP-001 — same express upgrade fixes both]",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-010",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE / Open Redirect",
+      "title": "React Router — Open redirect via protocol-relative URL (CVSS reported 0, exploitable)",
+      "file": "Source/Frontend/package.json, portal/Frontend/package.json",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "detail": "Path starting with // gets reinterpreted as protocol-relative URL enabling phishing redirects.",
+      "recommendation": "cd Source/Frontend && npm update react-router-dom; cd portal/Frontend && npm update react-router-dom",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "CVE / Data Integrity",
+      "title": "@protobufjs/utf8 — Overlong UTF-8 decoding bypass (CVSS 5.3)",
+      "file": "platform/orchestrator (via @grpc/grpc-js)",
+      "cve": "GHSA-q6x5-8v7m-xcrf",
+      "detail": "Overlong UTF-8 sequences bypass validation. Fixed by gRPC upgrade.",
+      "recommendation": "npm update @grpc/grpc-js  # upgrade to ≥1.14.5 (also fixes DEP-005)",
+      "cross_ref": "[CROSS-REF: DEP-005 — same gRPC upgrade fixes both]",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-011",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "CVE / DoS",
+      "title": "baseline-browser-mapping — Process termination on invalid input",
+      "file": "portal/Frontend/package.json",
+      "cve": "GHSA-w5vr-8v7q-w6rv",
+      "recommendation": "Update to ≥2.11.0",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-012",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "CVE / Information Disclosure",
+      "title": "@babel/core — Arbitrary file read via sourceMappingURL (build-time, CVSS 3.2)",
+      "file": "portal/Frontend/package.json",
+      "cve": "GHSA-4x5r-pxfx-6jf8",
+      "detail": "Build-time only; requires attacker to control source code.",
+      "recommendation": "Update @babel/core to ≥7.29.1",
+      "status": "NEW",
+      "owner": "TheFixer"
+    },
+    {
+      "id": "DEP-013",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "Information Disclosure",
+      "title": "@grpc/grpc-js — Error message leakage to clients (CVSS 3.7)",
+      "file": "platform/orchestrator (via @grpc/grpc-js)",
+      "cve": "GHSA-f596-whhp-79r4",
+      "recommendation": "npm update @grpc/grpc-js  # upgrade to ≥1.14.5",
+      "cross_ref": "[CROSS-REF: DEP-005 — same upgrade]",
+      "status": "NEW",
+      "owner": "TheFixer"
+    }
+  ],
+
+  "cross_reference_map": [
+    {
+      "root_cause": "express upgrade (Source/Backend)",
+      "command": "cd Source/Backend && npm update express",
+      "resolves": ["DEP-001 (P1 — proxy-addr IP spoofing)", "DEP-008 (P3 — qs DoS)"],
+      "impact": "Eliminates 1 P1 + 1 P3"
+    },
+    {
+      "root_cause": "tailwindcss upgrade (portal/Frontend)",
+      "command": "cd portal/Frontend && npm update tailwindcss",
+      "resolves": ["DEP-002 (P2 — braces DoS)", "DEP-003 (P2 — browserslist OOM)", "DEP-007 (P2 — micromatch transitive)"],
+      "impact": "Eliminates 3 P2s"
+    },
+    {
+      "root_cause": "jest upgrade (Source/Backend)",
+      "command": "cd Source/Backend && npm update jest",
+      "resolves": ["DEP-004 (P2 — jest vulns)", "DEP-006 (P2 — jest-message-util)", "DEP-007 partial (P2 — micromatch via jest)"],
+      "impact": "Eliminates 2 P2s"
+    },
+    {
+      "root_cause": "@grpc/grpc-js upgrade (platform/orchestrator)",
+      "command": "npm update @grpc/grpc-js",
+      "resolves": ["DEP-005 (P2 — server crash + auth bypass)", "DEP-009 (P3 — protobuf UTF8)", "DEP-013 (P4 — error leakage)"],
+      "impact": "Eliminates 1 P2 + 1 P3 + 1 P4"
+    }
+  ],
+
+  "outdated_packages_technical_debt": [
+    { "project": "Source/Backend", "package": "pino", "current": "8.17.0", "latest": "10.4.0", "note": "v8 out of support — HIGH risk" },
+    { "project": "Source/Backend", "package": "express", "current": "4.18.2", "latest": "5.3.0" },
+    { "project": "Source/Frontend", "package": "react", "current": "18.3.1", "latest": "19.3.1" },
+    { "project": "Source/Frontend", "package": "react-router-dom", "current": "6.30.6", "latest": "7.18.4" }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "meta": {
+    "audit_id": "run-20261023-071858",
+    "audit_date": "2026-10-23",
+    "grade": "D",
+    "branch": "main",
+    "generated_by": "TheInspector team-leader",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline — backend and frontend not running; static-only audit"
+  },
+  "summary": {
+    "p1_total": 8,
+    "p2_total": 70,
+    "p3_total": 71,
+    "p4_total": 8,
+    "escalations_total": 6,
+    "fixed_total": 0,
+    "spec_coverage_pct": 13,
+    "prior_audit": null,
+    "trend": "first_audit"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE/access-control",
+      "title": "proxy-addr IPv4-Mapped IPv6 IP Spoofing — authorization bypass",
+      "cvss": 9.1,
+      "cwe": ["CWE-290", "CWE-348", "CWE-697"],
+      "file": "Source/Backend/package-lock.json",
+      "package": "proxy-addr <=2.0.7",
+      "exploit_scenario": "Attacker sends X-Forwarded-For: ::ffff:127.0.0.1 to spoof localhost IP, bypassing IP-based access controls and rate limiting",
+      "fix": "Upgrade to express >=5.0.0 which pulls proxy-addr >=2.0.8",
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE/injection",
+      "title": "Handlebars AST injection → Remote Code Execution",
+      "cvss": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "file": "Source/Backend/package-lock.json",
+      "package": "handlebars >=4.0.0 <=4.7.8",
+      "exploit_scenario": "Attacker crafts a Handlebars template with malformed @partial-block reference, injecting JavaScript that executes with backend process privileges",
+      "fix": "npm update handlebars to >4.7.8",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE/path-traversal+injection",
+      "title": "vitest Arbitrary File Read + Code Execution via UI server",
+      "cvss": 9.8,
+      "cwe": ["CWE-22", "CWE-862"],
+      "file": "Source/Frontend/package.json",
+      "package": "vitest <=4.1.10",
+      "exploit_scenario": "Attacker on same network as dev server requests /mock?path=../../etc/passwd via vitest UI; reads sensitive files or injects malicious mocks executed on next test run",
+      "fix": "npm update vitest to >=5.0.0 (major version bump required)",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "CVE/path-traversal",
+      "title": "Vite dev server path traversal — sensitive file disclosure",
+      "cvss": 8.5,
+      "cwe": ["CWE-22", "CWE-284"],
+      "file": "Source/Frontend/package-lock.json",
+      "package": "vite <=6.4.3",
+      "exploit_scenario": "If project path overlaps with system paths, attacker requests files outside server.fs.allow boundary, disclosing /etc/passwd or CI secrets",
+      "fix": "npm update vite to >=8.3.5",
+      "escalate_to": "TheGuardians",
+      "trigger": "sensitive data exposed"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "CVE/multiple",
+      "title": "portal/Backend — 4 critical CVEs (jest ecosystem + proxy-addr)",
+      "cvss": 9.1,
+      "cwe": ["CWE-290", "CWE-94"],
+      "file": "portal/Backend/package-lock.json",
+      "package": "jest <=30.2.0, proxy-addr <=2.0.7",
+      "exploit_scenario": "jest ecosystem code injection via malformed error stacks + proxy-addr IP spoofing (same as DEP-001, second project surface)",
+      "fix": "Upgrade jest to >=30.5.2; upgrade to express >=5.0.0 for proxy-addr fix",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P1",
+      "category": "CVE/multiple",
+      "title": "portal/Frontend — vitest + vite critical CVEs",
+      "cvss": 9.8,
+      "cwe": ["CWE-22", "CWE-862"],
+      "file": "portal/Frontend/package-lock.json",
+      "package": "vitest <=4.1.10, vite <=6.4.3",
+      "exploit_scenario": "Same as DEP-003 and DEP-004 but affecting the portal/Frontend project surface",
+      "fix": "npm update vitest to >=5.0.0; npm update vite to >=8.3.5",
+      "escalate_to": "TheGuardians",
+      "trigger": "sensitive data exposed"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "dev-workflow-platform.md has ~85 FR rows with 0% implementation",
+      "file": "Specifications/dev-workflow-platform.md",
+      "exploit_scenario": "Traceability enforcer reports green while covering only 13% of spec surface; entire requirement set silently untracked",
+      "recommendation": "Mark dev-workflow-platform.md as 'deferred/future' with explicit status header, OR exclude it from inspector.config.yml specs.dir scope",
+      "status": "NEW",
+      "escalate_to": null
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer silently targets only the most-recently-modified plan",
+      "file": "tools/traceability-enforcer.py:50",
+      "recommendation": "Pin enforcer to a canonical requirements file in inspector.config.yml or pass --plan explicitly in CLAUDE.md verification gate",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "inspector.config traceability regex 'FR-\\d+' doesn't match code format 'FR-WF-\\d+'",
+      "file": "Teams/TheInspector/inspector.config.yml:37",
+      "recommendation": "Update specs.patterns.traceability to 'FR-(WF-\\d+|dependency[a-z-]*)' to match actual codebase format",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Route handlers import store directly, bypassing the service layer",
+      "file": "Source/Backend/src/routes/workItems.ts:12, workflow.ts:15, intake.ts:4",
+      "recommendation": "Extract CRUD logic into services/workItemService.ts and services/intakeService.ts; route handlers should only parse request/response",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "OpenTelemetry distributed tracing not implemented despite CLAUDE.md mandate",
+      "file": "Source/Backend/src/ (no @opentelemetry/* packages found)",
+      "recommendation": "Add @opentelemetry/sdk-node + auto-instrumentations; create tracing.ts initializer; add custom spans to routeWorkItem, runAssessmentPod, dispatchWorkItem",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "source": "dependency-auditor",
+      "title": "jest ecosystem — 33+ HIGH CVEs (code injection, ReDoS, prototype pollution)",
+      "file": "Source/Backend/package-lock.json, portal/Backend/package-lock.json",
+      "package": "jest <=30.2.0",
+      "recommendation": "Upgrade jest to >=30.5.2 across all projects",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "source": "dependency-auditor",
+      "title": "js-yaml ReDoS via deeply nested YAML merge keys",
+      "file": "Source/Backend/package-lock.json",
+      "package": "js-yaml >=3.0.0 <3.15.2",
+      "recommendation": "Upgrade js-yaml to >=3.15.2 or >=4.x",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "source": "dependency-auditor",
+      "title": "micromatch/braces ReDoS via unbalanced brace expressions",
+      "file": "Source/Backend/package-lock.json",
+      "package": "braces (via micromatch)",
+      "recommendation": "npm update braces micromatch",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "test-coverage",
+      "source": "quality-oracle",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/ (root + pages/ subdirectory)",
+      "recommendation": "Keep pages/ versions (more complete), delete root-level duplicates",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "eslint-disable suppressions on react-hooks/exhaustive-deps in 2 production files",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, components/DependencyPicker.tsx:82",
+      "recommendation": "Fix hooks to include all dependencies, or add explanatory comment for intentional suppression",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "category": "untested",
+      "source": "quality-oracle",
+      "title": "DebugPortalPage.tsx has no FR linkage or test coverage",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "recommendation": "Add spec entry or Plans note, or mark as out-of-spec infrastructure with explanatory comment",
+      "status": "NEW"
+    }
+  ]
+}

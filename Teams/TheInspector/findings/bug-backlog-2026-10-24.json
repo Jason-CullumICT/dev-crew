@@ -1,0 +1,322 @@
+{
+  "audit_id": "run-20261024-e44da2f",
+  "audit_date": "2026-10-24",
+  "grade": "D",
+  "generated_by": "TheInspector / team-leader",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline — static-only mode",
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 11,
+    "p3_total": 16,
+    "p4_total": 3,
+    "escalations_to_guardians": 4,
+    "spec_coverage_pct": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IP spoofing — auth bypass",
+      "severity": "P1",
+      "category": "security",
+      "source": "dependency-auditor",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr",
+      "affected_workspace": "Source/Backend",
+      "exploit_scenario": "Attacker forges X-Forwarded-For header to spoof a trusted IP address, bypassing any IP-based access controls",
+      "recommendation": "cd Source/Backend && npm update proxy-addr@latest",
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass"
+    },
+    {
+      "id": "DEP-002",
+      "title": "handlebars — JavaScript code injection via template tampering",
+      "severity": "P1",
+      "category": "security",
+      "source": "dependency-auditor",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "package": "handlebars",
+      "affected_workspace": "Source/Backend",
+      "exploit_scenario": "Attacker injects malicious template string that executes arbitrary JavaScript in the server process",
+      "recommendation": "cd Source/Backend && npm update handlebars@latest",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-003",
+      "title": "tinypool — Prototype pollution leading to RCE",
+      "severity": "P1",
+      "category": "security",
+      "source": "dependency-auditor",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "package": "tinypool",
+      "affected_workspace": "Source/Frontend",
+      "exploit_scenario": "Attacker pollutes Object.prototype via crafted input, leading to arbitrary code execution in the worker pool",
+      "recommendation": "cd Source/Frontend && npm update tinypool@latest",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DEP-004",
+      "title": "protobufjs — Arbitrary code execution via deserialization",
+      "severity": "P1",
+      "category": "security",
+      "source": "dependency-auditor",
+      "cve": "Multiple RCE CVEs",
+      "package": "protobufjs",
+      "affected_workspace": "platform/orchestrator",
+      "exploit_scenario": "Attacker sends crafted protobuf payload triggering arbitrary code execution during deserialization in the orchestrator",
+      "recommendation": "cd platform/orchestrator && npm update protobufjs@latest",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Traceability enforcer blind to Specifications/ — false-negative CI gate",
+      "severity": "P1",
+      "category": "spec-coverage",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "exploit_scenario": "84 domain requirements in Specifications/ have zero implementation references. CI passes green while the entire domain spec is unvalidated. Agents reading the spec will implement conflicting code.",
+      "impact": "Agents implementing features against Specifications/ produce code that conflicts with the actual WorkItem workflow implementation",
+      "recommendation": "Extend traceability-enforcer.py to scan Specifications/ requirements. Fix FR-\\d+ regex pattern to match actual ID formats (FR-WF-*, FR-dependency-*). Route to requirements-reviewer.",
+      "route_to": "TheFixer + requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "title": "Spec–implementation divergence: Specifications/ describes a different system",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "exploit_scenario": "Specifications/ specifies SQLite + Feature Requests/Bugs/Cycles/Tickets (FR-001…069). Source implements an in-memory WorkItem workflow (FR-WF-001…013). Neither acknowledges the divergence — new agents will implement conflicting code.",
+      "impact": "Any new feature added against the spec will conflict with the actual implementation, causing integration failures and wasted dev cycles",
+      "recommendation": "Hold a spec disposition meeting: either (a) archive Specifications/dev-workflow-platform.md as superseded and write a new spec for the WorkItem system, or (b) implement the full FR-001…069 domain. Route to requirements-reviewer.",
+      "route_to": "requirements-reviewer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "title": "FR-TMP-001…010 have zero coverage — tiered-merge-pipeline unimplemented",
+      "severity": "P2",
+      "category": "spec-coverage",
+      "source": "quality-oracle",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "description": "10 requirements (risk classification, Playwright runner, auto-PR, AI review, auto-merge) have no implementation. E2E dir has zero test files.",
+      "recommendation": "Either implement FR-TMP-001…010 or formally mark them as deferred in the spec.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "title": "Architecture violation — direct store calls from route handlers",
+      "severity": "P2",
+      "category": "architecture",
+      "source": "quality-oracle",
+      "files": ["Source/Backend/workItems.ts", "Source/Backend/workflow.ts", "Source/Backend/intake.ts"],
+      "description": "Route handlers call store.* directly, bypassing the service layer. Architecture rule: 'No direct DB calls from route handlers — use the service layer.'",
+      "recommendation": "Introduce a WorkItemService / WorkflowService abstraction. Move all store.* calls into the service layer. Route handlers call service methods only.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "title": "Traceability ID format mismatch in inspector.config.yml",
+      "severity": "P2",
+      "category": "tooling",
+      "source": "quality-oracle",
+      "file": "Teams/TheInspector/inspector.config.yml",
+      "description": "Config declares pattern FR-\\d+ but codebase uses FR-WF-001, FR-dependency-*, free-text. Any tool using the config pattern finds 0 matches in source.",
+      "recommendation": "Update inspector.config.yml: traceability pattern to FR-[A-Z-]+\\d+ or equivalent. Run traceability-enforcer to verify.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "title": "E2E infrastructure wired up with zero tests",
+      "severity": "P2",
+      "category": "test-coverage",
+      "source": "quality-oracle",
+      "file": "Source/E2E/tests/",
+      "description": "playwright.config.ts is wired and cited in Verifies comments; Source/E2E/tests/ is empty.",
+      "recommendation": "Add at least smoke tests covering the critical paths cited in Verifies comments. Or remove the E2E infrastructure until tests are ready.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "title": "body-parser — DoS via invalid limit values and compressed bodies",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "cve": "CVSS 7.5",
+      "package": "body-parser",
+      "affected_workspace": "Source/Backend",
+      "recommendation": "npm update body-parser@latest in Source/Backend",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "form-data — CRLF injection enabling header attacks",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "cve": "CVSS 7.5",
+      "package": "form-data",
+      "cross_ref": "[CROSS-REF: red-teamer] — cache poisoning potential",
+      "recommendation": "npm update form-data@latest",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "@grpc/grpc-js — malformed requests crash server + cert validation bypass",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "cve": "CVSS 7.5",
+      "package": "@grpc/grpc-js",
+      "affected_workspace": "platform/orchestrator",
+      "recommendation": "cd platform/orchestrator && npm update @grpc/grpc-js@latest",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "title": "browserslist — unbounded memory growth leading to OOM crash",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "cve": "CVSS 7.5",
+      "package": "browserslist",
+      "recommendation": "npm update browserslist@latest",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "title": "nanoid — infinite loop on negative size parameters",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "cve": "CVSS 7.5",
+      "package": "nanoid",
+      "recommendation": "npm update nanoid@latest",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "title": "source-map-js — event loop DoS via source maps",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "cve": "CVSS 7.5",
+      "package": "source-map-js",
+      "recommendation": "npm update source-map-js@latest",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "title": "path-to-regexp — ReDoS via multiple route parameters",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "cve": "CVSS 7.5",
+      "package": "path-to-regexp",
+      "recommendation": "npm update path-to-regexp@latest",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "title": "eslint-disable react-hooks/exhaustive-deps — stale closure risk",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "files": ["Source/Frontend/DependencyPicker.tsx:82", "Source/Frontend/useWorkItems.ts:63"],
+      "recommendation": "Fix hook dependencies rather than suppressing the lint rule",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "title": "Recently modified components with no test files",
+      "severity": "P3",
+      "source": "quality-oracle",
+      "files": ["Layout.tsx", "PriorityBadge.tsx", "StatusBadge.tsx", "TypeBadge.tsx", "DebugPortalPage.tsx"],
+      "recommendation": "Add unit tests for each component",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-outdated",
+      "title": "14 moderate CVEs in transitive dependencies (js-yaml, brace-expansion, postcss, vite, etc.)",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "recommendation": "npm audit fix in all workspaces; review @babel/core, postcss, vite upgrades carefully for breaking changes",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P3-major-versions",
+      "title": "Outdated major versions: express (4→5), react (18→19), react-router-dom (6→7), pino (8→10), uuid (9→14)",
+      "severity": "P3",
+      "source": "dependency-auditor",
+      "recommendation": "Plan major version upgrades; test in staging before applying. Prioritize pino and uuid (security implications).",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-P4-001",
+      "title": "Plans gate runs at 100% coverage but domain gate runs at 0%",
+      "severity": "P4",
+      "source": "quality-oracle",
+      "description": "Positive data point: Plans enforcer is working correctly. P4 tracking item to note the asymmetry.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P4-001",
+      "title": "prom-client outdated (15.x → 15.1.3) — minor version behind",
+      "severity": "P4",
+      "source": "dependency-auditor",
+      "recommendation": "npm update prom-client",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-P4-002",
+      "title": "1 unlicensed transitive dependency detected",
+      "severity": "P4",
+      "source": "dependency-auditor",
+      "recommendation": "Identify the unlicensed package and assess legal risk",
+      "status": "NEW"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Traceability tooling gap",
+      "affected_findings": ["QO-001", "QO-005"],
+      "single_fix": "Rewrite traceability-enforcer.py to (a) scan Specifications/ as well as Plans/, and (b) use a flexible ID regex that matches all real formats (FR-WF-*, FR-dependency-*, FR-TMP-*)",
+      "fix_resolves_count": 2
+    },
+    {
+      "root_cause": "Spec maintenance debt — specifications not updated when implementation diverged",
+      "affected_findings": ["QO-002", "QO-003"],
+      "single_fix": "Spec disposition decision: archive superseded Specifications/dev-workflow-platform.md, write a new spec for the WorkItem system, and track FR-TMP-001…010 implementation status explicitly",
+      "fix_resolves_count": 2
+    },
+    {
+      "root_cause": "Insufficient request-layer hardening (no service layer + vulnerable body parsers)",
+      "affected_findings": ["QO-004", "DEP-005", "DEP-011"],
+      "single_fix": "Introduce service layer (QO-004 fix) + update body-parser and path-to-regexp; the service layer absorbs malformed request fallout that currently reaches store.* directly",
+      "fix_resolves_count": 3
+    }
+  ]
+}

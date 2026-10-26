@@ -1,0 +1,318 @@
+{
+  "audit_id": "run-20261026-074702",
+  "audit_date": "2026-10-26",
+  "branch": "audit/inspector-2026-10-26-7b538a",
+  "grade": "D",
+  "grade_rationale": "4 P1 findings exceed C-band ceiling (max_p1: 2 per config). Services offline — performance-profiler and chaos-monkey ran static-only.",
+  "summary": {
+    "p1_total": 4,
+    "p2_total": 6,
+    "p3_total": 6,
+    "p4_total": 0,
+    "escalations_total": 2,
+    "fixed_total": 0,
+    "trend": "first_audit"
+  },
+  "escalations": [
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "title": "Portal/Backend OpenTelemetry ecosystem has 4 critical CVEs",
+      "summary": "25 known issues in @opentelemetry/auto-instrumentations-node + 12 CVEs in protobufjs. If telemetry pipeline ingests PII or auth tokens, actively exploitable.",
+      "file": "portal/Backend/package.json",
+      "category": "cve / telemetry-security",
+      "cves": ["protobufjs multiple", "@opentelemetry/auto-instrumentations-node 25 issues"],
+      "action": "Audit telemetry data scope before dismissing. Pin and review OTel package versions.",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "escalate_to": "TheGuardians",
+      "title": "PostCSS path traversal via sourceMappingURL (GHSA-6g55-p6wh-862q)",
+      "summary": "PostCSS auto-loads source maps from CSS sourceMappingURL without validation. Arbitrary file read possible if app processes untrusted CSS. CVSS 7.5.",
+      "file": "Source/Frontend/package-lock.json",
+      "category": "cve / path-traversal",
+      "cves": ["GHSA-6g55-p6wh-862q"],
+      "action": "Determine if any code path processes untrusted CSS. Update postcss regardless.",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift / architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer scope is critically narrow — covers 10% of spec requirements",
+      "file": "tools/traceability-enforcer.py",
+      "line": 80,
+      "detail": "The enforcer scans only Source/ and E2E/. portal/ — which implements the majority of domain requirements — is never scanned. The gate reports 100% pass on 13 of ~134 spec requirements.",
+      "exploit_scenario": "An agent edits portal/ code, introduces spec drift, and CI passes. The gate is not protecting portal/ at all.",
+      "recommendation": "Add 'portal' to source_dirs in tools/traceability-enforcer.py. Also add enforcement for all Specifications/ FRs, not just Plans/*/requirements.md.",
+      "cross_ref": ["QO-004"],
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Raw SQL in route handler — no service layer",
+      "file": "portal/Backend/src/routes/teamDispatches.ts",
+      "line": 37,
+      "detail": "Route handler directly calls db.prepare('SELECT * FROM team_dispatches...').all() and db.prepare('INSERT INTO team_dispatches...').run(). All other portal routes use the service layer.",
+      "exploit_scenario": "Any future parameterised input (team name from URL) hits the DB directly with no service-level validation. Creates injection footgun.",
+      "recommendation": "Extract portal/Backend/src/services/teamDispatchService.ts with listDispatches() and createDispatch(). Route delegates to service only.",
+      "cross_ref": ["QO-008"],
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve / supply-chain",
+      "specialist": "dependency-auditor",
+      "title": "Brace-expansion multiple DoS vulnerabilities (CVSS 7.5)",
+      "file": "Source/Backend/package-lock.json",
+      "line": null,
+      "detail": "4 CVEs: GHSA-3jxr-9vmj-r5cp (exponential expansion), GHSA-mh99-v99m-4gvg (OOM), GHSA-rgw5-rvv9-x895 (bypass), GHSA-q2hr-2g5m-vwhr (quadratic time).",
+      "exploit_scenario": "Crafted brace patterns exhaust CPU or RAM. Primary build-time vector; runtime risk if app exposes globbing to user input.",
+      "recommendation": "Run npm ls brace-expansion to identify chain. Add overrides entry in package.json to pin to patched version.",
+      "cross_ref": [],
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "cve / telemetry-security",
+      "specialist": "dependency-auditor",
+      "title": "Portal/Backend OpenTelemetry ecosystem has 4 critical CVEs",
+      "file": "portal/Backend/package.json",
+      "line": null,
+      "detail": "25 known issues in @opentelemetry/auto-instrumentations-node + 12 CVEs in protobufjs. portal/Backend is the highest-risk workspace.",
+      "exploit_scenario": "If OTel pipeline ingests PII or auth tokens and a protobuf deserialization CVE is triggered, attacker can leak or corrupt telemetry data including request context.",
+      "recommendation": "ESCALATE to TheGuardians. Audit telemetry data scope. Pin and review OTel versions. Consider explicit per-library instrumentation instead of auto-instrumentations.",
+      "cross_ref": [],
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "tiered-merge-pipeline spec (FR-TMP-001–010) has zero implementation",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "detail": "10 requirements covering risk classification, auto-PR, AI review, and auto-merge have no Verifies: comments anywhere.",
+      "recommendation": "Mark spec as 'Status: Planned / Not Yet Implemented' OR create a Plans entry and implement it.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "3 recently-added portal files have no traceability comments",
+      "files": [
+        "portal/Backend/src/routes/teamDispatches.ts",
+        "portal/Frontend/src/components/common/RepoSelector.tsx",
+        "portal/Frontend/src/pages/TeamsPage.tsx"
+      ],
+      "detail": "All three modified in last 14 days with zero // Verifies: comments. Cannot be detected by enforcer since portal/ is not scanned (QO-001).",
+      "recommendation": "Identify governing spec/FR for each file. Add // Verifies: <FR-ID> comments or write the spec first.",
+      "cross_ref": ["QO-001"],
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Empty .catch(() => {}) silently swallows errors in 3 files",
+      "files": [
+        "portal/Frontend/src/components/bugs/BugDetail.tsx:82",
+        "portal/Frontend/src/components/feature-requests/FeatureRequestDetail.tsx:80",
+        "portal/Frontend/src/components/common/RepoSelector.tsx:20"
+      ],
+      "detail": "Silent error suppression on repos.list() calls. Violates: 'Never swallow errors silently'. Users get no feedback; failures are invisible to operators.",
+      "recommendation": "At minimum: .catch(err => console.warn('repo load failed', err)). Prefer setting error state for user feedback.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "body-parser DoS via trailing bytes after compressed body (GHSA-27r3-jxmh-p828)",
+      "file": "Source/Backend/package-lock.json",
+      "package": "body-parser@1.20.8",
+      "cvss": 7.5,
+      "cwe": "CWE-248",
+      "detail": "Trailing bytes after compressed request body bypass size enforcement. Attacker triggers via HTTP POST with Content-Encoding: gzip + crafted body.",
+      "recommendation": "npm update body-parser (requires express or middleware bump). Fix via express version bump.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "browserslist unbounded memory growth (GHSA-c83g-rgw3-j3cx, CVSS 7.5)",
+      "file": "Source/Backend/package-lock.json",
+      "package": "browserslist@4.28.6",
+      "cvss": 7.5,
+      "cwe": "CWE-770",
+      "detail": "Cache without eviction policy causes unbounded memory growth. Attacker controlling browser list queries triggers OOM.",
+      "recommendation": "npm update browserslist across all workspaces.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve / path-traversal",
+      "specialist": "dependency-auditor",
+      "title": "PostCSS path traversal via sourceMappingURL (GHSA-6g55-p6wh-862q, CVSS 7.5)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "postcss",
+      "cvss": 7.5,
+      "cwe": "CWE-22",
+      "detail": "postcss auto-loads source maps from CSS sourceMappingURL without validation. Arbitrary file read if app processes untrusted CSS.",
+      "recommendation": "Update postcss. Determine if any code path processes untrusted CSS input. ESCALATE to TheGuardians if yes.",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift / process-violation",
+      "specialist": "quality-oracle",
+      "title": "Plan-originated FRs (FR-070–095) not backed by Specifications/",
+      "file": "Plans/image-upload/requirements.md",
+      "recommendation": "Move FR-070–095 into Specifications/image-upload.md to maintain spec-first workflow.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable react-hooks/exhaustive-deps in 4 production files",
+      "files": [
+        "portal/Frontend/src/components/shared/DependencyPicker.tsx:82",
+        "portal/Frontend/src/hooks/useApi.ts:35",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63"
+      ],
+      "recommendation": "Review each suppression; add explaining comment or extract to useCallback/useMemo.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "interface TeamDispatch defined inline in route file — not in Shared types",
+      "file": "portal/Backend/src/routes/teamDispatches.ts",
+      "line": 14,
+      "recommendation": "Move TeamDispatch to portal/Shared/types.ts and import it. Resolve together with QO-002.",
+      "cross_ref": ["QO-002"],
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "React Router open redirect via protocol-relative URL (GHSA-2j2x-hqr9-3h42)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "@remix-run/router@1.3.0–1.23.2",
+      "cwe": "CWE-601",
+      "recommendation": "npm update @remix-run/router or react-router-dom. Audit route handlers that follow user-supplied redirect URLs.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "Vite build tool vulnerabilities (9 CVEs, path traversal in dev server)",
+      "file": "Multiple package-lock.json",
+      "package": "vite",
+      "recommendation": "Update to latest stable Vite 5.x. Primarily dev-time risk.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P3",
+      "category": "cve",
+      "specialist": "dependency-auditor",
+      "title": "Vitest mocker path traversal + code injection (GHSA-82fw-gwwq-j7x9, GHSA-qxg6-89mg-rqv8)",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "@vitest/mocker",
+      "cwe": "CWE-22 / CWE-94",
+      "recommendation": "Upgrade vitest to 4.1.12+. Test-time risk; could affect CI/CD if tests run untrusted code.",
+      "status": "NEW",
+      "fix_team": "TheFixer"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "Traceability enforcer blind to portal/",
+      "affected_findings": ["QO-001", "QO-004"],
+      "single_fix": "Add 'portal' to source_dirs in tools/traceability-enforcer.py:80",
+      "fix_eliminates": "1xP1 + 1xP2"
+    },
+    {
+      "root_cause": "teamDispatches.ts route not refactored to service pattern",
+      "affected_findings": ["QO-002", "QO-008"],
+      "single_fix": "Extract teamDispatchService.ts; move TeamDispatch to portal/Shared/types.ts",
+      "fix_eliminates": "1xP1 + 1xP3"
+    },
+    {
+      "root_cause": "No automated dependency hygiene (no Renovate/Dependabot)",
+      "affected_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-005"],
+      "single_fix": "Install Renovate/Dependabot; run npm update for patched packages",
+      "fix_eliminates": "1xP1 + 3xP2"
+    }
+  ],
+  "spec_coverage": {
+    "enforcer_reported": "100%",
+    "enforcer_scope": "13/134 total spec FRs (FR-WF-* only)",
+    "estimated_true_coverage": "~10%",
+    "unimplemented_frs": [
+      "FR-TMP-001", "FR-TMP-002", "FR-TMP-003", "FR-TMP-004", "FR-TMP-005",
+      "FR-TMP-006", "FR-TMP-007", "FR-TMP-008", "FR-TMP-009", "FR-TMP-010"
+    ]
+  },
+  "metadata": {
+    "specialists_active": ["quality-oracle", "dependency-auditor"],
+    "specialists_offline": ["performance-profiler", "chaos-monkey"],
+    "mode": "static",
+    "services_status": {
+      "backend": "offline",
+      "frontend": "offline"
+    },
+    "prior_audit": null,
+    "report_html": "Teams/TheInspector/findings/audit-2026-10-26-D.html"
+  }
+}

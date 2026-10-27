@@ -1,0 +1,314 @@
+{
+  "audit": {
+    "date": "2026-10-27",
+    "grade": "D",
+    "branch": "main",
+    "scope": "full-codebase",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline (localhost:3001, localhost:5173 unreachable)",
+    "totals": {
+      "p1": 5,
+      "p2": 15,
+      "p3": 17,
+      "p4": 33,
+      "total": 70,
+      "escalations": 3
+    }
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "title": "proxy-addr IP Spoofing via X-Forwarded-For header forgery",
+      "specialist": "dependency-auditor",
+      "ghsa": "GHSA-jqcg-44mw-7w3h",
+      "cvss": 9.1,
+      "category": "auth-bypass",
+      "escalate_to": "TheGuardians",
+      "affects": ["Source/Backend", "portal/Backend", "platform/orchestrator", "Source/Frontend", "portal/Frontend"],
+      "description": "proxy-addr (via Express 4.18.2) fails to validate X-Forwarded-For headers, allowing attackers to forge their source IP and bypass IP-based access controls.",
+      "exploit_scenario": "Unauthenticated attacker on the network sets X-Forwarded-For to a trusted IP. Any IP-based access control or rate-limiting relying on req.ip is bypassed.",
+      "exploitability": "zero-precondition",
+      "fix": "npm update express to >=4.22.3 or 5.3.0+ in all projects",
+      "cross_ref": ["DA-003"],
+      "status": "NEW"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "title": "Vitest dev server arbitrary file read/execution",
+      "specialist": "dependency-auditor",
+      "ghsa": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "category": "injection",
+      "escalate_to": "TheGuardians",
+      "affects": ["Source/Frontend", "portal/Frontend"],
+      "description": "Vitest dev server (versions <5.0.5) allows unauthenticated file system reads and potential code execution when the dev server is network-accessible.",
+      "exploit_scenario": "If vitest --ui or vitest watch port is reachable from the network, attacker reads arbitrary host files (env files, SSH keys, source outside project root).",
+      "exploitability": "zero-precondition",
+      "fix": "npm update vitest to >=5.0.5 in Source/Frontend and portal/Frontend",
+      "cross_ref": ["DA-004"],
+      "status": "NEW"
+    },
+    {
+      "id": "DA-004",
+      "severity": "P1",
+      "title": "@vitest/mocker arbitrary code injection via mock registration",
+      "specialist": "dependency-auditor",
+      "ghsa": "GHSA-qxg6-89mg-rqv8",
+      "cvss": 4.7,
+      "category": "injection",
+      "escalate_to": "TheGuardians",
+      "affects": ["Source/Frontend", "portal/Frontend"],
+      "description": "@vitest/mocker allows arbitrary code injection through mock registration, enabling supply-chain or insider attacks via crafted test files.",
+      "exploit_scenario": "Malicious or compromised test file exploits mock registration to execute arbitrary code in the test runner (CI/CD pipeline).",
+      "exploitability": "authenticated",
+      "fix": "npm update vitest to >=5.0.5 (resolves both DA-002 and DA-004)",
+      "cross_ref": ["DA-002"],
+      "status": "NEW"
+    }
+  ],
+  "findings": {
+    "p1": [
+      {
+        "id": "QO-001",
+        "severity": "P1",
+        "title": "GET /api/search not registered in app.ts — always 404 in production",
+        "specialist": "quality-oracle",
+        "category": "feature-gap",
+        "requirement": "FR-dependency-search",
+        "file": "Source/Backend/src/app.ts",
+        "description": "The search route is tested (5 test cases) but never registered. DependencyPicker typeahead always returns 404.",
+        "exploit_scenario": "User opens DependencyPicker. Every keystroke fires GET /api/search which returns 404. Typeahead silently fails. Dependency search feature is non-functional.",
+        "exploitability": "authenticated",
+        "fix": "Create Source/Backend/src/routes/search.ts, implement GET /api/search?q=, register in app.ts. Re-enable 5 test cases.",
+        "assign_to": "TheFixer",
+        "cross_ref": ["QO-002", "QO-003"],
+        "status": "NEW"
+      },
+      {
+        "id": "DA-003",
+        "severity": "P1",
+        "title": "body-parser DoS via malformed compressed request body",
+        "specialist": "dependency-auditor",
+        "ghsa": "GHSA-27r3-jxmh-p828",
+        "cvss": 7.5,
+        "category": "denial-of-service",
+        "affects": ["Source/Backend", "portal/Backend", "platform/orchestrator"],
+        "description": "body-parser throws unhandled exception on malformed deflate/gzip request bodies, crashing the Express process.",
+        "exploit_scenario": "Attacker sends POST with malformed compressed body to any endpoint. Express process crashes. Service is down until restarted.",
+        "exploitability": "zero-precondition",
+        "fix": "Resolved by Express upgrade >=4.22.3 (same fix as DA-001)",
+        "assign_to": "TheFixer",
+        "cross_ref": ["DA-001"],
+        "status": "NEW"
+      }
+    ],
+    "p2": [
+      {
+        "id": "QO-002",
+        "severity": "P2",
+        "title": "dependency_check_duration_seconds Prometheus histogram missing",
+        "specialist": "quality-oracle",
+        "category": "observability",
+        "requirement": "FR-dependency-metrics",
+        "file": "Source/Backend/src/metrics.ts",
+        "description": "Spec requires 4 metrics. Only 3 counters exist. The histogram for dependency check duration is absent.",
+        "fix": "Add dependency_check_duration_seconds histogram to metrics.ts. Record duration in the dependency check service method.",
+        "assign_to": "TheFixer",
+        "cross_ref": ["QO-001"],
+        "status": "NEW"
+      },
+      {
+        "id": "QO-003",
+        "severity": "P2",
+        "title": "DependencySection.test.tsx and BlockedBadge.test.tsx component test files missing",
+        "specialist": "quality-oracle",
+        "category": "test-coverage",
+        "requirement": "FR-dependency-frontend-tests",
+        "file": "Source/Frontend/tests/",
+        "description": "FR requires dedicated component test files. Only integration.test.tsx exists. DependencyPicker.tsx also has no unit tests.",
+        "fix": "Create DependencySection.test.tsx, BlockedBadge.test.tsx, and DependencyPicker.test.tsx. Remove false meta-test claim.",
+        "assign_to": "TheFixer",
+        "cross_ref": ["QO-001"],
+        "status": "NEW"
+      },
+      {
+        "id": "QO-004",
+        "severity": "P2",
+        "title": "69 orphaned requirements in Specifications/dev-workflow-platform.md",
+        "specialist": "quality-oracle",
+        "category": "spec-hygiene",
+        "file": "Specifications/dev-workflow-platform.md",
+        "description": "FR-001–069 define the legacy portal app, not the active Source/ app. Having it in Specifications/ confuses audit scope and agent context.",
+        "fix": "Add STATUS: LEGACY header or move to Plans/dev-workflow-platform/",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DA-P2-01",
+        "severity": "P2",
+        "title": "react-router-dom open redirect vulnerability",
+        "specialist": "dependency-auditor",
+        "category": "dependency-cve",
+        "affects": ["Source/Frontend", "portal/Frontend"],
+        "fix": "npm update react-router-dom",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DA-P2-02",
+        "severity": "P2",
+        "title": "ws prototype pollution / DoS",
+        "specialist": "dependency-auditor",
+        "category": "dependency-cve",
+        "affects": ["all projects (transitive)"],
+        "fix": "Update ws transitive dependency",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DA-P2-03",
+        "severity": "P2",
+        "title": "js-yaml arbitrary code execution via unsafe load()",
+        "specialist": "dependency-auditor",
+        "category": "dependency-cve",
+        "affects": ["platform/orchestrator (transitive)"],
+        "fix": "Update js-yaml transitive dependency to safeLoad() or yaml.load() with schema",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DA-P2-04-to-12",
+        "severity": "P2",
+        "title": "9 additional high-severity transitive dependency CVEs",
+        "specialist": "dependency-auditor",
+        "category": "dependency-cve",
+        "count": 9,
+        "description": "Identified in full dependency audit report at Teams/TheInspector/findings/AUDIT-2026-10-27-dependency-report.md",
+        "fix": "Execute Phase 1-2 of remediation roadmap in dependency report",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      }
+    ],
+    "p3": [
+      {
+        "id": "QO-005",
+        "severity": "P3",
+        "title": "Specifications/workflow-engine.md has no formal FR IDs",
+        "specialist": "quality-oracle",
+        "category": "spec-hygiene",
+        "file": "Specifications/workflow-engine.md",
+        "description": "Prose-only spec. FR-WF-001–013 IDs exist only in Plans/, violating spec-is-source-of-truth principle.",
+        "fix": "Add FR-WF-001–013 IDs directly into Specifications/workflow-engine.md",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "QO-006",
+        "severity": "P3",
+        "title": "eslint-disable suppressions without safety rationale",
+        "specialist": "quality-oracle",
+        "category": "code-quality",
+        "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+        "description": "react-hooks/exhaustive-deps disabled with no comment explaining why the dep omission is safe.",
+        "fix": "Add inline comment explaining why each dep omission is intentional or fix the dependency array.",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DA-P3-01-to-15",
+        "severity": "P3",
+        "title": "15 medium-severity transitive dependency CVEs",
+        "specialist": "dependency-auditor",
+        "category": "dependency-cve",
+        "count": 15,
+        "description": "Identified in full dependency audit report. Includes Vite, pino, OpenTelemetry ecosystem gaps.",
+        "fix": "Execute Phase 3 of remediation roadmap in dependency report",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      }
+    ],
+    "p4": [
+      {
+        "id": "QO-007",
+        "severity": "P4",
+        "title": "DebugPortalPage.tsx uses non-standard traceability comment",
+        "specialist": "quality-oracle",
+        "category": "traceability",
+        "file": "Source/Frontend/src/pages/DebugPortalPage.tsx",
+        "description": "Uses '// Verifies: dev-crew debug portal' which is not a valid FR ID. No backing requirement in any spec.",
+        "fix": "Create a spec entry for the debug portal or replace with a valid FR ID",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      },
+      {
+        "id": "DA-P4-01-to-32",
+        "severity": "P4",
+        "title": "32 low-severity transitive dependency CVEs",
+        "specialist": "dependency-auditor",
+        "category": "dependency-cve",
+        "count": 32,
+        "description": "Identified in full dependency audit report.",
+        "fix": "Execute Phase 4 of remediation roadmap (Dependabot/Renovate setup)",
+        "assign_to": "TheFixer",
+        "status": "NEW"
+      }
+    ]
+  },
+  "remediation_summary": {
+    "block_deployment": [
+      "npm update express >=4.22.3 across all 5 projects (resolves DA-001 P1, DA-003 P1)",
+      "npm update vitest >=5.0.5 in Source/Frontend + portal/Frontend (resolves DA-002 P1, DA-004 P1)",
+      "Notify TheGuardians: proxy-addr X-Forwarded-For exposure + Vitest CI exposure"
+    ],
+    "this_sprint": [
+      "Implement GET /api/search route + register in app.ts (QO-001 P1)",
+      "Add dependency_check_duration_seconds histogram to metrics.ts (QO-002 P2)",
+      "Create DependencySection.test.tsx + BlockedBadge.test.tsx + DependencyPicker.test.tsx (QO-003 P2)",
+      "npm update react-router-dom (DA-P2-01 P2)"
+    ],
+    "next_sprint": [
+      "Add STATUS: LEGACY to dev-workflow-platform.md (QO-004 P2)",
+      "Add FR IDs to Specifications/workflow-engine.md (QO-005 P3)",
+      "Rationale comments for eslint-disable suppressions (QO-006 P3)",
+      "Vite 8.3.5+, pino 10.4.0+ upgrades (DA-P3 Phase 3)"
+    ],
+    "backlog": [
+      "Set up Dependabot/Renovate (DA Phase 4)",
+      "Fix traceability enforcer configuration for FR-WF-* IDs",
+      "Add DebugPortalPage.tsx proper FR traceability (QO-007 P4)",
+      "uuid v14 major version upgrade",
+      "Re-run with services running for performance + chaos coverage"
+    ]
+  },
+  "cross_references": [
+    {
+      "root_cause": "Express upgrade (npm update express >=4.22.3)",
+      "resolves": ["DA-001", "DA-003"],
+      "p1_reduction": 2
+    },
+    {
+      "root_cause": "Vitest upgrade (npm update vitest >=5.0.5)",
+      "resolves": ["DA-002", "DA-004"],
+      "p1_reduction": 2
+    },
+    {
+      "root_cause": "Implement search route + metrics + tests in one PR",
+      "resolves": ["QO-001", "QO-002", "QO-003"],
+      "p1_reduction": 1,
+      "p2_reduction": 2
+    }
+  ],
+  "grade_rationale": {
+    "grade": "D",
+    "thresholds_checked": {
+      "A": {"max_p1": 0, "actual_p1": 5, "result": "FAIL"},
+      "B": {"max_p1": 0, "actual_p1": 5, "result": "FAIL"},
+      "C": {"max_p1": 2, "actual_p1": 5, "result": "FAIL"},
+      "D": {"max_p1": 999, "actual_p1": 5, "result": "PASS"}
+    },
+    "note": "Grade is driven by 4 critical CVEs in dependency stack. A single sprint of Express + Vitest upgrades removes 4 of 5 P1s and would move the grade to C or better."
+  }
+}

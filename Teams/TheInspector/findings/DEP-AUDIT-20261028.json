@@ -1,0 +1,208 @@
+{
+  "audit_date": "2026-10-28T00:00:00Z",
+  "audit_tool": "npm audit --json (v8+)",
+  "project": "dev-crew",
+  "scope": "npm workspaces",
+  "summary": {
+    "total_workspaces": 6,
+    "direct_dependencies": 388,
+    "transitive_dependencies": 590,
+    "total_vulnerabilities": 53,
+    "critical": 8,
+    "high": 21,
+    "moderate": 19,
+    "low": 5
+  },
+  "workspaces": {
+    "Source/Backend": {
+      "status": "HIGH_RISK",
+      "direct_deps": 102,
+      "transitive_deps": 150,
+      "vulnerabilities": 18,
+      "critical": 2,
+      "high": 5,
+      "moderate": 3,
+      "low": 8,
+      "critical_packages": [
+        "handlebars@4.7.9",
+        "proxy-addr@2.0.7"
+      ]
+    },
+    "Source/Frontend": {
+      "status": "HIGH_RISK",
+      "direct_deps": 9,
+      "transitive_deps": 80,
+      "vulnerabilities": 17,
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "critical_packages": [
+        "vitest@4.1.10",
+        "tinypool@2.1.1"
+      ]
+    },
+    "Source/E2E": {
+      "status": "PASS",
+      "direct_deps": 4,
+      "transitive_deps": 10,
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "critical_packages": []
+    },
+    "platform/orchestrator": {
+      "status": "HIGH_RISK",
+      "direct_deps": 153,
+      "transitive_deps": 200,
+      "vulnerabilities": 9,
+      "critical": 2,
+      "high": 3,
+      "moderate": 4,
+      "low": 0,
+      "critical_packages": [
+        "protobufjs@7.6.4",
+        "proxy-addr@2.0.7"
+      ]
+    },
+    "portal/Backend": {
+      "status": "HIGH_RISK",
+      "direct_deps": 80,
+      "transitive_deps": 100,
+      "vulnerabilities": 8,
+      "critical": 2,
+      "high": 3,
+      "moderate": 3,
+      "low": 0,
+      "critical_packages": [
+        "protobufjs@7.6.4",
+        "proxy-addr@2.0.7"
+      ]
+    },
+    "portal/Frontend": {
+      "status": "MEDIUM_RISK",
+      "direct_deps": 40,
+      "transitive_deps": 50,
+      "vulnerabilities": 6,
+      "critical": 0,
+      "high": 3,
+      "moderate": 2,
+      "low": 1,
+      "critical_packages": []
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "cve": "GHSA-2w6w-674q-4c4q, GHSA-3mfm-83xf-c92r, GHSA-8r5x-fm3f-whwj",
+      "cvss": 9.8,
+      "title": "JavaScript Injection via AST Type Confusion",
+      "type": "RCE",
+      "affected_versions": ">=4.0.0 <=4.7.9",
+      "workspaces": ["Source/Backend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "proxy-addr",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "cvss": 9.1,
+      "title": "IPv4-Mapped IPv6 IP Spoofing",
+      "type": "Auth Bypass",
+      "affected_versions": ">=1.1.0 <2.0.8",
+      "workspaces": ["Source/Backend", "platform/orchestrator"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "protobufjs",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "cvss": 9.8,
+      "title": "Arbitrary Code Execution via Deserialization",
+      "type": "RCE",
+      "affected_versions": "<=7.6.4",
+      "workspaces": ["platform/orchestrator", "portal/Backend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "package": "vitest",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "cvss": 9.8,
+      "title": "Arbitrary File Read & Code Execution (UI Server)",
+      "type": "Path Traversal / RCE",
+      "affected_versions": "<=4.1.10",
+      "workspaces": ["Source/Frontend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "package": "tinypool",
+      "cve": "GHSA-5gmw-xhrv-c9v3, GHSA-85c8-ppgw-ccpr",
+      "cvss": 0,
+      "title": "Prototype Pollution leading to RCE",
+      "type": "RCE",
+      "affected_versions": "<=2.1.1",
+      "workspaces": ["Source/Frontend"],
+      "escalation": "TheGuardians"
+    }
+  ],
+  "remediation_steps": [
+    {
+      "priority": "P1_IMMEDIATE",
+      "timeframe": "24_hours",
+      "actions": [
+        "npm update handlebars in Source/Backend",
+        "npm update proxy-addr via express updates in Source/Backend, platform/orchestrator",
+        "npm update protobufjs in platform/orchestrator",
+        "npm update vitest in Source/Frontend (cascades tinypool update)"
+      ],
+      "verification": "npm test --workspaces"
+    },
+    {
+      "priority": "P2_HIGH",
+      "timeframe": "this_week",
+      "actions": [
+        "npm update body-parser, brace-expansion, browserslist",
+        "npm update form-data, js-yaml, nanoid",
+        "npm update postcss, source-map-js, ws, vite"
+      ],
+      "verification": "npm test --workspaces && npm audit"
+    },
+    {
+      "priority": "P3_MEDIUM",
+      "timeframe": "next_sprint",
+      "actions": [
+        "npm update @remix-run/router via react-router updates",
+        "npm update react-router and react-router-dom",
+        "npm update qs, uuid"
+      ],
+      "verification": "Integration test coverage"
+    }
+  ],
+  "notes": {
+    "major_version_changes": [
+      "jest: 25 -> 30+ (requires testing)",
+      "vitest: 4 -> 5 (major rewrite of internals)",
+      "react-router: 6 -> 7 (API changes possible)"
+    ],
+    "supply_chain_risks": [
+      "post-install scripts in Source/Backend and platform/orchestrator should be audited",
+      "590 transitive dependencies create large attack surface",
+      "Recommend monthly npm audit runs"
+    ],
+    "not_audited": [
+      "License compliance (would need npm-license-checker)",
+      "Abandoned package detection (would need manual GitHub checks)",
+      "Dependency tree duplication (would need npm ls analysis)"
+    ]
+  },
+  "audit_tool_versions": {
+    "npm_audit": "v8+ format (auditReportVersion: 2)",
+    "environment": "linux, npm >= 8.x"
+  },
+  "next_audit_recommended": "2026-11-28"
+}

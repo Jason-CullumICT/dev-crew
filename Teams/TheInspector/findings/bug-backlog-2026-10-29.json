@@ -1,0 +1,317 @@
+{
+  "audit_date": "2026-10-29",
+  "grade": "D",
+  "branch": "audit/inspector-2026-10-29-84f012",
+  "scope": "full-codebase",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services not running (static-mode only audit)",
+  "totals": {
+    "p1": 6,
+    "p2": 13,
+    "p3": 70,
+    "p4": 23,
+    "total": 112
+  },
+  "escalations": [
+    {
+      "id": "DEP-C001",
+      "severity": "P1",
+      "category": "CVE/NetworkSecurity",
+      "title": "proxy-addr IP Spoofing via IPv4-Mapped IPv6",
+      "file": "Source/Backend/package-lock.json",
+      "vuln_id": "GHSA-jqcg-44mw-7w3h",
+      "cvss": 7.5,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Network-level access control bypass — affects all backends trusting X-Forwarded-For",
+      "fix": "npm update proxy-addr to v2.1.2+",
+      "affected_locations": ["Source/Backend", "platform/orchestrator", "portal/Backend"]
+    },
+    {
+      "id": "DEP-C002",
+      "severity": "P1",
+      "category": "CVE/CodeExecution",
+      "title": "tinypool Prototype Pollution → RCE",
+      "file": "Source/Frontend/package-lock.json",
+      "vuln_id": "GHSA-5gmw-xhrv-c9v3",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "RCE via prototype pollution in worker threads",
+      "fix": "npm update tinypool to v1.1.0+ or v0.4.0+",
+      "affected_locations": ["Source/Frontend", "portal/Backend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-C003",
+      "severity": "P1",
+      "category": "CVE/InformationDisclosure",
+      "title": "vitest Arbitrary File Read/Execute (Dev Server)",
+      "file": "portal/Backend/package-lock.json",
+      "vuln_id": "GHSA-pending",
+      "cvss": 8.1,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Source code disclosure and RCE when Vitest UI server active",
+      "fix": "npm update vitest to latest patched version; disable UI server in CI",
+      "affected_locations": ["portal/Backend", "portal/Frontend"],
+      "note": "Dev-only but critical for security posture"
+    },
+    {
+      "id": "DEP-C004",
+      "severity": "P1",
+      "category": "CVE/CodeExecution",
+      "title": "protobufjs Arbitrary Code Execution via Malformed .proto",
+      "file": "portal/Backend/package-lock.json",
+      "vuln_id": "GHSA-pending",
+      "cvss": 9.8,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Arbitrary code execution via input validation bypass on .proto parsing",
+      "fix": "npm update protobufjs to latest; validate all .proto sources",
+      "affected_locations": ["portal/Backend", "platform/orchestrator"]
+    },
+    {
+      "id": "DEP-C005",
+      "severity": "P1",
+      "category": "CVE/Injection",
+      "title": "handlebars JavaScript Injection via AST Type Confusion (SSTI)",
+      "file": "Source/Backend/package-lock.json",
+      "vuln_id": "GHSA-3mfm-83xf-c92r",
+      "cvss": 7.2,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheGuardians",
+      "escalation_reason": "Server-side template injection — injection trigger in config",
+      "fix": "npm update handlebars to v4.7.9+; never render user input as templates",
+      "affected_locations": ["Source/Backend"]
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "pending_dependencies status absent from WorkItemStatus enum; dispatch gating at wrong transition",
+      "file": "Source/Shared/types/workflow.ts",
+      "line": 5,
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "failure_scenario": "POST /api/work-items/:id/approve on item with unresolved blockers silently succeeds (status=approved), then POST /api/work-items/:id/dispatch returns 400 — caller expected 200 with pending_dependencies state",
+      "recommendation": "Add PendingDependencies to WorkItemStatus enum; add approve→pendingDependencies transition; check blockers in approve handler; cascade dependents in dependency.ts",
+      "cross_refs": ["QO-003"],
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration histogram missing from metrics.ts (FR-dependency-metrics)",
+      "file": "Source/Backend/src/metrics.ts",
+      "line": 40,
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "fix": "Add Histogram for dependency_check_duration_seconds; instrument computeHasUnresolvedBlockers/isReady",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "BlockedBadge missing amber state for pending_dependencies (FR-dependency-blocked-badge)",
+      "file": "Source/Frontend/src/components/BlockedBadge.tsx",
+      "line": 10,
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "fix": "Add status prop to BlockedBadgeProps; render amber badge when status === PendingDependencies (blocked by QO-001)",
+      "cross_refs": ["QO-001"],
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Specifications/tiered-merge-pipeline.md — 10 FRs (FR-TMP-001-010) fully orphaned, no plan, no source",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "line": 1,
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "fix": "Create Plans/tiered-merge-pipeline/requirements.md OR mark spec Status: Deferred",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Traceability enforcer checks only most-recent plan — multi-plan gaps invisible to CLAUDE.md gate",
+      "file": "tools/traceability-enforcer.py",
+      "line": 40,
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "fix": "Update CLAUDE.md gate to run both plans explicitly, OR add --all flag to enforcer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H001",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "body-parser DoS via Invalid Limit (unbounded body parsing)",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update body-parser; validate limit param in Express middleware",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H002",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "brace-expansion Zero-Step Sequence DoS (infinite loop via malformed brace patterns)",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update brace-expansion via Jest/ts-jest update",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H003",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "browserslist Unbounded Memory Growth (cache never evicts → OOM)",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update browserslist to latest; monitor memory in CI builds",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H004",
+      "severity": "P2",
+      "category": "CVE/Injection",
+      "title": "form-data CRLF Injection via Unescaped Multipart Field Names",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update form-data; validate all user-supplied field names",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H005",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "js-yaml Quadratic-Complexity DoS via Merge Key Aliases",
+      "file": "Source/Backend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update js-yaml; set strict mode; limit YAML file size",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H006",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "nanoid Non-Secure Generator Loop Indefinitely on Negative Size",
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update nanoid; ensure all calls use positive size",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H007",
+      "severity": "P2",
+      "category": "CVE/XSS",
+      "title": "postcss XSS via Unescaped </style> in CSS Output",
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update postcss; sanitize CSS output before rendering",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H008",
+      "severity": "P2",
+      "category": "CVE/DoS",
+      "title": "source-map-js Event-Loop DoS via Indexed Section Offsets",
+      "file": "Source/Frontend/package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Update source-map-js; disable source maps in production",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-H009",
+      "severity": "P2",
+      "category": "CVE/PathTraversal",
+      "title": "Vite Path Traversal in Optimized Deps (.map file handling)",
+      "file": "Source/Frontend/package.json",
+      "line": 1,
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "note": "DIRECT dependency — most urgent P2 fix",
+      "fix": "npm update vite to ^5.5.0+",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "test-coverage",
+      "title": "Duplicate frontend test files — root + pages/ for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "fix": "Delete root tests/WorkItemDetailPage.test.tsx and tests/WorkItemListPage.test.tsx; keep pages/ variants",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry absent from Source/Backend (CLAUDE.md non-negotiable rule)",
+      "file": "Source/Backend/package.json",
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "fix": "Add @opentelemetry/sdk-node and instrumentation packages; initialize in app.ts; add custom spans",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable react-hooks/exhaustive-deps without inline rationale (2 suppressions)",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts",
+      "line": 63,
+      "specialist": "quality-oracle",
+      "escalate_to": "TheFixer",
+      "fix": "Add rationale comment OR refactor to useCallback to stabilize dependency reference",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-M001",
+      "severity": "P3",
+      "category": "CVE/Moderate",
+      "title": "67 moderate CVEs across all packages (babel, jest, remix-run/router, vitest/mocker)",
+      "file": "package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Batch npm update pass; prioritize @remix-run/router open redirect and @vitest/mocker path traversal",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-L001",
+      "severity": "P4",
+      "category": "CVE/Low",
+      "title": "23 low-severity CVEs across all packages",
+      "file": "package-lock.json",
+      "specialist": "dependency-auditor",
+      "escalate_to": "TheFixer",
+      "fix": "Address in Dependabot/Renovate automated update pass",
+      "status": "NEW"
+    }
+  ]
+}

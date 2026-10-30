@@ -1,0 +1,191 @@
+{
+  "audit_id": "run-20261030-083155",
+  "audit_date": "2026-10-30",
+  "grade": "F",
+  "grade_rationale": "7 P1 findings; proxy-addr exploitable auth bypass + 69 unimplemented FRs (critical domain failure) satisfy F-grade criteria",
+  "branch": "audit/inspector-2026-10-30-04b2ba",
+  "prior_audit": null,
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": [
+    { "name": "performance-profiler", "reason": "backend service unavailable (localhost:3001 offline)" },
+    { "name": "chaos-monkey", "reason": "requires ALL services healthy; backend offline" }
+  ],
+  "summary": {
+    "p1": 7,
+    "p2": 17,
+    "p3": 6,
+    "p4": 0,
+    "total": 30,
+    "spec_coverage_pct": 0,
+    "fixed": 0,
+    "escalations": 4
+  },
+  "escalations": [
+    {
+      "id": "DEP-003",
+      "title": "proxy-addr — IPv4-Mapped IPv6 IP Spoofing (auth bypass)",
+      "severity": "P1",
+      "category": "authentication-bypass",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "file": "Source/Backend/package.json",
+      "route": "ESCALATE → TheGuardians",
+      "trigger": "auth bypass",
+      "exploit_scenario": "Attacker crafts X-Forwarded-For: ::ffff:127.0.0.1 to appear as localhost, bypassing IP-based access controls in Express middleware",
+      "recommendation": "Update proxy-addr via npm update Express. Audit all IP-based access control paths. Test with TheGuardians red-team."
+    },
+    {
+      "id": "DEP-004",
+      "title": "protobufjs — Arbitrary Code Execution via Malformed Messages",
+      "severity": "P1",
+      "category": "remote-code-execution",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "file": "platform/orchestrator/package.json",
+      "route": "ESCALATE → TheGuardians",
+      "trigger": "injection",
+      "exploit_scenario": "Send malformed .proto or .pb message to platform/orchestrator or portal/Backend — triggers RCE in protobufjs message parser",
+      "recommendation": "npm install protobufjs@latest in platform/orchestrator and portal/Backend. Review what message sources are trusted vs. untrusted."
+    },
+    {
+      "id": "DEP-005",
+      "title": "handlebars — JS Injection via AST Type Confusion (@partial-block)",
+      "severity": "P1",
+      "category": "injection",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "file": "Source/Backend/package.json",
+      "route": "ESCALATE → TheGuardians",
+      "trigger": "injection",
+      "exploit_scenario": "Attacker tampers with the @partial-block AST node in a Handlebars template to inject and execute arbitrary JavaScript in the rendering context",
+      "recommendation": "npm install handlebars@latest (>=4.7.8). Audit all Backend template rendering — if any templates accept user input, add strict escaping."
+    },
+    {
+      "id": "DEP-009",
+      "title": "form-data — CRLF Injection in Multipart Field Names/Filenames",
+      "severity": "P2",
+      "category": "injection",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "file": "Source/Backend/package.json",
+      "route": "ESCALATE → TheGuardians",
+      "trigger": "injection",
+      "exploit_scenario": "Upload file with crafted filename 'evil.txt\r\nX-Injected: header' to inject HTTP headers into multipart form data, potentially bypassing security checks",
+      "recommendation": "Update form-data. Test all file upload endpoints with crafted CRLF filenames."
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "FR-WF-* IDs Invented — No Spec Backing for 13 Requirement IDs",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "file": "Source/Backend/src/app.ts",
+      "status": "NEW",
+      "route": "TheFixer",
+      "exploit_scenario": "Traceability enforcer cannot validate any requirements — traceability system is entirely decorative. Any defect in the 30+ source files is undetectable via traceability gate.",
+      "recommendation": "Add formal FR-WF-001 through FR-WF-013 IDs to Specifications/workflow-engine.md. This is a one-time spec edit that instantly validates all existing Verifies comments."
+    },
+    {
+      "id": "QO-002",
+      "title": "69 Formal Requirements (FR-001–FR-069) Entirely Unimplemented",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "status": "NEW",
+      "route": "TheFixer",
+      "exploit_scenario": "69 active formal FRs (SQLite feature requests, dev cycles, pipeline orchestration) have zero implementation. Either major scope drift or stale spec misleads future agents into building wrong things.",
+      "recommendation": "Immediately determine spec status: (a) archive dev-workflow-platform.md if superseded, or (b) create a Plans/ entry if it describes intended future work. Do not leave 69 live FRs silently unimplemented."
+    },
+    {
+      "id": "DEP-001",
+      "title": "vitest — Arbitrary File Read/Execute via UI Server",
+      "severity": "P1",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "file": "Source/Frontend/package.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "exploit_scenario": "If vitest UI server is accessible (e.g., dev server left running in staging), attacker can read arbitrary files from filesystem and execute code via HTTP request to UI endpoint",
+      "recommendation": "npm install --save-dev vitest@latest in Source/Frontend and portal/Backend. Set ui: false in vitest.config.ts for non-development environments."
+    },
+    {
+      "id": "DEP-002",
+      "title": "tinypool — Prototype Pollution RCE via Worker Options",
+      "severity": "P1",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "file": "Source/Frontend/package.json",
+      "status": "NEW",
+      "route": "TheFixer",
+      "exploit_scenario": "Malformed worker thread options passed to tinypool trigger prototype pollution leading to Remote Code Execution. Fixed as transitive dep when vitest is updated.",
+      "recommendation": "Update vitest (tinypool is a transitive dependency — it updates automatically)."
+    },
+    {
+      "id": "DEP-003",
+      "title": "proxy-addr — IPv4-Mapped IPv6 IP Spoofing (Auth Bypass)",
+      "severity": "P1",
+      "category": "authentication-bypass",
+      "source": "dependency-auditor",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "route": "ESCALATE → TheGuardians",
+      "exploit_scenario": "Attacker crafts X-Forwarded-For: ::ffff:127.0.0.1 header to appear as localhost, bypassing IP-based access controls in Express trusted-proxy middleware",
+      "recommendation": "Run npm update in Source/Backend, platform/orchestrator, portal/Backend. Have TheGuardians test all IP-based access control paths."
+    },
+    {
+      "id": "DEP-004",
+      "title": "protobufjs — Arbitrary Code Execution",
+      "severity": "P1",
+      "category": "remote-code-execution",
+      "source": "dependency-auditor",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "file": "platform/orchestrator/package.json",
+      "status": "NEW",
+      "route": "ESCALATE → TheGuardians",
+      "exploit_scenario": "Send malformed .proto or .pb message to platform/orchestrator or portal/Backend — triggers arbitrary code execution in protobufjs message parser",
+      "recommendation": "npm install protobufjs@latest. Classify all protobuf message sources as trusted/untrusted. Add validation layer for untrusted sources."
+    },
+    {
+      "id": "DEP-005",
+      "title": "handlebars — JS Injection via AST Type Confusion",
+      "severity": "P1",
+      "category": "injection",
+      "source": "dependency-auditor",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "route": "ESCALATE → TheGuardians",
+      "exploit_scenario": "Attacker tampers with @partial-block AST node in Handlebars template to inject and execute JavaScript in server rendering context",
+      "recommendation": "npm install handlebars@latest (>=4.7.8). Audit all Backend template rendering for user-controlled input."
+    }
+  ],
+  "p2_findings": [
+    { "id": "QO-003", "title": "FR-TMP-001–FR-TMP-010 (Tiered Merge Pipeline) Unimplemented in Source/", "severity": "P2", "category": "spec-drift", "source": "quality-oracle", "file": "Specifications/tiered-merge-pipeline.md", "status": "NEW", "route": "TheFixer" },
+    { "id": "QO-004", "title": "Route Handlers Call Store Directly (Bypasses Service Layer)", "severity": "P2", "category": "architecture-violation", "source": "quality-oracle", "file": "Source/Backend/src/routes/workItems.ts", "status": "NEW", "route": "TheFixer" },
+    { "id": "QO-005", "title": "FR-dependency-* Spec Targets portal/ but Implementation is in Source/", "severity": "P2", "category": "spec-drift", "source": "quality-oracle", "file": "Specifications/dev-workflow-platform.md", "status": "NEW", "route": "TheFixer" },
+    { "id": "QO-008", "title": "workflow-engine.md Has No Formal FR-WF-* Requirement IDs", "severity": "P2", "category": "spec-drift", "source": "quality-oracle", "file": "Specifications/workflow-engine.md", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-006", "title": "body-parser — DoS via Invalid Limit Value", "severity": "P2", "category": "cve", "cve": "GHSA-v422-hmwv-36x6", "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-007", "title": "brace-expansion — Process Hang & Memory Exhaustion", "severity": "P2", "category": "cve", "cve": "GHSA-f886-m6hf-6m8v", "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-008", "title": "browserslist — Unbounded Memory Growth (Cache No Eviction)", "severity": "P2", "category": "cve", "cve": "GHSA-c83g-rgw3-j3cx", "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-009", "title": "form-data — CRLF Injection in Multipart Fields/Filenames", "severity": "P2", "category": "injection", "cve": "GHSA-hmw2-7cc7-3qxx", "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW", "route": "ESCALATE → TheGuardians" },
+    { "id": "DEP-010", "title": "js-yaml — Quadratic-Complexity DoS via Merge Keys", "severity": "P2", "category": "cve", "cve": "GHSA-h67p-54hq-rp68", "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-011", "title": "vite — Path Traversal in Optimized Deps .map Handling", "severity": "P2", "category": "cve", "cve": "GHSA-4w7w-66w2-5vf9", "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-012", "title": "postcss — XSS via Unescaped </style> in CSS Stringify Output", "severity": "P2", "category": "cve", "cve": "GHSA-qx2v-qp2m-jg93", "source": "dependency-auditor", "file": "portal/Frontend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-013", "title": "nanoid — Non-Secure Generators Loop Indefinitely with Negative Size", "severity": "P2", "category": "cve", "cve": "GHSA-28wg-ghj8-5hjv", "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-014", "title": "source-map-js — Event-Loop DoS via Indexed Sourcemap Offsets", "severity": "P2", "category": "cve", "cve": "GHSA-68fv-2mgg-jv7q", "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-015", "title": "ws — Uninitialized Memory Disclosure", "severity": "P2", "category": "cve", "cve": "GHSA-58qx-3vcg-4xpx", "source": "dependency-auditor", "file": "portal/Frontend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-016", "title": "@vitest/mocker — Path Traversal & Code Injection via Mock Registration", "severity": "P2", "category": "cve", "cve": "GHSA-82fw-gwwq-j7x9", "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-017", "title": "@remix-run/router — Open Redirect via Protocol-Relative // URLs", "severity": "P2", "category": "cve", "cve": "GHSA-2j2x-hqr9-3h42", "source": "dependency-auditor", "file": "Source/Frontend/package.json", "status": "NEW", "route": "TheFixer" },
+    { "id": "DEP-018", "title": "picomatch — Method Injection in POSIX Character Classes", "severity": "P2", "category": "cve", "cve": "GHSA-3v7f-55p6-f55p", "source": "dependency-auditor", "file": "portal/Frontend/package.json", "status": "NEW", "route": "TheFixer" }
+  ],
+  "p3_p4_findings": [
+    { "id": "QO-006", "title": "Two eslint-disable Suppressions Hiding react-hooks/exhaustive-deps", "severity": "P3", "category": "pattern-violation", "source": "quality-oracle", "file": "Source/Frontend/src/components/DependencyPicker.tsx", "status": "NEW" },
+    { "id": "QO-007", "title": "WorkItemDetailPage.tsx at 426 Lines (85% of 500-Line Threshold)", "severity": "P3", "category": "pattern-violation", "source": "quality-oracle", "file": "Source/Frontend/src/pages/WorkItemDetailPage.tsx", "status": "NEW" },
+    { "id": "DEP-019", "title": "@grpc/grpc-js — Malformed Request Server Crash", "severity": "P3", "category": "cve", "cve": "GHSA-5375-pq7m-f5r2", "source": "dependency-auditor", "file": "platform/orchestrator/package.json", "status": "NEW" },
+    { "id": "DEP-020", "title": "path-to-regexp — ReDoS via Multiple Route Parameters", "severity": "P3", "category": "cve", "cve": "GHSA-37ch-88jc-xwx2", "source": "dependency-auditor", "file": "platform/orchestrator/package.json", "status": "NEW" },
+    { "id": "DEP-021", "title": "baseline-browser-mapping — Process Termination on Invalid Input", "severity": "P3", "category": "cve", "cve": "GHSA-w5vr-8v7q-w6rv", "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW" },
+    { "id": "DEP-022", "title": "@babel/core — Arbitrary File Read via sourceMappingURL Comment", "severity": "P3", "category": "cve", "cve": "GHSA-4x5r-pxfx-6jf8", "source": "dependency-auditor", "file": "Source/Backend/package.json", "status": "NEW" }
+  ]
+}

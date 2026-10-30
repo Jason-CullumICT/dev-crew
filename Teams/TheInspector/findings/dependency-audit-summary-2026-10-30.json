@@ -1,0 +1,202 @@
+{
+  "audit_date": "2026-10-30",
+  "audit_type": "dependency",
+  "projects_scanned": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E",
+    "platform/orchestrator",
+    "portal/Backend",
+    "portal/Frontend"
+  ],
+  "total_vulnerabilities": 123,
+  "vulnerabilities_by_severity": {
+    "critical": 12,
+    "high": 34,
+    "moderate": 67,
+    "low": 10
+  },
+  "critical_findings": {
+    "total": 5,
+    "packages": [
+      {
+        "id": "DEP-001",
+        "package": "vitest",
+        "severity": "critical",
+        "cve": "GHSA-5xrq-8626-4rwp",
+        "title": "Arbitrary file read/execute via UI server",
+        "affected_projects": [
+          "Source/Frontend (DIRECT)",
+          "portal/Backend (DIRECT)",
+          "portal/Frontend (transitive)"
+        ],
+        "type": "remote-code-execution",
+        "exploit_vector": "HTTP request to vitest UI endpoint when enabled in non-dev"
+      },
+      {
+        "id": "DEP-002",
+        "package": "tinypool",
+        "severity": "critical",
+        "cve": "GHSA-5gmw-xhrv-c9v3",
+        "title": "Prototype pollution RCE via worker options",
+        "affected_projects": [
+          "Source/Frontend (transitive)",
+          "portal/Backend (transitive)",
+          "portal/Frontend (transitive)"
+        ],
+        "type": "remote-code-execution",
+        "exploit_vector": "Malformed worker configuration"
+      },
+      {
+        "id": "DEP-003",
+        "package": "proxy-addr",
+        "severity": "critical",
+        "cve": "GHSA-jqcg-44mw-7w3h",
+        "title": "IPv4-mapped IPv6 IP spoofing for auth bypass",
+        "affected_projects": [
+          "Source/Backend (transitive)",
+          "platform/orchestrator (transitive)",
+          "portal/Backend (transitive)"
+        ],
+        "type": "authentication-bypass",
+        "exploit_vector": "Craft X-Forwarded-For with IPv4-mapped IPv6 to bypass IP whitelist",
+        "requires_escalation": true,
+        "escalation_team": "TheGuardians"
+      },
+      {
+        "id": "DEP-004",
+        "package": "protobufjs",
+        "severity": "critical",
+        "cve": "GHSA-xq3m-2v4x-88gg",
+        "title": "Arbitrary code execution in protobuf message parsing",
+        "affected_projects": [
+          "platform/orchestrator (transitive)",
+          "portal/Backend (transitive)"
+        ],
+        "type": "remote-code-execution",
+        "exploit_vector": "Send malformed .proto or .pb message"
+      },
+      {
+        "id": "DEP-005",
+        "package": "handlebars",
+        "severity": "critical",
+        "cve": "GHSA-3mfm-83xf-c92r",
+        "title": "JavaScript injection via AST tampering",
+        "affected_projects": [
+          "Source/Backend (transitive)"
+        ],
+        "type": "code-injection",
+        "exploit_vector": "Tampering @partial-block in template AST"
+      }
+    ]
+  },
+  "high_severity_findings": 34,
+  "direct_dependencies_with_critical": 3,
+  "direct_critical_packages": [
+    "vitest (appears in 2 projects)"
+  ],
+  "outdated_direct_dependencies": {
+    "total": 7,
+    "major_versions_behind_1": 7,
+    "major_versions_behind_2": 0
+  },
+  "dependency_tree_analysis": {
+    "largest_projects": [
+      {
+        "project": "portal/Backend",
+        "direct": 397,
+        "transitive": 181,
+        "total": 577,
+        "risk_level": "HIGH"
+      },
+      {
+        "project": "portal/Frontend",
+        "direct": 9,
+        "transitive": 415,
+        "total": 424,
+        "risk_level": "HIGH"
+      },
+      {
+        "project": "Source/Backend",
+        "direct": 102,
+        "transitive": 310,
+        "total": 411,
+        "risk_level": "MODERATE"
+      },
+      {
+        "project": "platform/orchestrator",
+        "direct": 153,
+        "transitive": 2,
+        "total": 155,
+        "risk_level": "MODERATE"
+      },
+      {
+        "project": "Source/Frontend",
+        "direct": 3,
+        "transitive": 227,
+        "total": 230,
+        "risk_level": "MODERATE"
+      }
+    ],
+    "total_direct_dependencies": 664,
+    "total_transitive_dependencies": 1135
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": 0,
+    "hardcoded_secrets_found": false,
+    "very_high_tree_size_projects": [
+      "portal/Backend (577)",
+      "portal/Frontend (424)"
+    ]
+  },
+  "action_items": {
+    "immediate": [
+      "Update vitest to latest in Source/Frontend and portal/Backend",
+      "Update proxy-addr in all packages",
+      "Update protobufjs in platform/orchestrator and portal/Backend",
+      "Update handlebars in Source/Backend",
+      "Disable vitest UI server in non-dev environments"
+    ],
+    "short_term": [
+      "Update vite (direct dep)",
+      "Update postcss (direct dep)",
+      "Update remaining P2 high-severity packages",
+      "Review test infrastructure for vitest UI exposure"
+    ],
+    "long_term": [
+      "Reduce portal/Backend dependency tree (577 is concerning)",
+      "Add npm audit to CI/CD pipeline",
+      "Establish monthly dependency update cadence",
+      "Monitor for new vulnerabilities in critical packages"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "DEP-003 (proxy-addr): Test IP spoofing in auth flows",
+      "DEP-004 (protobufjs): Review message parsing security",
+      "DEP-005 (handlebars): Audit template injection risks",
+      "DEP-009 (form-data): Test CRLF injection in uploads",
+      "DEP-013 (nanoid): Audit ID generation security"
+    ],
+    "TheFixer": [
+      "Update all critical and high-severity packages",
+      "Add npm audit to CI pipeline",
+      "Lock vitest as devDependency only"
+    ]
+  },
+  "metrics": {
+    "cves_critical": 12,
+    "cves_high": 34,
+    "cves_moderate": 67,
+    "cves_low": 10,
+    "projects_with_critical": 6,
+    "direct_deps_with_critical": 3,
+    "largest_dep_tree": 577,
+    "avg_dep_tree_size": 364
+  },
+  "overall_grade": "D",
+  "overall_status": "CRITICAL — Multiple P1 vulnerabilities in production-facing packages",
+  "recommendations": "URGENT: Update vitest, proxy-addr, protobufjs, handlebars, tinypool. Disable vitest UI in non-dev. Audit IP-based auth. Escalate proxy-addr and protobufjs issues to TheGuardians.",
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-10-30.md",
+  "learnings_file": "Teams/TheInspector/learnings/dependency-auditor.md"
+}

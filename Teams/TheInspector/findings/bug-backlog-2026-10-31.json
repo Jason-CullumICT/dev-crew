@@ -1,0 +1,317 @@
+{
+  "audit_id": "run-20261031-082519",
+  "audit_date": "2026-10-31",
+  "branch": "audit/inspector-2026-10-31-d339c9",
+  "overall_grade": "D",
+  "grade_rationale": "5 P1 findings (exceeds max_p1:2 threshold for grade C). 4 critical CVEs including RCE vectors. 17 P2 findings.",
+  "grading_thresholds": {
+    "applied": "D",
+    "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80 },
+    "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60 },
+    "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40 },
+    "D": "anything worse"
+  },
+  "totals": {
+    "p1": 5,
+    "p2": 17,
+    "p3": 6,
+    "p4": 3,
+    "total": 31,
+    "escalated_to_guardians": 4,
+    "routed_to_fixer": 20
+  },
+  "trend": {
+    "status": "first_audit",
+    "prior_grade": null,
+    "fixed_count": 0,
+    "still_open_count": 0,
+    "regressed_count": 0,
+    "new_count": 31
+  },
+  "spec_coverage": {
+    "self_judging_workflow": { "total": 13, "covered": 13, "pct": 100 },
+    "dependency_linking": { "total": 16, "covered": 15, "pct": 94 },
+    "dev_workflow_platform": { "total": 69, "note": "excluded — config maps wrong source dir; see QO-001" },
+    "weighted_active_pct": 97
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Handlebars JavaScript Injection (CVSS 9.8)",
+      "package": "handlebars@4.7.8",
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-8r5x-fm3f-whwj", "GHSA-p8wg-vrv2-v86f"],
+      "file": "Source/Backend/node_modules (transitive via jest/handlebars)",
+      "exploit_scenario": "AST type confusion allows arbitrary JS execution during template rendering",
+      "fix": "Update direct dep pulling handlebars to require >=4.7.10",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve",
+      "title": "proxy-addr IP Spoofing / Auth Bypass (CVSS 9.1)",
+      "package": "proxy-addr@2.0.7",
+      "cves": ["GHSA-jqcg-44mw-7w3h"],
+      "file": "Source/Backend/node_modules (transitive via express)",
+      "exploit_scenario": "Forged X-Forwarded-For with IPv4-mapped IPv6 bypasses subnet trust; req.ip returns spoofed value",
+      "fix": "cd Source/Backend && npm update express (upgrades proxy-addr to >=2.0.8)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Vitest UI Server Arbitrary File Read/Execute (CVSS 9.8)",
+      "package": "vitest@2.0.5",
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "file": "Source/Frontend/package.json",
+      "exploit_scenario": "Any machine reaching the Vitest UI port can read and execute arbitrary project files, no auth required",
+      "fix": "cd Source/Frontend && npm update vitest (target >=5.0.5 for tinypool fix too)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "cve",
+      "title": "Tinypool Prototype Pollution → RCE Gadget",
+      "package": "tinypool@2.1.1",
+      "cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "file": "Source/Frontend/node_modules (transitive via vitest)",
+      "exploit_scenario": "Prototype pollution of worker/run options triggers code execution in worker processes",
+      "fix": "Resolved by updating vitest to >=5.0.5 (see DEP-003)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "config-mismatch",
+      "title": "Inspector config specs.dir maps to wrong application layer",
+      "file": "Teams/TheInspector/inspector.config.yml:33",
+      "exploit_scenario": "specs.dir points to portal/ app specs; source.dirs points to workflow engine. All drift analysis results are invalid.",
+      "fix": "Update specs.dir to Plans/, fix traceability pattern to FR-[A-Z][A-Z0-9-]+",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers bypass service layer — direct store imports",
+      "files": ["Source/Backend/src/routes/workItems.ts:12", "Source/Backend/src/routes/workflow.ts:15", "Source/Backend/src/routes/intake.ts:4"],
+      "fix": "Extract store calls into service functions; routes call services only",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "FR-dependency-seed not implemented — no code, no traceability",
+      "file": "Source/Backend/src/ (missing: store/seed.ts)",
+      "fix": "Create idempotent seedDependencies() function, wire to app.ts startup",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "dependencyCheckDuration Histogram missing from metrics.ts",
+      "file": "Source/Backend/src/metrics.ts:40",
+      "fix": "Add Histogram to prom-client imports; define and instrument dependencyCheckDuration",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "cve",
+      "title": "body-parser DoS via trailing bytes after compressed body",
+      "package": "body-parser@1.20.8",
+      "cves": ["GHSA-27r3-jxmh-p828"],
+      "fix": "npm update express (brings body-parser >=1.20.9)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve",
+      "title": "brace-expansion DoS — 6 CVEs (CPU exhaustion, OOM, stack overflow)",
+      "package": "brace-expansion@1.1.20",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895", "GHSA-q2hr-2g5m-vwhr", "GHSA-qhr7-859c-m2p7", "GHSA-6j4f-fj2g-mc7p"],
+      "fix": "Update all deps using brace-expansion; update npm/npx/package managers",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve",
+      "title": "browserslist unbounded memory growth — 2 CVEs",
+      "package": "browserslist@4.28.6",
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "fix": "npm update vite (which updates browserslist)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "cve",
+      "title": "js-yaml quadratic CPU consumption — 4 CVEs",
+      "package": "js-yaml@3.15.1",
+      "cves": ["GHSA-h67p-54hq-rp68", "GHSA-52cp-r559-cp3m", "GHSA-5p4m-2wfm-xmqj", "GHSA-2883-xcg3-v3hh"],
+      "fix": "Direct update or update packages depending on js-yaml",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "cve",
+      "title": "nanoid infinite loop / integer overflow — 3 CVEs",
+      "package": "nanoid@3.3.17",
+      "cves": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+      "fix": "npm update nanoid@latest",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "cve",
+      "title": "postcss path traversal / arbitrary file read — 4 CVEs",
+      "package": "postcss@8.5.22",
+      "cves": ["GHSA-6g55-p6wh-862q", "GHSA-r28c-9q8g-f849", "GHSA-fxqj-rqcc-2cmp"],
+      "fix": "npm update postcss@latest (>=8.5.23)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "cve",
+      "title": "form-data CRLF injection in multipart field names",
+      "package": "form-data@4.0.5",
+      "cves": ["GHSA-hmw2-7cc7-3qxx"],
+      "fix": "npm update form-data@latest (>=4.0.6)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "cve",
+      "title": "source-map-js event-loop DoS",
+      "package": "source-map-js@1.2.1",
+      "cves": ["GHSA-68fv-2mgg-jv7q"],
+      "fix": "npm update source-map-js@latest (>=1.2.2)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "category": "cve",
+      "title": "ws memory exhaustion DoS via tiny fragments",
+      "package": "ws@8.20.1",
+      "cves": ["GHSA-96hv-2xvq-fx4p"],
+      "fix": "npm update ws@latest (>=8.21.0)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "category": "cve+outdated",
+      "title": "vite multiple path traversal CVEs — 8 vulnerabilities",
+      "package": "vite@5.4.0",
+      "cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-v6wh-96g9-6wx3", "GHSA-698v-4r3x-3vcv", "GHSA-r825-w8mm-5pxw", "GHSA-587h-7wmj-h5pm", "GHSA-9jrq-w75r-8gcw", "GHSA-rq7h-c2jc-7f22", "GHSA-fx2h-pf6j-xcff"],
+      "fix": "npm update vite (>=8.3.5) — MAJOR VERSION, run full test suite",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P2",
+      "category": "cve",
+      "title": "vitest/mocker path traversal + code injection — 2 CVEs",
+      "package": "vitest@2.0.5 + @vitest/mocker",
+      "cves": ["GHSA-82fw-gwwq-j7x9", "GHSA-qxg6-89mg-rqv8"],
+      "fix": "Resolved by updating vitest (see DEP-003)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-018",
+      "severity": "P2",
+      "category": "outdated",
+      "title": "pino 2 major versions behind (8.17.0 → 10.x)",
+      "package": "pino@8.17.0",
+      "fix": "npm update pino@latest in Source/Backend — check v10 breaking changes",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-021",
+      "severity": "P2",
+      "category": "outdated+cve",
+      "title": "react-router-dom outdated + open redirect CVE",
+      "package": "react-router-dom@6.30.6",
+      "cves": ["GHSA-2j2x-hqr9-3h42"],
+      "fix": "npm update react-router-dom@latest (v7 — route API migration required)",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-022",
+      "severity": "P2",
+      "category": "outdated+cve",
+      "title": "vite 3 major versions behind + 8 CVEs (see DEP-014)",
+      "package": "vite@5.4.0",
+      "fix": "Covered by DEP-014 remediation",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    { "id": "QO-005", "severity": "P3", "category": "architecture", "title": "OpenTelemetry tracing not instrumented", "file": "Source/Backend/src/", "fix": "Add @opentelemetry/sdk-node + Express HTTP middleware, or document exception in CLAUDE.md", "status": "NEW" },
+    { "id": "QO-006", "severity": "P3", "category": "architecture", "title": "Logger always emits JSON — no dev pretty-print", "file": "Source/Backend/src/utils/logger.ts:17", "fix": "Add NODE_ENV !== 'production' branch for readable output", "status": "NEW" },
+    { "id": "DEP-016", "severity": "P3", "category": "cve", "title": "@babel/core arbitrary file read via sourceMappingURL", "package": "@babel/core@7.29.0", "cves": ["GHSA-4x5r-pxfx-6jf8"], "fix": "npm update @babel/core", "status": "NEW" },
+    { "id": "DEP-017", "severity": "P3", "category": "cve", "title": "@remix-run/router open redirect via protocol-relative URL", "package": "@remix-run/router@1.23.2", "cves": ["GHSA-2j2x-hqr9-3h42"], "fix": "Update react-router-dom (brings router update)", "status": "NEW" },
+    { "id": "DEP-019", "severity": "P3", "category": "outdated", "title": "uuid 5 major versions behind (9.0.0 → 14.x)", "package": "uuid@9.0.0", "fix": "npm update uuid@latest (low risk)", "status": "NEW" },
+    { "id": "DEP-020", "severity": "P3", "category": "outdated", "title": "React 1 major version behind (18.3.1 → 19.x)", "package": "react@18.3.1", "fix": "npm update react react-dom (requires component testing)", "status": "NEW" }
+  ],
+  "p4_findings": [
+    { "id": "QO-007", "severity": "P4", "category": "pattern-violation", "title": "eslint-disable exhaustive-deps in 2 hooks", "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"], "fix": "Audit whether intentional; use useCallback/useRef instead of suppressing", "status": "NEW" },
+    { "id": "QO-008", "severity": "P4", "category": "test-coverage", "title": "Traceability enforcer only checks most-recent plan in CI", "file": "tools/traceability-enforcer.py:49", "fix": "Wrap enforcer in a loop over all Plans/*/requirements.md; update CLAUDE.md gate", "status": "NEW" },
+    { "id": "DEP-023", "severity": "P4", "category": "cve", "title": "Moderate CVEs in esbuild/jest transitive deps", "fix": "Resolved when vite and vitest are updated", "status": "NEW" }
+  ],
+  "cross_reference_map": [
+    { "root_cause": "Vitest outdated (2.0.5)", "affected": ["DEP-003", "DEP-004", "DEP-015"], "single_fix": "npm update vitest >=5.0.5", "impact": "3 findings resolved" },
+    { "root_cause": "Vite outdated (5.4.0)", "affected": ["DEP-014", "DEP-007", "DEP-010", "DEP-012"], "single_fix": "npm update vite >=8.3.5", "impact": "4 findings resolved (major version bump)" },
+    { "root_cause": "Express outdated", "affected": ["DEP-002", "DEP-005"], "single_fix": "npm update express", "impact": "2 findings resolved (patch/minor)" },
+    { "root_cause": "Inspector config misrouted", "affected": ["QO-001"], "single_fix": "Fix inspector.config.yml specs.dir and traceability pattern", "impact": "Makes all future drift analysis valid" }
+  ],
+  "remediation_roadmap": {
+    "block_deployment": ["DEP-001", "DEP-002", "DEP-003", "DEP-004"],
+    "this_sprint": ["QO-001", "QO-002", "QO-003", "QO-004", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "DEP-013", "DEP-014", "DEP-015", "DEP-018"],
+    "next_sprint": ["QO-005", "QO-006", "DEP-016", "DEP-017", "DEP-021"],
+    "backlog": ["QO-007", "QO-008", "DEP-019", "DEP-020", "DEP-022", "DEP-023"]
+  },
+  "report_paths": {
+    "html": "Teams/TheInspector/findings/audit-2026-10-31-D.html",
+    "json_backlog": "Teams/TheInspector/findings/bug-backlog-2026-10-31.json"
+  }
+}

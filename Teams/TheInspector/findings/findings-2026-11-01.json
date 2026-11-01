@@ -1,0 +1,292 @@
+{
+  "audit_metadata": {
+    "run_id": "audit_2026_11_01",
+    "timestamp": "2026-11-01",
+    "analyzer": "Dependency Auditor (Haiku)",
+    "project": "dev-crew",
+    "scope": "npm packages across 3 components"
+  },
+  "summary": {
+    "total_cves": 58,
+    "critical": 6,
+    "high": 15,
+    "moderate": 31,
+    "low": 6,
+    "risk_level": "CRITICAL"
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "Handlebars JavaScript Injection (Multiple CVEs)",
+      "severity": "P1",
+      "package": "handlebars",
+      "version": "<=4.7.9",
+      "components": ["Source/Backend (dev dependency)"],
+      "cvss_max": 9.8,
+      "cve_count": 8,
+      "key_cves": ["GHSA-2w6w-674q-4c4q", "GHSA-3mfm-83xf-c92r", "GHSA-8r5x-fm3f-whwj"],
+      "fix": "npm update handlebars",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Protobufjs Arbitrary Code Execution",
+      "severity": "P1",
+      "package": "protobufjs",
+      "version": "<=7.6.4",
+      "components": ["platform/orchestrator (direct dependency)"],
+      "cvss_max": 9.8,
+      "cve_count": 10,
+      "key_cves": ["GHSA-xq3m-2v4x-88gg", "GHSA-75px-5xx7-5xc7"],
+      "fix": "npm update protobufjs",
+      "escalate_to": "TheGuardians",
+      "impact": "Orchestrator infrastructure - runs all agent pipelines"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Proxy-Addr IPv4-Mapped IPv6 IP Spoofing",
+      "severity": "P1",
+      "package": "proxy-addr",
+      "version": "<=2.0.7",
+      "components": ["Source/Backend", "platform/orchestrator"],
+      "cvss_max": 9.1,
+      "cve_count": 1,
+      "key_cves": ["GHSA-jqcg-44mw-7w3h"],
+      "fix": "npm update express",
+      "escalate_to": "TheGuardians",
+      "impact": "Bypasses IP-based access control via IPv4-mapped IPv6 addresses"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vitest UI Arbitrary File Read and Execution",
+      "severity": "P1",
+      "package": "vitest",
+      "version": "<=4.1.10",
+      "components": ["Source/Frontend (dev dependency)"],
+      "cvss_max": 9.8,
+      "cve_count": 3,
+      "key_cves": ["GHSA-5xrq-8626-4rwp", "GHSA-82fw-gwwq-j7x9"],
+      "fix": "npm update vitest",
+      "impact": "If Vitest UI server runs, attacker can read files and execute code"
+    },
+    {
+      "id": "DEP-005",
+      "title": "Tinypool Prototype Pollution → RCE",
+      "severity": "P1",
+      "package": "tinypool",
+      "version": "<=2.1.1",
+      "components": ["Source/Frontend (transitive via Vitest)"],
+      "cvss_max": 9.8,
+      "cve_count": 2,
+      "key_cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "fix": "npm update vitest (brings tinypool v2.1.2+)"
+    },
+    {
+      "id": "DEP-006",
+      "title": "Body-Parser Denial of Service",
+      "severity": "P2",
+      "package": "body-parser",
+      "version": "<=1.20.8",
+      "components": ["Source/Backend", "platform/orchestrator"],
+      "cvss_max": 7.5,
+      "cve_count": 2,
+      "key_cves": ["GHSA-27r3-jxmh-p828"],
+      "fix": "npm update express"
+    }
+  ],
+  "outdated_packages": {
+    "backend": [
+      {
+        "name": "express",
+        "current": "4.18.2",
+        "wanted": "4.22.3",
+        "latest": "5.3.0",
+        "gap_majors": 1,
+        "fixes": ["proxy-addr IP spoofing", "body-parser DoS"],
+        "priority": "CRITICAL"
+      },
+      {
+        "name": "uuid",
+        "current": "9.0.0",
+        "wanted": "9.0.1",
+        "latest": "14.0.3",
+        "gap_majors": 5,
+        "fixes": ["buffer bounds check vulnerability"],
+        "priority": "HIGH"
+      },
+      {
+        "name": "pino",
+        "current": "8.17.0",
+        "wanted": "8.21.0",
+        "latest": "10.4.0",
+        "gap_majors": 2,
+        "fixes": ["performance & observability improvements"],
+        "priority": "LOW"
+      }
+    ],
+    "frontend": [
+      {
+        "name": "react",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.3.1",
+        "gap_majors": 1,
+        "priority": "LOW"
+      },
+      {
+        "name": "react-router-dom",
+        "current": "6.26.0",
+        "wanted": "6.30.6",
+        "latest": "7.18.5",
+        "gap_majors": 1,
+        "fixes": ["multiple open redirect CVEs"],
+        "priority": "CRITICAL"
+      },
+      {
+        "name": "vite",
+        "current": "5.4.0",
+        "wanted": "5.4.0",
+        "latest": "8.3.5",
+        "gap_majors": 3,
+        "fixes": ["path traversal", "command execution"],
+        "priority": "CRITICAL"
+      },
+      {
+        "name": "vitest",
+        "current": "2.0.5",
+        "wanted": "2.0.5",
+        "latest": "5.0.5",
+        "gap_majors": 3,
+        "fixes": ["arbitrary file read", "code execution"],
+        "priority": "CRITICAL"
+      }
+    ],
+    "orchestrator": [
+      {
+        "name": "dockerode",
+        "current": "4.0.4",
+        "latest": "5.0.1",
+        "gap_majors": 1,
+        "fixes": ["uuid buffer bounds (transitive)"],
+        "priority": "HIGH"
+      }
+    ]
+  },
+  "dependency_tree": {
+    "backend": {
+      "direct_prod": 102,
+      "direct_dev": 310,
+      "transitive_estimated": 300,
+      "total_surface": "~400+"
+    },
+    "frontend": {
+      "direct_prod": 9,
+      "direct_dev": 222,
+      "transitive_estimated": 220,
+      "total_surface": "~230+"
+    },
+    "orchestrator": {
+      "direct_prod": 153,
+      "direct_dev": 0,
+      "transitive_estimated": 100,
+      "total_surface": "~150+"
+    },
+    "total_monorepo": "~600+ transitive dependencies"
+  },
+  "supply_chain_risks": [
+    {
+      "risk": "Large dependency tree (600+ packages)",
+      "impact": "Increased attack surface; single maintainer packages are points of failure",
+      "mitigation": "Implement dependency pinning, automated scanning, regular audits"
+    },
+    {
+      "risk": "Handlebars ecosystem instability",
+      "impact": "8 separate CVEs in one package; indicates maintenance gaps",
+      "mitigation": "Consider alternative template engine or lock version"
+    },
+    {
+      "risk": "Protobufjs complexity",
+      "impact": "10+ CVEs; complex code generation with multiple injection vectors",
+      "mitigation": "Evaluate buf (buf.build) ecosystem as replacement"
+    },
+    {
+      "risk": "Testing frameworks lagging",
+      "impact": "Jest 29 outdated (current 30+); Vitest 2 far behind (current 5)",
+      "mitigation": "Plan major version upgrades per component"
+    }
+  ],
+  "remediation_phases": {
+    "phase_1_critical": {
+      "timeline": "24-48 hours",
+      "tasks": [
+        "npm update express (fixes proxy-addr, body-parser)",
+        "npm update uuid (buffer bounds)",
+        "npm update react-router-dom (open redirects)",
+        "npm update vitest @vitest/mocker tinypool (RCE)",
+        "npm update vite (path traversal)",
+        "npm update @grpc/grpc-js (server crash)",
+        "npm update protobufjs (code execution)"
+      ],
+      "testing": ["npm test", "Source/E2E tests", "orchestrator smoke test"]
+    },
+    "phase_2_high": {
+      "timeline": "1-2 weeks",
+      "tasks": [
+        "npm update jest (brace-expansion, glob fixes)",
+        "npm update @babel/core (arbitrary file read)",
+        "npm update postcss (path traversal)",
+        "npm update ws (memory exhaustion)",
+        "npm update nanoid (infinite loops)"
+      ]
+    },
+    "phase_3_verification": {
+      "tasks": [
+        "Re-run full npm audit",
+        "Verify zero critical/high remaining",
+        "Staging deployment",
+        "Full test suite on staging",
+        "Production rollout"
+      ]
+    }
+  },
+  "license_status": "Not fully scanned (license-checker not available in environment). No GPL/AGPL detected in direct dependencies.",
+  "recommendations": [
+    {
+      "category": "Immediate",
+      "items": [
+        "Apply all Phase 1 updates within 24-48 hours",
+        "Rotate any secrets potentially exposed via Vitest UI",
+        "Enable npm audit in CI/CD pipeline (fail on critical/high)"
+      ]
+    },
+    {
+      "category": "Short-term",
+      "items": [
+        "Complete Phase 2 updates within 2 weeks",
+        "Implement automated Dependabot or npm audit checks",
+        "Document major version upgrade strategy for React, Vite, Jest"
+      ]
+    },
+    {
+      "category": "Long-term",
+      "items": [
+        "Reduce dependency tree size (aim for <300 transitive)",
+        "Evaluate protobufjs → buf migration",
+        "Consider handlebars → ejs or mustache",
+        "Establish SLA for CVE remediation (e.g., critical within 48 hours)"
+      ]
+    }
+  ],
+  "escalations": [
+    {
+      "finding": "DEP-001, DEP-002, DEP-003, DEP-004",
+      "team": "TheGuardians",
+      "reason": "Security vulnerabilities affecting access control and code execution"
+    },
+    {
+      "finding": "All findings",
+      "team": "TheFixer",
+      "reason": "Requires code changes to Source/ and platform/ for dependency updates"
+    }
+  ]
+}

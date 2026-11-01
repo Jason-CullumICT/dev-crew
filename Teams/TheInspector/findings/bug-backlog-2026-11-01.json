@@ -1,0 +1,331 @@
+{
+  "audit_metadata": {
+    "audit_id": "inspector-2026-11-01",
+    "date": "2026-11-01",
+    "branch": "audit/inspector-2026-11-01-b5eb3a",
+    "grade": "D",
+    "specialists": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline (backend http://localhost:3001 and frontend http://localhost:5173 not reachable); static-mode analysis only",
+    "prior_audit": null,
+    "trend": "First audit — no baseline"
+  },
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 13,
+    "p3_total": 2,
+    "p4_total": 1,
+    "total_findings": 22,
+    "spec_coverage_pct": 87,
+    "escalations_to_guardians": 4,
+    "fixed_count": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "title": "Handlebars JavaScript Injection (8 CVEs, CVSS 9.8)",
+      "category": "code-injection",
+      "package": "handlebars <=4.7.9",
+      "components": ["Source/Backend (dev/test dependency chain)"],
+      "route_to": "TheGuardians",
+      "reason": "Template injection vulnerability in test infrastructure — attacker can inject arbitrary JS via malformed Handlebars templates",
+      "fix": "npm update handlebars",
+      "key_cves": ["GHSA-2w6w-674q-4c4q", "GHSA-8r5x-fm3f-whwj", "GHSA-xjpj-3mr7-gcpf"],
+      "cvss_max": 9.8
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "title": "Protobufjs Arbitrary Code Execution (10 CVEs, CVSS 9.8)",
+      "category": "code-injection",
+      "package": "protobufjs <=7.6.4",
+      "components": ["platform/orchestrator (direct dependency)"],
+      "route_to": "TheGuardians",
+      "reason": "Malformed protobuf descriptors can trigger RCE in the orchestrator that runs all agent pipelines",
+      "fix": "cd platform/orchestrator && npm update protobufjs",
+      "key_cves": ["GHSA-xq3m-2v4x-88gg", "GHSA-75px-5xx7-5xc7"],
+      "cvss_max": 9.8
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "title": "Proxy-addr IPv4-Mapped IPv6 IP Spoofing / Auth Bypass (CVSS 9.1)",
+      "category": "auth-bypass",
+      "package": "proxy-addr <=2.0.7 (transitive via express)",
+      "components": ["Source/Backend", "platform/orchestrator"],
+      "route_to": "TheGuardians",
+      "reason": "Bypasses IP-based access controls via IPv4-mapped IPv6 addresses — falls under 'auth bypass' security trigger",
+      "fix": "cd Source/Backend && npm update express; cd platform/orchestrator && npm update express",
+      "key_cves": ["GHSA-jqcg-44mw-7w3h"],
+      "cvss_max": 9.1
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "title": "Vitest UI Arbitrary File Read and Code Execution (CVSS 9.8)",
+      "category": "arbitrary-file-access",
+      "package": "vitest <=4.1.10",
+      "components": ["Source/Frontend (dev dependency)"],
+      "route_to": "TheGuardians",
+      "reason": "If Vitest UI server runs on CI, any network attacker can read arbitrary files (.env, secrets) and execute code via mock injection",
+      "fix": "cd Source/Frontend && npm update vitest",
+      "key_cves": ["GHSA-5xrq-8626-4rwp", "GHSA-82fw-gwwq-j7x9"],
+      "cvss_max": 9.8
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "title": "Traceability enforcer excludes portal/ — entire application tree unchecked",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Teams/TheInspector/inspector.config.yml:42",
+      "route_to": "TheFixer",
+      "failure_scenario": "Enforcer scans only Source/ and reports 76 FRs MISSING from dev-workflow-platform spec, even though ~96% are implemented in portal/. False alarms hide real drift; portal/ compliance is completely invisible.",
+      "recommendation": "Add 'portal/' to source.dirs in inspector.config.yml",
+      "fix_complexity": "trivial"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "title": "Tinypool Prototype Pollution → RCE (transitive via Vitest)",
+      "category": "remote-code-execution",
+      "specialist": "dependency-auditor",
+      "package": "tinypool <=2.1.1",
+      "components": ["Source/Frontend (transitive via Vitest)"],
+      "route_to": "TheFixer",
+      "reason": "Fixed by same vitest update as DEP-004 — no separate escalation needed, but tracks as P1 until resolved",
+      "fix": "cd Source/Frontend && npm update vitest",
+      "key_cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "cvss_max": 9.8
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "title": "dependencyCheckDuration histogram missing from Source/Backend metrics",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/src/metrics.ts:40-62",
+      "route_to": "TheFixer",
+      "failure_scenario": "GET /metrics on Source/ backend returns no dependency_check_duration histogram; dashboards and alerting get no data",
+      "recommendation": "Add dependencyCheckDuration Histogram to Source/Backend/src/metrics.ts matching portal/ label schema (check_type)"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "title": "3 FR-dependency-* requirements self-reported incomplete (api-types, seed, 2 test files)",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Plans/dependency-linking/requirements.md",
+      "route_to": "TheFixer",
+      "failure_scenario": "TypeScript strict-mode catch on 'as any' cast; blocked_by changes lost on PATCH; fresh environments missing seed data; DependencySection and BlockedBadge have zero test coverage",
+      "recommendation": "Add blocked_by?: string[] to shared API types; create portal/Backend/src/database/seed.ts; add DependencySection.test.tsx and BlockedBadge.test.tsx"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "title": "Specifications/tiered-merge-pipeline.md — 10 FRs with 0% implementation",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "route_to": "TheFixer",
+      "failure_scenario": "Spec drifts from system as workflow engine evolves; future implementation becomes harder",
+      "recommendation": "Create Plans/tiered-merge-pipeline/requirements.md and dispatch to TheATeam, OR annotate spec as 'Phase 2 — not yet planned'"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "title": "Body-Parser Denial of Service (CVSS 7.5)",
+      "category": "denial-of-service",
+      "specialist": "dependency-auditor",
+      "package": "body-parser <=1.20.8 (transitive via Express)",
+      "components": ["Source/Backend", "platform/orchestrator"],
+      "route_to": "TheFixer",
+      "fix": "npm update express (>=4.21.0)",
+      "key_cves": ["GHSA-27r3-jxmh-p828"]
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "title": "grpc-js Server Crash + Auth Context Bug (CVSS 7.5)",
+      "category": "denial-of-service",
+      "specialist": "dependency-auditor",
+      "package": "@grpc/grpc-js <=1.14.4",
+      "components": ["platform/orchestrator"],
+      "route_to": "TheFixer",
+      "fix": "cd platform/orchestrator && npm update @grpc/grpc-js",
+      "key_cves": ["GHSA-5375-pq7m-f5r2", "GHSA-m9gg-hp2v-232j"]
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "title": "Brace-Expansion DoS — 6 CVEs via exponential expansion",
+      "category": "denial-of-service",
+      "specialist": "dependency-auditor",
+      "package": "brace-expansion <=1.1.20 (transitive via Jest/glob)",
+      "components": ["Source/Backend"],
+      "route_to": "TheFixer",
+      "fix": "npm update jest"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "title": "Browserslist Memory Exhaustion (CVSS 7.5)",
+      "category": "denial-of-service",
+      "specialist": "dependency-auditor",
+      "package": "browserslist <=4.28.6 (transitive via Vite)",
+      "components": ["Source/Frontend"],
+      "route_to": "TheFixer",
+      "fix": "cd Source/Frontend && npm update vite"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "title": "Vite Path Traversal and Command Execution — 8 CVEs",
+      "category": "path-traversal",
+      "specialist": "dependency-auditor",
+      "package": "vite <=6.4.3",
+      "components": ["Source/Frontend"],
+      "route_to": "TheFixer",
+      "fix": "cd Source/Frontend && npm update vite",
+      "key_cves": ["GHSA-4w7w-66w2-5vf9", "GHSA-587h-7wmj-h5pm"]
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "title": "PostCSS XSS and Arbitrary File Read — 4 CVEs",
+      "category": "xss",
+      "specialist": "dependency-auditor",
+      "package": "postcss <=8.5.22 (transitive via Vite)",
+      "components": ["Source/Frontend"],
+      "route_to": "TheFixer",
+      "fix": "cd Source/Frontend && npm update postcss"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "title": "React Router Open Redirect — 4 CVEs (CVSS 6.9)",
+      "category": "open-redirect",
+      "specialist": "dependency-auditor",
+      "package": "react-router-dom <=6.30.5",
+      "components": ["Source/Frontend"],
+      "route_to": "TheFixer",
+      "fix": "cd Source/Frontend && npm update react-router-dom",
+      "key_cves": ["GHSA-2j2x-hqr9-3h42", "GHSA-jjmj-jmhj-qwj2"]
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "title": "Nanoid Infinite Loops — 3 CVEs",
+      "category": "denial-of-service",
+      "specialist": "dependency-auditor",
+      "package": "nanoid <=3.3.17 (transitive via PostCSS/Vite)",
+      "components": ["Source/Frontend"],
+      "route_to": "TheFixer",
+      "fix": "cd Source/Frontend && npm update nanoid"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "title": "source-map-js Event Loop DoS (CVSS 7.5)",
+      "category": "denial-of-service",
+      "specialist": "dependency-auditor",
+      "package": "source-map-js <=1.2.1 (transitive via PostCSS)",
+      "components": ["Source/Frontend"],
+      "route_to": "TheFixer",
+      "fix": "cd Source/Frontend && npm update source-map-js"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P2",
+      "title": "WebSocket (ws) Memory Exhaustion — 2 CVEs",
+      "category": "denial-of-service",
+      "specialist": "dependency-auditor",
+      "package": "ws <=8.20.1",
+      "components": ["Source/Frontend"],
+      "route_to": "TheFixer",
+      "fix": "cd Source/Frontend && npm update ws"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "category": "test-coverage",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/tests/",
+      "route_to": "TheFixer",
+      "recommendation": "Delete top-level duplicates (tests/WorkItemDetailPage.test.tsx, tests/WorkItemListPage.test.tsx); keep /pages/ variants"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "title": "eslint-disable suppressing react-hooks/exhaustive-deps without explanation",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "files": ["Source/Frontend/src/hooks/useWorkItems.ts:63", "Source/Frontend/src/components/DependencyPicker.tsx:82"],
+      "route_to": "TheFixer",
+      "recommendation": "Fix dependency arrays or add explanatory comments documenting why deps are intentionally excluded"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "title": "Non-FR traceability comment in DebugPortalPage not enforcer-visible",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "file": "Source/Frontend/src/pages/DebugPortalPage.tsx:1",
+      "route_to": "TheFixer",
+      "recommendation": "Assign a real FR-XXX identifier or use // Note: debug-only page, no functional requirement"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "Express and proxy-addr out of date",
+      "single_fix": "npm update express in Source/Backend and platform/orchestrator",
+      "resolves": ["DEP-003", "DEP-006"],
+      "fix_impact": "Eliminates P1 auth bypass + P2 DoS with one command per component"
+    },
+    {
+      "root_cause": "Vitest / Vite testing toolchain severely out of date (3 major versions behind)",
+      "single_fix": "cd Source/Frontend && npm update vitest vite @vitest/mocker tinypool postcss nanoid source-map-js browserslist ws",
+      "resolves": ["DEP-004", "DEP-005", "DEP-009", "DEP-010", "DEP-011", "DEP-013", "DEP-014", "DEP-015"],
+      "fix_impact": "Eliminates 2 P1s + 7 P2s across Frontend with a single update sweep"
+    },
+    {
+      "root_cause": "Enforcer scope gap: portal/ excluded from source.dirs",
+      "single_fix": "Add 'portal/' to source.dirs in Teams/TheInspector/inspector.config.yml",
+      "resolves": ["QO-001"],
+      "cross_specialists": ["quality-oracle"],
+      "note": "Once fixed, re-run enforcer to establish true FR-001 to FR-069 baseline — may surface additional P2s or clear them"
+    }
+  ],
+  "remediation_plan": {
+    "block_deployment": [
+      "DEP-002: Protobufjs RCE in orchestrator (TheGuardians + TheFixer)",
+      "DEP-003: Proxy-addr auth bypass in backend (TheGuardians + TheFixer)"
+    ],
+    "this_sprint": [
+      "DEP-001: Handlebars injection (TheGuardians review + npm update handlebars)",
+      "DEP-004 + DEP-005: Vitest RCE — npm update vitest vite in Source/Frontend",
+      "QO-001: Add portal/ to inspector.config.yml source.dirs (5-min fix)",
+      "QO-002: Add dependencyCheckDuration histogram to Source/Backend/src/metrics.ts",
+      "QO-003: Fix blocked_by types, create seed.ts, add 2 test files"
+    ],
+    "next_sprint": [
+      "DEP-006 through DEP-015: Full P2 dependency sweep (Phase 2 updates)",
+      "QO-004: Create tiered-merge-pipeline plan or annotate as Phase 2"
+    ],
+    "backlog": [
+      "QO-005: Delete duplicate test files",
+      "QO-006: Fix eslint-disable comments",
+      "QO-007: Fix non-FR traceability comment"
+    ]
+  }
+}

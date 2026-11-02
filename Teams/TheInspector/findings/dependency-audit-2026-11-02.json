@@ -1,0 +1,215 @@
+{
+  "audit_date": "2026-11-02",
+  "auditor": "dependency-auditor",
+  "projects_audited": [
+    "Source/Backend",
+    "Source/Frontend",
+    "Source/E2E"
+  ],
+  "summary": {
+    "total_direct_dependencies": 22,
+    "total_transitive_dependencies": 648,
+    "total_cves": 49,
+    "critical": 4,
+    "high": 12,
+    "moderate": 27,
+    "low": 6,
+    "overall_grade": "F",
+    "projects": {
+      "backend": {
+        "direct": 9,
+        "transitive": 412,
+        "cves": {
+          "critical": 2,
+          "high": 5,
+          "moderate": 20,
+          "low": 5,
+          "total": 32
+        },
+        "status": "CRITICAL"
+      },
+      "frontend": {
+        "direct": 8,
+        "transitive": 231,
+        "cves": {
+          "critical": 2,
+          "high": 7,
+          "moderate": 7,
+          "low": 1,
+          "total": 17
+        },
+        "status": "CRITICAL"
+      },
+      "e2e": {
+        "direct": 1,
+        "transitive": 5,
+        "cves": {
+          "critical": 0,
+          "high": 0,
+          "moderate": 0,
+          "low": 0,
+          "total": 0
+        },
+        "status": "CLEAN"
+      }
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "proxy-addr",
+      "version": "1.1.0 - 2.0.7",
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "title": "IP spoofing via IPv4-mapped IPv6",
+      "affected_project": "Source/Backend",
+      "escalation": "TheGuardians",
+      "type": "Access Control Bypass"
+    },
+    {
+      "id": "DEP-002",
+      "package": "handlebars",
+      "version": "3.0.0 - 4.7.9",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-8r5x-fm3f-whwj",
+        "GHSA-p8wg-vrv2-v86f"
+      ],
+      "title": "JavaScript injection via AST type confusion",
+      "affected_project": "Source/Backend",
+      "escalation": "TheGuardians",
+      "type": "Code Injection",
+      "note": "Dev dependency (jest/babel); build-time risk"
+    },
+    {
+      "id": "DEP-003",
+      "package": "tinypool",
+      "version": "<=2.1.1",
+      "severity": "CRITICAL",
+      "cvss": 9.8,
+      "cves": [
+        "GHSA-5gmw-xhrv-c9v3",
+        "GHSA-85c8-ppgw-ccpr"
+      ],
+      "title": "Prototype pollution → RCE in worker pool",
+      "affected_project": "Source/Frontend",
+      "escalation": "TheGuardians",
+      "type": "Remote Code Execution",
+      "note": "Dev dependency (vitest); CI/CD pipeline risk"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-004",
+      "package": "@vitest/mocker",
+      "severity": "HIGH",
+      "cvss": 5.9,
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "title": "Path traversal / arbitrary file read"
+    },
+    {
+      "id": "DEP-005",
+      "package": "postcss",
+      "severity": "HIGH",
+      "cves": [
+        "GHSA-qx2v-qp2m-jg93",
+        "GHSA-6g55-p6wh-862q",
+        "GHSA-fxqj-rqcc-2cmp",
+        "GHSA-r28c-9q8g-f849"
+      ],
+      "title": "Multiple path traversal and XSS issues"
+    },
+    {
+      "id": "DEP-006",
+      "package": "nanoid",
+      "severity": "HIGH",
+      "cves": [
+        "GHSA-28wg-ghj8-5hjv",
+        "GHSA-2v37-7h3g-55p8",
+        "GHSA-xwg4-73v4-xw9w"
+      ],
+      "title": "Infinite loop and integer overflow"
+    },
+    {
+      "id": "DEP-007",
+      "package": "ws",
+      "severity": "HIGH",
+      "cves": [
+        "GHSA-58qx-3vcg-4xpx",
+        "GHSA-96hv-2xvq-fx4p"
+      ],
+      "title": "Memory disclosure and exhaustion"
+    },
+    {
+      "id": "DEP-008",
+      "package": "@remix-run/router",
+      "severity": "HIGH",
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "title": "Open redirect via protocol-relative URLs"
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "npm update proxy-addr (CVSS 9.1 access control bypass)",
+      "npm update jest (handlebars CVSS 9.8 code injection)",
+      "npm update vitest (tinypool CVSS 9.8 RCE)"
+    ],
+    "high_priority": [
+      "npm update postcss nanoid react-router-dom qs",
+      "npm update source-map-js ws uuid"
+    ],
+    "medium_priority": [
+      "Upgrade React 18.3.1 → 19.3.1",
+      "Upgrade React Router 6.26.0 → 7.x",
+      "Upgrade Pino 8.17.0 → 10.4.0 (evaluate breaking changes)",
+      "Implement npm audit in CI/CD pipeline"
+    ]
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "findings": [
+      "No GPL/AGPL licenses in direct dependencies",
+      "No UNLICENSED packages detected",
+      "All packages compatible with commercial use"
+    ]
+  },
+  "outdated_packages": {
+    "backend": [
+      {"package": "express", "current": "^4.18.2", "wanted": "4.22.3", "latest": "5.3.0"},
+      {"package": "pino", "current": "^8.17.0", "wanted": "8.21.0", "latest": "10.4.0"}
+    ],
+    "frontend": [
+      {"package": "react", "current": "^18.3.1", "wanted": "18.3.1", "latest": "19.3.1"},
+      {"package": "react-dom", "current": "^18.3.1", "wanted": "18.3.1", "latest": "19.3.1"},
+      {"package": "react-router-dom", "current": "^6.26.0", "wanted": "6.30.6", "latest": "7.18.5"}
+    ]
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": [
+        "DEP-001: proxy-addr IP spoofing (access control bypass)",
+        "DEP-002: handlebars code injection (CVSS 9.8)",
+        "DEP-003: tinypool RCE (CVSS 9.8)",
+        "DEP-005: postcss path traversal",
+        "DEP-008: react-router open redirect"
+      ],
+      "priority": "IMMEDIATE"
+    },
+    {
+      "team": "TheFixer",
+      "findings": [
+        "Moderate/low CVE updates",
+        "Major version upgrades with testing",
+        "CI/CD integration for npm audit",
+        "Dependabot/Renovate setup"
+      ],
+      "priority": "IMMEDIATE"
+    }
+  ],
+  "next_review": "2026-11-16",
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-11-02.md"
+}

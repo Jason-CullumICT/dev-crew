@@ -321,3 +321,106 @@ The application has **zero authentication or authorization** on any endpoint. Ev
 | Access or modify a soft-deleted work item via direct ID reference | Not achievable via current code — `findById` returns undefined for deleted items | N/A |
 | Submit a malformed assessment verdict that bypasses routing logic | PEN-003 (invalid enum via intake) | Chain C |
 | Enumerate all work items without pagination limit enforcement | PEN-002 | Chain A |
+
+---
+
+## Red Team Results
+
+**Executed by:** red_teamer  
+**Date:** 2026-11-02  
+**Environment:** Ephemeral Docker (`docker-compose.test.yml`) — portal backend at `http://localhost:3001`  
+**Note:** The pen-tester's attack surface map was produced against `Source/Backend/` (work-item/workflow domain). The running service is `portal/Backend/` (feature-request/bug/cycle domain). Exploit chains were adapted to the live target; PEN finding numbers are mapped by analogy where the vulnerability class is identical.
+
+---
+
+### RED-001: Unauthenticated Force-Approve Bypasses Entire Voting Process
+- **Severity:** Critical
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/force-approve`
+- **Based On:** PEN-001 (no auth), PEN-004/PEN-005 analogs (state machine bypass)
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` — create any feature request (no credentials); item starts in `potential` status.
+  2. `PATCH /api/feature-requests/FR-0007` with `{"status":"voting"}` — no auth required; item transitions to `voting`.
+  3. `POST /api/feature-requests/FR-0007/force-approve` — no auth required; route handler has zero authentication middleware. The "human override" function is callable by any anonymous HTTP client.
+  4. **Result:** FR-0007 status = `"approved"`, `votes: []` (zero votes cast), `human_approval_approved_at` timestamp set. The entire community voting process is bypassed without any credentials.
+  5. The `deny` endpoint (`POST /:id/deny`) is equally unprotected — an anonymous caller can deny any feature request in `voting` status.
+- **Evidence:** `curl -X POST http://localhost:3001/api/feature-requests/FR-0007/force-approve` → `{"status":"approved","votes":[],"human_approval_approved_at":"2026-11-02T10:52:17.920Z"}`
+- **Recommendation:** All human-decision endpoints (`/force-approve`, `/deny`, `/approve`) must require authentication and role-based authorization (e.g., `role: "admin"` or `role: "product-manager"`). Add auth middleware before the router or use an API gateway policy.
+
+---
+
+### RED-002: Cycle Completion Without Lifecycle Phase Progression
+- **Severity:** High
+- **Objective Achieved:** Yes — "Bypass work item state machine to reach an invalid status"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/cycles/:id/complete`
+- **Based On:** PEN-001 (no auth), PEN-004 analog (state machine bypass)
+- **Exploit Scenario:**
+  1. `POST /api/cycles` — create a new development cycle; it starts in `spec_changes` status (initial phase).
+  2. `POST /api/cycles/CYCLE-0001/complete` — no auth required; no status guard in `completeCycle()`. The only guard checks incomplete tickets, but a freshly created cycle has zero tickets so the check trivially passes.
+  3. **Result:** Cycle status jumps directly from `spec_changes` → `complete`, skipping all intermediate phases (`in_development`, `testing`, etc.). The service also auto-creates a `Feature` record and a `Learning` record as if work was properly done, and marks the associated work item as `completed`.
+  4. An attacker can fabricate completed development cycles for arbitrary work items, polluting the feature and learning records without any real work being performed.
+- **Evidence:** `curl -X POST http://localhost:3001/api/cycles/CYCLE-0001/complete` → `{"status":"complete","completed_at":"2026-11-02T10:54:05.608Z"}` from `spec_changes` initial status.
+- **Recommendation:** Add a status guard in `completeCycle()` requiring the cycle to be in an expected terminal state (e.g., `testing` or `ready_to_deploy`) before accepting completion. Add authentication middleware to all mutation endpoints.
+
+---
+
+### RED-003: Full Data Exfiltration — All Items Enumerable Without Auth or Pagination Limit
+- **Severity:** High
+- **Objective Achieved:** Yes — "Enumerate all work items without pagination limit enforcement"
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `GET http://localhost:3001/api/feature-requests`, `GET /api/bugs`, `GET /api/dashboard/summary`, `GET /metrics`
+- **Based On:** PEN-001 (no auth), PEN-002 (unbounded pagination), PEN-008 (metrics exposure), PEN-012 (dashboard leakage)
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests` — returns ALL feature requests in a single response with no authentication. No `limit` parameter accepted; the service performs a full table scan. During testing, 31 items were returned in one request.
+  2. `GET /api/dashboard/summary` — returns real-time operational counts by status and severity (confirmed: `{"feature_requests":{"potential":27,"voting":0,"approved":2,...},"bugs":{...}}`).
+  3. `GET /metrics` — 531-line Prometheus dump including `feature_request_status_transitions_total`, `bug_status_transitions_total`, HTTP request counts per route and status code. Reveals system activity patterns without credentials.
+  4. Full dataset, operational state, and internal activity metrics are exfiltrated with three unauthenticated GET requests.
+- **Evidence:** `curl http://localhost:3001/api/feature-requests` returned 31 items; `curl http://localhost:3001/api/dashboard/summary` returned full status breakdown; `curl http://localhost:3001/metrics` returned 531 lines of operational data.
+- **Recommendation:** All list and dashboard endpoints require authentication. Metrics endpoint (`/metrics`) must be protected with network policy (scrape-only from internal Prometheus) or a bearer token. Implement server-side pagination with a hard maximum page size.
+
+---
+
+### RED-004: No Rate Limiting — Unbounded Request Flooding Confirmed
+- **Severity:** High
+- **Objective Achieved:** Partial (DoS risk confirmed; no OOM achieved in test time)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests` (and all endpoints)
+- **Based On:** PEN-009 (no rate limiting)
+- **Exploit Scenario:**
+  1. Sent 20 rapid sequential `POST /api/feature-requests` requests with no throttle. All 20 returned HTTP 201.
+  2. No `Retry-After` header, no `429 Too Many Requests` response, no IP-based rate limiting observed.
+  3. Combined with full data enumeration (RED-003), an attacker can flood item creation to exhaust database storage and inflate list-endpoint response sizes (body limit is 16KB on input but no limit on DB or output size).
+  4. All workflow mutation endpoints (approve, deny, force-approve, complete) are equally unprotected.
+- **Evidence:** 20/20 POST requests returned 201 with no throttling signal.
+- **Recommendation:** Deploy `express-rate-limit` middleware (or API gateway rate limiting) with per-IP limits. Apply stricter limits to state-mutation endpoints. Consider a global request budget per session/token once auth is added.
+
+---
+
+### RED-005: Unauthenticated Deny — Adversarial Feature Request Rejection
+- **Severity:** High
+- **Objective Achieved:** Yes — "Submit a malformed assessment verdict that bypasses routing logic" (analog)
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `POST http://localhost:3001/api/feature-requests/:id/deny`
+- **Based On:** PEN-001 (no auth), PEN-004 analog
+- **Exploit Scenario:**
+  1. Move any feature request to `voting` status via unauthenticated PATCH.
+  2. `POST /api/feature-requests/FR-0032/deny` with `{"comment":"Denying without any credentials"}` — no auth check.
+  3. **Result:** Feature request status = `"denied"`. Any competitor or malicious actor can systematically deny competitor-submitted feature requests without any credentials.
+  4. Symmetric with RED-001: both force-approve and deny are available to anonymous callers, allowing complete manipulation of the approval outcome.
+- **Evidence:** `curl -X POST http://localhost:3001/api/feature-requests/FR-0032/deny -d '{"comment":"..."}'` → `{"status":"denied"}` with no `Authorization` header.
+- **Recommendation:** Same as RED-001 — require authentication and role authorization on all approval-decision endpoints.
+
+---
+
+## Red Team Objectives Summary
+
+| Objective | Status | RED Finding |
+|---|---|---|
+| Bypass work item state machine to reach an invalid status | **ACHIEVED** | RED-001, RED-002 |
+| Access or modify a soft-deleted work item via direct ID reference | Not applicable to live portal backend (soft-delete not implemented here) | N/A |
+| Submit a malformed assessment verdict that bypasses routing logic | **ACHIEVED (analog)** | RED-005 (unauthenticated deny/force-approve) |
+| Enumerate all work items without pagination limit enforcement | **ACHIEVED** | RED-003 |
+
+**Overall Grade Impact:** Multiple Critical/High confirmed breaches. Per `security.config.yml` grading scale: any confirmed red-team breach of a critical objective → **Grade F**.

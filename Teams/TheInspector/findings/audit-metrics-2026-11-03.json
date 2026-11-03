@@ -1,0 +1,211 @@
+{
+  "audit_date": "2026-11-03",
+  "scan_duration_minutes": 15,
+  "projects_audited": 6,
+  "summary": {
+    "total_vulnerabilities": 75,
+    "critical": 6,
+    "high": 28,
+    "moderate": 33,
+    "low": 8,
+    "info": 0
+  },
+  "by_project": {
+    "Source/Backend": {
+      "path": "Source/Backend",
+      "vulnerabilities": 32,
+      "critical": 2,
+      "high": 5,
+      "moderate": 20,
+      "low": 5,
+      "outdated_major": 3,
+      "top_threats": [
+        "handlebars (code injection)",
+        "proxy-addr (auth bypass)",
+        "brace-expansion (DoS)",
+        "js-yaml (CPU DoS)"
+      ]
+    },
+    "Source/Frontend": {
+      "path": "Source/Frontend",
+      "vulnerabilities": 17,
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "outdated_major": 3,
+      "top_threats": [
+        "tinypool (RCE in vitest)",
+        "proxy-addr (auth bypass)",
+        "esbuild (dev server CSRF)",
+        "nanoid (loops indefinitely)"
+      ]
+    },
+    "Source/E2E": {
+      "path": "Source/E2E",
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "status": "CLEAN"
+    },
+    "platform/orchestrator": {
+      "path": "platform/orchestrator",
+      "vulnerabilities": 9,
+      "critical": 2,
+      "high": 3,
+      "moderate": 4,
+      "low": 0,
+      "outdated_major": 3,
+      "top_threats": [
+        "protobufjs (code execution)",
+        "proxy-addr (auth bypass)",
+        "@grpc/grpc-js (crash/info leak)"
+      ]
+    },
+    "portal/Backend": {
+      "path": "portal/Backend",
+      "vulnerabilities": 8,
+      "critical": 0,
+      "high": 4,
+      "moderate": 4,
+      "low": 0,
+      "top_threats": [
+        "@opentelemetry/core (memory exhaustion)",
+        "body-parser (DoS)",
+        "grpc-js (crash)"
+      ]
+    },
+    "portal/Frontend": {
+      "path": "portal/Frontend",
+      "vulnerabilities": 9,
+      "critical": 2,
+      "high": 5,
+      "moderate": 2,
+      "low": 0,
+      "top_threats": [
+        "tinypool (RCE)",
+        "esbuild (dev server CSRF)",
+        "picomatch (ReDoS)"
+      ]
+    }
+  },
+  "critical_cves": [
+    {
+      "cve_id": "GHSA-3mfm-83xf-c92r",
+      "package": "handlebars",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "affected_projects": ["Source/Backend"],
+      "impact": "Code execution",
+      "fix": "npm install handlebars@latest"
+    },
+    {
+      "cve_id": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr",
+      "title": "IPv4-mapped IPv6 IP Spoofing",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "platform/orchestrator", "portal/Backend", "portal/Frontend"],
+      "impact": "Authentication bypass, access control bypass",
+      "fix": "npm audit fix"
+    },
+    {
+      "cve_id": "GHSA-xq3m-2v4x-88gg",
+      "package": "protobufjs",
+      "title": "Arbitrary Code Execution",
+      "affected_projects": ["platform/orchestrator"],
+      "impact": "Code execution",
+      "fix": "npm install protobufjs@latest"
+    },
+    {
+      "cve_id": "GHSA-5gmw-xhrv-c9v3",
+      "package": "tinypool",
+      "title": "Prototype Pollution → RCE",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "impact": "Code execution in vitest workers",
+      "fix": "npm install vitest@latest"
+    }
+  ],
+  "outdated_packages": {
+    "major_versions_behind": {
+      "uuid": {
+        "current": "9.0.1",
+        "latest": "14.0.3",
+        "gap": 5,
+        "projects": ["Source/Backend"],
+        "risk": "HIGH - has security fix in 11.x+"
+      },
+      "pino": {
+        "current": "8.21.0",
+        "latest": "10.4.0",
+        "gap": 2,
+        "projects": ["Source/Backend"],
+        "risk": "MODERATE - check compatibility"
+      },
+      "express": {
+        "current": "4.22.3",
+        "latest": "5.3.0",
+        "gap": 1,
+        "projects": ["Source/Backend", "platform/orchestrator"],
+        "risk": "LOW - breaking API changes"
+      }
+    }
+  },
+  "common_vulnerabilities": {
+    "proxy-addr": {
+      "projects_affected": 5,
+      "severity": "CRITICAL",
+      "type": "Auth bypass",
+      "action": "Upgrade all projects to proxy-addr@>=2.0.8"
+    },
+    "body-parser": {
+      "projects_affected": 3,
+      "severity": "HIGH",
+      "type": "DoS",
+      "action": "npm audit fix"
+    },
+    "form-data": {
+      "projects_affected": 4,
+      "severity": "HIGH",
+      "type": "CRLF injection",
+      "action": "npm audit fix"
+    },
+    "browserslist": {
+      "projects_affected": 4,
+      "severity": "HIGH",
+      "type": "Memory exhaustion",
+      "action": "npm audit fix"
+    }
+  },
+  "recommendations": {
+    "immediate": [
+      "Upgrade proxy-addr to >=2.0.8 in all projects (5-minute fix)",
+      "Upgrade handlebars to >=4.7.10 in Source/Backend",
+      "Upgrade protobufjs to >=7.7.0 in platform/orchestrator",
+      "Run npm audit fix in all non-E2E projects"
+    ],
+    "this_sprint": [
+      "Upgrade vitest to >=4.1.12 (fixes tinypool, esbuild)",
+      "Upgrade jest chain in Source/Backend (test compatibility review)",
+      "Upgrade uuid to >=11.1.1 in Source/Backend",
+      "Upgrade React to 19.x in Source/Frontend (parallel work)"
+    ],
+    "next_sprint": [
+      "Upgrade express 4 → 5 (breaking change)",
+      "Upgrade react-router-dom to 7.x",
+      "Upgrade dockerode to 5.x",
+      "Upgrade multer to 2.x"
+    ]
+  },
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: handlebars (code execution)",
+      "DEP-002: proxy-addr (auth bypass)",
+      "DEP-003: protobufjs (code execution)",
+      "DEP-004: tinypool (RCE in build infrastructure)",
+      "DEP-008: esbuild (dev server CSRF)",
+      "DEP-009: form-data (request smuggling)"
+    ]
+  },
+  "health_grade": "D",
+  "grade_rationale": "6 critical CVEs + 28 high severity CVEs in production code. Audit fixes available but require coordinated effort. Multiple code execution vulnerabilities require urgent attention."
+}

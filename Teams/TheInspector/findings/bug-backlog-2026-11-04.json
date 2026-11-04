@@ -1,0 +1,288 @@
+{
+  "audit_id": "inspector-2026-11-04",
+  "audit_date": "2026-11-04",
+  "branch": "audit/inspector-2026-11-04-bda81c",
+  "grade": "D",
+  "overall": {
+    "p1_count": 6,
+    "p2_count": 15,
+    "p3_count": 2,
+    "p4_count": 0,
+    "spec_coverage_pct": 13,
+    "escalation_count": 4
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "category": "security-cve",
+      "title": "proxy-addr IP Spoofing — GHSA-jqcg-44mw-7w3h",
+      "summary": "Attackers can bypass IP-based access controls using IPv6-mapped IPv4 addresses via express dependency",
+      "file": "Source/Backend/package.json",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "affected_packages": ["proxy-addr", "express"],
+      "fix": "npm update express",
+      "exploit_scenario": "Network attacker crafts IPv6-mapped IPv4 request to bypass IP allowlists on internal routes",
+      "escalate_to": "TheGuardians",
+      "trigger": "missing access control"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "category": "security-cve",
+      "title": "Handlebars Code Injection — GHSA-3mfm-83xf-c92r",
+      "summary": "JavaScript injection via AST type confusion in Handlebars (pulled in by jest/babel)",
+      "file": "Source/Backend/package.json",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "affected_packages": ["handlebars"],
+      "fix": "npm audit fix (update handlebars)",
+      "exploit_scenario": "Attacker with control over template input executes arbitrary JS in backend process via AST confusion",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection"
+    },
+    {
+      "id": "DA-003",
+      "severity": "P1",
+      "category": "security-cve",
+      "title": "Tinypool RCE via Prototype Pollution — GHSA-5gmw-xhrv-c9v3",
+      "summary": "Remote Code Execution during test execution via vitest >=2.0 tinypool dependency",
+      "file": "Source/Frontend/package.json",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "affected_packages": ["tinypool", "vitest"],
+      "fix": "npm update vitest",
+      "exploit_scenario": "Malicious test fixture or compromised test dependency triggers RCE through prototype pollution in tinypool worker pool",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection (RCE)"
+    },
+    {
+      "id": "DA-004",
+      "severity": "P1",
+      "category": "security-cve",
+      "title": "protobufjs RCE — GHSA-xq3m-2v4x-88gg",
+      "summary": "Arbitrary code execution in orchestrator infrastructure via @grpc/grpc-js protobuf parsing",
+      "file": "platform/orchestrator/package.json",
+      "cve": "GHSA-xq3m-2v4x-88gg",
+      "affected_packages": ["protobufjs", "@grpc/grpc-js"],
+      "fix": "npm update @grpc/grpc-js (>=1.14.5)",
+      "exploit_scenario": "Network attacker sends malformed protobuf payload to orchestrator gRPC endpoint, triggering arbitrary code execution",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection (RCE)"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Specifications/ folder superseded but not archived",
+      "summary": "Specifications/dev-workflow-platform.md contains 76 FRs with zero implementation traceability. The active implementation is a Self-Judging Workflow Engine not covered by this spec.",
+      "file": "Specifications/dev-workflow-platform.md",
+      "exploit_scenario": "Every team member and agent reads this spec as authoritative; they build toward obsolete requirements, creating permanent drift between spec and system",
+      "recommendation": "Archive with [SUPERSEDED] header and date, or move FRs into active Plans/",
+      "source": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "27 FR-dependency-* IDs unanchored in any spec or plan",
+      "summary": "27 traceability IDs in source code (FR-dependency-service, FR-dependency-picker, etc.) have no corresponding spec or plan requirements file — they are ghost references.",
+      "file": "Source/Backend/src/metrics.ts",
+      "exploit_scenario": "Traceability enforcer cannot validate these IDs; audits pass green while these paths are entirely unverified",
+      "recommendation": "Create Plans/dependency-linking/requirements.md with formal FR entries for all FR-dependency-* IDs",
+      "source": "quality-oracle",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer scope mismatch (plan-only, not spec-aware)",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Extend enforcer to scan all Specifications/*.md, or document clearly that it is plan-scoped only",
+      "source": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "Route handlers call workItemStore directly — no service layer",
+      "file": "Source/Backend/src/routes/workItems.ts:12",
+      "recommendation": "Create WorkItemService in Source/Backend/src/services/workItemService.ts; route handlers call service only",
+      "source": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "tiered-merge-pipeline.md 13 FRs have zero implementation",
+      "file": "Specifications/tiered-merge-pipeline.md",
+      "recommendation": "Classify as active WIP or future-planned; create Plans/ entry if active",
+      "source": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "OpenTelemetry distributed tracing absent (mandatory architecture rule)",
+      "file": "Source/Backend/src/app.ts",
+      "recommendation": "Install @opentelemetry/sdk-node and add auto-instrumentation + traceparent header propagation",
+      "source": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-005",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "Vite path traversal via optimized deps .map handling",
+      "file": "Source/Frontend/package.json",
+      "cve": "path traversal",
+      "affected_packages": ["vite"],
+      "current_version": "^5.4.0",
+      "required_version": "^5.5.0+",
+      "recommendation": "Update vite to ^5.5.0 in Source/Frontend/package.json",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-006",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "body-parser DoS via invalid limit bypass",
+      "file": "Source/Backend/package.json",
+      "affected_packages": ["body-parser"],
+      "recommendation": "npm audit fix in Source/Backend",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-007",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "brace-expansion memory exhaustion via glob patterns",
+      "file": "Source/Backend/package.json",
+      "affected_packages": ["brace-expansion"],
+      "recommendation": "npm audit fix",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-008",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "browserslist OOM via unbounded cache growth",
+      "file": "Source/Frontend/package.json",
+      "affected_packages": ["browserslist"],
+      "recommendation": "npm audit fix in Source/Frontend",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-009",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "form-data CRLF injection in multipart fields",
+      "file": "Source/Backend/package.json",
+      "affected_packages": ["form-data"],
+      "recommendation": "npm audit fix",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-010",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "js-yaml quadratic DoS via merge keys",
+      "file": "Source/Backend/package.json",
+      "affected_packages": ["js-yaml"],
+      "recommendation": "npm audit fix",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-011",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "nanoid event-loop DoS with negative size",
+      "file": "Source/Frontend/package.json",
+      "affected_packages": ["nanoid"],
+      "recommendation": "npm audit fix in Source/Frontend",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-012",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "postcss XSS via unescaped </style> tags",
+      "file": "Source/Frontend/package.json",
+      "affected_packages": ["postcss"],
+      "recommendation": "npm audit fix in Source/Frontend",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-013",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "source-map-js event-loop DoS via source map offsets",
+      "file": "Source/Frontend/package.json",
+      "affected_packages": ["source-map-js"],
+      "recommendation": "npm audit fix in Source/Frontend",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-014",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "@grpc/grpc-js server crash via malformed requests",
+      "file": "platform/orchestrator/package.json",
+      "affected_packages": ["@grpc/grpc-js"],
+      "recommendation": "npm update @grpc/grpc-js to >=1.14.5",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-015",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "path-to-regexp ReDoS via multiple route parameters",
+      "file": "Source/Backend/package.json",
+      "affected_packages": ["path-to-regexp"],
+      "recommendation": "npm audit fix in Source/Backend",
+      "source": "dependency-auditor",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "untested",
+      "title": "4 frontend components lack any test file",
+      "file": "Source/Frontend/src/components/Layout.tsx",
+      "affected_files": ["Layout.tsx", "PriorityBadge.tsx", "StatusBadge.tsx", "TypeBadge.tsx"],
+      "recommendation": "Add unit tests for each component covering prop variations",
+      "source": "quality-oracle",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "eslint-disable react-hooks/exhaustive-deps suppressions in production source",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63",
+      "affected_files": ["useWorkItems.ts:63", "DependencyPicker.tsx:82"],
+      "recommendation": "Audit each suppression — fix effect dependencies or add inline justification comments",
+      "source": "quality-oracle",
+      "status": "NEW"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    DEPENDENCY AUDIT REPORT SUMMARY                         ║
+║                         2026-11-05 - Critical Status                       ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+OVERALL STATUS: 🔴 CRITICAL - Immediate action required
+
+┌─ VULNERABILITY BREAKDOWN ─────────────────────────────────────────────────┐
+│                                                                             │
+│  Total Vulnerabilities: 125                                                │
+│  ├─ 🔴 CRITICAL: 12  [Immediate risk of exploitation]                    │
+│  ├─ 🟠 HIGH:     34  [High likelihood/impact vulnerability]              │
+│  ├─ 🟡 MODERATE: 68  [Medium risk, needs planning]                       │
+│  └─ 🟢 LOW:      11  [Low priority]                                      │
+│                                                                             │
+│  Outdated Major Versions: 26 packages                                      │
+│  License Issues: 0 (Compliant)                                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─ PROJECT HEALTH DASHBOARD ────────────────────────────────────────────────┐
+│                                                                             │
+│  Source/Backend             ✅ 18 vulnerabilities  (2C, 5H, 3M, 8L)       │
+│  Source/Frontend            ✅ 17 vulnerabilities  (2C, 7H, 7M, 1L)       │
+│  Source/E2E                 ✅ CLEAN (0 vulnerabilities)                  │
+│  platform/orchestrator      ⚠️  9 vulnerabilities  (2C, 3H, 4M, 0L)       │
+│  portal/Backend             🔴 61 vulnerabilities (4C, 11H, 46M, 0L)      │
+│  portal/Frontend            ⚠️  18 vulnerabilities (2C, 8H, 7M, 1L)       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─ TOP 5 CRITICAL CVEs (REQUIRE IMMEDIATE ACTION) ──────────────────────────┐
+│                                                                             │
+│ 1. 🔴 proxy-addr IP Spoofing (GHSA-f596-whhp-79r4)                       │
+│    Impact: Authentication bypass, IP-based access control circumvention   │
+│    Projects: Source/Backend, platform/orchestrator                        │
+│    Fix: npm update proxy-addr                                             │
+│                                                                             │
+│ 2. 🔴 Handlebars.js RCE via @partial-block                               │
+│    Impact: Server-side template injection, arbitrary code execution      │
+│    Projects: Source/Backend                                               │
+│    Fix: npm update handlebars OR remove if unused                        │
+│                                                                             │
+│ 3. 🔴 tinypool Prototype Pollution RCE                                    │
+│    Impact: Remote code execution in test environment                      │
+│    Projects: Source/Frontend, portal/Frontend                             │
+│    Fix: npm update tinypool vitest                                        │
+│                                                                             │
+│ 4. 🔴 Vitest UI Arbitrary File Read & Execution                          │
+│    Impact: File disclosure, code execution via exposed UI server          │
+│    Projects: portal/Frontend                                              │
+│    Fix: npm update vitest, disable UI in production                      │
+│                                                                             │
+│ 5. 🔴 protobufjs Code Injection                                           │
+│    Impact: Code execution via malformed protobuf messages                 │
+│    Projects: platform/orchestrator                                        │
+│    Fix: npm update protobufjs, validate proto schemas                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─ IMMEDIATE ACTIONS (Next 24 Hours) ────────────────────────────────────────┐
+│                                                                             │
+│ [ ] 1. cd Source/Backend && npm update proxy-addr                         │
+│ [ ] 2. cd platform/orchestrator && npm update proxy-addr                  │
+│ [ ] 3. cd Source/Backend && npm update handlebars                         │
+│ [ ] 4. cd Source/Frontend && npm update tinypool vitest                   │
+│ [ ] 5. cd portal/Frontend && npm update tinypool vitest                   │
+│ [ ] 6. cd platform/orchestrator && npm update protobufjs                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─ HIGH PRIORITY ACTIONS (Next 48 Hours) ───────────────────────────────────┐
+│                                                                             │
+│ [ ] Run npm audit fix on all projects:                                    │
+│     for dir in Source/{Backend,Frontend,E2E} platform/orchestrator \      │
+│         portal/{Backend,Frontend}; do                                     │
+│       cd "$dir" && npm audit fix || npm audit fix --force                 │
+│     done                                                                   │
+│                                                                             │
+│ [ ] Review and audit portal/Backend (61 vulnerabilities!)                 │
+│     - Check if it's legacy/third-party code                               │
+│     - May require major version upgrades                                   │
+│                                                                             │
+│ [ ] Validate @grpc/grpc-js certificate configuration in orchestrator      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─ ESCALATIONS TO SECURITY TEAM ────────────────────────────────────────────┐
+│                                                                             │
+│ Route to TheGuardians:                                                    │
+│  • proxy-addr IP spoofing (authentication bypass)                         │
+│  • Handlebars RCE (template injection)                                    │
+│  • tinypool RCE (test infrastructure)                                     │
+│  • protobufjs injection (untrusted data handling)                         │
+│                                                                             │
+│ Action: Security team will assess impact and prioritize patches           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─ SUPPLY CHAIN RISKS ──────────────────────────────────────────────────────┐
+│                                                                             │
+│ ⚠️  @opentelemetry/auto-instrumentations-node                             │
+│    Pulls in 50+ instrumentation packages                                  │
+│    → Review if all are needed, consider selective imports                 │
+│                                                                             │
+│ ⚠️  Vite/Vitest Dev Tooling Ecosystem                                     │
+│    Recurring vulnerabilities: source-map-js, tinypool, vitest             │
+│    → Monitor upstream releases closely                                     │
+│                                                                             │
+│ ✅ Post-Install Scripts: None detected (LOW RISK)                         │
+│ ✅ License Compliance: All permissive licenses (MIT, Apache 2.0, ISC)    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+DETAILED REPORTS:
+  📄 Teams/TheInspector/findings/dependency-audit-20251105.md (markdown)
+  📊 Teams/TheInspector/findings/dependency-audit-20251105.json (JSON)
+  📚 Teams/TheInspector/learnings/dependency-auditor.md (learnings)
+
+NEXT AUDIT: 2026-11-19 (14 days)
+AUDIT INTERVAL: Bi-weekly
+
+═════════════════════════════════════════════════════════════════════════════
+Report Generated: 2026-11-05 | Severity: CRITICAL | Status: Requires Action
+═════════════════════════════════════════════════════════════════════════════

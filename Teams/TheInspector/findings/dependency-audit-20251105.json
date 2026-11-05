@@ -1,0 +1,360 @@
+{
+  "audit_metadata": {
+    "date": "2026-11-05",
+    "agent": "dependency_auditor",
+    "audit_type": "npm_vulnerability_scan",
+    "scope": ["Source/", "platform/", "portal/"],
+    "package_managers_detected": ["npm"],
+    "total_projects_scanned": 6
+  },
+  "summary": {
+    "total_vulnerabilities": 125,
+    "critical": 12,
+    "high": 34,
+    "moderate": 68,
+    "low": 11,
+    "outdated_packages": 26,
+    "actionable_items": 22
+  },
+  "by_project": {
+    "Source/Backend": {
+      "vulnerabilities": 18,
+      "critical": 2,
+      "high": 5,
+      "moderate": 3,
+      "low": 8,
+      "outdated": 4,
+      "direct_dependencies": 12,
+      "transitive_dependencies": 13,
+      "status": "ACTION_REQUIRED"
+    },
+    "Source/Frontend": {
+      "vulnerabilities": 17,
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "outdated": 3,
+      "direct_dependencies": 10,
+      "status": "ACTION_REQUIRED"
+    },
+    "Source/E2E": {
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "outdated": 0,
+      "direct_dependencies": 4,
+      "status": "CLEAN"
+    },
+    "platform/orchestrator": {
+      "vulnerabilities": 9,
+      "critical": 2,
+      "high": 3,
+      "moderate": 4,
+      "low": 0,
+      "outdated": 3,
+      "direct_dependencies": 3,
+      "transitive_dependencies": 3,
+      "status": "ACTION_REQUIRED"
+    },
+    "portal/Backend": {
+      "vulnerabilities": 61,
+      "critical": 4,
+      "high": 11,
+      "moderate": 46,
+      "low": 0,
+      "outdated": 11,
+      "status": "CRITICAL"
+    },
+    "portal/Frontend": {
+      "vulnerabilities": 18,
+      "critical": 2,
+      "high": 8,
+      "moderate": 7,
+      "low": 1,
+      "outdated": 3,
+      "status": "ACTION_REQUIRED"
+    }
+  },
+  "critical_cves": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IP Spoofing via IPv4-mapped IPv6",
+      "severity": "P1_CRITICAL",
+      "cve": "GHSA-f596-whhp-79r4",
+      "packages": ["proxy-addr"],
+      "affected_projects": ["Source/Backend", "platform/orchestrator"],
+      "impact": "Authentication bypass, IP-based access control bypass",
+      "recommendation": "npm update proxy-addr",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js JavaScript Injection via @partial-block",
+      "severity": "P1_CRITICAL",
+      "packages": ["handlebars"],
+      "affected_projects": ["Source/Backend"],
+      "impact": "Server-side template injection, arbitrary code execution",
+      "recommendation": "npm update handlebars OR remove if unused",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "tinypool Prototype Pollution RCE",
+      "severity": "P1_CRITICAL",
+      "packages": ["tinypool"],
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "impact": "Remote code execution in test environment",
+      "recommendation": "npm update tinypool vitest",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "severity": "P1_CRITICAL",
+      "packages": ["vitest"],
+      "affected_projects": ["portal/Frontend"],
+      "impact": "Arbitrary file read and code execution via UI server",
+      "recommendation": "npm update vitest, disable UI in prod, bind to localhost",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "title": "protobufjs Code Injection via Bytes Field Defaults",
+      "severity": "P1_CRITICAL",
+      "packages": ["protobufjs"],
+      "affected_projects": ["platform/orchestrator"],
+      "impact": "Code injection via malformed protobuf messages",
+      "recommendation": "npm update protobufjs, validate proto schemas",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-006",
+      "title": "@grpc/grpc-js Server Crash via Malformed Requests",
+      "severity": "P2_HIGH",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "packages": ["@grpc/grpc-js"],
+      "affected_projects": ["platform/orchestrator"],
+      "impact": "Denial of service, certificate validation bypass",
+      "recommendation": "npm update @grpc/grpc-js (>= 1.14.5)"
+    }
+  ],
+  "high_severity_issues": [
+    {
+      "id": "DEP-007",
+      "title": "body-parser DoS via invalid limit",
+      "packages": ["body-parser"],
+      "affected_projects": ["Source/Backend", "Source/Frontend", "platform/orchestrator", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-008",
+      "title": "brace-expansion Zero-Step Sequence DoS",
+      "packages": ["brace-expansion"],
+      "affected_projects": ["Source/Backend"]
+    },
+    {
+      "id": "DEP-009",
+      "title": "Browserslist Memory Exhaustion",
+      "packages": ["browserslist"],
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-010",
+      "title": "form-data CRLF Injection",
+      "packages": ["form-data"],
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-011",
+      "title": "js-yaml Quadratic Complexity DoS",
+      "packages": ["js-yaml"],
+      "affected_projects": ["Source/Backend"]
+    },
+    {
+      "id": "DEP-012",
+      "title": "nanoid Non-Secure Generator Loop",
+      "packages": ["nanoid"],
+      "affected_projects": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-013",
+      "title": "PostCSS XSS via Unescaped </style>",
+      "packages": ["postcss"],
+      "affected_projects": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-014",
+      "title": "source-map-js Event Loop DoS",
+      "packages": ["source-map-js"],
+      "affected_projects": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-015",
+      "title": "path-to-regexp ReDoS",
+      "packages": ["path-to-regexp"],
+      "affected_projects": ["platform/orchestrator"]
+    },
+    {
+      "id": "DEP-016",
+      "title": "ws Uninitialized Memory Disclosure",
+      "packages": ["ws"],
+      "affected_projects": ["portal/Frontend"]
+    },
+    {
+      "id": "DEP-017",
+      "title": "Vite Path Traversal in .map Handling",
+      "packages": ["vite"],
+      "affected_projects": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "id": "DEP-018",
+      "title": "picomatch Glob Pattern Injection",
+      "packages": ["picomatch"],
+      "affected_projects": ["portal/Frontend"]
+    }
+  ],
+  "outdated_packages": [
+    {
+      "package": "react-router-dom",
+      "transitive": "@remix-run/router",
+      "current_range": "1.3.0 - 1.23.2",
+      "latest": "1.23.3+",
+      "issue": "Same-origin redirect bypass via protocol-relative URLs",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "package": "vitest",
+      "transitive": "@vitest/mocker",
+      "current_range": "< 4.1.11",
+      "issue": "Path traversal in mock redirects, code injection",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "package": "@babel/core",
+      "current_range": "<= 7.29.0",
+      "issue": "Low severity file read via sourceMappingURL",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Frontend"]
+    },
+    {
+      "package": "baseline-browser-mapping",
+      "current_range": "2.0.0 - 2.10.x",
+      "latest": ">= 2.11.0",
+      "issue": "Process termination on invalid input",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"]
+    }
+  ],
+  "supply_chain_risks": [
+    {
+      "risk": "HIGH",
+      "description": "@opentelemetry/auto-instrumentations-node pulls in 50+ instrumentation packages",
+      "impact": "Large supply chain surface increase",
+      "recommendation": "Review if all instrumentations are needed, consider selective imports",
+      "affected_projects": ["platform/orchestrator"]
+    },
+    {
+      "risk": "MEDIUM",
+      "description": "Vite/Vitest ecosystem has recurring dev tooling vulnerabilities",
+      "impact": "Frequent security updates required, build infrastructure at risk",
+      "recommendation": "Monitor upstream releases, enable automatic security alerts"
+    },
+    {
+      "risk": "LOW",
+      "description": "No post-install scripts detected in primary dependencies",
+      "impact": "Reduced risk of supply chain attacks via script execution",
+      "status": "CLEAN"
+    }
+  ],
+  "license_compliance": {
+    "status": "COMPLIANT",
+    "notes": "All detected licenses are permissive (MIT, Apache 2.0, ISC)",
+    "viral_licenses": "None detected",
+    "unknown_licenses": "None detected",
+    "recommendation": "No compliance action required"
+  },
+  "immediate_actions": [
+    {
+      "priority": 1,
+      "action": "Update proxy-addr to >= 2.0.8",
+      "projects": ["Source/Backend", "platform/orchestrator"],
+      "command": "npm update proxy-addr",
+      "timeline": "0-24 hours"
+    },
+    {
+      "priority": 2,
+      "action": "Update handlebars or remove if unused",
+      "projects": ["Source/Backend"],
+      "command": "npm update handlebars",
+      "timeline": "0-24 hours"
+    },
+    {
+      "priority": 3,
+      "action": "Update tinypool and vitest",
+      "projects": ["Source/Frontend", "portal/Frontend"],
+      "command": "npm update tinypool vitest",
+      "timeline": "0-24 hours"
+    },
+    {
+      "priority": 4,
+      "action": "Update protobufjs",
+      "projects": ["platform/orchestrator"],
+      "command": "npm update protobufjs",
+      "timeline": "0-24 hours"
+    },
+    {
+      "priority": 5,
+      "action": "Run npm audit fix on all projects",
+      "projects": ["Source/Backend", "Source/Frontend", "Source/E2E", "platform/orchestrator", "portal/Backend", "portal/Frontend"],
+      "command": "npm audit fix || npm audit fix --force",
+      "timeline": "24-48 hours"
+    },
+    {
+      "priority": 6,
+      "action": "Audit portal/Backend for major version updates",
+      "projects": ["portal/Backend"],
+      "note": "61 vulnerabilities - may need significant refactor",
+      "timeline": "48-72 hours"
+    }
+  ],
+  "cross_team_escalations": [
+    {
+      "finding": "proxy-addr IP spoofing",
+      "severity": "CRITICAL",
+      "escalate_to": "TheGuardians",
+      "reason": "Security impact on auth/access control",
+      "action": "Assess if application relies on IP-based restrictions"
+    },
+    {
+      "finding": "Handlebars RCE",
+      "severity": "CRITICAL",
+      "escalate_to": "TheGuardians",
+      "reason": "Server-side code execution risk",
+      "action": "Verify handlebars is necessary, audit all template sources"
+    },
+    {
+      "finding": "tinypool/vitest RCE",
+      "severity": "CRITICAL",
+      "escalate_to": "TheGuardians",
+      "reason": "Test infrastructure at risk",
+      "action": "Block test execution if confirmed exploited, audit CI/CD"
+    },
+    {
+      "finding": "protobufjs injection",
+      "severity": "CRITICAL",
+      "escalate_to": "TheGuardians",
+      "reason": "Code injection via untrusted data",
+      "action": "Verify proto schema sources, validate input"
+    }
+  ],
+  "metrics": {
+    "projects_with_critical": 4,
+    "projects_with_high": 5,
+    "projects_clean": 1,
+    "avg_vulnerabilities_per_project": 20.8,
+    "vulnerability_trend": "concerning",
+    "dependency_health": "needs_improvement"
+  },
+  "next_audit": "2026-11-19",
+  "audit_interval_days": 14
+}

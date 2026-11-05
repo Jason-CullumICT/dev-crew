@@ -1,0 +1,377 @@
+{
+  "audit_id": "run-20261105-091827",
+  "audit_date": "2026-11-05",
+  "project": "dev-crew Source App",
+  "grade": "D",
+  "grade_rationale": "6 P1 findings exceed C threshold (max_p1=2). Spec coverage 93.1% is healthy. Dependency vulnerability load is the primary driver of grade.",
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 15,
+    "p3_total": 5,
+    "p4_total": 0,
+    "spec_coverage_pct": 93.1,
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services not running — static mode only"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "security",
+      "title": "proxy-addr IP Spoofing via IPv4-mapped IPv6",
+      "cve": "GHSA-f596-whhp-79r4",
+      "files": ["Source/Backend/package.json", "platform/orchestrator/package.json"],
+      "failure_scenario": "Attacker sends request with IPv4-mapped IPv6 address → proxy-addr misidentifies source IP → IP-based access controls bypassed; auth middleware trusts forged IP",
+      "impact": "Authentication bypass, IP-based access control circumvention",
+      "recommendation": "npm update proxy-addr (>= 2.0.8) in Source/Backend and platform/orchestrator",
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass",
+      "timeline": "0-24 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "security",
+      "title": "Handlebars.js JavaScript Injection via @partial-block",
+      "files": ["Source/Backend/package.json"],
+      "failure_scenario": "Attacker controls template input containing @partial-block syntax → Handlebars evaluates arbitrary JavaScript in server context → remote code execution",
+      "impact": "Server-side template injection, arbitrary code execution on backend host",
+      "recommendation": "npm update handlebars in Source/Backend; audit all template call sites; remove handlebars if unused",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "timeline": "0-24 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "security",
+      "title": "tinypool Prototype Pollution Remote Code Execution",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "Attacker injects malicious object with __proto__ properties into tinypool worker context → prototype chain poisoned → arbitrary code runs in test runner or build pipeline",
+      "impact": "Remote code execution in test environment and CI/CD pipeline",
+      "recommendation": "npm update tinypool vitest in Source/Frontend and portal/Frontend",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "timeline": "0-24 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "security",
+      "title": "Vitest UI Server Arbitrary File Read and Code Execution",
+      "files": ["portal/Frontend/package.json"],
+      "failure_scenario": "Vitest UI server is exposed on portal/Frontend → attacker requests /@fs/etc/passwd or crafted path → reads arbitrary files; with write primitives, executes code",
+      "impact": "Arbitrary file disclosure from server filesystem; potential code execution",
+      "recommendation": "npm update vitest; disable Vitest UI in production; bind UI server to localhost only",
+      "escalate_to": "TheGuardians",
+      "trigger": "sensitive data exposed",
+      "timeline": "0-24 hours",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "security",
+      "title": "protobufjs Code Injection via Bytes Field Defaults",
+      "files": ["platform/orchestrator/package.json"],
+      "failure_scenario": "Orchestrator receives malformed protobuf message with crafted bytes field default → protobufjs evaluates embedded code during deserialization → code injection in orchestrator process",
+      "impact": "Code injection in orchestrator via untrusted protobuf messages",
+      "recommendation": "npm update protobufjs in platform/orchestrator; validate all proto schema sources; never load untrusted .proto files",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection",
+      "timeline": "0-24 hours",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "GET /api/search endpoint not registered — DependencyPicker typeahead broken end-to-end",
+      "files": ["Source/Backend/src/app.ts"],
+      "failure_scenario": "User opens DependencyPicker → types search query → frontend calls GET /api/search?q=… → backend returns 404 (route not registered) → picker shows no results → dependency cannot be set via UI",
+      "impact": "FR-dependency-search completely non-functional; feature shipped but broken",
+      "recommendation": "Register search route in app.ts; add route handler in routes/workItems.ts or new search.ts module; test contract already written at Source/Backend/tests/routes/search.test.ts",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "dependencyCheckDuration Prometheus histogram missing (FR-dependency-metrics)",
+      "files": ["Source/Backend/src/metrics.ts"],
+      "failure_scenario": "Operator queries GET /metrics → dependencyCheckDuration_seconds histogram absent → no latency visibility into slow BFS cycle detection",
+      "recommendation": "Add Histogram to metrics.ts; instrument hasUnresolvedBlockers / isReady functions",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Route handlers bypass service layer — direct store imports in 3 route files",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/intake.ts",
+        "Source/Backend/src/routes/workflow.ts"
+      ],
+      "failure_scenario": "Developer adds validation logic to workItemService.createWorkItem() → all 3 routes bypass it via direct store call → validation silently skipped for all entry points",
+      "recommendation": "Introduce workItemService.ts wrapping store CRUD; update route handlers to call service layer",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "@grpc/grpc-js Server Crash via Malformed Requests + Certificate Validation Bypass",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "files": ["platform/orchestrator/package.json"],
+      "failure_scenario": "Attacker sends malformed gRPC request to orchestrator → server crashes (DoS); separate path: TLS certificate validation bypassed allowing MITM",
+      "recommendation": "npm update @grpc/grpc-js to >= 1.14.5 in platform/orchestrator",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "body-parser Denial of Service via Invalid Content-Length",
+      "files": ["Source/Backend/package.json", "platform/orchestrator/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "Attacker sends request with crafted Content-Length header → body-parser hangs or crashes → all HTTP endpoints on affected services unavailable (DoS)",
+      "recommendation": "npm update in all projects to get current express/body-parser versions",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "brace-expansion Zero-Step Sequence Denial of Service",
+      "files": ["Source/Backend/package.json"],
+      "failure_scenario": "Attacker crafts brace expression with zero-step sequence (e.g., {0..1000000..0}) → infinite loop in brace-expansion → process hangs",
+      "recommendation": "npm update brace-expansion to >= 1.1.12 in Source/Backend",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "Browserslist Memory Exhaustion",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "Malformed browserslist query string causes memory exhaustion in build toolchain; could affect CI/CD environments",
+      "recommendation": "npm update browserslist across all projects",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "form-data CRLF Injection",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "Attacker injects CRLF sequences into form field names → HTTP response splitting possible → header injection attacks",
+      "recommendation": "npm update form-data across all projects",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "js-yaml Quadratic Complexity Denial of Service",
+      "files": ["Source/Backend/package.json"],
+      "failure_scenario": "Attacker submits specially crafted YAML payload to any endpoint that processes YAML → O(n²) parsing loop → CPU exhaustion → DoS",
+      "recommendation": "npm update js-yaml to >= 3.13.1 in Source/Backend",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "nanoid Non-Cryptographically-Secure Generator Loop Risk",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "If nanoid IDs are used for security-sensitive tokens (session, CSRF), predictable output may allow forgery",
+      "recommendation": "npm update nanoid; audit usage to confirm IDs are not used in security contexts",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "PostCSS XSS via Unescaped </style> Tag",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "PostCSS generates CSS containing unescaped </style> → browser prematurely closes style block → HTML injection point opens; XSS if attacker controls CSS content",
+      "recommendation": "npm update postcss in Source/Frontend and portal/Frontend",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "source-map-js Event Loop Denial of Service",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "Processing crafted source maps in build pipeline stalls the Node.js event loop; CI builds hang indefinitely",
+      "recommendation": "npm update source-map-js in Source/Frontend and portal/Frontend",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "path-to-regexp ReDoS via Backtracking Pattern",
+      "files": ["platform/orchestrator/package.json"],
+      "failure_scenario": "Attacker sends URL with specially crafted path to orchestrator → path-to-regexp regex catastrophically backtracks → event loop blocked → all orchestrator requests stall (DoS)",
+      "recommendation": "npm update path-to-regexp to >= 0.1.12 in platform/orchestrator",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "ws Uninitialized Memory Disclosure",
+      "files": ["portal/Frontend/package.json"],
+      "failure_scenario": "Attacker crafts WebSocket frame with specific mask bytes → ws reads uninitialized memory → partial memory contents returned to client (information disclosure)",
+      "recommendation": "npm update ws to >= 8.18.1 in portal/Frontend",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-017",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "Vite Path Traversal in Source Map Handling",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "failure_scenario": "Dev server exposes crafted .map request → Vite resolves path traversal sequences → reads arbitrary files from server filesystem outside project root",
+      "recommendation": "npm update vite to latest in Source/Frontend and portal/Frontend",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-018",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "picomatch Glob Pattern Injection",
+      "files": ["portal/Frontend/package.json"],
+      "failure_scenario": "Attacker controls glob pattern input → picomatch matches unintended paths → unauthorized file access in build pipeline or file watcher context",
+      "recommendation": "npm update picomatch in portal/Frontend",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-004",
+      "severity": "P3",
+      "category": "tooling-gap",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer does not cover FR-dependency-* requirements",
+      "files": ["tools/traceability-enforcer.py"],
+      "recommendation": "Update enforcer to also scan Plans/dependency-linking/requirements.md",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "spec-debt",
+      "source": "quality-oracle",
+      "title": "Two specs in Specifications/ have zero Source/ coverage (Specifications/dev-workflow-platform.md, Specifications/tiered-merge-pipeline.md)",
+      "files": ["Specifications/dev-workflow-platform.md", "Specifications/tiered-merge-pipeline.md"],
+      "recommendation": "Add 'Status: Deferred' headers or move to Specifications/deferred/; update CLAUDE.md",
+      "escalate_to": "requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "eslint-disable-next-line without rationale in 2 production files",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx",
+        "Source/Frontend/src/hooks/useWorkItems.ts"
+      ],
+      "recommendation": "Add inline comment explaining why dependency is intentionally omitted; refactor if suppression hides real bug",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-SC-001",
+      "severity": "P3",
+      "category": "supply-chain",
+      "source": "dependency-auditor",
+      "title": "@opentelemetry/auto-instrumentations-node pulls 50+ transitive packages",
+      "files": ["platform/orchestrator/package.json"],
+      "recommendation": "Review which instrumentations are needed; use selective @opentelemetry/instrumentation-* imports instead of the meta-package",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-SC-002",
+      "severity": "P3",
+      "category": "supply-chain",
+      "source": "dependency-auditor",
+      "title": "26 outdated packages across 5 projects; Vite/Vitest ecosystem has recurring vulnerability pattern",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json", "platform/orchestrator/package.json", "portal/Backend/package.json", "portal/Frontend/package.json"],
+      "recommendation": "Enable automated security alerts (Dependabot or npm audit in CI); schedule monthly dependency update sprint; portal/Backend is highest risk (61 vulnerabilities — may need major-version overhaul)",
+      "escalate_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "cross_references": [
+    {
+      "group_id": "XREF-001",
+      "root_cause": "Outdated Vite/Vitest build toolchain",
+      "affected_findings": ["DEP-003", "DEP-004", "DEP-013", "DEP-014", "DEP-017", "DEP-018"],
+      "single_fix": "npm update vite vitest tinypool postcss source-map-js picomatch in Source/Frontend and portal/Frontend",
+      "fix_impact": "Resolves 6 findings across 2 projects"
+    },
+    {
+      "group_id": "XREF-002",
+      "root_cause": "Stale express/connect middleware stack",
+      "affected_findings": ["DEP-001", "DEP-007", "DEP-010"],
+      "single_fix": "npm update express body-parser form-data proxy-addr across Source/Backend, platform/orchestrator",
+      "fix_impact": "Resolves 3 findings including 1 P1 escalation"
+    },
+    {
+      "group_id": "XREF-003",
+      "root_cause": "FR-dependency-* feature partially implemented",
+      "affected_findings": ["QO-001", "QO-002", "QO-004"],
+      "single_fix": "Complete dependency feature implementation: register /api/search route, add dependencyCheckDuration histogram, expand traceability enforcer",
+      "fix_impact": "Resolves 1 P1 + 1 P2 + 1 P3 from quality-oracle"
+    }
+  ],
+  "next_audit": "2026-11-19",
+  "audit_interval_days": 14
+}

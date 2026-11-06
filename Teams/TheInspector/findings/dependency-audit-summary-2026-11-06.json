@@ -1,0 +1,257 @@
+{
+  "audit_metadata": {
+    "date": "2026-11-06",
+    "agent": "dependency_auditor",
+    "model": "claude-haiku-4.5",
+    "status": "completed",
+    "grade": "D",
+    "verdict": "FAIL - Critical CVEs must be fixed before deployment"
+  },
+  "package_managers_detected": [
+    "npm"
+  ],
+  "workspaces_scanned": 7,
+  "direct_dependencies": {
+    "production": 7,
+    "development": 18,
+    "total": 25
+  },
+  "transitive_dependencies": {
+    "backend": {
+      "production": 102,
+      "development": 310,
+      "total": 412
+    },
+    "frontend": {
+      "production": 9,
+      "development": 222,
+      "total": 231
+    },
+    "combined": 643
+  },
+  "cve_summary": {
+    "total": 21,
+    "critical_p1": 4,
+    "high_p2": 9,
+    "moderate_p3": 7,
+    "low_p4": 1,
+    "by_severity": {
+      "critical": {
+        "count": 4,
+        "cves": [
+          "GHSA-5xrq-8626-4rwp",
+          "GHSA-jqcg-44mw-7w3h",
+          "GHSA-82fw-gwwq-j7x9",
+          "GHSA-qxg6-89mg-rqv8"
+        ]
+      },
+      "high": {
+        "count": 9,
+        "cves": [
+          "GHSA-27r3-jxmh-p828",
+          "GHSA-3jxr-9vmj-r5cp",
+          "GHSA-w5hq-g745-h8pq",
+          "GHSA-76f5-xvv2-mzvf",
+          "GHSA-c83g-rgw3-j3cx",
+          "GHSA-96hv-2xvq-fx4p",
+          "GHSA-rq7h-c2jc-7f22",
+          "GHSA-fx2h-pf6j-xcff",
+          "GHSA-1119503"
+        ]
+      }
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "Arbitrary File Read & RCE via Vitest UI Server",
+      "affected_versions": "<3.2.6",
+      "current_version": "^2.0.5",
+      "file": "Source/Frontend/package.json",
+      "fix": "npm update vitest@5.1.0+",
+      "timeline": "IMMEDIATE",
+      "workspace": "frontend"
+    },
+    {
+      "id": "DEP-002",
+      "package": "proxy-addr",
+      "severity": "P1",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "title": "IPv4-Mapped IPv6 IP Spoofing",
+      "affected_versions": "1.1.0-2.0.7",
+      "file": "Source/Backend/package.json (transitive via express)",
+      "fix": "npm update express",
+      "timeline": "IMMEDIATE",
+      "workspace": "backend",
+      "escalate_to": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "@vitest/mocker",
+      "severity": "P1",
+      "cvss": 5.9,
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "title": "Path Traversal & Arbitrary File Read",
+      "affected_versions": "2.1.0-4.1.11",
+      "file": "Source/Frontend/package.json (transitive via vitest)",
+      "fix": "npm update vitest@5.1.0+",
+      "timeline": "IMMEDIATE",
+      "workspace": "frontend"
+    },
+    {
+      "id": "DEP-004",
+      "package": "@vitest/mocker",
+      "severity": "P1",
+      "cvss": 4.7,
+      "cve": "GHSA-qxg6-89mg-rqv8",
+      "title": "Code Injection via Unauthenticated Mock Registration",
+      "affected_versions": "2.1.0-beta.7-4.1.11",
+      "file": "Source/Frontend/package.json (transitive via vitest)",
+      "fix": "npm update vitest@5.1.0+",
+      "timeline": "IMMEDIATE",
+      "workspace": "frontend"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-005",
+      "package": "body-parser",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve": "GHSA-27r3-jxmh-p828",
+      "title": "DoS via Trailing Bytes After Compression",
+      "fix": "npm update express"
+    },
+    {
+      "id": "DEP-006",
+      "package": "brace-expansion",
+      "severity": "P2",
+      "cvss": 5.3,
+      "cve": "GHSA-3jxr-9vmj-r5cp",
+      "title": "DoS via Exponential Expansion"
+    },
+    {
+      "id": "DEP-007",
+      "package": "uuid",
+      "severity": "P2",
+      "cvss": 7.5,
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "title": "Missing Buffer Bounds Check",
+      "fix": "npm update uuid@11.1.1+"
+    },
+    {
+      "id": "DEP-008",
+      "package": "vite",
+      "severity": "P2",
+      "title": "Multiple File Access Bypass Vulnerabilities",
+      "fix": "npm update vite@8.3.6+"
+    }
+  ],
+  "outdated_packages": {
+    "major_version_gaps": [
+      {
+        "package": "vitest",
+        "current": "^2.0.5",
+        "latest": "^5.1.0",
+        "gap": 3,
+        "status": "CRITICAL",
+        "reason": "Multiple security fixes"
+      },
+      {
+        "package": "vite",
+        "current": "^5.4.0",
+        "latest": "^8.3.6",
+        "gap": 3,
+        "status": "HIGH",
+        "reason": "File access bypass fixes"
+      },
+      {
+        "package": "uuid",
+        "current": "^9.0.0",
+        "latest": "^14.0.3",
+        "gap": 5,
+        "status": "HIGH",
+        "reason": "Buffer bounds check fix"
+      }
+    ],
+    "no_abandoned_packages": true
+  },
+  "license_compliance": {
+    "status": "PASS",
+    "issues": 0,
+    "warnings": [
+      "Source/Backend and Source/Frontend package.json should declare top-level license field"
+    ],
+    "viral_licenses": 0,
+    "unlicensed_packages": 0
+  },
+  "supply_chain_risks": {
+    "post_install_scripts": 0,
+    "single_maintainer_deps": 0,
+    "recently_transferred_packages": 0,
+    "low_download_count_packages": 0,
+    "total_risk_level": "MODERATE",
+    "assessment": "643 transitive dependencies create large attack surface; no individual supply chain risks identified"
+  },
+  "remediation_phases": {
+    "phase_1_immediate": {
+      "description": "Before next deployment",
+      "items": [
+        "Upgrade vitest to 5.1.0+ (eliminates CVSS 9.8 RCE)",
+        "Upgrade express to fix proxy-addr IP spoofing (eliminates CVSS 9.1)",
+        "Upgrade uuid to 11.1.1+ (eliminates CVSS 7.5 buffer issue)"
+      ],
+      "commands": [
+        "cd Source/Frontend && npm update vitest",
+        "cd Source/Backend && npm update express uuid",
+        "npm test (both workspaces)"
+      ]
+    },
+    "phase_2_1_to_2_sprints": {
+      "description": "Next sprint planning",
+      "items": [
+        "Upgrade vite to 8.3.6+ (file access bypass fixes)",
+        "Update react-router-dom for redirect fix"
+      ]
+    },
+    "phase_3_1_to_2_quarters": {
+      "description": "Routine maintenance",
+      "items": [
+        "Monitor jest transitive CVEs",
+        "Monitor babel/browserslist updates"
+      ]
+    }
+  },
+  "escalations": {
+    "TheGuardians": [
+      {
+        "finding": "vitest RCE (CVSS 9.8)",
+        "action": "Ensure Vitest UI server is never exposed to external networks; review CI/CD pipeline"
+      },
+      {
+        "finding": "proxy-addr IP spoofing (CVSS 9.1)",
+        "action": "Audit backend for IP-based access controls; backend has NO authentication layer per config"
+      }
+    ]
+  },
+  "metrics": {
+    "cves_critical": 4,
+    "cves_high": 9,
+    "cves_moderate": 7,
+    "cves_low": 1,
+    "cves_total": 21,
+    "outdated_major": 3,
+    "abandoned_packages": 0,
+    "license_issues": 0,
+    "transitive_deps": 643,
+    "post_install_scripts": 0,
+    "supply_chain_risks": 0
+  },
+  "report_file": "Teams/TheInspector/findings/dependency-audit-2026-11-06.md",
+  "learnings_file": "Teams/TheInspector/learnings/dependency-auditor.md"
+}

@@ -1,0 +1,311 @@
+{
+  "meta": {
+    "audit_id": "run-20261106-091900",
+    "audit_date": "2026-11-06",
+    "grade": "D",
+    "branch": "main",
+    "generated_by": "TheInspector / team-leader",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler (services offline)", "chaos-monkey (services offline)"]
+  },
+  "summary": {
+    "p1_total": 7,
+    "p2_total": 11,
+    "p3_total": 9,
+    "p4_total": 1,
+    "total_findings": 28,
+    "spec_coverage_pct": 0,
+    "escalation_count": 4,
+    "fixed_since_prior": 0,
+    "prior_audit": "none — first full combined audit"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "trigger": "missing access control / RCE",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "vitest — Arbitrary File Read & Remote Code Execution",
+      "package": "vitest ^2.0.5",
+      "file": "Source/Frontend/package.json",
+      "exploit_scenario": "Unauthenticated attacker with network access to Vitest UI server reads arbitrary files via path traversal in mock redirect API, then executes arbitrary code on the developer/CI machine.",
+      "impact": "Full filesystem read + code execution on dev/CI environment",
+      "fix": "cd Source/Frontend && npm update vitest  # target >=5.1.0"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass / IP spoofing",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "title": "proxy-addr — IPv4-Mapped IPv6 IP Spoofing (via Express)",
+      "package": "proxy-addr 1.1.0–2.0.7 (transitive via express)",
+      "file": "Source/Backend/package.json",
+      "exploit_scenario": "Attacker sends request with X-Forwarded-For: ::ffff:127.0.0.1; Express resolves req.ip as 127.0.0.1 — bypassing any IP-based access control or rate-limiting logic. Backend has NO authentication layer per inspector.config.yml, amplifying exposure.",
+      "impact": "IP-based access controls fully defeated; request spoofing possible",
+      "fix": "cd Source/Backend && npm update express  # pulls proxy-addr >=2.0.8"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection / path traversal",
+      "cvss": 5.9,
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "title": "@vitest/mocker — Path Traversal & Arbitrary File Read",
+      "package": "@vitest/mocker 2.1.0–4.1.11 (transitive via vitest)",
+      "file": "Source/Frontend/package.json",
+      "exploit_scenario": "Stacked with DEP-001: attacker uses @vitest/mocker mock redirect API to traverse to files outside project root; exfiltrates .env, secrets, SSH keys from CI runner.",
+      "impact": "Sensitive file exfiltration from CI/dev environment",
+      "fix": "cd Source/Frontend && npm update vitest  # resolves all vitest-related CVEs"
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection / code injection",
+      "cvss": 4.7,
+      "cve": "GHSA-qxg6-89mg-rqv8",
+      "title": "@vitest/mocker — Unauthenticated Code Injection via Manual Mock Registration",
+      "package": "@vitest/mocker 2.1.0-beta.7–4.1.11 (transitive via vitest)",
+      "file": "Source/Frontend/package.json",
+      "exploit_scenario": "Attacker with access to test environment injects arbitrary code via manual mock registration; combined with DEP-001 network access, achieves full code execution without authentication.",
+      "impact": "Arbitrary code execution in test/dev environment",
+      "fix": "cd Source/Frontend && npm update vitest  # target >=5.1.0"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "architecture-violation",
+      "title": "Routes bypass service layer — direct store access in 3 route files",
+      "files": [
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/intake.ts:4"
+      ],
+      "exploit_scenario": "Business logic executed directly in route handlers; store state can be modified without going through service-layer validation, enabling state machine inconsistencies and business rule bypass.",
+      "recommendation": "Create workItemService.ts; route handlers call services; services call store. Remove direct store imports from all route files.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "spec-drift",
+      "title": "Traceability enforcer does not cover Specifications/ — false-green gate",
+      "files": ["tools/traceability-enforcer.py"],
+      "exploit_scenario": "CI gate reports PASSED while 95 domain requirements have zero implementation coverage. False green obscures total spec drift; teams ship unvalidated code believing quality gates are satisfied.",
+      "recommendation": "Extend enforcer to scan Specifications/ for FR-\\d+ and FR-TMP-\\d+; or document the two-tier traceability model and update CLAUDE.md.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "spec-drift",
+      "title": "95 Specifications/ requirements entirely unimplemented — 0% coverage",
+      "files": [
+        "Specifications/dev-workflow-platform.md",
+        "Specifications/tiered-merge-pipeline.md"
+      ],
+      "exploit_scenario": "CLAUDE.md mandates specs-first development. The authoritative domain specs describe features (SQLite, AI voting, human approval, pipeline runner) that are entirely absent from Source/. The gap between documented intent and reality is total — product, audit, and compliance decisions based on specs will be incorrect.",
+      "recommendation": "Product decision required: (a) retro-spec workflow engine into Specifications/ and deprecate unbuilt FRs, OR (b) scope incremental implementation plan for FR-001…FR-069.",
+      "route_to": "TheATeam (product decision) + requirements-reviewer"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "architecture-violation",
+      "title": "Duplicate logger modules — two valid import paths",
+      "files": [
+        "Source/Backend/src/utils/logger.ts",
+        "Source/Backend/src/logger.ts"
+      ],
+      "recommendation": "Add default export to utils/logger.ts; delete src/logger.ts; update all imports.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppresses exhaustive-deps without justification (2 files)",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "recommendation": "Add inline comment justifying each suppression, or refactor to satisfy the lint rule.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "cvss": 7.5,
+      "cve": "GHSA-27r3-jxmh-p828",
+      "title": "body-parser — DoS via Trailing Bytes After Compression",
+      "package": "body-parser (transitive via express)",
+      "file": "Source/Backend/package.json",
+      "recommendation": "npm update express (pulls body-parser >=1.20.9)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "cvss": 5.3,
+      "cve": "GHSA-3jxr-9vmj-r5cp",
+      "title": "brace-expansion — DoS via Exponential Expansion",
+      "package": "brace-expansion (transitive, dev tools)",
+      "recommendation": "Update build toolchain packages in next maintenance window.",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "cvss": 7.5,
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "title": "uuid — Missing Buffer Bounds Check (potential OOB write)",
+      "package": "uuid ^9.0.0 (direct production dependency)",
+      "file": "Source/Backend/package.json",
+      "recommendation": "cd Source/Backend && npm update uuid  # target >=11.1.1",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "title": "vite — Multiple File Access Bypass Vulnerabilities (3 CVEs)",
+      "cves": ["GHSA-76f5-xvv2-mzvf", "GHSA-rq7h-c2jc-7f22", "GHSA-fx2h-pf6j-xcff"],
+      "package": "vite ^5.4.0 (dev dependency)",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "npm update vite  # target >=8.3.6 (major version bump — audit breaking changes)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "cvss": 7.5,
+      "cve": "GHSA-c83g-rgw3-j3cx",
+      "title": "browserslist — Unbounded Memory Growth (DoS)",
+      "package": "browserslist <=4.28.6 (transitive via vite, @vitejs/plugin-react)",
+      "recommendation": "Resolved by vite upgrade (DEP-008 fix)",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-010",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "title": "react-router-dom / @remix-run/router — Open Redirect",
+      "package": "@remix-run/router (transitive via react-router-dom ^6.26.0)",
+      "file": "Source/Frontend/package.json",
+      "recommendation": "npm update react-router-dom to latest 6.x or upgrade to v7",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-011",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "cve",
+      "title": "Additional high-severity transitive CVEs (2 remaining)",
+      "cves": ["GHSA-96hv-2xvq-fx4p", "GHSA-1119503"],
+      "recommendation": "Run npm audit in both workspaces and apply npm audit fix for all auto-fixable items.",
+      "route_to": "TheFixer"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "3 files approaching 500-line split threshold",
+      "files": [
+        "Source/Frontend/src/pages/WorkItemDetailPage.tsx (426 lines)",
+        "Source/Frontend/src/components/DependencyPicker.tsx (376 lines)",
+        "Source/Backend/src/routes/workflow.ts (374 lines)"
+      ],
+      "recommendation": "Flag for extraction on next edit: custom hooks from pages; sub-routers from workflow.ts.",
+      "route_to": "TheFixer (backlog)"
+    },
+    {
+      "id": "QO-007",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "untested",
+      "title": "vite.config.ts recently modified, lacks Verifies traceability comment",
+      "files": ["Source/Frontend/vite.config.ts"],
+      "recommendation": "Add // Verifies: FR-WF-009 (or appropriate FR-WF ID) at top of file.",
+      "route_to": "TheFixer (backlog)"
+    },
+    {
+      "id": "DEP-P3-001",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "cve-moderate",
+      "title": "7 moderate-severity CVEs in transitive dependencies",
+      "recommendation": "Address during routine maintenance window; run npm audit fix.",
+      "route_to": "TheFixer (backlog)"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-P4-001",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "cve-low",
+      "title": "1 low-severity CVE in transitive dependencies",
+      "recommendation": "Monitor; address in quarterly maintenance.",
+      "route_to": "TheFixer (backlog)"
+    }
+  ],
+  "clean_checks": [
+    "No console.log in production source (logger abstraction used everywhere)",
+    "No hardcoded secrets or credentials",
+    "No skipped/todo tests",
+    "All 14 backend test files contain assertions",
+    "Services do not import Express framework types (business logic clean)",
+    "No truly empty catch blocks",
+    "Plans/self-judging-workflow traceability: 13/13 FR-WF IDs traced — enforcer PASSES",
+    "No abandoned packages in dependency tree",
+    "No license compliance violations",
+    "No supply chain red flags (no post-install scripts, no suspicious maintainer transfers)"
+  ]
+}

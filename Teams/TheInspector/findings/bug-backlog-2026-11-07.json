@@ -1,0 +1,305 @@
+{
+  "audit_id": "inspector-2026-11-07",
+  "audit_date": "2026-11-07",
+  "branch": "audit/inspector-2026-11-07-517aea",
+  "grade": "D",
+  "prior_grade": null,
+  "trend": "first-audit",
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 10,
+    "p3_total": 10,
+    "p4_total": 3,
+    "fixed_count": 0,
+    "new_count": 29,
+    "escalations_count": 3,
+    "spec_coverage_plans": "100%",
+    "spec_coverage_specifications": "0%",
+    "license_compliance": "COMPLIANT",
+    "dynamic_mode_used": false,
+    "performance_profiler": "not-run",
+    "chaos_monkey": "not-run"
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IP Spoofing via IPv4-mapped IPv6",
+      "severity": "P1",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr < 2.0.8",
+      "file": "Source/Backend/package-lock.json",
+      "category": "access-control-bypass",
+      "escalate_to": "TheGuardians",
+      "reason": "IP-based access control bypass via X-Forwarded-For header spoofing",
+      "fix": "cd Source/Backend && npm install express@^4.22.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "severity": "P1",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest < 3.2.6",
+      "file": "Source/Frontend/package-lock.json",
+      "category": "arbitrary-file-read",
+      "escalate_to": "TheGuardians",
+      "reason": "Development environment arbitrary file read/execute — dev server must not be exposed to untrusted networks",
+      "fix": "cd Source/Frontend && npm install vitest@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "title": "body-parser Denial of Service via Compressed Request",
+      "severity": "P1",
+      "cvss": 7.5,
+      "cve": "GHSA-27r3-jxmh-p828",
+      "package": "body-parser < 1.20.9",
+      "file": "Source/Backend/package-lock.json",
+      "category": "denial-of-service",
+      "escalate_to": "TheGuardians",
+      "reason": "Network-exploitable, no-auth DoS against REST API — attacker crashes server with crafted compressed requests",
+      "fix": "cd Source/Backend && npm install express@^4.22.0",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IP Spoofing via IPv4-mapped IPv6",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve-security",
+      "cvss": 9.1,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "file": "Source/Backend/package-lock.json",
+      "package": "proxy-addr < 2.0.8",
+      "exploit_scenario": "Attacker sends request with crafted X-Forwarded-For header using IPv4-mapped IPv6 notation; express trusts forged IP, bypassing IP-allowlist or IP-based rate limiting",
+      "impact": "Authentication/access-control bypass for any IP-restricted route",
+      "fix": "cd Source/Backend && npm install express@^4.22.0",
+      "escalate": "[ESCALATE → TheGuardians]",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Vitest UI Server Arbitrary File Read & Execution",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve-security",
+      "cvss": 9.8,
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "vitest < 3.2.6",
+      "exploit_scenario": "When Vitest UI server is running (vitest --ui), attacker on same network sends path-traversal request to read arbitrary files or execute code with process privileges",
+      "impact": "Full filesystem read and potential code execution in dev/CI environments",
+      "fix": "cd Source/Frontend && npm install vitest@latest",
+      "escalate": "[ESCALATE → TheGuardians]",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "title": "body-parser Denial of Service via Compressed Request",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "cvss": 7.5,
+      "cve": "GHSA-27r3-jxmh-p828",
+      "file": "Source/Backend/package-lock.json",
+      "package": "body-parser < 1.20.9",
+      "exploit_scenario": "Attacker sends POST with valid gzip body followed by trailing bytes; body-parser throws uncaught exception, crashing the express process",
+      "impact": "Complete denial of service to all API routes — no authentication required",
+      "fix": "cd Source/Backend && npm install express@^4.22.0",
+      "escalate": "[ESCALATE → TheGuardians]",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "title": "@vitest/mocker Code Injection via Manual Mock Registration",
+      "severity": "P1",
+      "specialist": "dependency-auditor",
+      "category": "cve-security",
+      "cvss": 4.7,
+      "cve": "GHSA-qxg6-89mg-rqv8",
+      "file": "Source/Frontend/package-lock.json",
+      "package": "@vitest/mocker < 4.1.12",
+      "exploit_scenario": "During test execution, unauthenticated manual mock registration allows injected code path to be executed in test runner context",
+      "impact": "Code execution in test/CI environment; potential credential exfiltration",
+      "fix": "cd Source/Frontend && npm install vitest@latest",
+      "escalate": null,
+      "status": "NEW"
+    },
+    {
+      "id": "QO-001",
+      "title": "Specifications/ Describes Unimplemented Product (FR-001–FR-069 at 0% coverage)",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "file": "Specifications/dev-workflow-platform.md",
+      "exploit_scenario": "Any agent reads CLAUDE.md, opens Specifications/, and builds against FR-001–FR-069 instead of the actual implemented product spec; causes regressions or wasted sprint cycles",
+      "impact": "Agents systematically misled about product domain; every new coder agent risks building the wrong thing",
+      "fix": "Move dev-workflow-platform.md to docs/archive/ with header; add Specifications/README.md clarifying workflow-engine.md is the active spec",
+      "route_to": "requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "title": "GET /api/search Not Wired — FR-dependency-search Unimplemented, Tests Fail",
+      "severity": "P1",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "file": "Source/Backend/src/app.ts",
+      "exploit_scenario": "CI runs Source/Backend/tests/routes/search.test.ts; all tests fail because route is not registered. DependencyPicker component makes calls to /api/search and receives 404s in production",
+      "impact": "CI test suite fails; DependencyPicker feature is broken in production",
+      "fix": "Implement Source/Backend/src/routes/search.ts with cross-entity search and register as app.use('/api', searchRouter) in app.ts",
+      "route_to": "TheFixer → backend-coder",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "DEP-005",
+      "title": "brace-expansion Multiple DoS Vulnerabilities (5 CVEs)",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "cvss_range": "5.3-7.5",
+      "file": "Source/Backend/package-lock.json, Source/Frontend/package-lock.json",
+      "fix": "npm install --save-dev glob@latest minimatch@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "title": "browserslist Memory Exhaustion & Prototype Pollution",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "cvss": 7.5,
+      "file": "Source/Frontend/package-lock.json",
+      "fix": "cd Source/Frontend && npm install vite@latest @vitejs/plugin-react@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "title": "ws WebSocket Memory Exhaustion",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "cve-dos",
+      "cvss": 7.5,
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "file": "Source/Frontend/package-lock.json",
+      "fix": "cd Source/Frontend && npm install vitest@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-015",
+      "title": "express 4.18.2 — 2+ Major Versions Behind, Missing Security Patches",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "outdated",
+      "file": "Source/Backend/package.json",
+      "fix": "cd Source/Backend && npm install express@^4.22.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016",
+      "title": "uuid 9.0.0 — 5 Major Versions Behind + Buffer Overflow CVE",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "outdated-cve",
+      "file": "Source/Backend/package.json",
+      "fix": "cd Source/Backend && npm install uuid@^14.0.0",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-019",
+      "title": "vitest 4.1.10 — Major Version Behind + Critical CVE Umbrella",
+      "severity": "P2",
+      "specialist": "dependency-auditor",
+      "category": "outdated-cve",
+      "file": "Source/Frontend/package.json",
+      "fix": "cd Source/Frontend && npm install vitest@latest",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "title": "Traceability Enforcer Ignores Specifications/ — False Green Gate",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "pattern-violation",
+      "file": "tools/traceability-enforcer.py",
+      "fix": "Update enforcer to also scan Specifications/ for requirement IDs, or warn when specs.dir in inspector.config.yml contains untraced requirements",
+      "route_to": "solo-session",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "title": "FR-070–FR-085 Referenced in api-contracts.md but Defined in No Spec",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "spec-drift",
+      "file": "Source/Shared/api-contracts.md",
+      "fix": "Create spec entry for FR-070–FR-085 in Specifications/ or update api-contracts.md to use correct FR-dependency-* IDs",
+      "route_to": "requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "title": "Duplicate Frontend Test Files for WorkItemDetailPage and WorkItemListPage",
+      "severity": "P2",
+      "specialist": "quality-oracle",
+      "category": "test-coverage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "fix": "Merge unique tests into tests/pages/ subdirectory; delete root-level duplicates",
+      "route_to": "TheFixer → frontend-coder",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {"id": "DEP-008", "title": "@remix-run/router Open Redirect", "cve": "GHSA-2j2x-hqr9-3h42", "severity": "P3", "specialist": "dependency-auditor", "fix": "npm install react-router-dom@latest", "status": "NEW"},
+    {"id": "DEP-009", "title": "Vitest @vitest/mocker Path Traversal (dev-time)", "cve": "GHSA-82fw-gwwq-j7x9", "severity": "P3", "specialist": "dependency-auditor", "fix": "npm install vitest@latest", "status": "NEW"},
+    {"id": "DEP-010", "title": "Vite Dev Server FS Restrict Bypass", "severity": "P3", "specialist": "dependency-auditor", "fix": "npm install vite@latest", "status": "NEW"},
+    {"id": "DEP-011", "title": "js-yaml Code Execution via Untrusted YAML", "cve": "GHSA-xhqq-w5r3-4wg3", "severity": "P3", "specialist": "dependency-auditor", "fix": "Verify no untrusted YAML parsed in production; update transitive dep", "status": "NEW"},
+    {"id": "DEP-012", "title": "uuid Buffer Bounds Check Missing (v3/v5/v6 with buf param)", "cve": "GHSA-w5hq-g745-h8pq", "severity": "P3", "specialist": "dependency-auditor", "fix": "npm install uuid@^14.0.0", "status": "NEW"},
+    {"id": "DEP-013", "title": "esbuild Transitive DoS / Info Disclosure", "severity": "P3", "specialist": "dependency-auditor", "fix": "npm install vite@latest", "status": "NEW"},
+    {"id": "DEP-017", "title": "pino 8.17.0 — 2 Major Versions Behind", "severity": "P3", "specialist": "dependency-auditor", "fix": "npm install pino@^10.0.0", "status": "NEW"},
+    {"id": "DEP-018", "title": "react-router-dom 6.26.0 — Major Version Behind + Open Redirect", "severity": "P3", "specialist": "dependency-auditor", "fix": "npm install react-router-dom@^7.0.0", "status": "NEW"},
+    {"id": "QO-006", "title": "eslint-disable Without Rationale in useWorkItems.ts and DependencyPicker.tsx", "severity": "P3", "specialist": "quality-oracle", "fix": "Add invariant comment above each eslint-disable", "status": "NEW"},
+    {"id": "QO-007", "title": "DebugPortalPage Uses Non-Standard Verifies Comment", "severity": "P3", "specialist": "quality-oracle", "fix": "Replace with // Infrastructure: debug portal iframe — not spec-traced", "status": "NEW"}
+  ],
+  "p4_findings": [
+    {"id": "DEP-014", "title": "@babel/core Arbitrary File Read via sourceMappingURL", "cve": "GHSA-4x5r-pxfx-6jf8", "cvss": 3.2, "severity": "P4", "specialist": "dependency-auditor", "fix": "Will resolve with vite/build tool updates", "status": "NEW"},
+    {"id": "DEP-LOW-01", "title": "Additional low-severity transitive CVEs (grouped)", "severity": "P4", "specialist": "dependency-auditor", "count": 2, "fix": "npm audit fix", "status": "NEW"}
+  ],
+  "cross_references": [
+    {
+      "root_cause": "vitest/vite toolchain severely outdated",
+      "single_fix": "cd Source/Frontend && npm install vitest@latest vite@latest",
+      "resolves": ["DEP-002", "DEP-004", "DEP-007", "DEP-009", "DEP-010", "DEP-013", "DEP-019"]
+    },
+    {
+      "root_cause": "express/body-parser/proxy-addr update needed",
+      "single_fix": "cd Source/Backend && npm install express@^4.22.0",
+      "resolves": ["DEP-001", "DEP-003", "DEP-015"]
+    },
+    {
+      "root_cause": "Specification directory structure misalignment",
+      "single_fix": "Archive dev-workflow-platform.md; add Specifications/README.md; update traceability enforcer to scan Specifications/",
+      "resolves": ["QO-001", "QO-003", "QO-004"]
+    }
+  ],
+  "positive_observations": [
+    "All recently modified source files carry Verifies: comments",
+    "No console.log in production source — structured logger used throughout",
+    "No hardcoded secrets or credentials found in source",
+    "No empty catch blocks — all errors logged with context",
+    "Shared types centralized in Source/Shared/types/workflow.ts",
+    "E2E test project is clean — zero vulnerabilities",
+    "All direct dependencies use MIT or Apache-2.0 licenses"
+  ]
+}

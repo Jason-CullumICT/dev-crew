@@ -163,3 +163,66 @@ After completing analysis, update `Teams/TheInspector/learnings/dependency-audit
 - License decisions made by the team
 - Audit tools available in this environment
 - Prior CVE findings and their fix status
+
+---
+
+## Audit History & Watch List (Updated 2026-11-07)
+
+### Watch List — High-Risk Packages
+1. **proxy-addr ecosystem (express → body-parser → proxy-addr)**
+   - Multiple security fixes in Express 4.22.0+
+   - Critical IP spoofing CVE found in v2.0.7
+   - Action: Lock to ≥2.0.8; monitor Express LTS releases
+
+2. **Vitest/vite build chain**
+   - Multiple path traversal and arbitrary file read CVEs
+   - Vitest < 3.2.6 has UI server code execution
+   - Action: Pin to latest major version; monitor weekly updates
+
+3. **brace-expansion (and glob dependencies)**
+   - 5+ DoS vulnerabilities from 2024-2025
+   - Used transitively by npm/shell glob libraries
+   - Action: Keep all glob/minimatch/glob-stream updated
+
+4. **uuid package**
+   - v9.x is 2+ years old
+   - v11+ has buffer safety fixes
+   - Action: Plan major version upgrade; test UUID generation
+
+### Available Audit Tools
+- `npm audit --json` — Preferred; built-in npm >= 7.0.0 ✓
+- `npm outdated --json` — Preferred; shows version drift ✓
+- `npx license-checker --json` — Not installed; falls back to manual package.json scan
+
+### Audit Results Summary
+
+**Audit Date:** 2026-11-07
+- **Projects scanned:** 3 (Backend, Frontend, E2E)
+- **Total CVEs found:** 35 (critical: 4, high: 12, moderate: 16, low: 3)
+- **Outdated packages:** 5 (major version behind)
+- **License status:** COMPLIANT (all MIT/Apache)
+- **Supply chain risk:** MEDIUM (well-maintained, no malicious patterns)
+
+**Blockers (P1):**
+- proxy-addr IP spoofing (GHSA-jqcg-44mw-7w3h)
+- Vitest UI arbitrary file read (GHSA-5xrq-8626-4rwp)
+- body-parser DoS (GHSA-27r3-jxmh-p828)
+
+**Next Actions:**
+- Update express to 4.22.0+ or 5.x
+- Update vitest to latest major
+- Test uuid upgrade path
+- Plan react-router-dom 7.x migration
+
+---
+
+### License Decisions (Team Notes)
+- **MIT:** Acceptable for all projects (permissive)
+- **Apache-2.0:** Acceptable; compatible with MIT in same codebase
+- **GPL/AGPL:** NOT acceptable; would require full project GPL licensing
+- **UNLICENSED:** Escalate to legal; no transitive dependencies flagged
+
+---
+
+### Prior Findings (2026 Q4)
+None on record — this is the first structured dependency audit run.

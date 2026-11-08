@@ -1,0 +1,162 @@
+{
+  "audit_date": "2026-11-08",
+  "audit_tool": "npm audit --json",
+  "total_projects_scanned": 6,
+  "summary": {
+    "total_vulnerabilities": 88,
+    "critical": 12,
+    "high": 32,
+    "moderate": 36,
+    "low": 8,
+    "total_transitive_dependencies": 1679,
+    "grade": "D"
+  },
+  "projects": {
+    "Source/Backend": {
+      "path": "Source/Backend",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 5,
+        "moderate": 3,
+        "low": 8,
+        "total": 18
+      },
+      "dependencies": {
+        "prod": 102,
+        "dev": 310,
+        "optional": 2,
+        "total": 411
+      },
+      "direct_issues": ["uuid", "ts-jest"],
+      "critical_cves": ["proxy-addr (IP spoofing)"]
+    },
+    "Source/Frontend": {
+      "path": "Source/Frontend",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 7,
+        "moderate": 7,
+        "low": 1,
+        "total": 17
+      },
+      "dependencies": {
+        "prod": 9,
+        "dev": 222,
+        "optional": 50,
+        "total": 230
+      },
+      "direct_issues": ["vitest"],
+      "critical_cves": ["vitest (file read/execute via UI)"]
+    },
+    "Source/E2E": {
+      "path": "Source/E2E",
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 4,
+        "dev": 0,
+        "optional": 1,
+        "total": 4
+      },
+      "direct_issues": [],
+      "critical_cves": [],
+      "status": "CLEAN"
+    },
+    "platform/orchestrator": {
+      "path": "platform/orchestrator",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 3,
+        "moderate": 4,
+        "low": 0,
+        "total": 9
+      },
+      "dependencies": {
+        "prod": 153,
+        "dev": 0,
+        "optional": 3,
+        "total": 155
+      },
+      "direct_issues": ["dockerode"],
+      "critical_cves": ["protobufjs (RCE)", "proxy-addr (IP spoofing)"]
+    },
+    "portal/Backend": {
+      "path": "portal/Backend",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 6,
+        "moderate": 15,
+        "low": 1,
+        "total": 24
+      },
+      "dependencies": {
+        "prod": 180,
+        "dev": 40,
+        "optional": 5,
+        "total": 225
+      },
+      "direct_issues": ["@opentelemetry/auto-instrumentations-node"],
+      "critical_cves": ["protobufjs (RCE)", "proxy-addr (IP spoofing)"]
+    },
+    "portal/Frontend": {
+      "path": "portal/Frontend",
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 8,
+        "moderate": 7,
+        "low": 1,
+        "total": 18
+      },
+      "dependencies": {
+        "prod": 9,
+        "dev": 416,
+        "optional": 49,
+        "total": 424
+      },
+      "direct_issues": ["vitest"],
+      "critical_cves": ["vitest (file read/execute)"]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IP Spoofing via IPv4-Mapped IPv6",
+      "package": "proxy-addr",
+      "cvss": 9.1,
+      "cwe": "CWE-290",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "vitest Arbitrary File Read & Execution",
+      "package": "vitest",
+      "cvss": 9.8,
+      "cwe": "CWE-22, CWE-862",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "title": "protobufjs Remote Code Execution",
+      "package": "protobufjs",
+      "cvss": 9.8,
+      "cwe": "CWE-94",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "escalation": "TheGuardians"
+    }
+  ],
+  "remediation_priority": "URGENT",
+  "recommended_timeline": {
+    "critical": "Today (24 hours)",
+    "high": "This week (7 days)",
+    "moderate": "This month (30 days)",
+    "low": "Next release cycle"
+  },
+  "audit_report": "Teams/TheInspector/findings/DEPENDENCY-AUDIT-2026-11-08.md"
+}

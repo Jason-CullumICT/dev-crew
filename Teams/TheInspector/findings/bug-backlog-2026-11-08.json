@@ -1,0 +1,185 @@
+{
+  "audit": {
+    "run_id": "run-20261108-085724",
+    "date": "2026-11-08",
+    "branch": "audit/inspector-2026-11-08-ab8989",
+    "grade": "D",
+    "mode": "static",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline (backend: http://localhost:3001, frontend: http://localhost:5173)"
+  },
+  "summary": {
+    "p1_total": 5,
+    "p2_total": 6,
+    "p3_total": 0,
+    "p4_total": 2,
+    "escalations_total": 3,
+    "fixed_total": 0,
+    "spec_coverage_pct": 0
+  },
+  "escalations": [
+    {
+      "id": "DA-001",
+      "priority": "P1",
+      "category": "access-control-bypass",
+      "title": "proxy-addr IP Spoofing — CVSS 9.1",
+      "source": "dependency-auditor",
+      "cvss": 9.1,
+      "cwe": "CWE-290",
+      "owasp": "A01: Broken Access Control",
+      "description": "IPv4-mapped IPv6 addresses bypass IP-based access control in Express stacks using proxy-addr. Any IP-restricted route is bypassable from the network.",
+      "affected": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "remediation": "npm update proxy-addr (per affected project)",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "trigger": "access control bypass"
+    },
+    {
+      "id": "DA-002",
+      "priority": "P1",
+      "category": "rce-credential-leak",
+      "title": "vitest Arbitrary File Read + RCE via UI Server — CVSS 9.8",
+      "source": "dependency-auditor",
+      "cvss": 9.8,
+      "cwe": "CWE-22, CWE-78",
+      "owasp": "A02: Cryptographic Failures, A07: Authentication Failures",
+      "description": "Direct dependency. Path-traversal reads arbitrary files (env, keys); second vector enables RCE via browser-side API. Affects both Frontend projects.",
+      "affected": ["Source/Frontend", "portal/Frontend"],
+      "remediation": "npm update vitest in Source/Frontend and portal/Frontend. Do not expose vitest UI server on network until patched.",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "trigger": "injection"
+    },
+    {
+      "id": "DA-003",
+      "priority": "P1",
+      "category": "rce",
+      "title": "protobufjs Remote Code Execution via malformed protobuf — CVSS 9.8",
+      "source": "dependency-auditor",
+      "cvss": 9.8,
+      "cwe": "CWE-1321, CWE-94",
+      "owasp": "A03: Injection",
+      "description": "Crafted protobuf message triggers prototype pollution in protobufjs, achieving RCE on the server. Affects gRPC-using services.",
+      "affected": ["platform/orchestrator", "portal/Backend"],
+      "remediation": "npm update protobufjs @grpc/grpc-js @opentelemetry/auto-instrumentations-node in affected projects.",
+      "escalate_to": "TheGuardians",
+      "status": "NEW",
+      "trigger": "injection"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "priority": "P1",
+      "category": "spec-drift",
+      "title": "FR namespace entirely disconnected from Specifications/",
+      "source": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "77 FRs in Specifications/ use FR-001–FR-069 namespace. All Verifies: comments in Source/ use FR-WF-* and FR-dependency-* from Plans/. Zero namespace overlap. Traceability enforcer never reads Specifications/, always reports PASSED.",
+      "impact": "Every architecture decision citing a Specification ID is unverifiable. Domain compliance cannot be demonstrated.",
+      "recommendation": "Align FR namespace across Specifications/ and Source/. Extend traceability enforcer to scan Specifications/.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "priority": "P1",
+      "category": "architecture-violation",
+      "title": "Route handlers bypass service layer (3 of 4 route files, 16+ direct store calls)",
+      "source": "quality-oracle",
+      "files": ["Source/Backend/routes/workflow.ts", "Source/Backend/routes/workItems.ts", "Source/Backend/routes/intake.ts"],
+      "description": "workflow.ts, workItems.ts, and intake.ts import and call workItemStore directly with 16+ calls. Violates CLAUDE.md non-negotiable: 'No direct DB calls from route handlers — use the service layer.'",
+      "impact": "Untestable business logic, brittle coupling, violation of architecture contract.",
+      "recommendation": "Extract services/workItemService.ts and services/intakeService.ts. Routes handle HTTP concerns only.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "priority": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer blind to Specifications/ — always reports PASSED",
+      "source": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "description": "Enforcer scans only Plans/self-judging-workflow/requirements.md (13 FRs). All 77 Specifications/ FRs are permanently invisible.",
+      "recommendation": "Extend enforcer to also scan Specifications/ directory.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "priority": "P2",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md describes a superseded system",
+      "source": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "description": "Spec describes feature requests, bug reports, dev cycles, AI voting, SQLite — a system replaced by the self-judging workflow engine. Never archived or updated.",
+      "recommendation": "Add '## Status: SUPERSEDED' header or archive to Specifications/archive/.",
+      "route_to": "requirements-reviewer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "priority": "P2",
+      "category": "pattern-violation",
+      "title": "eslint-disable suppressions without justification (2 occurrences)",
+      "source": "quality-oracle",
+      "files": ["Source/Frontend/hooks/useWorkItems.ts:63", "Source/Frontend/components/DependencyPicker.tsx:82"],
+      "description": "Both suppress react-hooks/exhaustive-deps with no comment explaining why. Both modified in last 14 days.",
+      "recommendation": "Add comments explaining the suppression, or fix the underlying hook dependency issue.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-high-bulk",
+      "priority": "P2",
+      "category": "dependency-security",
+      "title": "32 high-severity CVEs across 5 npm projects",
+      "source": "dependency-auditor",
+      "affected": ["Source/Backend", "Source/Frontend", "platform/orchestrator", "portal/Backend", "portal/Frontend"],
+      "description": "32 high-severity vulnerabilities. Primarily Express middleware ecosystem DoS issues and OpenTelemetry instrumentation package vulnerabilities.",
+      "recommendation": "Apply npm update per project. See Teams/TheInspector/findings/DEPENDENCY-AUDIT-2026-11-08.md for full remediation commands.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-moderate-bulk",
+      "priority": "P2",
+      "category": "dependency-security",
+      "title": "36 moderate-severity CVEs across 5 npm projects",
+      "source": "dependency-auditor",
+      "affected": ["Source/Backend", "Source/Frontend", "platform/orchestrator", "portal/Backend", "portal/Frontend"],
+      "description": "36 moderate-severity vulnerabilities. See full dependency audit report for breakdown.",
+      "recommendation": "Apply npm update per project. See Teams/TheInspector/findings/DEPENDENCY-AUDIT-2026-11-08.md for full remediation commands.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "QO-006",
+      "priority": "P4",
+      "category": "spec-drift",
+      "title": "DebugPortalPage.tsx uses non-standard Verifies: comment format",
+      "source": "quality-oracle",
+      "file": "portal/Frontend/src/pages/DebugPortalPage.tsx",
+      "description": "No FR-XXX ID in Verifies: comment. Enforcer cannot link it to any requirement.",
+      "recommendation": "Update comment to include a valid FR-XXX ID, or remove if not requirement-traceable.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DA-low-bulk",
+      "priority": "P4",
+      "category": "dependency-security",
+      "title": "8 low-severity CVEs across npm projects",
+      "source": "dependency-auditor",
+      "description": "8 low-severity vulnerabilities. See full dependency audit report.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

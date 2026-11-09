@@ -1,0 +1,234 @@
+{
+  "audit_id": "run-20261109-093415",
+  "audit_date": "2026-11-09",
+  "grade": "D",
+  "grade_rationale": "6 P1 findings total (5 security CVEs + 1 missing route). Config threshold: C=max_p1:2, D=anything worse. P2 count: 6. Active spec coverage ~90% (FR-WF 100%, FR-dependency 81%).",
+  "scope": "Full codebase — static analysis only (services offline)",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services not running; dynamic mode unavailable",
+  "escalations": [
+    {
+      "id": "DA-001",
+      "severity": "P1",
+      "category": "dependency/rce",
+      "title": "vitest <3.2.6 — Remote Code Execution via Prototype Pollution (CVSS 9.8)",
+      "trigger": "injection",
+      "route": "[ESCALATE → TheGuardians]",
+      "files": ["Source/Frontend/package.json", "portal/Backend/package.json"],
+      "cvss": 9.8,
+      "cve_refs": ["GHSA-xxxxx (tinypool prototype pollution)"],
+      "exploit_scenario": "Tinypool worker options prototype pollution; network-accessible, no auth required. Any user on network can trigger RCE in test/CI pipeline.",
+      "recommendation": "npm install vitest@^3.2.6 --save-dev in Source/Frontend and portal/Backend",
+      "cross_ref": "DA-005 (same tinypool root cause)"
+    },
+    {
+      "id": "DA-002",
+      "severity": "P1",
+      "category": "dependency/access-control",
+      "title": "proxy-addr <2.0.8 — IP Spoofing bypasses access controls (CVSS 9.1)",
+      "trigger": "missing access control",
+      "route": "[ESCALATE → TheGuardians]",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json", "platform/orchestrator/package.json", "portal/Backend/package.json"],
+      "cvss": 9.1,
+      "cve_refs": [],
+      "exploit_scenario": "IPv4-mapped IPv6 address handling allows spoofed source IP. Any network attacker can bypass IP-based firewalling, rate limiting, or ACLs on all 4 express services.",
+      "recommendation": "npm install express@^4.20.0 in all 4 affected projects (bundles fixed proxy-addr)",
+      "cross_ref": null
+    },
+    {
+      "id": "DA-003",
+      "severity": "P1",
+      "category": "dependency/rce",
+      "title": "protobufjs <=7.5.5 — 12 CVEs: Code Execution, DoS, Prototype Pollution",
+      "trigger": "injection",
+      "route": "[ESCALATE → TheGuardians]",
+      "files": ["platform/orchestrator/package.json", "portal/Backend/package.json"],
+      "cvss": null,
+      "cve_refs": ["GHSA-4x5r-pxfx-6jf8", "11 others"],
+      "exploit_scenario": "Code injection through bytes field defaults, DoS via crafted field names, arbitrary code execution via generated code. Affects infrastructure orchestrator.",
+      "recommendation": "npm install protobufjs@>=7.6.0 in platform/orchestrator and portal/Backend",
+      "cross_ref": null
+    },
+    {
+      "id": "DA-004",
+      "severity": "P1",
+      "category": "dependency/injection",
+      "title": "handlebars <=4.7.8 — Template Injection / RCE via AST Confusion (CVSS 8.1)",
+      "trigger": "injection",
+      "route": "[ESCALATE → TheGuardians]",
+      "files": ["Source/Backend/package.json"],
+      "cvss": 8.1,
+      "cve_refs": ["handlebars JS injection via AST type confusion", "prototype pollution → XSS", "10 others"],
+      "exploit_scenario": "If any user-controlled input reaches a Handlebars template in Source/Backend, server-side template injection leads to arbitrary code execution.",
+      "recommendation": "npm audit fix in Source/Backend (or npm install handlebars@>4.7.8)",
+      "cross_ref": null
+    },
+    {
+      "id": "DA-005",
+      "severity": "P1",
+      "category": "dependency/rce",
+      "title": "tinypool <=2.1.0 — Prototype Pollution RCE (transitive via vitest)",
+      "trigger": "injection",
+      "route": "[ESCALATE → TheGuardians]",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json", "portal/Backend/package.json"],
+      "cvss": null,
+      "cve_refs": [],
+      "exploit_scenario": "Same tinypool prototype pollution vector as DA-001. Affects CI/CD test execution paths in 3 projects.",
+      "recommendation": "Resolved by updating vitest to >=3.2.6 (see DA-001)",
+      "cross_ref": "DA-001 (same root cause — single fix resolves both)"
+    }
+  ],
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift/untested",
+      "title": "GET /api/search not wired — 5 tests known-failing",
+      "route": "[TheFixer]",
+      "files": ["Source/Backend/src/app.ts", "Source/Backend/tests/routes/search.test.ts"],
+      "status": "NEW",
+      "exploit_scenario": "No exploit — missing feature. Frontend DependencyPicker calls GET /api/search which 404s. Full-stack integration is broken end-to-end. 5 test cases document the contract but fail.",
+      "recommendation": "Implement Source/Backend/src/routes/search.ts and wire with app.use('/api/search', searchRouter). Test contract is already written."
+    },
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "title": "3 route files bypass service layer — import store directly",
+      "route": "[TheFixer]",
+      "files": [
+        "Source/Backend/src/routes/workItems.ts:12",
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/intake.ts:4"
+      ],
+      "status": "NEW",
+      "exploit_scenario": "Not an exploit — architecture rule violation. Direct store imports couple routes to storage, block testability, and violate CLAUDE.md layering rule.",
+      "recommendation": "Extract CRUD operations into workItemService.ts. Routes call service, service calls store."
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Specifications/dev-workflow-platform.md is orphaned — 74 FRs unimplemented",
+      "route": "[TheFixer → requirements-reviewer]",
+      "files": ["Specifications/dev-workflow-platform.md:341"],
+      "status": "NEW",
+      "exploit_scenario": "Not an exploit — spec confusion risk. Future agents reading Specifications/ see 74 unimplemented FRs with no context that this is a different or archived system.",
+      "recommendation": "Mark spec [SUPERSEDED], [PLANNED], or add header note. Extend traceability enforcer to cover or explicitly exclude this spec."
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift/pattern-violation",
+      "title": "Traceability enforcer never scans dependency-linking plan (FR-dependency-* blind spot)",
+      "route": "[TheFixer]",
+      "files": ["tools/traceability-enforcer.py"],
+      "status": "NEW",
+      "exploit_scenario": "CI shows green traceability while QO-001 (missing search route) exists. The enforcer only targets the most-recently-modified plan file.",
+      "recommendation": "Extend enforcer to accept multiple plan files or add a second CI pass for Plans/dependency-linking/requirements.md"
+    },
+    {
+      "id": "DA-006",
+      "severity": "P2",
+      "category": "dependency/dos",
+      "title": "DoS vulnerabilities: browserslist (OOM) and brace-expansion (process hang)",
+      "route": "[TheFixer]",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json", "portal/Backend/package.json"],
+      "status": "NEW",
+      "exploit_scenario": "Unbounded memory growth via browserslist; zero-step sequence causes process hang via brace-expansion. Affects build tooling and runtime.",
+      "recommendation": "npm audit fix across all affected projects"
+    },
+    {
+      "id": "DA-007",
+      "severity": "P2",
+      "category": "dependency/injection",
+      "title": "body-parser size-enforcement bypass (CWE-770) and form-data CRLF injection",
+      "route": "[TheFixer]",
+      "files": ["Source/Backend/package.json", "portal/Backend/package.json"],
+      "status": "NEW",
+      "exploit_scenario": "body-parser allows oversized payloads bypassing size limits. form-data CRLF injection in multipart field names can corrupt headers.",
+      "recommendation": "npm audit fix; verify request size limits are enforced at middleware level"
+    },
+    {
+      "id": "DA-008",
+      "severity": "P2",
+      "category": "dependency/info-disclosure",
+      "title": "@babel/core — arbitrary file read via sourceMappingURL",
+      "route": "[TheFixer]",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "status": "NEW",
+      "exploit_scenario": "Crafted sourceMappingURL in transformed code can cause Babel to read arbitrary files from the filesystem during build.",
+      "recommendation": "Update @babel/core to patched version; run npm audit fix"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "api/client.ts silently swallows JSON parse failure",
+      "route": "[TheFixer]",
+      "files": ["Source/Frontend/src/api/client.ts:26"],
+      "status": "NEW",
+      "recommendation": "Add inline comment explaining intentional suppression per CLAUDE.md silent-catch rule"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "title": "2 eslint-disable suppressions without rationale comments",
+      "route": "[TheFixer]",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "status": "NEW",
+      "recommendation": "Add one-line comment above each eslint-disable explaining why the dependency is intentionally omitted"
+    },
+    {
+      "id": "DA-009",
+      "severity": "P3",
+      "category": "dependency/outdated",
+      "title": "Outdated major versions: pino (2 majors behind), uuid (3+ majors behind)",
+      "route": "[TheFixer]",
+      "files": ["Source/Backend/package.json"],
+      "status": "NEW",
+      "recommendation": "Plan upgrades: express@^4.20.0 (or 5.x), pino@^10.4.0, uuid@^14.0.3. Test for breaking changes."
+    },
+    {
+      "id": "DA-010",
+      "severity": "P3",
+      "category": "dependency/compliance",
+      "title": "License compliance audit not completed (license-checker not installed)",
+      "route": "[TheFixer]",
+      "files": [],
+      "status": "NEW",
+      "recommendation": "npm install -g license-checker; run license audit against all 6 projects; document GPL/AGPL policy"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P4",
+      "category": "spec-drift",
+      "title": "DebugPortalPage Verifies comment is not a valid FR reference",
+      "route": "[TheFixer]",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx:1"],
+      "status": "NEW",
+      "recommendation": "Replace with formal FR-WF-XXX reference or add '// No FR — dev tooling only'"
+    }
+  ],
+  "summary": {
+    "p1_total": 6,
+    "p1_escalated": 5,
+    "p1_fixer": 1,
+    "p2_total": 6,
+    "p3_total": 4,
+    "p4_total": 1,
+    "total_findings": 17,
+    "spec_coverage": {
+      "FR-WF (13/13)": "100%",
+      "FR-dependency (13/16)": "81%",
+      "dev-workflow-platform (0/74)": "0% — orphaned spec",
+      "active_plans_avg": "~90%"
+    }
+  },
+  "next_audit_recommended": "2026-11-16"
+}

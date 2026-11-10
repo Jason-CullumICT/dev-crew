@@ -1,0 +1,238 @@
+{
+  "audit_date": "2026-11-10",
+  "auditor": "dependency-auditor",
+  "project": "dev-crew",
+  "summary": {
+    "total_vulnerabilities": 211,
+    "critical": 12,
+    "high": 74,
+    "moderate": 114,
+    "low": 11,
+    "total_packages": 13,
+    "packages_with_criticals": 5,
+    "deprecated_packages": 4,
+    "license_compliance": "PASS"
+  },
+  "packages": {
+    "Source/Backend": {
+      "vulnerabilities": 18,
+      "critical": 2,
+      "high": 5,
+      "moderate": 3,
+      "low": 8,
+      "total_deps": 412,
+      "direct_deps": 4,
+      "critical_issues": [
+        "proxy-addr IPv4-mapped IPv6 spoofing (GHSA-jqcg-44mw-7w3h)",
+        "handlebars AST injection (GHSA-3mfm-83xf-c92r)"
+      ],
+      "deprecated": [
+        "glob (old version)",
+        "async@1.0.6 (memory leak)",
+        "supertest@6.3.3 (3 major versions behind)"
+      ]
+    },
+    "Source/Frontend": {
+      "vulnerabilities": 17,
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "total_deps": 281,
+      "direct_deps": 3,
+      "critical_issues": [
+        "tinypool prototype pollution RCE (GHSA-5gmw-xhrv-c9v3)",
+        "@remix-run/router open redirect (GHSA-2j2x-hqr9-3h42)"
+      ]
+    },
+    "Source/E2E": {
+      "vulnerabilities": 0,
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total_deps": 5,
+      "direct_deps": 1,
+      "status": "CLEAN"
+    },
+    "platform/orchestrator": {
+      "vulnerabilities": 9,
+      "critical": 2,
+      "high": 3,
+      "moderate": 4,
+      "low": 0,
+      "total_deps": 156,
+      "direct_deps": 3,
+      "critical_issues": [
+        "protobufjs code injection (GHSA-66ff-xgx4-vchm)",
+        "proxy-addr IPv4-mapped IPv6 spoofing (GHSA-jqcg-44mw-7w3h)"
+      ],
+      "deprecated": [
+        "multer@1.4.5-lts (1.x version; should use 2.x)"
+      ]
+    },
+    "portal/Backend": {
+      "vulnerabilities": 61,
+      "critical": 4,
+      "high": 11,
+      "moderate": 46,
+      "low": 0,
+      "total_deps": 577,
+      "direct_deps": 397,
+      "supply_chain_risk": "HIGHEST (577 total transitive deps, 397 prod)"
+    },
+    "portal/Frontend": {
+      "vulnerabilities": 18,
+      "critical": 2,
+      "high": 8,
+      "moderate": 7,
+      "low": 1,
+      "total_deps": 424,
+      "direct_deps": 9
+    }
+  },
+  "critical_cves": [
+    {
+      "id": "GHSA-jqcg-44mw-7w3h",
+      "source": 1241210,
+      "package": "proxy-addr",
+      "title": "proxy-addr vulnerable to IP spoofing via IPv4-mapped IPv6 trust subnet",
+      "severity": "critical",
+      "affected_packages": [
+        "Source/Backend",
+        "platform/orchestrator",
+        "portal/Backend",
+        "portal/Frontend"
+      ],
+      "cvss": 7.5,
+      "cwe": "CWE-295",
+      "exploit_type": "IP Spoofing / Access Control Bypass",
+      "recommendation": "Update to proxy-addr ^2.1.0"
+    },
+    {
+      "id": "GHSA-3mfm-83xf-c92r",
+      "source": 1115538,
+      "package": "handlebars",
+      "title": "Handlebars.js has JavaScript Injection via AST Type Confusion",
+      "severity": "critical",
+      "affected_packages": ["Source/Backend"],
+      "cvss": 9.8,
+      "cwe": "CWE-94",
+      "exploit_type": "Code Injection / RCE",
+      "recommendation": "Update handlebars; verify backend doesn't render user-controlled templates"
+    },
+    {
+      "id": "GHSA-66ff-xgx4-vchm",
+      "source": 1118641,
+      "package": "protobufjs",
+      "title": "protobuf.js: Code injection through bytes field defaults",
+      "severity": "critical",
+      "affected_packages": ["platform/orchestrator"],
+      "exploit_type": "Code Injection / RCE",
+      "recommendation": "Update protobufjs; audit proto message handling"
+    },
+    {
+      "id": "GHSA-5gmw-xhrv-c9v3",
+      "source": 1241260,
+      "package": "tinypool",
+      "title": "Tinypool: Prototype Pollution gadget in worker options",
+      "severity": "critical",
+      "affected_packages": ["Source/Frontend (via vitest)"],
+      "exploit_type": "Prototype Pollution / RCE",
+      "recommendation": "Update vitest to latest"
+    }
+  ],
+  "high_cves_direct_deps": [
+    {
+      "package": "body-parser",
+      "cve": "GHSA-v422-hmwv-36x6",
+      "title": "body-parser vulnerable to DoS via invalid limit",
+      "severity": "high",
+      "affected_packages": ["Source/Backend", "platform/orchestrator"]
+    },
+    {
+      "package": "uuid",
+      "severity": "moderate",
+      "affected_packages": ["Source/Backend (DIRECT)"]
+    }
+  ],
+  "deprecated_packages": [
+    {
+      "package": "multer",
+      "version": "1.4.5-lts.1",
+      "location": "platform/orchestrator/package.json",
+      "reason": "Multer 1.x impacted by multiple unpatched vulnerabilities",
+      "recommendation": "Migrate to multer 2.x",
+      "priority": "IMMEDIATE"
+    },
+    {
+      "package": "supertest",
+      "version": "6.3.3",
+      "location": "Source/Backend/package.json (devDep)",
+      "reason": "3+ major versions behind; no longer maintained",
+      "recommendation": "Update to ^7.1.3",
+      "priority": "HIGH"
+    },
+    {
+      "package": "glob",
+      "location": "Source/Backend transitive",
+      "reason": "Old version with known CVEs, no longer supported",
+      "recommendation": "Update build toolchain dependencies"
+    },
+    {
+      "package": "async",
+      "version": "1.0.6",
+      "location": "Source/Backend transitive",
+      "reason": "Memory leak; not supported",
+      "recommendation": "Find and update transitive dependency; use modern async/await or p-queue"
+    }
+  ],
+  "supply_chain_assessment": {
+    "total_transitive_deps": 1878,
+    "largest_tree": "portal/Backend (577)",
+    "post_install_scripts": "CLEAN (none detected)",
+    "suspicious_packages": "NONE",
+    "license_compliance": "PASS (MIT/Apache-2.0/ISC/BSD)",
+    "package_duplicates": "NORMAL (esbuild platforms, expected hoisting)",
+    "risk_level": "MEDIUM-HIGH (12 critical CVEs)"
+  },
+  "remediation_plan": {
+    "immediate_p1": [
+      "Update proxy-addr to ^2.1.0 (all packages)",
+      "Verify handlebars template handling; update handlebars",
+      "Update protobufjs (platform/orchestrator)",
+      "Update vitest (Source/Frontend)"
+    ],
+    "high_priority_p2": [
+      "Migrate platform/orchestrator to multer 2.x",
+      "Update supertest in Source/Backend to ^7.1.3",
+      "Update body-parser via express updates"
+    ],
+    "medium_priority_p3": [
+      "Update glob dependencies (build chain)",
+      "Replace async@1.0.6 with modern alternative",
+      "Update browserslist and other moderate-severity packages"
+    ],
+    "automation": [
+      "Add npm audit to CI/CD pre-merge checks",
+      "Fail builds on critical/high vulnerabilities",
+      "Integrate dependabot or renovate for weekly updates",
+      "Add npm-check-updates to monthly review process"
+    ]
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "findings": [
+        "proxy-addr IP spoofing — potential auth bypass if IP-based access control used",
+        "handlebars RCE — potential RCE if backend renders user templates",
+        "protobufjs injection — potential RCE if processing untrusted proto",
+        "tinypool/vitest injection — CI/CD security posture review needed"
+      ],
+      "action": "Security review of affected code paths"
+    }
+  ],
+  "next_review": "2026-12-10 (or after remediation sprint completes)",
+  "grade": "D",
+  "grade_rationale": "12 critical CVEs in production packages; 74 high-severity; requires immediate remediation"
+}

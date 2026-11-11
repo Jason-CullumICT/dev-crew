@@ -1,0 +1,184 @@
+{
+  "audit_metadata": {
+    "date": "2026-11-11",
+    "auditor": "dependency_auditor",
+    "model": "claude-haiku-4-5",
+    "run_id": "run-20261111-091014"
+  },
+  "summary": {
+    "total_vulnerabilities": 123,
+    "critical_p1": 12,
+    "high_p2": 34,
+    "moderate_p3": 67,
+    "low_p4": 10,
+    "projects_scanned": 5,
+    "outdated_packages": 25,
+    "package_managers": ["npm"],
+    "status": "CRITICAL_FINDINGS_DETECTED"
+  },
+  "projects": {
+    "Portal/Backend": {
+      "total_vulnerabilities": 61,
+      "critical": 4,
+      "high": 11,
+      "moderate": 46,
+      "direct_dependencies": 11,
+      "estimated_transitive": 650,
+      "risk_level": "HIGH"
+    },
+    "Source/Backend": {
+      "total_vulnerabilities": 18,
+      "critical": 2,
+      "high": 5,
+      "moderate": 8,
+      "low": 3,
+      "direct_dependencies": 4,
+      "estimated_transitive": 120,
+      "risk_level": "MODERATE"
+    },
+    "Portal/Frontend": {
+      "total_vulnerabilities": 18,
+      "critical": 2,
+      "high": 8,
+      "moderate": 8,
+      "low": 0,
+      "direct_dependencies": 3,
+      "estimated_transitive": 400,
+      "risk_level": "MODERATE"
+    },
+    "Source/Frontend": {
+      "total_vulnerabilities": 17,
+      "critical": 2,
+      "high": 7,
+      "moderate": 8,
+      "low": 0,
+      "direct_dependencies": 3,
+      "estimated_transitive": 250,
+      "risk_level": "MODERATE"
+    },
+    "Orchestrator": {
+      "total_vulnerabilities": 9,
+      "critical": 2,
+      "high": 3,
+      "moderate": 4,
+      "low": 0,
+      "direct_dependencies": 3,
+      "estimated_transitive": 100,
+      "risk_level": "LOW"
+    }
+  },
+  "critical_findings_p1": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "CRITICAL",
+      "category": "Code Injection / XSS",
+      "projects_affected": ["Source/Backend"],
+      "is_direct": false,
+      "affected_versions": ">=4.0.0 <=4.7.8",
+      "cve_count": 11,
+      "highest_cvss": 9.8,
+      "description": "Multiple JavaScript injection vectors via AST manipulation, partial templates, and prototype pollution",
+      "remediation": "npm update handlebars@latest",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "package": "vitest",
+      "severity": "CRITICAL",
+      "category": "Arbitrary File Read",
+      "projects_affected": ["Source/Frontend", "Portal/Backend", "Portal/Frontend"],
+      "is_direct": true,
+      "cve_count": 2,
+      "description": "Vitest UI server allows arbitrary file read and execution when listening",
+      "remediation": "npm update vitest@latest",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "tinypool",
+      "severity": "CRITICAL",
+      "category": "Prototype Pollution / RCE",
+      "projects_affected": ["Source/Frontend", "Portal/Backend", "Portal/Frontend"],
+      "is_direct": false,
+      "cve_count": 2,
+      "description": "Prototype pollution in worker options leads to remote code execution",
+      "remediation": "Update vitest (which pins tinypool)",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-004",
+      "package": "proxy-addr",
+      "severity": "CRITICAL",
+      "category": "IP Spoofing / Auth Bypass",
+      "projects_affected": ["Source/Backend", "Portal/Backend", "Orchestrator"],
+      "is_direct": false,
+      "description": "IPv4-mapped IPv6 spoofing bypasses IP-based access control",
+      "remediation": "npm update express",
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-005",
+      "package": "protobufjs",
+      "severity": "CRITICAL",
+      "category": "Code Injection / Prototype Pollution / RCE",
+      "projects_affected": ["Portal/Backend", "Orchestrator"],
+      "is_direct": false,
+      "cve_count": 13,
+      "description": "Multiple code injection and prototype pollution vectors through .proto schema manipulation",
+      "remediation": "npm update protobufjs",
+      "escalation": "TheGuardians"
+    }
+  ],
+  "high_findings_p2": [
+    {
+      "id": "DEP-006",
+      "package": "postcss",
+      "severity": "HIGH",
+      "category": "Path Traversal / XSS",
+      "projects_affected": ["Portal/Frontend"],
+      "is_direct": true,
+      "cve_count": 4,
+      "description": "Source map path traversal allows arbitrary .map file disclosure and XSS"
+    },
+    {
+      "id": "DEP-007",
+      "package": "vite",
+      "severity": "HIGH",
+      "category": "Path Traversal / Privilege Escalation",
+      "projects_affected": ["Source/Frontend", "Portal/Frontend"],
+      "is_direct": true,
+      "cve_count": 7,
+      "description": "Dev server path traversal and Windows privilege escalation via editor launch options"
+    }
+  ],
+  "recommendations": {
+    "phase_1_immediate": [
+      "Update handlebars in Source/Backend",
+      "Update vitest in all projects to latest",
+      "Update protobufjs in Portal/Backend and Orchestrator",
+      "Update express in all projects"
+    ],
+    "phase_2_urgent": [
+      "Update postcss and vite in Portal/Frontend",
+      "Update vite in Source/Frontend",
+      "Update form-data, browserslist, brace-expansion in all projects",
+      "Update OpenTelemetry packages in Portal/Backend"
+    ],
+    "phase_3_standard": [
+      "Update all 25 outdated packages",
+      "Review and implement npm audit policy in CLAUDE.md",
+      "Configure GitHub Dependabot"
+    ]
+  },
+  "license_compliance": {
+    "status": "COMPLIANT",
+    "viral_licenses_detected": 0,
+    "notes": "All direct dependencies use permissive licenses (MIT, Apache 2.0)"
+  },
+  "supply_chain_risk": {
+    "highest_risk_project": "Portal/Backend",
+    "reason": "650+ transitive dependencies, 61 total vulnerabilities",
+    "recommendation": "Consider service decomposition and quarterly deep audits"
+  }
+}

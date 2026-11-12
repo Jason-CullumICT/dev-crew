@@ -1,0 +1,366 @@
+{
+  "audit": {
+    "date": "2026-11-12",
+    "branch": "audit/inspector-2026-11-12-3532db",
+    "grade": "F",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "scope": "full-codebase-static",
+    "is_first_audit": true
+  },
+  "summary": {
+    "p1_total": 8,
+    "p2_total": 7,
+    "p3_total": 69,
+    "p4_total": 10,
+    "total_findings": 94,
+    "escalations_to_guardians": 3,
+    "spec_coverage_pct": 26,
+    "frs_total": 111,
+    "frs_traced": 29
+  },
+  "escalations": [
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "handlebars JavaScript Injection RCE",
+      "package": "handlebars@>=4.0.0 <=4.7.9",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-8r5x-fm3f-whwj"],
+      "cvss": 9.8,
+      "escalate_to": "TheGuardians",
+      "reason": "RCE via template injection — TheGuardians must assess whether any template renders user-controlled input",
+      "fix": "Update handlebars to >=4.7.10 or >=5.0.0",
+      "timeline": "Block deployment"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "proxy-addr IP Spoofing / Trust Subnet Bypass",
+      "package": "proxy-addr@>=1.1.0 <2.0.8",
+      "files": ["Source/Backend/package.json", "platform/orchestrator/package.json"],
+      "cves": ["GHSA-jqcg-44mw-7w3h"],
+      "cvss": 9.1,
+      "escalate_to": "TheGuardians",
+      "reason": "Authentication bypass risk — IPv4-mapped IPv6 addresses bypass Express trust-proxy checks; TheGuardians must assess trust proxy configuration",
+      "fix": "Upgrade express to 5.x to pull proxy-addr >=2.0.8",
+      "timeline": "Block deployment"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "CVE",
+      "title": "protobufjs Arbitrary Code Execution",
+      "package": "protobufjs@>=7.0.0 <7.5.5",
+      "files": ["platform/orchestrator/package.json"],
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "cvss": 9.8,
+      "escalate_to": "TheGuardians",
+      "reason": "RCE via malformed .proto messages — TheGuardians must assess whether orchestrator accepts external protobuf data",
+      "fix": "Update protobufjs to >=7.5.5",
+      "timeline": "Block deployment"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "specialist": "quality-oracle",
+      "title": "Route handlers bypass the service layer",
+      "files": [
+        "Source/Backend/src/routes/workflow.ts",
+        "Source/Backend/src/routes/workItems.ts",
+        "Source/Backend/src/routes/intake.ts"
+      ],
+      "detail": "20 direct store calls across 3 route modules. CLAUDE.md non-negotiable: 'No direct DB calls from route handlers — use the service layer.' In-memory store is the DB-equivalent.",
+      "recommendation": "Create WorkItemService; refactor 3 route modules to parse → call service → respond. Follow dashboard.ts → services/dashboard.ts pattern.",
+      "owner": "TheFixer",
+      "timeline": "This sprint",
+      "status": "NEW",
+      "cross_ref": "Shares root cause with QO-002: both are architecture/process discipline gaps"
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "Traceability enforcer validates only 13 of 111 FRs — CI gate is a false positive",
+      "files": ["tools/traceability-enforcer.py"],
+      "detail": "tools/traceability-enforcer.py:56 uses os.path.getmtime to auto-pick most-recently-modified requirements file. Currently picks Plans/self-judging-workflow/requirements.md (13 FRs → PASS). Never checks dev-workflow-platform.md (69 FRs, 0% coverage) or tiered-merge-pipeline.md (13 FRs, 0% coverage).",
+      "recommendation": "Add --all-plans mode iterating all Plans/*/requirements.md. Mark inactive plans as Status: ARCHIVED. Update CLAUDE.md gate command.",
+      "owner": "solo-session (tools/ not a pipeline-agent module)",
+      "timeline": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "vitest direct dependency RCE (CVSS 9.8)",
+      "package": "vitest@<=4.1.10",
+      "files": ["Source/Frontend/package.json"],
+      "cves": ["GHSA-5xrq-8626-4rwp"],
+      "cvss": 9.8,
+      "detail": "When Vitest UI server is listening, arbitrary files can be read and executed without authentication. Direct dependency.",
+      "fix": "npm update vitest to >=3.2.6 or >=4.1.11 or >=5.1.0 in Source/Frontend. Also resolves DEP-005.",
+      "owner": "TheFixer",
+      "timeline": "Block deployment",
+      "status": "NEW",
+      "cross_ref": "DEP-005 (tinypool) resolved by same fix"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "handlebars JavaScript Injection RCE (CVSS 9.8)",
+      "package": "handlebars@>=4.0.0 <=4.7.9",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-8r5x-fm3f-whwj"],
+      "cvss": 9.8,
+      "escalate_to": "TheGuardians",
+      "fix": "Update handlebars to >=4.7.10 or >=5.0.0",
+      "owner": "TheFixer + TheGuardians assessment",
+      "timeline": "Block deployment",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "proxy-addr IP Spoofing — trust bypass (CVSS 9.1)",
+      "package": "proxy-addr@>=1.1.0 <2.0.8",
+      "files": ["Source/Backend/package.json", "platform/orchestrator/package.json"],
+      "cves": ["GHSA-jqcg-44mw-7w3h"],
+      "cvss": 9.1,
+      "escalate_to": "TheGuardians",
+      "fix": "Upgrade express to 5.x to pull proxy-addr >=2.0.8",
+      "owner": "TheFixer + TheGuardians assessment",
+      "timeline": "Block deployment",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "protobufjs Arbitrary Code Execution (CVSS 9.8)",
+      "package": "protobufjs@>=7.0.0 <7.5.5",
+      "files": ["platform/orchestrator/package.json"],
+      "cves": ["GHSA-xq3m-2v4x-88gg"],
+      "cvss": 9.8,
+      "escalate_to": "TheGuardians",
+      "fix": "npm update protobufjs to >=7.5.5",
+      "owner": "TheFixer + TheGuardians assessment",
+      "timeline": "Block deployment",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "tinypool Prototype Pollution RCE (via vitest)",
+      "package": "tinypool@<=2.1.1",
+      "files": ["Source/Frontend/package.json"],
+      "cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "detail": "Transitive via vitest. Malicious worker options trigger prototype pollution leading to RCE during test execution.",
+      "fix": "Update vitest >=5.1.0 (same fix as DEP-001)",
+      "owner": "TheFixer",
+      "timeline": "Block deployment (bundled with DEP-001)",
+      "status": "NEW",
+      "cross_ref": "DEP-001: same fix"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P1",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "Portal/Backend: 61 vulnerabilities including 4 critical",
+      "package": "@opentelemetry/* + 578 transitive deps",
+      "files": ["portal/Backend/package.json"],
+      "detail": "61 vulnerabilities (4 critical, 11 high, 46 moderate). Portal has 578 transitive dependencies. Lateral movement risk if portal server is reachable.",
+      "fix": "Determine in-scope vs dev-only. If in-scope: update all @opentelemetry/* packages. If dev-only: document isolation boundary.",
+      "owner": "Architecture decision (solo-session) + TheFixer",
+      "timeline": "Block deployment decision",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "dev-workflow-platform.md FR-001 to FR-069 describe an application not built in Source/",
+      "files": ["Specifications/dev-workflow-platform.md"],
+      "detail": "69 FRs define SQLite, FeatureRequest, BugReport, Ticket entities — none exist in Source/. Source/ implements WorkItem-based in-memory engine. 0% coverage on these 69 FRs.",
+      "recommendation": "Archive or update spec to reflect what Source/ actually builds. Create authoritative spec for WorkItem engine.",
+      "owner": "requirements-reviewer",
+      "timeline": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "tiered-merge-pipeline.md 13 FRs have zero implementation — status unknown",
+      "files": ["Specifications/tiered-merge-pipeline.md"],
+      "detail": "FR-TMP-001 through FR-TMP-010 and FR-1 to FR-3 define risk classification, E2E test generation, Playwright, auto-PR, AI PR review, auto-merge. No implementation in Source/. Status unknown.",
+      "recommendation": "Add Status: PLANNED | DEFERRED | ABANDONED header. Archive if abandoned.",
+      "owner": "requirements-reviewer",
+      "timeline": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "spec-drift",
+      "specialist": "quality-oracle",
+      "title": "dependency-linking plan references non-existent portal/ project paths",
+      "files": ["Plans/dependency-linking/requirements.md"],
+      "detail": "All requirements reference portal/Backend, portal/Frontend, portal/Shared/ — paths not in this repo. Causes 7 false enforcer failures (FR-0002, FR-0003, FR-0004, FR-0005, FR-0007, FR-070, FR-085).",
+      "recommendation": "Add Status: ARCHIVED (applied to portal/) header to prevent misleading enforcer failures.",
+      "owner": "requirements-reviewer",
+      "timeline": "Next sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "@grpc/grpc-js server crash DoS (CVSS 7.5)",
+      "package": "@grpc/grpc-js@>=1.14.0 <1.14.5",
+      "files": ["platform/orchestrator/package.json"],
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "fix": "Update @grpc/grpc-js to >=1.14.5",
+      "owner": "TheFixer",
+      "timeline": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "body-parser request size limit bypass enabling DoS",
+      "package": "body-parser (transitive via express)",
+      "files": ["Source/Backend/package.json"],
+      "cves": ["GHSA-v422-hmwv-36x6"],
+      "fix": "Update express to 5.x (pulls latest body-parser)",
+      "owner": "TheFixer",
+      "timeline": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "form-data ReDoS and path traversal",
+      "package": "form-data (transitive)",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "fix": "Update form-data to latest via npm update",
+      "owner": "TheFixer",
+      "timeline": "This sprint",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "React Router open redirect via protocol-relative URL",
+      "package": "@remix-run/router@>=1.3.0 <1.23.3",
+      "files": ["Source/Frontend/package.json"],
+      "cves": ["GHSA-2j2x-hqr9-3h42"],
+      "fix": "Update react-router-dom to >=6.28.0",
+      "owner": "TheFixer",
+      "timeline": "This sprint",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "eslint-disable react-hooks/exhaustive-deps in 2 files without explanation",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "recommendation": "Add inline comment explaining intentional dep omission. If dep should be included, add it and test.",
+      "owner": "TheFixer",
+      "timeline": "Backlog",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "specialist": "quality-oracle",
+      "title": "Hardcoded localhost:4200 fallback in DebugPortalPage iframe",
+      "files": ["Source/Frontend/src/pages/DebugPortalPage.tsx:5"],
+      "recommendation": "Make VITE_PORTAL_URL required at build time, or show a disabled placeholder when URL is a localhost default in non-local env. Document in .env.example.",
+      "owner": "TheFixer",
+      "timeline": "Backlog",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011-077",
+      "severity": "P3",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "67 moderate CVEs (grouped)",
+      "detail": "Categories: brace-expansion ReDoS, browserslist DoS, js-yaml unsafe deserialize, nanoid weak randomness (CVSS 5.3), ws DoS, postcss CSS parse DoS, esbuild minification, baseline-browser-mapping DoS. All transitive.",
+      "owner": "TheFixer",
+      "timeline": "Next sprint — dependency sweep",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-078-087",
+      "severity": "P4",
+      "category": "CVE",
+      "specialist": "dependency-auditor",
+      "title": "10 low-severity CVEs (grouped)",
+      "detail": "Low-risk CVEs across transitive dependencies. No immediate action required.",
+      "owner": "TheFixer",
+      "timeline": "Backlog",
+      "status": "NEW"
+    }
+  ],
+  "grading": {
+    "overall": "F",
+    "rationale": "F is assigned because: (1) DEP-003 is an exploitable authentication bypass (proxy-addr IP spoofing CVSS 9.1) — config.grading F trigger: 'exploitable auth bypass'; (2) 12 critical CVEs including 3 at CVSS 9.8 — config.grading F trigger: 'critical domain failure'; (3) 8 total P1 findings exceeds D threshold; (4) 26% spec coverage is below the 40% minimum for grade C.",
+    "per_specialist": {
+      "quality-oracle": "D",
+      "dependency-auditor": "F",
+      "performance-profiler": "N/A (skipped)",
+      "chaos-monkey": "N/A (skipped)"
+    },
+    "thresholds": {
+      "A": {"max_p1": 0, "max_p2": 3, "min_spec_coverage": 80},
+      "B": {"max_p1": 0, "max_p2": 8, "min_spec_coverage": 60},
+      "C": {"max_p1": 2, "max_p2": 15, "min_spec_coverage": 40},
+      "D": {"max_p1": 999},
+      "F": "exploitable auth bypass + critical domain failure"
+    }
+  },
+  "routing": {
+    "TheGuardians": ["DEP-002", "DEP-003", "DEP-004"],
+    "TheFixer": ["QO-001", "DEP-001", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "QO-006", "QO-007", "DEP-011-077", "DEP-078-087"],
+    "requirements-reviewer": ["QO-003", "QO-004", "QO-005"],
+    "solo-session": ["QO-002"]
+  }
+}

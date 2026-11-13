@@ -1,0 +1,406 @@
+{
+  "audit_id": "audit-2026-11-13",
+  "date": "2026-11-13",
+  "grade": "D",
+  "generated_by": "TheInspector team-leader (claude-sonnet-4-6)",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+  "skip_reason": "Services offline at audit time — both ran static analysis only; no dynamic report files produced",
+  "summary": {
+    "p1_total": 16,
+    "p2_total": 8,
+    "p3_total": 2,
+    "p4_total": 1,
+    "total_findings": 27,
+    "fixed_since_prior": 0,
+    "prior_audit": "none — first combined inspector report",
+    "spec_coverage_pct": 22,
+    "escalation_count": 3
+  },
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "spec-drift/tool-gap",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer defaults to single plan — 7 of 8 plans silently skipped",
+      "file": "tools/traceability-enforcer.py",
+      "line": 46,
+      "detail": "The CLAUDE.md gate runs the enforcer with no arguments; it picks the most-recently-modified requirements.md (self-judging-workflow). Seven other plans are never checked, including five APPROVED plans with zero Verifies: coverage (dev-cycle-traceability FR-068/069, duplicate-deprecated-status FR-DUP-11..13, orchestrated-dev-cycles FR-048/049, orchestrator-cycle-dashboard FR-075/076, image-upload FR-070+).",
+      "recommendation": "Add --all flag and invoke it in the CLAUDE.md gate; or maintain an active_plans manifest in inspector.config.yml.",
+      "owner": "TheFixer (tools/ — solo-session)",
+      "escalate": false
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "spec-drift/architecture-violation",
+      "source": "quality-oracle",
+      "title": "Specifications/ directory has zero traceability enforcement (77 FRs uncovered)",
+      "file": "Specifications/dev-workflow-platform.md",
+      "line": null,
+      "detail": "CLAUDE.md declares Specifications/ the most critical documents and mandates that implementation traces to specs. The enforcer only scans Plans/ — 77 FRs in dev-workflow-platform.md and 10 in tiered-merge-pipeline.md have zero Verifies: coverage. Ambiguity exists: dev-workflow-platform.md describes a different product (SQLite feature-request platform) from what is in Source/. Status field (active|superseded|roadmap) needed.",
+      "recommendation": "Classify each spec with a status field. Extend enforcer to cover active specs. Mark dev-workflow-platform.md as superseded or roadmap.",
+      "owner": "requirements-reviewer (spec classification), TheFixer (enforcer extension)",
+      "escalate": false
+    },
+    {
+      "id": "DA-P1-001",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "dependency-cve/injection",
+      "source": "dependency-auditor",
+      "title": "portal/Backend — 4 critical CVEs (OpenTelemetry, joi, gRPC, better-sqlite3)",
+      "file": "portal/Backend/package.json",
+      "line": null,
+      "cves": [
+        "OpenTelemetry auto-instrumentations-node v0.40.0 — multiple critical instrumentation CVEs",
+        "joi (transitive) — prototype pollution / injection risk",
+        "better-sqlite3 v12.8.0 — potential unsafe database operations",
+        "@grpc/grpc-js (transitive) — gRPC deserialization issues"
+      ],
+      "detail": "portal/Backend has the largest transitive tree in the project (578 packages: 397 prod, 181 dev). Four critical CVEs are present in production code paths. This is the highest-priority dependency fix.",
+      "recommendation": "npm update @opentelemetry/auto-instrumentations-node; npm audit fix --force (after review). Consider separating OTel instrumentation into optional init file.",
+      "owner": "TheFixer (platform area — coordinate with solo-session for portal/)",
+      "escalate": false
+    },
+    {
+      "id": "DA-P1-002",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "dependency-cve/injection",
+      "source": "dependency-auditor",
+      "title": "Source/Backend — handlebars JS injection [GHSA-3mfm-83xf-c92r] (transitive via jest)",
+      "file": "Source/Backend/package.json",
+      "line": null,
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "detail": "Handlebars AST Type Confusion allows JavaScript injection in test runner context. While test-time, compromised test artifacts could be deployed. Combined with the vitest/tinypool issues this represents a build-chain trust problem.",
+      "recommendation": "npm audit fix --force in Source/Backend; pin or exclude handlebars if fix not available.",
+      "owner": "TheFixer (backend-coder)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Build artifact compromise risk — injection in test runner"
+    },
+    {
+      "id": "DA-P1-003",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "dependency-cve/spoofing",
+      "source": "dependency-auditor",
+      "title": "Source/Backend — proxy-addr IPv4-mapped IPv6 spoofing [GHSA-jqcg-44mw-7w3h]",
+      "file": "Source/Backend/package.json",
+      "line": null,
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "detail": "proxy-addr mishandles IPv4-mapped IPv6 addresses allowing an attacker to spoof their source IP. Affects trust boundary decisions in Express middleware (IP allowlists, rate-limiting by IP, logging).",
+      "recommendation": "npm audit fix in Source/Backend; update express and its middleware chain.",
+      "owner": "TheFixer (backend-coder)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "IP spoofing undermines trust boundary validation — config.security.critical_operations affected"
+    },
+    {
+      "id": "DA-P1-004",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "dependency-cve/rce",
+      "source": "dependency-auditor",
+      "title": "Source/Frontend & portal/Frontend — tinypool prototype pollution RCE in vitest [GHSA-5gmw-xhrv-c9v3]",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "line": null,
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "detail": "tinypool (vitest worker pool) has a prototype pollution gadget that can lead to RCE during test execution. Test-time only, but could compromise build artifacts used in deployment.",
+      "recommendation": "Update vitest to a patched version across Source/Frontend and portal/Frontend. Verify tinypool version resolves the CVE.",
+      "owner": "TheFixer (frontend-coder)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Build-time RCE can compromise deployed artifacts [ESCALATE → TheGuardians]"
+    },
+    {
+      "id": "DA-P1-005",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "dependency-cve/code-injection",
+      "source": "dependency-auditor",
+      "title": "Source/Frontend & portal/Frontend — @vitest/mocker path traversal / code injection [GHSA-82fw-gwwq-j7x9]",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "line": null,
+      "cve": "GHSA-82fw-gwwq-j7x9",
+      "detail": "@vitest/mocker has an arbitrary file read / code injection vulnerability in manual mock handling. Exploitable during test runs — could read sensitive files or inject code into mock factories.",
+      "recommendation": "Update @vitest/mocker to patched version; pin vitest suite versions together.",
+      "owner": "TheFixer (frontend-coder)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "Code injection in test tooling — build-chain compromise [ESCALATE → TheGuardians]"
+    },
+    {
+      "id": "DA-P1-006",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "dependency-cve/spoofing",
+      "source": "dependency-auditor",
+      "title": "platform/orchestrator — proxy-addr IP spoofing + joi injection [GHSA-jqcg-44mw-7w3h]",
+      "file": "platform/orchestrator/package.json",
+      "line": null,
+      "cves": ["GHSA-jqcg-44mw-7w3h", "joi prototype pollution"],
+      "detail": "Same proxy-addr spoofing CVE as Source/Backend plus joi prototype pollution affects the orchestrator service. The orchestrator handles pipeline state and agent routing — IP spoofing here could allow unauthorized agents to inject pipeline updates.",
+      "recommendation": "npm audit fix in platform/orchestrator; coordinate with solo-session for platform/ changes.",
+      "owner": "solo-session (platform/ ownership)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "IP spoofing in pipeline orchestrator undermines agent trust boundaries"
+    },
+    {
+      "id": "DA-P1-007",
+      "severity": "P1",
+      "status": "NEW",
+      "category": "dependency-cve/dos",
+      "source": "dependency-auditor",
+      "title": "Source/Backend + portal/Backend — HTTP DoS chain (body-parser, form-data, proxy-addr)",
+      "files": ["Source/Backend/package.json", "portal/Backend/package.json"],
+      "line": null,
+      "cves": ["GHSA-27r3-jxmh-p828 (body-parser)", "GHSA-hmw2-7cc7-3qxx (form-data)"],
+      "detail": "body-parser (<1.20.9) is vulnerable to DoS via trailing bytes in compressed requests. form-data has CRLF injection in multipart fields. Combined with proxy-addr spoofing, an attacker can craft requests that exhaust server resources while masking their origin IP.",
+      "recommendation": "npm update body-parser form-data in affected workspaces. Update express to v5+ for bundled fixes.",
+      "owner": "TheFixer (backend-coder) + solo-session (portal/)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "HTTP DoS chain in production request handling [ESCALATE → TheGuardians]"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Route handlers import store directly — service layer bypassed in 3 route files",
+      "files": [
+        "Source/Backend/src/routes/workflow.ts:15",
+        "Source/Backend/src/routes/intake.ts:4",
+        "Source/Backend/src/routes/workItems.ts:12"
+      ],
+      "detail": "All three route files import * as store from '../store/workItemStore' and call store functions directly. Architecture rule: No direct DB calls from route handlers — use the service layer. Couples routing to storage, makes mocking difficult, scatters business logic.",
+      "recommendation": "Introduce workItemService.ts and intakeService.ts facades. Routes call service functions only.",
+      "owner": "TheFixer (backend-coder)",
+      "escalate": false
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "Silent error swallow in frontend API client catch() — returns {} on parse failure",
+      "file": "Source/Frontend/src/api/client.ts",
+      "line": 26,
+      "detail": "const body = await response.json().catch(() => ({})) — swallows JSON parse errors returning empty object. Architecture rule: Never swallow errors silently. 502 HTML error pages propagate as fake-success {} to callers.",
+      "recommendation": "Log the parse failure and re-throw, or add a comment documenting intentional suppression with response.ok check.",
+      "owner": "TheFixer (frontend-coder)",
+      "escalate": false
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "tool-correctness",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer extracts FR IDs from prose — false positives erode trust",
+      "file": "tools/traceability-enforcer.py",
+      "line": 60,
+      "detail": "Regex FR-[A-Z0-9-]+ matches ALL occurrences including data-example IDs in table prose. Plans/dependency-linking mentions FR-0002..FR-0007 as seed data item IDs. Teams learn to ignore enforcer failures, missing real gaps.",
+      "recommendation": "Restrict extraction to first column of Markdown tables: re.findall(r'^\\|\\s*(FR-[A-Z0-9-]+)\\s*\\|', content, re.MULTILINE). Skip placeholder IDs (FR-X+).",
+      "owner": "TheFixer (tools/ — solo-session)",
+      "escalate": false
+    },
+    {
+      "id": "DA-P2-001",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "dependency-cve/traversal",
+      "source": "dependency-auditor",
+      "title": "Build toolchain path traversal (vite, esbuild) — Source/Frontend, portal/Frontend, platform/orchestrator",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json", "platform/orchestrator/package.json"],
+      "detail": "vite and esbuild have path traversal vulnerabilities in .map file handling and optimized dependency serving. Affects build output integrity. Combined with the tinypool RCE, the build chain trust model is compromised.",
+      "recommendation": "Update vite and esbuild to latest patched versions across all workspaces.",
+      "owner": "TheFixer (frontend-coder) + solo-session (platform/)",
+      "escalate": false
+    },
+    {
+      "id": "DA-P2-002",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "dependency-cve/redirect",
+      "source": "dependency-auditor",
+      "title": "Open redirect in @remix-run/router via protocol-relative URLs [GHSA-2j2x-hqr9-3h42]",
+      "files": ["Source/Frontend/package.json", "portal/Frontend/package.json"],
+      "cve": "GHSA-2j2x-hqr9-3h42",
+      "detail": "react-router-dom 6.26.0 (via @remix-run/router) allows open redirect via protocol-relative URLs. Upgrade to react-router-dom 6.30.6+ or v7.x. Note: v7 is a breaking change requiring testing.",
+      "recommendation": "npm update react-router-dom to 6.30.6+ in both workspaces; evaluate v7 upgrade path.",
+      "owner": "TheFixer (frontend-coder)",
+      "escalate": false
+    },
+    {
+      "id": "DA-P2-003",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "dependency-outdated",
+      "source": "dependency-auditor",
+      "title": "Outdated packages with security-relevant version gaps (pino 2 majors, uuid 5 majors, React 1 major)",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json"],
+      "detail": "pino 8.17.0 → 10.4.0 (2 majors behind, missing security patches); uuid 9.0.0 → 14.0.3 (5 majors, compatibility risk); react 18.3.1 → 19.3.1 (breaking changes but security improvements).",
+      "recommendation": "Update pino and uuid in Source/Backend immediately. Plan React 19 upgrade with thorough testing.",
+      "owner": "TheFixer (backend-coder, frontend-coder)",
+      "escalate": false
+    },
+    {
+      "id": "DA-P2-004",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "dependency-supply-chain",
+      "source": "dependency-auditor",
+      "title": "OpenTelemetry auto-instrumentation production risk — portal/Backend loads untrusted config at startup",
+      "file": "portal/Backend/package.json",
+      "detail": "@opentelemetry/auto-instrumentations-node v0.40.0 auto-instruments at import time. The large transitive tree (397 prod packages) increases supply chain attack surface. Verify no instrumentation loads untrusted config files at startup.",
+      "recommendation": "Separate OTel initialization into optional init file; audit which instrumentations are actually needed; update to latest patched version.",
+      "owner": "TheFixer (platform area — solo-session for portal/)",
+      "escalate": false
+    },
+    {
+      "id": "DA-P2-005",
+      "severity": "P2",
+      "status": "NEW",
+      "category": "dependency-supply-chain",
+      "source": "dependency-auditor",
+      "title": "Dependency tree bloat — 310-416 dev packages per workspace increases supply chain surface",
+      "files": ["Source/Backend/package.json", "Source/Frontend/package.json", "portal/Backend/package.json", "portal/Frontend/package.json"],
+      "detail": "Dev-time dependency trees are massive: Source/Backend 310 dev, portal/Frontend 416 dev, portal/Backend 181 dev. Each package is a potential supply chain attack vector. Source/E2E is clean (4 total).",
+      "recommendation": "Audit dev dependencies with npm ls --depth=0; remove unused tooling packages; check for GPL/AGPL in prod trees.",
+      "owner": "TheFixer (all coders)",
+      "escalate": false
+    },
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "OpenTelemetry tracing not implemented — CLAUDE.md OTel mandate unmet",
+      "file": "Source/Backend/src/app.ts",
+      "detail": "No @opentelemetry/* imports in Source/. CLAUDE.md requires OTel HTTP instrumentation, custom spans for critical paths, W3C traceparent propagation. Logging and Prometheus metrics are implemented; tracing is the gap.",
+      "recommendation": "Add OTel SDK initialization in app.ts; auto-instrument HTTP routes; propagate traceparent via Express middleware.",
+      "owner": "TheFixer (backend-coder)",
+      "escalate": false
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "status": "NEW",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "eslint-disable-next-line react-hooks/exhaustive-deps in 2 hooks — undocumented stale closure risk",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "detail": "Both files silence exhaustive-deps without explanation. Missing dependency could cause stale closure bugs in edge cases.",
+      "recommendation": "Either add missing dependency or add a comment explaining intentional omission (e.g., // only runs on mount).",
+      "owner": "TheFixer (frontend-coder)",
+      "escalate": false
+    },
+    {
+      "id": "QO-008",
+      "severity": "P4",
+      "status": "NEW",
+      "category": "test-coverage",
+      "source": "quality-oracle",
+      "title": "Infrastructure files have no test coverage (errorHandler, id.ts, logger, app.ts)",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Backend/src/middleware/errorHandler.ts",
+        "Source/Backend/src/logger.ts",
+        "Source/Backend/src/models/WorkItem.ts",
+        "Source/Backend/src/utils/id.ts",
+        "Source/Backend/src/utils/logger.ts"
+      ],
+      "detail": "Highest risk: utils/id.ts (ID uniqueness / WI-XXX format) and errorHandler.ts (response shape correctness). No test files found for any of these.",
+      "recommendation": "Add unit tests for utils/id.ts (uniqueness, format) and middleware/errorHandler.ts (error shape, status code mapping) at minimum.",
+      "owner": "TheFixer (backend-coder)",
+      "escalate": false
+    }
+  ],
+  "escalations": [
+    {
+      "id": "ESC-001",
+      "finding_ids": ["DA-P1-004", "DA-P1-005"],
+      "summary": "Build-time RCE via tinypool prototype pollution and @vitest/mocker code injection — deployed artifacts could be compromised",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection / build-chain compromise"
+    },
+    {
+      "id": "ESC-002",
+      "finding_ids": ["DA-P1-002", "DA-P1-007"],
+      "summary": "HTTP request handling DoS chain (body-parser, proxy-addr, form-data) in production backends + handlebars injection via test framework",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection / DoS in production request path"
+    },
+    {
+      "id": "ESC-003",
+      "finding_ids": ["DA-P1-003", "DA-P1-006"],
+      "summary": "IP spoofing via proxy-addr in Source/Backend and platform/orchestrator — trust boundary validation undermined",
+      "severity": "P1",
+      "escalate_to": "TheGuardians",
+      "trigger": "missing access control / trust boundary bypass"
+    }
+  ],
+  "cross_references": [
+    {
+      "root_cause": "proxy-addr IP spoofing vulnerability",
+      "finding_ids": ["DA-P1-003", "DA-P1-006", "DA-P1-007"],
+      "single_fix": "npm audit fix targeting proxy-addr across Source/Backend, portal/Backend, platform/orchestrator",
+      "fix_impact": "Resolves 3 P1 findings across 3 workspaces"
+    },
+    {
+      "root_cause": "vitest/tinypool + @vitest/mocker build-chain vulnerabilities",
+      "finding_ids": ["DA-P1-004", "DA-P1-005"],
+      "single_fix": "Update vitest suite (vitest, @vitest/mocker, tinypool) in Source/Frontend and portal/Frontend",
+      "fix_impact": "Resolves 2 P1 findings across 2 workspaces"
+    },
+    {
+      "root_cause": "Traceability enforcer tool bugs (scope + regex)",
+      "finding_ids": ["QO-001", "QO-002", "QO-005"],
+      "single_fix": "Rewrite enforcer: --all mode + first-column-only FR extraction + active/superseded spec classification",
+      "fix_impact": "Resolves 2 P1 and 1 P2 quality finding; unlocks real spec coverage measurement"
+    }
+  ],
+  "recommendations": {
+    "block_deployment": [
+      "DA-P1-003: proxy-addr IP spoofing in Source/Backend (production trust boundary)",
+      "DA-P1-006: proxy-addr + joi in platform/orchestrator (agent pipeline trust)",
+      "DA-P1-007: HTTP DoS chain in production request handlers"
+    ],
+    "this_sprint": [
+      "DA-P1-001: portal/Backend critical CVE cluster (4 CVEs, largest attack surface)",
+      "DA-P1-004/005: vitest/tinypool RCE — build artifact integrity",
+      "DA-P2-001: vite/esbuild path traversal in build toolchain",
+      "QO-003: Extract service layer (3 route files directly access store)"
+    ],
+    "next_sprint": [
+      "QO-001: Fix traceability enforcer to scan all plans",
+      "QO-002: Classify Specifications/ files with status field",
+      "QO-004: Fix silent error swallow in api/client.ts",
+      "DA-P2-002: Update react-router-dom for open redirect fix",
+      "DA-P2-003: Update pino, uuid to current majors"
+    ],
+    "backlog": [
+      "QO-005: Narrow enforcer regex to table first-column only",
+      "QO-006: Implement OpenTelemetry tracing in Source/Backend",
+      "QO-007: Document or fix eslint-disable in React hooks",
+      "QO-008: Add unit tests for errorHandler.ts and utils/id.ts",
+      "DA-P2-004: Audit OTel auto-instrumentation scope in portal/Backend",
+      "DA-P2-005: Prune dev dependency trees across all workspaces"
+    ]
+  }
+}

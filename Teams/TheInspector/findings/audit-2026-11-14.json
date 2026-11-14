@@ -1,0 +1,340 @@
+{
+  "audit_metadata": {
+    "date": "2026-11-14",
+    "auditor": "dependency_auditor",
+    "tool": "npm audit",
+    "scope": ["Source/Backend", "Source/Frontend", "Source/E2E", "platform/orchestrator", "portal/Backend", "portal/Frontend"],
+    "total_projects": 6,
+    "total_dependencies": 1621
+  },
+  "summary": {
+    "overall_grade": "D",
+    "total_vulnerabilities": 123,
+    "critical": 12,
+    "high": 34,
+    "moderate": 67,
+    "low": 10,
+    "risk_level": "SEVERE"
+  },
+  "projects": {
+    "Source/Backend": {
+      "location": "Source/Backend/",
+      "type": "Express REST API",
+      "direct_deps": 4,
+      "transitive_deps": 407,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 5,
+        "moderate": 3,
+        "low": 8,
+        "total": 18
+      },
+      "grade": "C",
+      "critical_packages": ["handlebars", "proxy-addr"]
+    },
+    "Source/Frontend": {
+      "location": "Source/Frontend/",
+      "type": "React SPA (Vite)",
+      "direct_deps": 3,
+      "transitive_deps": 227,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 7,
+        "moderate": 7,
+        "low": 1,
+        "total": 17
+      },
+      "grade": "C",
+      "critical_packages": ["tinypool", "vitest"]
+    },
+    "Source/E2E": {
+      "location": "Source/E2E/",
+      "type": "Playwright E2E Tests",
+      "direct_deps": 4,
+      "transitive_deps": 0,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "grade": "A",
+      "critical_packages": []
+    },
+    "portal/Backend": {
+      "location": "portal/Backend/",
+      "type": "OpenTelemetry Instrumentation",
+      "direct_deps": 11,
+      "transitive_deps": 566,
+      "vulnerabilities": {
+        "critical": 4,
+        "high": 11,
+        "moderate": 46,
+        "low": 0,
+        "total": 61
+      },
+      "grade": "D",
+      "critical_packages": ["protobufjs", "grpc-js", "tinypool", "vitest"]
+    },
+    "portal/Frontend": {
+      "location": "portal/Frontend/",
+      "type": "React Debug UI",
+      "direct_deps": null,
+      "transitive_deps": null,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 8,
+        "moderate": 7,
+        "low": 1,
+        "total": 18
+      },
+      "grade": "C",
+      "critical_packages": ["tinypool", "vitest"]
+    },
+    "platform/orchestrator": {
+      "location": "platform/orchestrator/",
+      "type": "Orchestrator Engine",
+      "direct_deps": 3,
+      "transitive_deps": null,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 3,
+        "moderate": 4,
+        "low": 0,
+        "total": 9
+      },
+      "grade": "D",
+      "critical_packages": ["grpc-js", "protobufjs", "proxy-addr"]
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "title": "protobufjs — 12 Critical Code Injection & DoS Vulnerabilities",
+      "severity": "P1",
+      "category": "CVE / Code Injection / RCE",
+      "package": "protobufjs",
+      "affected_versions": "<=7.6.4",
+      "affected_projects": ["portal/Backend", "platform/orchestrator"],
+      "cve_count": 12,
+      "attack_vectors": ["Network", "Malformed protobuf messages", "Prototype pollution"],
+      "fix": "Update @grpc/grpc-js to >=1.14.5",
+      "effort_hours": 2,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js — Multiple Template Injection & Prototype Pollution",
+      "severity": "P1",
+      "category": "CVE / Template Injection",
+      "package": "handlebars",
+      "affected_versions": "All versions in current chain",
+      "affected_projects": ["Source/Backend"],
+      "cve_count": 8,
+      "attack_vectors": ["Template injection", "Prototype pollution"],
+      "fix": "Update handlebars to latest; verify no runtime template processing from untrusted input",
+      "effort_hours": 1,
+      "escalation": "TheGuardians",
+      "notes": "Likely build-time only; requires verification"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Tinypool — Prototype Pollution RCE",
+      "severity": "P1",
+      "category": "CVE / RCE",
+      "package": "tinypool",
+      "affected_versions": "<7.2.0",
+      "affected_projects": ["Source/Frontend", "portal/Backend"],
+      "cve_count": 2,
+      "attack_vectors": ["Worker options pollution", "Prototype pollution in run()"],
+      "fix": "Update vitest to >=2.1.0+",
+      "effort_hours": 1
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vitest UI — Arbitrary File Read & Execution",
+      "severity": "P1",
+      "category": "CVE / Arbitrary File Read",
+      "package": "vitest",
+      "affected_projects": ["Source/Frontend", "portal/Backend"],
+      "attack_vectors": ["UI server exposure", "Test redirect mock"],
+      "fix": "Update vitest; disable UI server; restrict network access",
+      "effort_hours": 0.5,
+      "notes": "Only risk if UI server is exposed or running in CI"
+    },
+    {
+      "id": "DEP-005",
+      "title": "proxy-addr — IPv4-Mapped IPv6 IP Spoofing",
+      "severity": "P1",
+      "category": "CVE / Access Control Bypass",
+      "package": "proxy-addr",
+      "affected_versions": "1.1.0 - 2.0.7",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "cve_count": 1,
+      "attack_vectors": ["IP spoofing via IPv4-mapped IPv6", "Bypass of IP-based access control"],
+      "fix": "Update express/body-parser; implement credential-based auth for sensitive endpoints",
+      "effort_hours": 3,
+      "escalation": "TheGuardians",
+      "notes": "CRITICAL: /api/metrics endpoint must not rely solely on IP whitelisting"
+    },
+    {
+      "id": "DEP-006",
+      "title": "@grpc/grpc-js — Server Crash & Certificate Validation Bypass",
+      "severity": "P1",
+      "category": "CVE / DoS / Certificate Validation",
+      "package": "@grpc/grpc-js",
+      "affected_versions": "1.14.0 - 1.14.4",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "cve_count": 3,
+      "attack_vectors": ["Malformed gRPC messages", "Certificate validation bypass"],
+      "fix": "Update to >=1.14.5; test mTLS validation",
+      "effort_hours": 2,
+      "escalation": "TheGuardians",
+      "notes": "Critical for mTLS scenarios; certificate bypass is exploitable"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-007",
+      "title": "body-parser — Denial of Service via Invalid Limit Bypass",
+      "severity": "P2",
+      "package": "body-parser",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "cve_count": 1,
+      "fix": "Verify size limits; update to latest",
+      "effort_hours": 2
+    },
+    {
+      "id": "DEP-008",
+      "title": "brace-expansion — Zero-Step Sequence DoS",
+      "severity": "P2",
+      "package": "brace-expansion",
+      "affected_projects": ["Source/Backend"],
+      "cve_count": 1,
+      "fix": "Update dependency",
+      "effort_hours": 1
+    },
+    {
+      "id": "DEP-009",
+      "title": "Browserslist — Unbounded Memory Growth (OOM)",
+      "severity": "P2",
+      "package": "browserslist",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cve_count": 1,
+      "fix": "Update; monitor process memory",
+      "effort_hours": 1
+    },
+    {
+      "id": "DEP-010",
+      "title": "form-data — CRLF Injection in Multipart Field Names",
+      "severity": "P2",
+      "package": "form-data",
+      "affected_projects": ["Source/Backend", "Source/E2E"],
+      "cve_count": 1,
+      "fix": "Sanitize field names; update",
+      "effort_hours": 1
+    },
+    {
+      "id": "DEP-011",
+      "title": "js-yaml — Quadratic Complexity DoS in Merge Key Handling",
+      "severity": "P2",
+      "package": "js-yaml",
+      "affected_projects": ["Source/Backend"],
+      "cve_count": 1,
+      "fix": "Validate YAML size; update js-yaml",
+      "effort_hours": 2
+    },
+    {
+      "id": "DEP-012",
+      "title": "@remix-run/router — Open Redirect via Protocol-Relative URLs",
+      "severity": "P2",
+      "package": "@remix-run/router",
+      "affected_versions": "1.3.0 - 1.23.2",
+      "affected_projects": ["Source/Frontend"],
+      "cve_count": 1,
+      "fix": "Update react-router-dom to >=6.26.0; audit redirect() calls",
+      "effort_hours": 2
+    }
+  ],
+  "remediation_plan": {
+    "immediate_p1": {
+      "timeframe": "Week 1",
+      "total_effort_hours": 10,
+      "items": [
+        "Update @grpc/grpc-js (protobufjs chain)",
+        "Update handlebars; verify runtime safety",
+        "Update vitest (tinypool RCE)",
+        "Verify vitest UI is not exposed",
+        "Implement credential-based auth for sensitive endpoints",
+        "Test mTLS after grpc-js update"
+      ]
+    },
+    "high_priority_p2": {
+      "timeframe": "Week 2-3",
+      "total_effort_hours": 9,
+      "items": [
+        "Update body-parser; verify size limits",
+        "Update brace-expansion",
+        "Update browserslist",
+        "Sanitize form-data field names",
+        "Validate YAML processing; update js-yaml",
+        "Update react-router-dom; audit redirects"
+      ]
+    },
+    "deferred_p3_p4": {
+      "timeframe": "Month 2",
+      "total_effort_hours": 5,
+      "items": [
+        "Audit uuid usage for security-critical functions",
+        "Update @babel/core",
+        "Update baseline-browser-mapping"
+      ]
+    }
+  },
+  "supply_chain_risks": [
+    {
+      "project": "portal/Backend",
+      "total_dependencies": 577,
+      "risk_level": "HIGH",
+      "primary_risk": "OpenTelemetry auto-instrumentation pulls in protobufjs with 12 critical CVEs",
+      "recommendation": "Consider lightweight alternative or remove non-critical instrumentations"
+    },
+    {
+      "project": "Source/Backend",
+      "total_dependencies": 407,
+      "risk_level": "MEDIUM",
+      "primary_risk": "Handlebars transitive dependency from test tools",
+      "recommendation": "Verify no runtime template processing; remove if possible"
+    },
+    {
+      "project": "Source/Frontend",
+      "total_dependencies": 230,
+      "risk_level": "MEDIUM",
+      "primary_risk": "Vitest/tinypool dev-time RCE gadgets",
+      "recommendation": "Ensure vitest runs only in isolated dev/CI environments"
+    }
+  ],
+  "escalations": {
+    "TheGuardians": [
+      "DEP-001: protobufjs RCE chain assessment",
+      "DEP-002: Handlebars runtime template processing verification",
+      "DEP-005: proxy-addr IP spoofing impact on /metrics endpoint",
+      "DEP-006: @grpc/grpc-js certificate validation in mTLS scenarios",
+      "DEP-014: UUID usage in security-sensitive contexts"
+    ],
+    "TheFixer": [
+      "Update all npm dependencies to secure versions",
+      "Add npm audit --fail-on=high to CI/CD",
+      "Implement credential-based auth for sensitive endpoints",
+      "Review UUID usage; replace with crypto.randomUUID() if needed"
+    ]
+  },
+  "next_steps": [
+    "Create tickets for P1 findings (Week 1 remediation)",
+    "Update CI/CD pipeline with npm audit gates",
+    "Schedule quarterly dependency audits",
+    "Document OpenTelemetry vs. risk trade-off decision",
+    "Review and commit updated package-lock.json files"
+  ]
+}

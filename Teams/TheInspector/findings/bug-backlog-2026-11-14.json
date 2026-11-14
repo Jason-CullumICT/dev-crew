@@ -1,0 +1,351 @@
+{
+  "audit_metadata": {
+    "audit_id": "INSP-2026-11-14",
+    "date": "2026-11-14",
+    "synthesized_by": "team_leader",
+    "grade": "D",
+    "specialists": ["quality-oracle", "dependency-auditor"],
+    "dynamic_specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "dynamic_skip_reason": "Services not running (static-only audit)",
+    "is_first_audit": true
+  },
+  "scorecard": {
+    "p1_total": 7,
+    "p2_total": 9,
+    "p3_total": 5,
+    "p4_total": 10,
+    "fixed_since_prior": 0,
+    "new_this_audit": 31,
+    "spec_coverage_pct": "UNKNOWN (enforcer blind to portal/)",
+    "source_coverage_pct": 100,
+    "dynamic_findings": 0,
+    "grade": "D",
+    "grade_rationale": "7 P1 findings exceed the C-grade threshold of max_p1:2. Grading config: D = max_p1:999."
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "title": "protobufjs — 12 Critical Code Injection & RCE CVEs",
+      "severity": "P1",
+      "category": "CVE / Code Injection / RCE",
+      "trigger": "injection",
+      "escalate_to": "TheGuardians",
+      "package": "protobufjs",
+      "affected_projects": ["portal/Backend", "platform/orchestrator"],
+      "cve_count": 12,
+      "attack_vectors": ["Network", "Malformed protobuf messages", "Prototype pollution"],
+      "fix": "Update @grpc/grpc-js to >=1.14.5",
+      "effort_hours": 2,
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars.js — Multiple Template Injection & Prototype Pollution CVEs",
+      "severity": "P1",
+      "category": "CVE / Template Injection",
+      "trigger": "injection",
+      "escalate_to": "TheGuardians",
+      "package": "handlebars",
+      "affected_projects": ["Source/Backend"],
+      "cve_count": 8,
+      "attack_vectors": ["Template injection", "Prototype pollution"],
+      "fix": "Update handlebars; verify no runtime template processing from untrusted input",
+      "effort_hours": 1,
+      "notes": "Likely build-time only; requires TheGuardians to verify runtime usage",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-005",
+      "title": "proxy-addr — IPv4-Mapped IPv6 IP Spoofing — Access Control Bypass",
+      "severity": "P1",
+      "category": "CVE / Access Control Bypass",
+      "trigger": "missing access control",
+      "escalate_to": "TheGuardians",
+      "package": "proxy-addr",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "cve_count": 1,
+      "attack_vectors": ["IP spoofing via IPv4-mapped IPv6"],
+      "fix": "Update express/body-parser; implement credential-based auth for sensitive endpoints",
+      "effort_hours": 3,
+      "notes": "CRITICAL: /api/metrics endpoint must not rely solely on IP whitelisting",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-006",
+      "title": "@grpc/grpc-js — Server Crash & Certificate Validation Bypass",
+      "severity": "P1",
+      "category": "CVE / DoS / Certificate Validation",
+      "trigger": "auth bypass",
+      "escalate_to": "TheGuardians",
+      "package": "@grpc/grpc-js",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "cve_count": 3,
+      "attack_vectors": ["Malformed gRPC messages", "Certificate validation bypass"],
+      "fix": "Update to >=1.14.5; test mTLS validation",
+      "effort_hours": 2,
+      "notes": "Critical for mTLS scenarios; certificate bypass is exploitable",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "title": "Traceability enforcer blind to portal/ codebase",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "file": "tools/traceability-enforcer.py",
+      "line": 87,
+      "detail": "Enforcer hardcodes source_dirs=[\"Source\",\"E2E\"] — portal/ codebase invisible. All 6 portal plans report 100% failure on a false negative. Blocks every agent running verification gates for portal/ features.",
+      "fix": "Add 'portal' to source_dirs list in tools/traceability-enforcer.py — one-line change.",
+      "effort_hours": 0.25,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Tinypool — Prototype Pollution RCE (via vitest)",
+      "severity": "P1",
+      "category": "CVE / RCE",
+      "package": "tinypool",
+      "affected_projects": ["Source/Frontend", "portal/Backend"],
+      "cve_count": 2,
+      "fix": "Update vitest to >=2.1.0+",
+      "effort_hours": 1,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vitest UI — Arbitrary File Read & Execution",
+      "severity": "P1",
+      "category": "CVE / Arbitrary File Read",
+      "package": "vitest",
+      "affected_projects": ["Source/Frontend", "portal/Backend"],
+      "fix": "Update vitest; disable UI server; restrict network access",
+      "effort_hours": 0.5,
+      "notes": "Only risk if UI server is exposed or running in CI",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "title": "FR-dependency-api-types: blocked_by field missing from UpdateBugInput/UpdateFeatureRequestInput",
+      "severity": "P2",
+      "category": "spec-drift",
+      "file": "portal/Shared/api.ts",
+      "detail": "blocked_by?: string[] absent from both input types; two as any casts in DependencyPicker.tsx as workaround.",
+      "fix": "Add blocked_by?: string[] to both types in portal/Shared/api.ts; remove as any casts.",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-003",
+      "title": "FR-dependency-seed: portal/Backend/src/database/seed.ts does not exist",
+      "severity": "P2",
+      "category": "spec-drift",
+      "file": "portal/Backend/src/database/",
+      "detail": "Seed file required by FR-dependency-seed for 8 known dependency relationships is missing. No demo state; tests expecting known relationships will fail on fresh DB.",
+      "fix": "Create seed.ts with idempotent insert logic; call during server startup after schema migration.",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-004",
+      "title": "FR-dependency-frontend-tests: DependencySection.test.tsx and BlockedBadge.test.tsx missing",
+      "severity": "P2",
+      "category": "untested",
+      "file": "portal/Frontend/tests/",
+      "detail": "Two production components (DependencySection 226 lines, BlockedBadge 70 lines) have no test coverage. FR-dependency-frontend-tests explicitly requires both.",
+      "fix": "Create both test files following DependencyPicker.test.tsx pattern.",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-007",
+      "title": "body-parser — Denial of Service via Invalid Limit Bypass",
+      "severity": "P2",
+      "package": "body-parser",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "cve_count": 1,
+      "fix": "Verify size limits; update to latest",
+      "effort_hours": 2,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-008",
+      "title": "brace-expansion — Zero-Step Sequence DoS",
+      "severity": "P2",
+      "package": "brace-expansion",
+      "affected_projects": ["Source/Backend"],
+      "cve_count": 1,
+      "fix": "Update dependency",
+      "effort_hours": 1,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-009",
+      "title": "Browserslist — Unbounded Memory Growth (OOM)",
+      "severity": "P2",
+      "package": "browserslist",
+      "affected_projects": ["Source/Backend", "Source/Frontend"],
+      "cve_count": 1,
+      "fix": "Update; monitor process memory",
+      "effort_hours": 1,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-010",
+      "title": "form-data — CRLF Injection in Multipart Field Names",
+      "severity": "P2",
+      "package": "form-data",
+      "affected_projects": ["Source/Backend", "Source/E2E"],
+      "cve_count": 1,
+      "fix": "Sanitize field names; update",
+      "effort_hours": 1,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-011",
+      "title": "js-yaml — Quadratic Complexity DoS in Merge Key Handling",
+      "severity": "P2",
+      "package": "js-yaml",
+      "affected_projects": ["Source/Backend"],
+      "cve_count": 1,
+      "fix": "Validate YAML size; update js-yaml",
+      "effort_hours": 2,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    },
+    {
+      "id": "DEP-012",
+      "title": "@remix-run/router — Open Redirect via Protocol-Relative URLs",
+      "severity": "P2",
+      "package": "@remix-run/router",
+      "affected_projects": ["Source/Frontend"],
+      "cve_count": 1,
+      "fix": "Update react-router-dom to >=6.26.0; audit redirect() calls",
+      "effort_hours": 2,
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "title": "DependencyPicker.test.tsx uses non-existent FR-0001 traceability ID",
+      "severity": "P3",
+      "category": "spec-drift",
+      "file": "portal/Frontend/tests/DependencyPicker.test.tsx",
+      "fix": "Replace all FR-0001 with FR-dependency-picker throughout file",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-006",
+      "title": "eslint-disable suppressions masking dependency array bugs in production hooks",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts",
+      "fix": "Audit suppressed hooks; add missing deps or document intentional suppression",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-007",
+      "title": "Silent JSON parse error swallow in api/client.ts catch",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "file": "Source/Frontend/src/api/client.ts",
+      "line": 26,
+      "fix": "Log parse failure at debug level before returning {}",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "QO-008",
+      "title": "Two parallel FR namespaces (FR-WF-* vs FR-NNN) risk collision across codebases",
+      "severity": "P3",
+      "category": "spec-drift",
+      "file": "Specifications/dev-workflow-platform.md",
+      "fix": "Clarify FR namespace ownership in CLAUDE.md; consider prefixing portal requirements",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "quality-oracle"
+    },
+    {
+      "id": "DEP-013",
+      "title": "67 moderate CVEs across 5 npm projects (dependency hygiene)",
+      "severity": "P3",
+      "category": "CVE / moderate",
+      "affected_projects": ["Source/Backend", "Source/Frontend", "portal/Backend", "portal/Frontend", "platform/orchestrator"],
+      "cve_count": 67,
+      "fix": "Scheduled dependency updates; npm audit --fix",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-014",
+      "title": "10 low-severity CVEs across npm projects",
+      "severity": "P4",
+      "cve_count": 10,
+      "fix": "Routine dependency updates",
+      "route_to": "TheFixer",
+      "status": "OPEN",
+      "source": "dependency-auditor"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "@grpc/grpc-js outdated version chain",
+      "affected_findings": ["DEP-001", "DEP-006"],
+      "single_fix": "Update @grpc/grpc-js to >=1.14.5 in portal/Backend and platform/orchestrator",
+      "fix_impact": "Resolves 15 CVEs (12 protobufjs + 3 grpc-js) in one update"
+    },
+    {
+      "root_cause": "vitest/tinypool outdated dev toolchain",
+      "affected_findings": ["DEP-003", "DEP-004"],
+      "single_fix": "Update vitest to >=2.1.0+ in Source/Frontend and portal/Backend",
+      "fix_impact": "Resolves 2 RCE CVEs and arbitrary file read; also closes tinypool chain"
+    },
+    {
+      "root_cause": "portal/ directory not in traceability enforcer scan dirs",
+      "affected_findings": ["QO-001", "QO-002", "QO-003", "QO-004", "QO-005"],
+      "single_fix": "Add 'portal' to source_dirs in tools/traceability-enforcer.py",
+      "fix_impact": "Unblocks all portal/ feature verification gates; exposes true spec coverage for 6 plans"
+    },
+    {
+      "root_cause": "proxy-addr vulnerability in shared Express dependency",
+      "affected_findings": ["DEP-005", "DEP-007"],
+      "single_fix": "Update express and body-parser across all 3 Express projects + add credential-based auth for /api/metrics",
+      "fix_impact": "Closes IP spoofing + DoS vectors in Source/Backend, portal/Backend, platform/orchestrator"
+    }
+  ]
+}

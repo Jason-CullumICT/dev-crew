@@ -1,0 +1,302 @@
+{
+  "audit_metadata": {
+    "agent": "dependency_auditor",
+    "audit_date": "2026-11-15",
+    "scan_duration_minutes": 5,
+    "auditor": "Claude Haiku 4.5"
+  },
+  "scope": {
+    "package_managers": ["npm"],
+    "manifests_found": 10,
+    "directories_audited": [
+      "Source/Backend",
+      "Source/Frontend",
+      "Source/E2E",
+      "platform/orchestrator",
+      "portal/Backend",
+      "portal/Frontend",
+      "abac-demo",
+      "abac-reimagined",
+      "abac-soc-demo",
+      "abac-soc-demo-v2"
+    ]
+  },
+  "vulnerability_summary": {
+    "total_cves": 40,
+    "severity_breakdown": {
+      "critical": 4,
+      "high": 12,
+      "moderate": 15,
+      "low": 9
+    },
+    "by_directory": {
+      "Source/Backend": {
+        "direct_dependencies": 102,
+        "transitive_dependencies": 412,
+        "vulnerabilities_total": 18,
+        "critical": 2,
+        "high": 5,
+        "moderate": 3,
+        "low": 8,
+        "status": "requires_immediate_action"
+      },
+      "Source/Frontend": {
+        "direct_dependencies": 9,
+        "transitive_dependencies": 230,
+        "vulnerabilities_total": 17,
+        "critical": 2,
+        "high": 7,
+        "moderate": 7,
+        "low": 1,
+        "status": "requires_immediate_action"
+      },
+      "Source/E2E": {
+        "direct_dependencies": 4,
+        "transitive_dependencies": 4,
+        "vulnerabilities_total": 0,
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "status": "clean"
+      }
+    }
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "critical",
+      "cves": [
+        "GHSA-2w6w-674q-4c4q",
+        "GHSA-8r5x-fm3f-whwj",
+        "GHSA-p8wg-vrv2-v86f",
+        "GHSA-3mfm-83xf-c92r",
+        "GHSA-xhpv-hc6g-r9c6",
+        "GHSA-xjpj-3mr7-gcpf",
+        "GHSA-9cx6-37pm-9jff"
+      ],
+      "title": "Multiple JavaScript Injection & RCE vulnerabilities",
+      "cvss_max": 9.8,
+      "impact": "remote_code_execution",
+      "affected_versions": "3.0.0 - 4.7.9",
+      "remediation": "npm update handlebars@4.7.10+ or remove dependency",
+      "exploitable": true
+    },
+    {
+      "id": "DEP-002",
+      "package": "proxy-addr",
+      "severity": "critical",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "title": "IPv4-mapped IPv6 IP Spoofing",
+      "cvss": 9.1,
+      "impact": "authentication_bypass",
+      "affected_versions": "1.1.0 - 2.0.7",
+      "remediation": "npm update proxy-addr@2.0.8+",
+      "exploitable": true,
+      "escalation": "TheGuardians"
+    },
+    {
+      "id": "DEP-003",
+      "package": "tinypool",
+      "severity": "critical",
+      "cves": ["GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "title": "Prototype Pollution leading to RCE in worker options",
+      "impact": "remote_code_execution",
+      "affected_versions": "<=2.1.1",
+      "remediation": "npm update vitest@5.1.0+",
+      "transitive_via": "vitest"
+    },
+    {
+      "id": "DEP-004",
+      "package": "vitest",
+      "severity": "critical",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "title": "Arbitrary File Read and Execution via UI Server",
+      "cvss": 9.8,
+      "impact": "arbitrary_file_read_and_execution",
+      "affected_versions": "<=4.1.10",
+      "remediation": "npm update vitest@3.2.6+ or vitest@5.1.0+",
+      "exploitable_if": "vitest ui server exposed"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-005",
+      "package": "body-parser",
+      "cve": "GHSA-27r3-jxmh-p828",
+      "title": "DoS via trailing bytes in compressed requests",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-006",
+      "package": "brace-expansion",
+      "cves": ["GHSA-f886-m6hf-6m8v", "GHSA-3jxr-9vmj-r5cp", "GHSA-mh99-v99m-4gvg", "GHSA-rgw5-rvv9-x895", "GHSA-q2hr-2g5m-vwhr", "GHSA-qhr7-859c-m2p7", "GHSA-6j4f-fj2g-mc7p"],
+      "title": "Multiple DoS via pathological pattern expansion",
+      "cvss_range": "5.3-7.5",
+      "count": 7
+    },
+    {
+      "id": "DEP-007",
+      "package": "browserslist",
+      "cves": ["GHSA-c83g-rgw3-j3cx", "GHSA-73wf-gq98-2v4g"],
+      "title": "Unbounded memory growth & prototype pollution",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-008",
+      "package": "form-data",
+      "cve": "GHSA-hmw2-7cc7-3qxx",
+      "title": "CRLF injection in multipart fields",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-009",
+      "package": "js-yaml",
+      "cves": ["GHSA-h67p-54hq-rp68", "GHSA-52cp-r559-cp3m", "GHSA-5p4m-2wfm-xmqj", "GHSA-2883-xcg3-v3hh"],
+      "title": "Quadratic complexity DoS via merge keys",
+      "cvss_range": "5.3-7.5",
+      "count": 4
+    },
+    {
+      "id": "DEP-010",
+      "package": "@grpc/grpc-js",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "title": "Server crashes & certificate auth bypass",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-011",
+      "package": "nanoid",
+      "cves": ["GHSA-28wg-ghj8-5hjv", "GHSA-2v37-7h3g-55p8", "GHSA-xwg4-73v4-xw9w"],
+      "title": "Infinite loops & integer overflow",
+      "cvss_range": "5.9-7.4"
+    },
+    {
+      "id": "DEP-012",
+      "package": "postcss",
+      "cves": ["GHSA-6g55-p6wh-862q", "GHSA-r28c-9q8g-f849"],
+      "title": "Arbitrary file read via sourceMappingURL",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-013",
+      "package": "source-map-js",
+      "cve": "GHSA-68fv-2mgg-jv7q",
+      "title": "Event-loop DoS via indexed offsets",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-014",
+      "package": "ws",
+      "cve": "GHSA-96hv-2xvq-fx4p",
+      "title": "Memory exhaustion from fragments",
+      "cvss": 7.5
+    },
+    {
+      "id": "DEP-015",
+      "package": "react-router-dom",
+      "cves": ["GHSA-jjmj-jmhj-qwj2", "GHSA-2j2x-hqr9-3h42", "GHSA-wrjc-x8rr-h8h6", "GHSA-337j-9hxr-rhxg"],
+      "title": "Open redirect leading to XSS",
+      "cvss": 6.9
+    }
+  ],
+  "license_compliance": {
+    "status": "pass",
+    "findings": "All packages use permissive licenses (MIT/Apache/BSD/ISC). No GPL/AGPL or UNLICENSED detected.",
+    "gpl_count": 0,
+    "agpl_count": 0,
+    "unlicensed_count": 0
+  },
+  "outdated_packages": {
+    "total_behind": 4,
+    "major_version_gaps": [
+      {
+        "package": "vitest",
+        "current": "2.0.5",
+        "latest": "5.1.0",
+        "gap": "3+ major",
+        "priority": "critical"
+      },
+      {
+        "package": "vite",
+        "current": "5.4.0",
+        "latest": "6.4.3+",
+        "gap": "1+ major",
+        "priority": "critical"
+      },
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "latest": "7.18.0+",
+        "gap": "1+ major",
+        "priority": "high"
+      },
+      {
+        "package": "jest",
+        "current": "29.7.0",
+        "latest": "30.0.0+",
+        "gap": "1+ major",
+        "priority": "moderate"
+      }
+    ]
+  },
+  "supply_chain_risk": {
+    "transitive_dep_count": 642,
+    "largest_tree": "Source/Backend (412 deps)",
+    "risk_level": "high",
+    "recommendation": "Establish weekly npm audit runs in CI; monitor for new vulnerability disclosures"
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "finding": "DEP-001",
+      "reason": "Handlebars RCE — potential injection vector if templates are user-controlled"
+    },
+    {
+      "team": "TheGuardians",
+      "finding": "DEP-002",
+      "reason": "proxy-addr IP spoofing — authentication bypass if req.ip used in security decisions"
+    },
+    {
+      "team": "TheGuardians",
+      "finding": "DEP-004",
+      "reason": "vitest file read — if UI server is exposed, arbitrary file access possible"
+    }
+  ],
+  "remediation_plan": {
+    "phase_1_critical_this_sprint": [
+      "DEP-001: Identify and remove handlebars usage or update to latest",
+      "DEP-002: npm update proxy-addr in Source/Backend",
+      "DEP-003: npm update vitest in Source/Frontend",
+      "DEP-004: Verify vitest UI not exposed; plan major upgrade"
+    ],
+    "phase_2_high_next_sprint": [
+      "DEP-005 to DEP-015: Run `npm audit fix` in all directories",
+      "Major version upgrades: vitest, vite, react-router-dom",
+      "Full test suite run and staging verification"
+    ],
+    "phase_3_moderate_backlog": [
+      "jest@30 upgrade",
+      "Minor version updates to @babel/core, esbuild",
+      "Establish weekly npm audit in CI pipeline"
+    ]
+  },
+  "recommendations": {
+    "immediate": [
+      "Run npm audit fix --force in all directories",
+      "Test thoroughly in staging before merging to main",
+      "Escalate vitest/vite/handlebars findings to TheGuardians for risk assessment"
+    ],
+    "short_term": [
+      "Plan major version upgrades (vitest@5, vite@8, react-router@7)",
+      "Establish weekly vulnerability scans in CI",
+      "Document dependency update policy in CLAUDE.md"
+    ],
+    "long_term": [
+      "Consider dependency auditing tools (Snyk, Dependabot)",
+      "Implement Software Bill of Materials (SBOM) tracking",
+      "Regular security training on supply-chain risks"
+    ]
+  }
+}

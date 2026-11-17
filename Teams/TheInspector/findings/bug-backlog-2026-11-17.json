@@ -1,0 +1,386 @@
+{
+  "audit_id": "run-20261117-103541",
+  "audit_date": "2026-11-17",
+  "grade": "D",
+  "grade_rationale": "5 P1 findings (4 security-dependency CVEs + 1 governance) exceed the max_p1:2 threshold for grade C per inspector.config.yml grading rules",
+  "specialists_run": ["quality-oracle", "dependency-auditor"],
+  "specialists_static_only": ["performance-profiler", "chaos-monkey"],
+  "note_on_static_specialists": "performance-profiler and chaos-monkey ran in static mode (no live services); no dynamic findings contributed",
+  "totals": {
+    "p1": 5,
+    "p2": 13,
+    "p3": 13,
+    "p4": 2,
+    "total": 33
+  },
+  "spec_coverage": {
+    "active_plans_pct": 100,
+    "specifications_root_pct": 25,
+    "note": "Root 25% is due to dev-workflow-platform.md (69 FRs) being an orphaned spec; actual implemented system is 100% traced to its active plan FRs"
+  },
+  "findings_p1": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "Orphaned spec — dev-workflow-platform.md has 0% implementation coverage",
+      "file": "Specifications/dev-workflow-platform.md",
+      "detail": "Spec defines 69 FRs for a feature-request/bug-report/dev-cycle management platform. Source/ implements a completely different system: the Self-Judging Workflow Engine. No FR-001–FR-069 requirement is traced in source code.",
+      "failure_scenario": "Agent reading Specifications/ as domain truth attempts to build feature-request system; generates hallucinated implementations conflicting with actual workflow-engine codebase",
+      "recommendation": "Add '## Status: Future / Not Yet Started' header OR archive the spec; clarify that Source/ implements Specifications/workflow-engine.md, not dev-workflow-platform.md",
+      "status": "NEW",
+      "escalation": null,
+      "route_to": "requirements-reviewer"
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "cvss": 9.8,
+      "title": "vitest@2.0.5 — Prototype Pollution RCE via tinypool",
+      "file": "Source/Frontend/package.json",
+      "detail": "CVE via tinypool <=2.1.1: worker.options allows arbitrary property injection; RCE in test execution environment. vitest UI --ui flag exposes arbitrary file read/execution vector.",
+      "failure_scenario": "Malicious test file or vitest UI --ui flag exploitation allows arbitrary code execution via tinypool worker option prototype pollution",
+      "recommendation": "npm update vitest@5.1.0+ (major version bump required)",
+      "status": "NEW",
+      "escalation": "TheGuardians [ESCALATE] — if vitest runs user-supplied test code in CI/CD pipeline",
+      "route_to": "TheFixer (upgrade) + TheGuardians (scope review)"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "cve": "GHSA-2w6w-674q-4c4q, GHSA-8r5x-fm3f-whwj",
+      "cvss": 9.8,
+      "title": "handlebars@4.7.9 — Critical JS Injection via AST type confusion",
+      "file": "node_modules/ (transitive, Backend + Frontend)",
+      "detail": "Multiple critical CVEs: AST type confusion allows JavaScript code execution via @partial-block, dynamic partials, decorators. Ranges: >=4.0.0 <=4.7.9.",
+      "failure_scenario": "If user-supplied Handlebars templates are compiled, AST type confusion allows arbitrary JavaScript execution on the server",
+      "recommendation": "npm update (triggers handlebars@4.7.10+ via transitive resolution); identify which build tool depends on handlebars",
+      "status": "NEW",
+      "escalation": "TheGuardians [ESCALATE] — injection risk if user templates compiled",
+      "route_to": "TheFixer (upgrade) + TheGuardians (code review)"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "cvss": 9.1,
+      "title": "proxy-addr@2.0.7 — IPv4-mapped IPv6 trust bypass (IP spoofing)",
+      "file": "Source/Backend (via express@4.18.2)",
+      "detail": "CVE-2024-50332: IPv4-mapped IPv6 addresses (::ffff:x.x.x.x) bypass app.set('trust proxy') subnet checks. Affects any Express server trusting proxy headers.",
+      "failure_scenario": "Attacker sends ::ffff:192.0.2.1 to bypass trust proxy subnet checks; enables IP-based access control bypass in k8s/load-balancer deployments",
+      "recommendation": "npm update express@4.22.3+ (includes proxy-addr 2.0.8+)",
+      "status": "NEW",
+      "escalation": "TheGuardians [ESCALATE] — access control bypass",
+      "route_to": "TheFixer (upgrade) + TheGuardians (audit trust proxy config)"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "title": "uuid@9.0.0 — Buffer overflow (missing bounds check) + 5 major versions outdated",
+      "file": "Source/Backend/package.json",
+      "detail": "CVE-2024-24391: Missing buffer bounds check in v3/v5/v6 when buf parameter provided. Can write past buffer. Also 5 major versions behind (9.0.0 vs 14.0.3).",
+      "failure_scenario": "If uuid is called with an attacker-controlled buf parameter, missing bounds check allows buffer overwrite causing memory corruption",
+      "recommendation": "npm update uuid@11.1.1+ (minimum); recommend 14.0.3+",
+      "status": "NEW",
+      "escalation": "TheGuardians [ESCALATE] — requires code review to verify no untrusted buf parameter usage",
+      "route_to": "TheFixer (upgrade) + TheGuardians (code review)"
+    }
+  ],
+  "findings_p2": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer silently skips dependency-linking plan",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "Enforcer auto-picks the most recently modified requirements.md. Right now it only covers Plans/self-judging-workflow; silently skips Plans/dependency-linking (16 FRs). Will flip without warning when either plan is touched.",
+      "recommendation": "Add --all-plans flag or CI step that runs enforcer per active plan",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "doc-stale",
+      "source": "quality-oracle",
+      "title": "dependency-linking delta shows 3 items as Missing that are already Done",
+      "file": "Plans/dependency-linking/requirements.md (lines 39-53)",
+      "detail": "FR-dependency-api-types, FR-dependency-seed, FR-dependency-frontend-tests all marked Missing but all exist in Source/. Stale delta will mislead next agent reading the plan.",
+      "recommendation": "Update delta table: mark all three Done; note FR-dependency-seed is N/A for in-memory store variant",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "vite@5.4.0 — 7 path traversal CVEs (dev server arbitrary file read)",
+      "file": "Source/Frontend/package.json",
+      "detail": "Multiple CVEs: fs.existsSync() bypass (Windows), server.fs.allow bypass, alternate path bypass. All in vite <=6.4.3.",
+      "recommendation": "npm update vite@8.3.8+ (major bump; breaking changes expected)",
+      "status": "NEW",
+      "escalation": "TheGuardians [SEE] if vite dev server exposed beyond localhost",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "body-parser@1.20.8 — DoS via trailing bytes in compressed requests",
+      "file": "Source/Backend (via express)",
+      "detail": "GHSA-27r3-jxmh-p828: Compressed request with trailing data causes indefinite processing, CPU exhaustion. CVSS 7.5.",
+      "recommendation": "npm update express@4.22.0+ (includes body-parser 1.20.9+)",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "brace-expansion@1.1.20 — 7 DoS CVEs (exponential expansion, stack exhaustion)",
+      "file": "node_modules/ (transitive via build tools)",
+      "detail": "Multiple DoS vectors: exponential-time expansion, unbounded recursion, stack exhaustion. Triggers on malformed brace patterns.",
+      "recommendation": "npm update brace-expansion@1.1.21+",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "browserslist@4.28.6 — Unbounded memory growth + prototype pollution",
+      "file": "node_modules/ (transitive via vite, postcss)",
+      "detail": "GHSA-c83g-rgw3-j3cx: No cache eviction on distinct queries → OOM. GHSA-73wf-gq98-2v4g: Prototype pollution via untrusted browserslist-stats.json.",
+      "recommendation": "npm update browserslist@4.28.7+",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "react-router-dom@6.26.0 — Open redirect (3 CVEs, protocol-relative bypass)",
+      "file": "Source/Frontend/package.json",
+      "detail": "GHSA-2j2x-hqr9-3h42: Same-origin check bypass via // protocol-relative URL. GHSA-wrjc-x8rr-h8h6: backslash bypass. GHSA-337j-9hxr-rhxg: Arbitrary constructor injection in SSR hydration.",
+      "recommendation": "npm update react-router-dom@7.18.5+ (major bump)",
+      "status": "NEW",
+      "escalation": "TheGuardians [ESCALATE] if user input can influence navigation targets",
+      "route_to": "TheFixer + TheGuardians"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "js-yaml@3.15.1 — Quadratic CPU DoS on merge-key chains (4 CVEs)",
+      "file": "node_modules/ (transitive via tools)",
+      "recommendation": "npm update js-yaml@3.15.2+",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "form-data@4.0.5 — CRLF injection in multipart field names/filenames",
+      "file": "node_modules/ (transitive)",
+      "recommendation": "npm update form-data@4.0.6+",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "postcss@8.5.22 — Arbitrary .map file read via sourceMappingURL",
+      "file": "node_modules/ (transitive via vite)",
+      "recommendation": "npm update postcss@8.5.23+ (may require vite major bump)",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "nanoid@3.3.17 — Infinite loops & integer overflow (3 CVEs)",
+      "file": "node_modules/ (transitive)",
+      "recommendation": "npm update nanoid@3.3.18+",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "source-map-js@1.2.1 — Event-loop DoS via malformed section offsets",
+      "file": "node_modules/ (transitive via postcss)",
+      "recommendation": "npm update source-map-js@1.2.2+",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P2",
+      "category": "CVE",
+      "source": "dependency-auditor",
+      "title": "ws@8.20.1 — Memory exhaustion DoS from tiny fragmented WebSocket messages",
+      "file": "node_modules/ (transitive)",
+      "recommendation": "npm update ws@8.21.0+",
+      "status": "NEW",
+      "route_to": "TheFixer"
+    }
+  ],
+  "findings_p3": [
+    {
+      "id": "QO-004", "severity": "P3", "source": "quality-oracle",
+      "title": "pending_dependencies WorkItemStatus referenced in comment but absent from enum",
+      "file": "Source/Shared/types/workflow.ts:214",
+      "recommendation": "Either add PendingDependencies to enum or update traceability comment to describe flag-based approach",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005", "severity": "P3", "source": "quality-oracle",
+      "title": "Duplicate test suites for WorkItemDetailPage and WorkItemListPage",
+      "file": "Source/Frontend/tests/ (root) + Source/Frontend/tests/pages/",
+      "recommendation": "Consolidate to tests/pages/; remove root-level duplicates",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006", "severity": "P3", "source": "quality-oracle",
+      "title": "eslint-disable suppressions in useWorkItems.ts and DependencyPicker.tsx",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "recommendation": "Add inline comment explaining suppression rationale or fix dependency array",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-016-025", "severity": "P3", "source": "dependency-auditor",
+      "title": "10 moderate CVEs in @babel/core, @vitest/mocker, @remix-run/router, esbuild, postcss (additional), qs (4 CVEs), nanoid (additional), vite (additional)",
+      "recommendation": "npm audit fix resolves most; schedule in next maintenance window",
+      "status": "NEW"
+    }
+  ],
+  "findings_p4": [
+    {
+      "id": "DEP-026-027", "severity": "P4", "source": "dependency-auditor",
+      "title": "2 low-severity informational CVEs",
+      "recommendation": "Address in next sprint",
+      "status": "NEW"
+    }
+  ],
+  "escalations": [
+    {
+      "id": "DEP-002",
+      "team": "TheGuardians",
+      "finding": "handlebars@4.7.9 JS Injection (CVSS 9.8)",
+      "trigger": "injection",
+      "urgency": "P1 — requires security code review before next release; determine if user-supplied templates are compiled anywhere",
+      "action": "Audit all handlebars template compilation calls; verify no user-controlled input reaches compile()"
+    },
+    {
+      "id": "DEP-003",
+      "team": "TheGuardians",
+      "finding": "proxy-addr@2.0.7 IP Spoofing / Access Control Bypass (CVSS 9.1)",
+      "trigger": "missing access control",
+      "urgency": "P1 BLOCKING — check whether trust proxy is configured and IPv6 clients exist in deployment",
+      "action": "Audit Express trust proxy configuration; verify no IP-based access controls rely on X-Forwarded-For"
+    },
+    {
+      "id": "DEP-004",
+      "team": "TheGuardians",
+      "finding": "uuid@9.0.0 Buffer Overflow (CVSS 7.5)",
+      "trigger": "injection",
+      "urgency": "P1 — code review to verify no untrusted buf parameter reaches uuid.v3/v5/v6",
+      "action": "Grep all uuid() call sites; confirm buf parameter is never from user input"
+    },
+    {
+      "id": "DEP-005",
+      "team": "TheGuardians",
+      "finding": "vite@5.4.0 Path Traversal (7 CVEs)",
+      "trigger": "sensitive data exposed",
+      "urgency": "P2 — verify dev server not network-accessible",
+      "action": "Confirm vite dev server listens on 127.0.0.1 only; check CI/CD exposure"
+    },
+    {
+      "id": "DEP-009",
+      "team": "TheGuardians",
+      "finding": "react-router-dom@6.26.0 Open Redirect (3 CVEs)",
+      "trigger": "auth bypass",
+      "urgency": "P2 — verify no user-controlled navigation targets in Link/useNavigate",
+      "action": "Audit frontend navigation: grep for useNavigate/Link with user-supplied hrefs"
+    }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "express/backend dependency chain outdated",
+      "single_fix": "npm update express@4.22.3+",
+      "resolves": ["DEP-003 (proxy-addr IP spoofing)", "DEP-006 (body-parser DoS)"],
+      "impact": "2 findings resolved with 1 command"
+    },
+    {
+      "root_cause": "vite + postcss + browserslist chain",
+      "single_fix": "npm update vite@8.3.8+",
+      "resolves": ["DEP-005 (vite path traversal)", "DEP-008 (browserslist memory)", "DEP-012 (postcss file read)", "DEP-014 (source-map-js DoS)"],
+      "impact": "4 findings resolved with 1 major bump"
+    },
+    {
+      "root_cause": "vitest + tinypool test infrastructure outdated",
+      "single_fix": "npm update vitest@5.1.0+",
+      "resolves": ["DEP-001 (tinypool RCE)", "DEP-007 (brace-expansion DoS — via test runner glob)"],
+      "impact": "2 findings resolved with 1 major bump"
+    },
+    {
+      "root_cause": "Spec governance gap — no process to handle orphaned specs",
+      "single_fix": "Archive or annotate dev-workflow-platform.md + extend traceability enforcer",
+      "resolves": ["QO-001 (orphaned spec)", "QO-002 (enforcer scope gap)"],
+      "impact": "Eliminates AI-hallucination risk and CI enforcement gap"
+    }
+  ],
+  "remediation_timeline": {
+    "block_deployment": [
+      "DEP-003: npm update express@4.22.3+ — proxy-addr access control bypass",
+      "DEP-002: npm update (handlebars@4.7.10+) — confirm no user templates compiled"
+    ],
+    "this_sprint": [
+      "DEP-001: npm update vitest@5.1.0+",
+      "DEP-004: npm update uuid@11.1.1+",
+      "DEP-005: npm update vite@8.3.8+",
+      "DEP-009: npm update react-router-dom@7.18.5+",
+      "QO-001: Annotate dev-workflow-platform.md as Future/Not Started",
+      "QO-003: Update dependency-linking delta table"
+    ],
+    "next_sprint": [
+      "QO-002: Extend traceability enforcer to cover all active plans",
+      "DEP-006–DEP-015: npm audit fix + npm update",
+      "QO-004–QO-006: Address P3 quality findings",
+      "Add npm audit --audit-level=moderate CI/CD gate"
+    ],
+    "backlog": [
+      "DEP-016–DEP-027: Moderate/low CVEs",
+      "Evaluate pino upgrade (8.17.0 → 10.4.0)",
+      "Evaluate React 19 upgrade",
+      "Enable Dependabot for weekly scans"
+    ]
+  }
+}

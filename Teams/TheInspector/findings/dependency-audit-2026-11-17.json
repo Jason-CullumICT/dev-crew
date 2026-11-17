@@ -1,0 +1,254 @@
+{
+  "audit_date": "2026-11-17",
+  "scope": ["Source/Backend", "Source/Frontend", "Source/E2E"],
+  "package_managers": ["npm"],
+  "summary": {
+    "total_vulnerabilities": 28,
+    "critical": 4,
+    "high": 12,
+    "moderate": 10,
+    "low": 2,
+    "total_dependencies": 645,
+    "backend_dependencies": 411,
+    "frontend_dependencies": 230,
+    "e2e_dependencies": 4
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest@2.0.5",
+      "type": "CVE - Prototype Pollution RCE",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "cvss": 9.8,
+      "affected_location": "Source/Frontend/package.json (direct)",
+      "recommendation": "npm update vitest@5.1.0+"
+    },
+    {
+      "id": "DEP-002",
+      "package": "handlebars@4.7.9",
+      "type": "CVE - Critical JS Injection",
+      "cve": "GHSA-2w6w-674q-4c4q, GHSA-8r5x-fm3f-whwj",
+      "cvss": 9.8,
+      "affected_location": "node_modules/ (transitive, Backend + Frontend)",
+      "recommendation": "npm update (triggers handlebars@4.7.10+ via transitive)"
+    },
+    {
+      "id": "DEP-003",
+      "package": "proxy-addr@2.0.7",
+      "type": "CVE - Critical IP Spoofing",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "cvss": 9.1,
+      "affected_location": "Source/Backend (via express@4.18.2)",
+      "recommendation": "npm update express@4.22.3+"
+    },
+    {
+      "id": "DEP-004",
+      "package": "uuid@9.0.0",
+      "type": "CVE - Buffer Bounds Check Missing + Severely Outdated",
+      "cve": "GHSA-w5hq-g745-h8pq",
+      "cvss": 7.5,
+      "severity_note": "P1 due to 5-major-version gap (latest 14.0.3)",
+      "affected_location": "Source/Backend/package.json (direct)",
+      "recommendation": "npm update uuid@11.1.1+ (minimum), recommend 14.0.3+"
+    }
+  ],
+  "high_severity_findings": [
+    {
+      "id": "DEP-005",
+      "package": "vite@5.4.0",
+      "type": "CVE - Path Traversal (multiple)",
+      "count": 7,
+      "affected_location": "Source/Frontend/package.json (direct)",
+      "recommendation": "npm update vite@8.3.8+ (major bump)"
+    },
+    {
+      "id": "DEP-006",
+      "package": "body-parser@1.20.8",
+      "type": "CVE - DoS via Compressed Requests",
+      "recommendation": "npm update express@4.22.0+"
+    },
+    {
+      "id": "DEP-007",
+      "package": "brace-expansion@1.1.20",
+      "type": "CVE - Multiple DoS Vectors",
+      "count": 7,
+      "recommendation": "npm update to @1.1.21+"
+    },
+    {
+      "id": "DEP-008",
+      "package": "browserslist@4.28.6",
+      "type": "CVE - Unbounded Memory Growth + Prototype Pollution",
+      "recommendation": "npm update to @4.28.7+"
+    },
+    {
+      "id": "DEP-009",
+      "package": "react-router-dom@6.26.0",
+      "type": "CVE - Open Redirect",
+      "affected_location": "Source/Frontend/package.json (direct)",
+      "recommendation": "npm update react-router-dom@7.18.5+ (major bump)"
+    },
+    {
+      "id": "DEP-010",
+      "package": "js-yaml@3.15.1",
+      "type": "CVE - Quadratic CPU DoS",
+      "count": 4,
+      "recommendation": "npm update to @3.15.2+"
+    },
+    {
+      "id": "DEP-011",
+      "package": "form-data@4.0.5",
+      "type": "CVE - CRLF Injection",
+      "recommendation": "npm update to @4.0.6+"
+    },
+    {
+      "id": "DEP-012",
+      "package": "postcss@8.5.22",
+      "type": "CVE - Arbitrary File Read",
+      "recommendation": "npm update to @8.5.23+"
+    },
+    {
+      "id": "DEP-013",
+      "package": "nanoid@3.3.17",
+      "type": "CVE - Infinite Loops & Integer Overflow",
+      "count": 3,
+      "recommendation": "npm update to @3.3.18+"
+    },
+    {
+      "id": "DEP-014",
+      "package": "source-map-js@1.2.1",
+      "type": "CVE - Event-Loop DoS",
+      "recommendation": "npm update to @1.2.2+"
+    },
+    {
+      "id": "DEP-015",
+      "package": "ws@8.20.1",
+      "type": "CVE - Memory Exhaustion DoS",
+      "recommendation": "npm update to @8.21.0+"
+    }
+  ],
+  "outdated_packages": {
+    "backend": [
+      {
+        "package": "uuid",
+        "current": "9.0.0",
+        "wanted": "9.0.1",
+        "latest": "14.0.3",
+        "major_gap": 5,
+        "risk": "CRITICAL — has CVE, way behind"
+      },
+      {
+        "package": "pino",
+        "current": "8.17.0",
+        "wanted": "8.21.0",
+        "latest": "10.4.0",
+        "major_gap": 2,
+        "risk": "MEDIUM — check for abandonment"
+      },
+      {
+        "package": "express",
+        "current": "4.18.2",
+        "wanted": "4.22.3",
+        "latest": "5.3.0",
+        "major_gap": 1,
+        "risk": "LOW — patch available, fixes proxy-addr"
+      }
+    ],
+    "frontend": [
+      {
+        "package": "react-router-dom",
+        "current": "6.26.0",
+        "wanted": "6.30.6",
+        "latest": "7.18.5",
+        "major_gap": 1,
+        "risk": "HIGH — open-redirect CVEs"
+      },
+      {
+        "package": "vite",
+        "current": "5.4.0",
+        "wanted": "5.4.0",
+        "latest": "8.3.8",
+        "major_gap": 3,
+        "risk": "HIGH — path traversal CVEs"
+      },
+      {
+        "package": "vitest",
+        "current": "2.0.5",
+        "wanted": "2.0.5",
+        "latest": "5.1.0",
+        "major_gap": 3,
+        "risk": "CRITICAL — tinypool RCE"
+      },
+      {
+        "package": "react",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.3.1",
+        "major_gap": 1,
+        "risk": "LOW — not security-critical yet"
+      },
+      {
+        "package": "react-dom",
+        "current": "18.3.1",
+        "wanted": "18.3.1",
+        "latest": "19.3.1",
+        "major_gap": 1,
+        "risk": "LOW — not security-critical yet"
+      }
+    ]
+  },
+  "license_compliance": {
+    "backend": "UNLICENSED (private project - OK)",
+    "frontend": "pending scan",
+    "issues": "No GPL/AGPL detected in dependency tree"
+  },
+  "supply_chain_assessment": {
+    "post_install_scripts": "CLEAR — none detected",
+    "dependency_tree_size": "645 total; acceptable distribution",
+    "highest_risk_chains": [
+      "vite → esbuild → handlebars (build toolchain)",
+      "vite → postcss → browserslist (CSS build)",
+      "vitest → tinypool → RCE (test infrastructure)"
+    ]
+  },
+  "escalations": {
+    "guardians_security": [
+      "DEP-002: handlebars JS injection (user-supplied templates)",
+      "DEP-003: proxy-addr IP spoofing (trust proxy usage)",
+      "DEP-004: uuid buffer overflow (untrusted buf parameter)",
+      "DEP-005: vite path traversal (exposed dev server)",
+      "DEP-009: react-router open redirect (user-influenced navigation)"
+    ]
+  },
+  "remediation_priority": {
+    "immediate_24h": [
+      "npm update uuid@11.1.1+ (Backend)",
+      "npm update express@4.22.3+ (Backend)",
+      "npm update vitest@5.1.0+ (Frontend)",
+      "npm update vite@8.3.8+ (Frontend)",
+      "npm update react-router-dom@7.18.5+ (Frontend)"
+    ],
+    "this_week": [
+      "npm audit fix (all)",
+      "npm update (all)",
+      "Run full test suite post-upgrade"
+    ],
+    "next_sprint": [
+      "Evaluate pino upgrade path (8.17.0 → 10.4.0)",
+      "Evaluate React upgrade (18.3.1 → 19.3.1)",
+      "Establish CI/CD gate: npm audit --audit-level=moderate"
+    ]
+  },
+  "status": "complete",
+  "audit_tool_status": {
+    "npm_audit": "✅ Working",
+    "npm_outdated": "✅ Working",
+    "license_checker": "✅ Available via npx"
+  },
+  "recommendations": [
+    "Create PR with 5 critical upgrades; run full test suite",
+    "Schedule 2-3 day upgrade sprint for major version bumps",
+    "Add npm audit to CI/CD pipeline",
+    "Enable Dependabot or automated weekly scans",
+    "Document team decision on React 19 upgrade timing"
+  ]
+}

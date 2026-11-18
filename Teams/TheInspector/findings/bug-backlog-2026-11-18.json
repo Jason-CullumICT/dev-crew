@@ -1,0 +1,243 @@
+{
+  "audit_id": "inspector-2026-11-18-1ad6a9",
+  "audit_date": "2026-11-18",
+  "branch": "audit/inspector-2026-11-18-1ad6a9",
+  "grade": "D",
+  "grade_rationale": "12 P1s (exceeds C max of 2), 72 P2s (exceeds C max of 15), 0% domain spec coverage (fails C minimum of 40%). Auth bypass (proxy-addr) + RCE (protobufjs) conditions met in infrastructure layer.",
+  "summary": {
+    "p1_total": 12,
+    "p2_total": 72,
+    "p3_total": 70,
+    "p4_total": 3,
+    "total_findings": 157,
+    "escalated_to_guardians": 3,
+    "routed_to_fixer": 9,
+    "fixed_since_prior": 0,
+    "first_audit": true
+  },
+  "specialists": {
+    "quality-oracle": { "mode": "static", "p1": 2, "p2": 2, "p3": 3, "p4": 0 },
+    "dependency-auditor": { "mode": "static", "p1": 12, "p2": 70, "p3": 67, "p4": 3 },
+    "performance-profiler": { "mode": "not-run", "reason": "services offline (static-only audit)" },
+    "chaos-monkey": { "mode": "not-run", "reason": "services offline (static-only audit)" }
+  },
+  "findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer does not check Specifications/ — 79 domain FRs unverified",
+      "file": "tools/traceability-enforcer.py",
+      "detail": "tools/traceability-enforcer.py only scans Plans/<feature>/requirements.md. The 79 canonical domain FRs in Specifications/ have 0% source coverage. The enforcer reports PASS despite total domain-layer blindness.",
+      "failure_scenario": "Developer omits or misimplements a domain FR; enforcer gate passes silently because it only checks Plan-level IDs.",
+      "recommendation": "Extend enforcer to scan Specifications/*.md for FR-[0-9]+ IDs and cross-check against source Verifies: comments. Or establish explicit FR-NNN → FR-WF-NNN mapping.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false,
+      "cross_ref": ["QO-007"]
+    },
+    {
+      "id": "QO-002",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Three route handlers directly call store, bypassing the service layer",
+      "file": "Source/Backend/src/routes/workItems.ts:12, intake.ts:4, workflow.ts:15",
+      "detail": "workItems.ts, intake.ts, and workflow.ts all import and call workItemStore functions directly. CLAUDE.md rule: No direct DB calls from route handlers — use the service layer.",
+      "failure_scenario": "Business logic added to a future workItemService.ts (validation, audit hooks) silently does not apply to these routes — routes bypass the service layer entirely.",
+      "recommendation": "Create services/workItemService.ts and services/intakeService.ts. Route handlers must only call service functions.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false,
+      "cross_ref": ["QO-003"]
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve-rce",
+      "source": "dependency-auditor",
+      "title": "vitest RCE — arbitrary file read/execution via UI server (CVSS 9.8)",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "package": "vitest <=4.1.10",
+      "affected_projects": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "detail": "When vitest UI server is listening, an attacker with network access can read arbitrary files (including .env secrets) and execute arbitrary JavaScript.",
+      "failure_scenario": "Dev server exposed on network: attacker reads .env, extracts credentials, achieves code execution in dev environment.",
+      "recommendation": "npm install vitest@5.1.1 across all affected projects. Never expose vitest UI server on a public network.",
+      "fix": "npm install vitest@5.1.1",
+      "status": "NEW",
+      "route": "TheFixer (immediate)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "sensitive data exposed, RCE via dev tooling"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve-rce",
+      "source": "dependency-auditor",
+      "title": "protobufjs RCE — arbitrary code execution via deserialization (CVSS 9.8)",
+      "cve": "GHSA-hprx-6r5c-rxvv",
+      "package": "protobufjs >=7.0.0 <7.6.4",
+      "affected_projects": ["platform/orchestrator"],
+      "detail": "Malformed protobuf messages trigger arbitrary code execution during deserialization in the gRPC layer.",
+      "failure_scenario": "Attacker sends crafted protobuf to gRPC endpoint → code execution on orchestrator host.",
+      "recommendation": "npm install protobufjs@7.6.4 in platform/orchestrator.",
+      "fix": "npm install protobufjs@7.6.4",
+      "status": "NEW",
+      "route": "TheFixer (immediate)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "RCE on orchestrator infrastructure"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "cve-auth-bypass",
+      "source": "dependency-auditor",
+      "title": "proxy-addr IP spoofing — IPv4-mapped IPv6 bypasses authentication ACLs (CVSS 9.1)",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr <2.0.8",
+      "affected_projects": ["platform/orchestrator"],
+      "detail": "IPv4-mapped IPv6 addresses are incorrectly normalized, allowing an attacker to forge trusted IPs and bypass IP-based authentication ACLs in Express.",
+      "failure_scenario": "Attacker crafts IPv4-mapped IPv6 request (e.g., ::ffff:127.0.0.1) → bypasses IP allowlist → gains unauthorized access.",
+      "recommendation": "npm install proxy-addr@2.0.8 in platform/orchestrator.",
+      "fix": "npm install proxy-addr@2.0.8",
+      "status": "NEW",
+      "route": "TheFixer (immediate)",
+      "escalate": true,
+      "escalate_to": "TheGuardians",
+      "escalate_reason": "auth bypass — explicit config escalation trigger"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "cve-critical-group",
+      "source": "dependency-auditor",
+      "title": "9 additional critical CVEs across portal/Backend (4), Source/Backend (2), portal/Frontend (2), Source/Frontend (cascade)",
+      "detail": "Remaining critical CVEs beyond DEP-001/002/003: vitest cascade in portal packages (4 critical in portal/Backend), jest ecosystem cascade in Source/Backend (2), and additional portal/Frontend criticals (2).",
+      "recommendation": "Phase 1 fix: npm audit fix --force in portal/Backend, Source/Backend, portal/Frontend after vitest/jest upgrades. See dependency-audit-2026-11-18.md for full package list.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "List route passes raw store object to res.json — fragile API contract",
+      "file": "Source/Backend/src/routes/workItems.ts:73-74",
+      "detail": "GET /api/work-items passes store.findAll() result directly to res.json(). Any store shape change silently changes the API contract with no compile-time error.",
+      "failure_scenario": "Store refactors return shape; API consumers break silently at runtime.",
+      "recommendation": "Map store response to explicit PaginatedResponse<WorkItem> type in the route handler.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false,
+      "cross_ref": ["QO-002"]
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "eslint-disable-next-line react-hooks/exhaustive-deps in 2 production files",
+      "file": "Source/Frontend/src/hooks/useWorkItems.ts:63, Source/Frontend/src/components/DependencyPicker.tsx:82",
+      "detail": "Suppressing exhaustive-deps hides potential stale-closure bugs in React hooks. These suppressions are in recently modified files.",
+      "failure_scenario": "Dependency added to hook callback but not to deps array; hook runs with stale data silently.",
+      "recommendation": "Fix the underlying deps array issue. If suppression is intentional, add inline comment explaining why.",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    },
+    {
+      "id": "DEP-HIGH-GROUP",
+      "severity": "P2",
+      "category": "cve-high-group",
+      "source": "dependency-auditor",
+      "title": "70 high-severity CVEs across npm projects (jest cascade, browserslist OOM, ws DoS, body-parser, grpc-js)",
+      "detail": "Top packages: jest ecosystem (40+ high in Source/Backend), browserslist unbounded memory OOM, ws memory exhaustion DoS, body-parser compression bypass, grpc-js auth bypass. Full list in dependency-audit-2026-11-18.md.",
+      "recommendation": "Phase 2 (2 weeks): npm install jest@30.5.2+, browserslist@4.28.7+, ws@8.21.0+, body-parser@1.20.9+, grpc-js@1.11.3+",
+      "status": "NEW",
+      "route": "TheFixer",
+      "escalate": false
+    }
+  ],
+  "escalations": [
+    {
+      "id": "ESC-001",
+      "source_finding": "DEP-001",
+      "escalate_to": "TheGuardians",
+      "trigger": "sensitive data exposed",
+      "summary": "vitest RCE (GHSA-5xrq-8626-4rwp, CVSS 9.8) — dev server can read .env secrets and execute arbitrary code",
+      "urgency": "immediate"
+    },
+    {
+      "id": "ESC-002",
+      "source_finding": "DEP-002",
+      "escalate_to": "TheGuardians",
+      "trigger": "injection / RCE",
+      "summary": "protobufjs RCE (GHSA-hprx-6r5c-rxvv, CVSS 9.8) — malformed protobuf → code execution on orchestrator",
+      "urgency": "immediate"
+    },
+    {
+      "id": "ESC-003",
+      "source_finding": "DEP-003",
+      "escalate_to": "TheGuardians",
+      "trigger": "auth bypass",
+      "summary": "proxy-addr IP spoofing (GHSA-jqcg-44mw-7w3h, CVSS 9.1) — IPv4-mapped IPv6 bypasses IP-based ACLs in Express",
+      "urgency": "immediate"
+    }
+  ],
+  "p3_p4_summary": [
+    { "id": "QO-005", "severity": "P3", "source": "quality-oracle", "title": "5 UI components have no test files (Layout, PriorityBadge, StatusBadge, TypeBadge, DebugPortalPage)" },
+    { "id": "QO-006", "severity": "P3", "source": "quality-oracle", "title": "Duplicate WorkItemDetailPage test files — root-level version lacks traceability" },
+    { "id": "QO-007", "severity": "P3", "source": "quality-oracle", "title": "5 frontend test files missing Verifies: traceability comments" },
+    { "id": "DEP-MOD-GROUP", "severity": "P3", "source": "dependency-auditor", "title": "67 moderate CVEs — primarily OpenTelemetry unbounded memory in portal/Backend (46), plus vite path traversal, misc" },
+    { "id": "DEP-LOW-GROUP", "severity": "P4", "source": "dependency-auditor", "title": "3 low CVEs across Source/Backend, Source/Frontend, portal/Frontend" }
+  ],
+  "cross_reference_map": [
+    {
+      "root_cause": "No service layer — store accessed directly from routes",
+      "affected_findings": ["QO-002", "QO-003"],
+      "single_fix": "Create services/workItemService.ts; route handlers call only service functions",
+      "fix_impact": "Resolves QO-002 (architecture violation) and QO-003 (fragile contract) in one change"
+    },
+    {
+      "root_cause": "Traceability system only covers Plans/, not Specifications/",
+      "affected_findings": ["QO-001", "QO-007"],
+      "single_fix": "Extend traceability-enforcer.py to scan Specifications/ and require Verifies: comments in all test files",
+      "fix_impact": "Resolves QO-001 (enforcer blind spot) and QO-007 (missing traceability in tests)"
+    },
+    {
+      "root_cause": "vitest package not pinned to patched version",
+      "affected_findings": ["DEP-001", "DEP-004 (partial)"],
+      "single_fix": "npm install vitest@5.1.1 in Source/Frontend, portal/Frontend, portal/Backend",
+      "fix_impact": "Eliminates 8 of 12 critical CVEs across 3 projects in one upgrade"
+    }
+  ],
+  "recommendations": {
+    "block_deployment": [
+      "DEP-001: Upgrade vitest to 5.1.1 (RCE, CVSS 9.8)",
+      "DEP-002: Upgrade protobufjs to 7.6.4 (RCE, CVSS 9.8)",
+      "DEP-003: Upgrade proxy-addr to 2.0.8 (auth bypass, CVSS 9.1)"
+    ],
+    "this_sprint": [
+      "QO-002: Create service layer — eliminate store imports in route handlers",
+      "DEP-004: Remaining 9 critical CVEs (jest, portal packages)",
+      "QO-001: Extend traceability enforcer to cover Specifications/"
+    ],
+    "next_sprint": [
+      "DEP-HIGH-GROUP: 70 high CVEs — jest@30.5.2+, browserslist@4.28.7+, ws@8.21.0+",
+      "QO-003: Explicit API response type mapping in route handlers",
+      "QO-004: Fix eslint-disable-next-line in useWorkItems.ts, DependencyPicker.tsx"
+    ],
+    "backlog": [
+      "QO-005: Add test files for 5 untested UI components",
+      "QO-006: Remove duplicate WorkItemDetailPage test file",
+      "QO-007: Add Verifies: comments to 5 frontend test files",
+      "DEP-MOD-GROUP: 67 moderate CVEs — Phase 3 major version upgrades",
+      "DEP-GOVERNANCE: Set up Dependabot + pre-commit npm audit hook"
+    ]
+  }
+}

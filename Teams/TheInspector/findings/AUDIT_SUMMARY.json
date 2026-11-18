@@ -1,0 +1,150 @@
+{
+  "audit_metadata": {
+    "date": "2026-11-18",
+    "agent": "dependency_auditor",
+    "model": "haiku",
+    "audit_scope": "npm packages across 6 npm projects"
+  },
+  "overall_grade": "F",
+  "summary": "152 known CVEs detected (12 critical, 70 high, 67 moderate, 3 low). Immediate action required on vitest, protobufjs, and proxy-addr.",
+  "vulnerability_metrics": {
+    "critical": 12,
+    "high": 70,
+    "moderate": 67,
+    "low": 3,
+    "total": 152
+  },
+  "projects_audited": 6,
+  "projects_by_status": {
+    "clean": ["Source/E2E"],
+    "moderate_risk": ["platform/orchestrator"],
+    "high_risk": ["Source/Backend", "Source/Frontend", "portal/Frontend"],
+    "critical_risk": ["portal/Backend"]
+  },
+  "top_critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "vitest",
+      "severity": "P1",
+      "cve": "GHSA-5xrq-8626-4rwp",
+      "issue": "Arbitrary file read/execution when UI server listening (CVSS 9.8)",
+      "affected_projects": ["Source/Frontend", "portal/Frontend", "portal/Backend"],
+      "fix": "npm install vitest@5.1.1"
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "severity": "P1",
+      "cve": "GHSA-hprx-6r5c-rxvv",
+      "issue": "Arbitrary code execution via deserialization (CVSS 9.8)",
+      "affected_projects": ["platform/orchestrator"],
+      "fix": "npm install protobufjs@7.6.4"
+    },
+    {
+      "id": "DEP-003",
+      "package": "proxy-addr",
+      "severity": "P1",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "issue": "IPv4-mapped IPv6 IP spoofing / auth bypass (CVSS 9.1)",
+      "affected_projects": ["platform/orchestrator"],
+      "fix": "npm install proxy-addr@2.0.8"
+    }
+  ],
+  "vulnerabilities_by_directory": {
+    "Source/Backend": {
+      "critical": 2,
+      "high": 41,
+      "moderate": 3,
+      "low": 1,
+      "total": 47,
+      "primary_issues": ["jest ecosystem cascading (jest-util, jest-message-util, micromatch)"]
+    },
+    "Source/Frontend": {
+      "critical": 2,
+      "high": 7,
+      "moderate": 7,
+      "low": 1,
+      "total": 17,
+      "primary_issues": ["vitest RCE", "browserslist OOM", "vite path traversal"]
+    },
+    "Source/E2E": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0,
+      "total": 0,
+      "status": "CLEAN ✅"
+    },
+    "platform/orchestrator": {
+      "critical": 2,
+      "high": 3,
+      "moderate": 4,
+      "low": 0,
+      "total": 9,
+      "primary_issues": ["protobufjs RCE", "proxy-addr IP spoofing", "grpc-js auth bypass"]
+    },
+    "portal/Backend": {
+      "critical": 4,
+      "high": 11,
+      "moderate": 46,
+      "low": 0,
+      "total": 61,
+      "primary_issues": ["vitest CRITICAL", "OpenTelemetry unbounded memory (46 moderate)", "uuid buffer bounds check"]
+    },
+    "portal/Frontend": {
+      "critical": 2,
+      "high": 8,
+      "moderate": 7,
+      "low": 1,
+      "total": 18,
+      "primary_issues": ["vitest CRITICAL", "browserslist high", "ws DoS"]
+    }
+  },
+  "license_compliance": {
+    "violations": 0,
+    "status": "PASS ✅",
+    "notes": "No GPL/AGPL packages detected. All dependencies use MIT, Apache 2.0, ISC, or BSD licenses."
+  },
+  "supply_chain_risk": {
+    "highest_risk_project": "portal/Frontend (430+ transitive dependencies)",
+    "lowest_risk_project": "Source/E2E (4 transitive dependencies, 0 CVEs)",
+    "post_install_scripts_detected": ["vite", "esbuild", "node-gyp"],
+    "assessment": "Medium-high: 430 transitive deps represent significant attack surface"
+  },
+  "remediation_phases": {
+    "phase_1_immediate": {
+      "timeline": "This week",
+      "action": "Fix P1 critical (vitest, protobufjs, proxy-addr)",
+      "expected_impact": "Reduce critical from 12 to 0"
+    },
+    "phase_2_short_term": {
+      "timeline": "2 weeks",
+      "action": "Fix P2 high (jest, browserslist, ws, body-parser, grpc-js)",
+      "expected_impact": "Reduce high from 70 to ~20"
+    },
+    "phase_3_medium_term": {
+      "timeline": "4 weeks",
+      "action": "Major version upgrades (React 19, TypeScript 6, Vite 6, Jest 30)",
+      "expected_impact": "Reduce total CVEs to <30"
+    },
+    "phase_4_long_term": {
+      "timeline": "Next quarter",
+      "action": "Establish dependency governance (Dependabot, pre-commit hooks, audit policy)",
+      "expected_impact": "Prevent future vulnerability accumulation"
+    }
+  },
+  "escalations": {
+    "security_team_TheGuardians": [
+      "DEP-001: vitest RCE (can read .env secrets in dev)",
+      "DEP-002: protobufjs RCE (if gRPC endpoints external)",
+      "DEP-003: proxy-addr IP bypass (affects authentication)"
+    ]
+  },
+  "next_actions": [
+    "1. Prioritize Phase 1 remediation (vitest, protobufjs, proxy-addr fixes)",
+    "2. Run full test suite after upgrades to ensure no breaking changes",
+    "3. Validate mTLS/gRPC functionality after grpc-js upgrade",
+    "4. Set up Dependabot for continuous monitoring",
+    "5. Add pre-commit hook: npm audit --audit-level=moderate"
+  ]
+}

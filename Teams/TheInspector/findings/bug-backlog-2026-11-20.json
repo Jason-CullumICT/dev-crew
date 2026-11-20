@@ -1,0 +1,230 @@
+{
+  "audit_metadata": {
+    "run_id": "run-20261120-100021",
+    "date": "2026-11-20",
+    "branch": "audit/inspector-2026-11-20-98ee13",
+    "grade": "D",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services not running (backend/frontend offline) — static analysis only"
+  },
+  "summary": {
+    "p1_total": 7,
+    "p2_total": 17,
+    "p3_total": 15,
+    "p4_total": 2,
+    "escalations_to_guardians": 5,
+    "fixed_since_prior": 0,
+    "prior_audit": null,
+    "spec_coverage_pct": 15
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "RCE",
+      "title": "handlebars — JavaScript Injection via AST Type Confusion",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "package": "handlebars",
+      "location": "Source/Backend (transitive)",
+      "risk": "RCE in template processing",
+      "escalate_to": "TheGuardians",
+      "fix": "cd Source/Backend && npm update handlebars",
+      "exploitability": "Authenticated",
+      "urgency": "IMMEDIATE"
+    },
+    {
+      "id": "DEP-002",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "auth-bypass",
+      "title": "proxy-addr — IPv4-mapped IPv6 Trust Subnet Spoofing",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "package": "proxy-addr",
+      "location": "Source/Backend, platform/orchestrator (transitive)",
+      "risk": "Authentication bypass via IP spoofing",
+      "escalate_to": "TheGuardians",
+      "fix": "cd Source/Backend && npm update proxy-addr && cd ../../platform/orchestrator && npm update proxy-addr",
+      "exploitability": "Zero-precondition",
+      "urgency": "IMMEDIATE",
+      "cross_ref": "Affects both Backend and Orchestrator"
+    },
+    {
+      "id": "DEP-003",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "RCE",
+      "title": "tinypool — Prototype Pollution → RCE via Worker Options",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "package": "tinypool",
+      "location": "Source/Frontend (transitive via vitest@2.0.5)",
+      "risk": "RCE during build/test phase",
+      "escalate_to": "TheGuardians",
+      "fix": "cd Source/Frontend && npm install vitest@^5.1.0",
+      "exploitability": "Privileged",
+      "urgency": "IMMEDIATE",
+      "blocker": true
+    },
+    {
+      "id": "DEP-004",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "RCE",
+      "title": "protobufjs — Code Injection via bytes Field Defaults",
+      "cve": "GHSA-66ff-xgx4-vchm",
+      "package": "protobufjs",
+      "location": "platform/orchestrator (transitive via @grpc/grpc-js)",
+      "risk": "RCE via malicious gRPC messages",
+      "escalate_to": "TheGuardians",
+      "fix": "cd platform/orchestrator && npm update @grpc/grpc-js protobufjs",
+      "exploitability": "Zero-precondition",
+      "urgency": "IMMEDIATE",
+      "blocker": true
+    },
+    {
+      "id": "DEP-005",
+      "source": "dependency-auditor",
+      "severity": "P1",
+      "category": "RCE",
+      "title": "tinypool variant — Second Prototype Pollution Gadget",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "package": "tinypool",
+      "location": "Source/Frontend (dev dependency)",
+      "risk": "RCE during test execution",
+      "escalate_to": "TheGuardians",
+      "fix": "Resolved by vitest@5.1.0+ upgrade (same as DEP-003)",
+      "exploitability": "Privileged",
+      "urgency": "IMMEDIATE",
+      "cross_ref": "DEP-003"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift/unimplemented",
+      "title": "GET /api/search not registered — DependencyPicker search is broken",
+      "files": [
+        "Source/Backend/src/app.ts",
+        "Source/Frontend/src/api/client.ts:103",
+        "Source/Frontend/src/components/DependencyPicker.tsx:54",
+        "Source/Backend/tests/routes/search.test.ts:1-6"
+      ],
+      "failure_scenario": "User opens DependencyPicker and types a search query. GET /api/search?q=auth returns HTTP 404. Typeahead shows no results. Dependencies cannot be discovered or added.",
+      "recommendation": "Add searchRouter in Source/Backend/src/routes/ and mount it: app.use('/api/search', searchRouter) in app.ts. Contract defined in search.test.ts.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-002",
+      "source": "quality-oracle",
+      "severity": "P1",
+      "category": "spec-drift/traceability",
+      "title": "Traceability enforcer blind to 69 Specification FRs",
+      "files": [
+        "tools/traceability-enforcer.py",
+        "Specifications/dev-workflow-platform.md"
+      ],
+      "failure_scenario": "tools/traceability-enforcer.py reports TRACEABILITY PASSED (13/13). 69 Specification FRs (FR-001..FR-069) have zero source coverage — CI gate gives false confidence.",
+      "recommendation": "Extend enforcer to scan Specifications/ for FR IDs; verify source coverage. Add Plans/*/requirements-crossref.md mapping Plan FRs to Spec FRs.",
+      "route_to": "TheATeam + requirements-reviewer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-003",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "test-coverage",
+      "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage",
+      "files": [
+        "Source/Frontend/tests/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemDetailPage.test.tsx",
+        "Source/Frontend/tests/WorkItemListPage.test.tsx",
+        "Source/Frontend/tests/pages/WorkItemListPage.test.tsx"
+      ],
+      "failure_scenario": "Both root-level and pages/ test files run in CI. Duplicate coverage causes false redundancy and merge conflicts.",
+      "recommendation": "Delete Source/Frontend/tests/WorkItemDetailPage.test.tsx and tests/WorkItemListPage.test.tsx (root-level); retain pages/ versions.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "source": "quality-oracle",
+      "severity": "P2",
+      "category": "pattern-violation",
+      "title": "eslint-disable without justification in production hooks",
+      "files": [
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "Source/Frontend/src/components/DependencyPicker.tsx:82"
+      ],
+      "failure_scenario": "Undocumented react-hooks/exhaustive-deps suppression can mask stale-closure bugs. Architecture requires justification for every disabled lint rule.",
+      "recommendation": "Add inline comment explaining why the dep is intentionally omitted.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-HIGH-001",
+      "source": "dependency-auditor",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "title": "15 High-severity CVEs across Backend and Frontend packages",
+      "packages": [
+        "body-parser (DoS via recursive payload)",
+        "browserslist (OOM - Backend + Frontend)",
+        "form-data (CRLF injection - Backend + Frontend)",
+        "js-yaml (code execution via crafted YAML)",
+        "nanoid (predictable ID generation)",
+        "postcss (XSS via unescaped </style> tag)",
+        "source-map-js (path traversal)",
+        "vite (server-side request forgery)",
+        "path-to-regexp (ReDoS - Orchestrator)",
+        "@grpc/grpc-js (DoS - Orchestrator)"
+      ],
+      "recommendation": "Run: npm update express body-parser browserslist form-data js-yaml nanoid postcss vite source-map-js (Frontend+Backend). npm update path-to-regexp @grpc/grpc-js (Orchestrator).",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-005",
+      "source": "quality-oracle",
+      "severity": "P3",
+      "category": "architecture-violation",
+      "title": "Logger abstraction split across two modules",
+      "files": [
+        "Source/Backend/src/utils/logger.ts",
+        "Source/Backend/src/logger.ts"
+      ],
+      "recommendation": "Consolidate to one canonical logger module; remove the other.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-MOD-001",
+      "source": "dependency-auditor",
+      "severity": "P3",
+      "category": "dependency-vulnerability",
+      "title": "14 Moderate-severity CVEs (file disclosure, injection bypasses, misc)",
+      "recommendation": "Run full npm audit --depth=20 after all immediate and high fixes are applied.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p4_findings": [
+    {
+      "id": "DEP-LOW-001",
+      "source": "dependency-auditor",
+      "severity": "P4",
+      "category": "dependency-vulnerability",
+      "title": "2 Low-severity CVEs (error leakage, low-impact DoS)",
+      "recommendation": "Address in next quarterly dependency update sweep.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ]
+}

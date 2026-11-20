@@ -1,0 +1,269 @@
+{
+  "audit_metadata": {
+    "timestamp": "2026-11-20T00:00:00Z",
+    "auditor": "dependency-auditor (Haiku)",
+    "scope": "Source/ and platform/orchestrator",
+    "methodology": "npm audit + lock file analysis + supply chain inspection"
+  },
+  "summary": {
+    "total_vulnerabilities": 37,
+    "critical": 5,
+    "high": 15,
+    "moderate": 14,
+    "low": 2,
+    "post_install_scripts": 0,
+    "license_violations": 0,
+    "abandoned_packages": 0,
+    "grade": "D"
+  },
+  "grade_rationale": "5 critical CVEs + 15 high + vitest 3 versions behind = exceeds B-grade threshold (max P1=0, P2≤8)",
+  "critical_vulnerabilities": [
+    {
+      "id": "DEP-001",
+      "package": "handlebars",
+      "severity": "critical",
+      "cve": "GHSA-3mfm-83xf-c92r",
+      "title": "JavaScript Injection via AST Type Confusion",
+      "description": "Attackers can inject arbitrary JavaScript by tampering with @partial-block partial",
+      "location": "Source/Backend (transitive)",
+      "risk": "RCE in template processing",
+      "escalate_to": "TheGuardians",
+      "fix": "npm update handlebars",
+      "exploitability": "high"
+    },
+    {
+      "id": "DEP-002",
+      "package": "proxy-addr",
+      "severity": "critical",
+      "cve": "GHSA-jqcg-44mw-7w3h",
+      "title": "IPv4-mapped IPv6 Trust Subnet Spoofing",
+      "description": "Callers can spoof IP addresses via IPv4-mapped IPv6 format (::ffff:192.0.2.1) to bypass IP-based access control",
+      "location": "Source/Backend, platform/orchestrator (transitive)",
+      "risk": "Authentication bypass via IP spoofing",
+      "escalate_to": "TheGuardians",
+      "fix": "npm update proxy-addr",
+      "exploitability": "high",
+      "recurring": true,
+      "watch_list": true
+    },
+    {
+      "id": "DEP-003",
+      "package": "tinypool",
+      "severity": "critical",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "title": "Prototype Pollution → RCE via Worker Options",
+      "description": "Prototype pollution in worker pool options allows arbitrary code execution during test execution",
+      "location": "Source/Frontend (transitive via vitest@2.0.5)",
+      "risk": "RCE during build/test phase",
+      "escalate_to": "TheGuardians",
+      "fix": "Upgrade vitest to v5.1.0+ (requires npm install vitest@^5.1.0)",
+      "exploitability": "high",
+      "blocker": true,
+      "action_urgency": "IMMEDIATE"
+    },
+    {
+      "id": "DEP-004",
+      "package": "protobufjs",
+      "severity": "critical",
+      "cve": "GHSA-66ff-xgx4-vchm",
+      "title": "Code Injection via bytes Field Defaults",
+      "description": "Malformed protobuf messages can inject code into generated toObject() method",
+      "location": "platform/orchestrator (transitive via @grpc/grpc-js)",
+      "risk": "RCE via malicious gRPC messages",
+      "escalate_to": "TheGuardians",
+      "fix": "npm update @grpc/grpc-js protobufjs",
+      "exploitability": "high",
+      "blocker": true
+    },
+    {
+      "id": "DEP-005",
+      "package": "unknown (tinypool variant)",
+      "severity": "critical",
+      "cve": "GHSA-5gmw-xhrv-c9v3",
+      "title": "Second prototype pollution gadget",
+      "description": "Related to tinypool in Frontend test harness",
+      "location": "Source/Frontend (dev dependency)",
+      "risk": "RCE during test execution",
+      "escalate_to": "TheGuardians",
+      "blocker": true,
+      "note": "Addressed by vitest@5.1.0+ upgrade"
+    }
+  ],
+  "package_summary": {
+    "source_backend": {
+      "file": "Source/Backend/package.json",
+      "direct_dependencies": 7,
+      "transitive_dependencies": 95,
+      "total_dependencies": 102,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 5,
+        "moderate": 3,
+        "low": 1,
+        "total": 11
+      },
+      "outdated": 4,
+      "critical_packages": ["handlebars", "proxy-addr"],
+      "high_packages": ["body-parser", "brace-expansion", "browserslist", "form-data", "js-yaml"],
+      "action": "Update express (body-parser fix), handlebars, proxy-addr"
+    },
+    "source_frontend": {
+      "file": "Source/Frontend/package.json",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 6,
+      "total_dependencies": 9,
+      "vulnerabilities": {
+        "critical": 1,
+        "high": 7,
+        "moderate": 7,
+        "low": 1,
+        "total": 17
+      },
+      "outdated": 11,
+      "critical_packages": ["tinypool"],
+      "high_packages": ["browserslist", "form-data", "nanoid", "postcss", "source-map-js", "vite"],
+      "blocker": "vitest@2.0.5 is 3+ versions behind, pins multiple critical vulnerabilities",
+      "action": "URGENT: npm install vitest@^5.1.0, then npm update remaining packages"
+    },
+    "source_e2e": {
+      "file": "Source/E2E/package.json",
+      "direct_dependencies": 1,
+      "transitive_dependencies": 3,
+      "total_dependencies": 4,
+      "vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0,
+        "total": 0
+      },
+      "status": "✓ CLEAN",
+      "note": "Playwright-based test ecosystem has excellent security profile"
+    },
+    "platform_orchestrator": {
+      "file": "platform/orchestrator/package.json",
+      "direct_dependencies": 3,
+      "transitive_dependencies": 150,
+      "total_dependencies": 153,
+      "vulnerabilities": {
+        "critical": 2,
+        "high": 3,
+        "moderate": 4,
+        "low": 0,
+        "total": 9
+      },
+      "critical_packages": ["protobufjs", "proxy-addr"],
+      "high_packages": ["@grpc/grpc-js", "body-parser", "path-to-regexp"],
+      "supply_chain_note": "150 transitive dependencies warrant monthly auditing and SRI/integrity verification for critical gRPC deps",
+      "action": "Update @grpc/grpc-js@latest, protobufjs@latest, proxy-addr@latest"
+    }
+  },
+  "escalations": {
+    "guardians": {
+      "count": 5,
+      "findings": [
+        {
+          "category": "RCE",
+          "packages": ["handlebars", "tinypool", "protobufjs"],
+          "urgency": "IMMEDIATE"
+        },
+        {
+          "category": "Authentication bypass",
+          "packages": ["proxy-addr"],
+          "urgency": "IMMEDIATE"
+        },
+        {
+          "category": "XSS",
+          "packages": ["postcss"],
+          "urgency": "HIGH"
+        }
+      ]
+    }
+  },
+  "supply_chain": {
+    "post_install_scripts": "✓ None detected",
+    "pre_install_scripts": "✓ None detected",
+    "total_dependencies_scanned": {
+      "direct": 14,
+      "transitive": "~250+",
+      "note": "Counts vary per workspace"
+    },
+    "dependency_tree_size": {
+      "backend": 102,
+      "frontend": 9,
+      "e2e": 4,
+      "orchestrator": 153,
+      "total": 268,
+      "risk_assessment": "Medium — good for team project, monitor transitive changes"
+    },
+    "license_compliance": {
+      "status": "✓ PASS",
+      "details": "All packages MIT/Apache-2.0/BSD, no GPL/AGPL viral risk, no UNLICENSED"
+    },
+    "abandoned_packages": "✓ None detected",
+    "duplicate_versions": "Expected (dev vs prod), no blockers identified"
+  },
+  "recommendations": {
+    "immediate": [
+      {
+        "priority": 1,
+        "action": "Update proxy-addr across all packages",
+        "command": "cd Source/Backend && npm update proxy-addr && cd ../../platform/orchestrator && npm update proxy-addr",
+        "reason": "Critical IP spoofing vulnerability with high exploitability"
+      },
+      {
+        "priority": 2,
+        "action": "Upgrade vitest to v5.1.0+",
+        "command": "cd Source/Frontend && npm install vitest@^5.1.0",
+        "reason": "Blocks 2 critical vulnerabilities (tinypool, mocker), 3 major versions behind"
+      },
+      {
+        "priority": 3,
+        "action": "Update handlebars in Backend",
+        "command": "cd Source/Backend && npm update handlebars",
+        "reason": "Template injection RCE risk"
+      },
+      {
+        "priority": 4,
+        "action": "Update gRPC stack in Orchestrator",
+        "command": "cd platform/orchestrator && npm update @grpc/grpc-js protobufjs",
+        "reason": "Critical deserialization gadget vulnerability"
+      }
+    ],
+    "high": [
+      "Update express/body-parser to latest (DoS fixes)",
+      "Update browserslist (OOM/DoS risks)",
+      "Update form-data (CRLF injection)",
+      "Update postcss/vite (XSS risks)",
+      "Full npm audit --depth=20 after immediate updates"
+    ],
+    "policy": [
+      "Enforce monthly npm audits on all packages (not just production)",
+      "Add vitest to watch list (track major version lag)",
+      "Add proxy-addr to watch list (recurring risk)",
+      "Document dependency update SLA in CLAUDE.md (critical: 7 days, high: 30 days)",
+      "Consider npm-check-updates (npm-check-updates -u --doctorTest) for safe bulk updates"
+    ]
+  },
+  "verification_gates": {
+    "post_fix": [
+      "npm audit --json re-run on all packages (expect 0 critical + high)",
+      "npm test --workspaces --if-present (verify no test breakage)",
+      "python3 tools/traceability-enforcer.py (traceability check)",
+      "git diff --stat (review scope of dependency updates)"
+    ],
+    "expected_outcomes": {
+      "backend": "11 CVEs → 0 (all fixes applied)",
+      "frontend": "17 CVEs → ~2-5 (vitest upgrade + bulk updates)",
+      "e2e": "0 CVEs → 0 (no changes)",
+      "orchestrator": "9 CVEs → 0 (all fixes applied)"
+    }
+  },
+  "learnings": {
+    "vitest_risk": "Vitest accumulates vulnerabilities when >2 major versions behind. Recommend quarterly update cycles with full test coverage.",
+    "build_tools_underappreciated": "Dev dependency vulnerabilities are as critical as production. npm audit --depth=20 on all workspace packages.",
+    "proxy_addr_recurring": "Watch list item. Update path: express@latest pulls proxy-addr@latest.",
+    "good_supply_chain_hygiene": "No post-install scripts detected. Continue enforcement in onboarding.",
+    "e2e_clean": "Playwright test ecosystem is clean. Consider as model for new test frameworks."
+  }
+}

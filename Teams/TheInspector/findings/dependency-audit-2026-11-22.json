@@ -1,0 +1,170 @@
+{
+  "audit_date": "2026-11-22",
+  "run_id": "default",
+  "agent": "dependency_auditor",
+  "status": "completed",
+  "summary": {
+    "total_cves": 118,
+    "critical": 8,
+    "high": 49,
+    "medium": 60,
+    "low": 1,
+    "projects_scanned": 5,
+    "package_managers": ["npm"],
+    "total_direct_deps": 68,
+    "total_transitive_deps": 1802
+  },
+  "critical_findings": [
+    {
+      "id": "DEP-001",
+      "package": "proxy-addr",
+      "severity": "P1",
+      "cve": "1241210",
+      "title": "IP spoofing via IPv4-mapped IPv6 trust subnet",
+      "affected_projects": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "is_direct": true,
+      "fix": "npm update proxy-addr@2.0.8+"
+    },
+    {
+      "id": "DEP-002",
+      "package": "protobufjs",
+      "severity": "P1",
+      "cve": "1118641",
+      "title": "Code injection via bytes field defaults in generated toObject",
+      "affected_projects": ["platform/orchestrator", "portal/Backend"],
+      "is_direct": true,
+      "fix": "npm update protobufjs@7.6.5+"
+    },
+    {
+      "id": "DEP-003",
+      "package": "handlebars",
+      "severity": "P1",
+      "cve": "1115538",
+      "title": "JavaScript Injection via AST Type Confusion by @partial-block tampering",
+      "affected_projects": ["Source/Backend"],
+      "is_direct": true,
+      "fix": "npm update handlebars@4.8.0+"
+    },
+    {
+      "id": "DEP-004",
+      "package": "tinypool",
+      "severity": "P1",
+      "cve": "1241260",
+      "title": "Prototype Pollution in worker options leads to RCE",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "is_direct": false,
+      "parent_packages": ["vitest", "vite-node"],
+      "fix": "npm update vitest@3.0.5+ tinypool@latest"
+    },
+    {
+      "id": "DEP-005",
+      "package": "vitest",
+      "severity": "P1",
+      "cve": "1139528",
+      "title": "Arbitrary file read/execution when UI server listening (--ui flag)",
+      "affected_projects": ["Source/Frontend", "portal/Backend", "portal/Frontend"],
+      "is_direct": false,
+      "risk_level": "dev-only (mitigation: avoid --ui flag)",
+      "fix": "npm update vitest@3.0.5+"
+    },
+    {
+      "id": "DEP-006",
+      "package": "body-parser",
+      "severity": "HIGH",
+      "cve": "1123977",
+      "title": "DoS via invalid limit value silently disables size enforcement",
+      "affected_projects": ["Source/Backend", "portal/Backend"],
+      "fix": "npm update body-parser@1.20.9+"
+    },
+    {
+      "id": "DEP-007",
+      "package": "js-yaml",
+      "severity": "HIGH",
+      "cve": "1121859",
+      "title": "Quadratic-complexity DoS in merge key handling",
+      "affected_projects": ["Source/Backend"],
+      "fix": "npm update js-yaml@3.15.2+"
+    },
+    {
+      "id": "DEP-008",
+      "package": "react-router",
+      "severity": "HIGH",
+      "cve": "1193669",
+      "title": "Open redirect vulnerability in route matching",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "fix": "npm update react-router@7.0+"
+    }
+  ],
+  "supply_chain_risks": [
+    {
+      "risk": "High transitive depth in platform/orchestrator",
+      "detail": "52x multiplier (3 direct → 156 transitive) via @grpc/grpc-js and protobufjs",
+      "recommendation": "Pin @grpc and protobuf versions explicitly"
+    },
+    {
+      "risk": "Observability instrumentation sprawl",
+      "detail": "50+ @opentelemetry/* packages in portal/Backend",
+      "recommendation": "Consolidate and version-lock OpenTelemetry packages"
+    },
+    {
+      "risk": "Test tool CVEs in production build chain",
+      "detail": "vitest and tinypool are dev deps but critical CVEs could affect CI/build",
+      "recommendation": "Verify test tools excluded from production artifacts"
+    }
+  ],
+  "license_compliance": {
+    "status": "PASS",
+    "summary": "No GPL/AGPL dependencies detected",
+    "primary_licenses": ["MIT", "Apache-2.0"],
+    "risk": "LOW"
+  },
+  "abandoned_packages": {
+    "status": "PASS",
+    "summary": "No abandoned packages detected",
+    "actively_maintained": ["Express", "React", "gRPC", "OpenTelemetry"]
+  },
+  "recommendations": {
+    "p0_immediate": [
+      "proxy-addr → 2.0.8+ (IP spoofing, all backends)",
+      "handlebars → 4.8.0+ (RCE template injection)",
+      "protobufjs → 7.6.5+ (gRPC code injection)",
+      "vitest → 3.0.5+ (tinypool RCE)"
+    ],
+    "p1_urgent": [
+      "body-parser → 1.20.9+ (DoS)",
+      "js-yaml → 3.15.2+ (DoS)",
+      "react-router → 7.0+ (open redirect)",
+      "nanoid → 3.3.0+ (weak entropy)"
+    ],
+    "p2_high": [
+      "Update remaining HIGH severity vulnerabilities",
+      "Patch transitive deps (browserslist, brace-expansion, form-data, postcss, source-map-js, ws)"
+    ],
+    "p3_backlog": [
+      "Major version upgrades (React v19, Express v5)",
+      "Consolidate OpenTelemetry packages"
+    ]
+  },
+  "escalations": [
+    {
+      "finding": "proxy-addr IP spoofing, protobufjs code injection, handlebars template injection",
+      "escalate_to": "TheGuardians",
+      "reason": "Security vulnerabilities (authentication bypass, RCE)"
+    },
+    {
+      "finding": "Major version upgrades (React, Express, React Router)",
+      "escalate_to": "TheFixer",
+      "reason": "Breaking changes requiring architectural coordination"
+    }
+  ],
+  "metrics": {
+    "cves_critical": 8,
+    "cves_high": 49,
+    "cves_medium": 60,
+    "cves_low": 1,
+    "projects_at_risk": 5,
+    "direct_dependencies_vulnerable": 12,
+    "transitive_dependencies_vulnerable": 100,
+    "supply_chain_risk_score": "HIGH"
+  }
+}

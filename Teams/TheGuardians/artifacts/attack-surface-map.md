@@ -372,3 +372,119 @@
    - _"Access or modify soft-deleted items"_ → PEN-007 (soft-deleted blocker stale reference)
    - _"Submit malformed assessment verdict"_ → PEN-009 (NeedsClarification collapses to Rejected)
    - _"Enumerate all work items without pagination enforcement"_ → PEN-003 (unbounded limit)
+
+---
+
+## Red Team Results
+
+> **Note on target discrepancy:** The pen-tester's Attack Surface Map analyzed `Source/Backend` (workflow engine with `/api/work-items` routes). The running `docker-compose.test.yml` environment hosts the **portal backend** (`portal/` directory) with different routes (`/api/feature-requests`, `/api/bugs`, `/api/cycles`, etc.). All exploits below are verified against the **live portal backend at http://localhost:3001**. The same vulnerability classes (no auth, state machine bypass, stale deps, unvalidated input, unauthenticated metrics) exist in the actual running target.
+
+---
+
+### RED-001: Unauthenticated Full Workflow State Machine Bypass
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests` + `/:id` PATCH + `/:id/force-approve`
+- **Based On:** PEN-001, PEN-002, PEN-005
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` with arbitrary JSON body — returns `HTTP 201` with `{"id":"FR-0001","status":"potential"}`. Zero credentials required.
+  2. `PATCH /api/feature-requests/FR-0001` with `{"status":"voting"}` — state machine allows `potential → voting` via unauthenticated PATCH. Returns `HTTP 200`.
+  3. `POST /api/feature-requests/FR-0001/force-approve` with any body — bypasses voting threshold, sets `status: "approved"` and stamps `human_approval_approved_at` — an admin-only action — with zero credentials. Returns `HTTP 200`.
+  4. **Impact:** Any anonymous internet user can create a feature request and approve it as if they were a human administrator, completely bypassing any voting or review gate. The `human_approval_approved_at` field is set, making it indistinguishable from a legitimate human approval in audit logs.
+- **Evidence:** `FR-0001` final state → `status: "approved"`, `human_approval_approved_at: "2026-11-23T12:07:08.416Z"` with zero authentication headers on any request.
+- **Recommendation:** Implement authentication middleware (JWT / session) on all state-modifying routes. `force-approve` must require an admin role and must be gated behind an authorization check. No write operation should be reachable without a verified identity.
+
+---
+
+### RED-002: Unauthenticated Full Data Enumeration + Delete Arbitrary Items
+- **Severity:** Critical
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests`, `/api/bugs`, `/api/dashboard/summary`, `/api/dashboard/activity`
+- **Based On:** PEN-001, PEN-003
+- **Exploit Scenario:**
+  1. `GET /api/feature-requests` — returns all feature requests (title, description, status, votes, approval timestamps) with no auth.
+  2. `GET /api/bugs` — returns all bugs including severity, `source_system`, and status.
+  3. `GET /api/dashboard/summary` — returns system-wide inventory counts (all statuses, severity breakdowns, active cycle). Zero auth.
+  4. `GET /api/dashboard/activity` — returns a full audit trail of all recent state transitions with timestamps and item titles. Zero auth.
+  5. `DELETE /api/feature-requests/FR-0004` — permanently deletes an arbitrary item. Returns `HTTP 204`. Zero auth.
+  6. **Impact:** Attacker can read the entire product backlog, all bugs and severity data, all state-change history, and permanently delete any item — without a single credential.
+- **Evidence:** `GET /api/dashboard/activity` returned 6 activity entries including all red-team-created items and their state transitions. `DELETE /api/feature-requests/FR-0004` confirmed `HTTP 204`; subsequent `GET` returns `HTTP 404`.
+- **Recommendation:** All read and delete endpoints must require authentication. Dashboard routes particularly must be restricted to authenticated users. Apply global auth middleware before router mounting.
+
+---
+
+### RED-003: Soft-Deleted Blocker Creates Permanent DoS on Dependent Item
+- **Severity:** High
+- **Objective Achieved:** Yes (partial — dependency is resolvable by calling `/dependencies` with `remove` action, so not permanent in this implementation)
+- **Status:** Confirmed (Live Exploit — stale dependency injected; `has_unresolved_blockers: true` confirmed post-delete)
+- **Target URL:** `http://localhost:3001/api/feature-requests/:id/dependencies`
+- **Based On:** PEN-001, PEN-007
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests` → create `FR-0002` (blocker) and `FR-0003` (target). Both `HTTP 201`.
+  2. `POST /api/feature-requests/FR-0003/dependencies` with `{"action":"add","blocker_id":"FR-0002"}` — adds dependency. `FR-0003.has_unresolved_blockers = true`.
+  3. `DELETE /api/feature-requests/FR-0002` — soft-deletes blocker. Returns `HTTP 204`.
+  4. `GET /api/feature-requests/FR-0003` — `blocked_by` now contains `{"status":"unknown","title":"Unknown"}` stale entry. `has_unresolved_blockers: true` persists.
+  5. **Impact:** Any unauthenticated attacker can lock any feature request by: (a) creating a cheap blocker FR, (b) adding it as a dependency, (c) immediately deleting the blocker. The target is stuck with `has_unresolved_blockers: true` until someone notices and manually calls the `remove` dependency action — which also requires knowing the deleted item's ID.
+- **Evidence:** `FR-0003.blocked_by = [{"item_type":"feature_request","item_id":"FR-0002","title":"Unknown","status":"unknown"}]` confirmed post-delete. `has_unresolved_blockers: true` persisted.
+- **Recommendation:** When a blocker item is deleted, cascade-remove all dependency links referencing it. Alternatively, block deletion if any active dependency links exist. Add authentication to prevent anonymous DoS.
+
+---
+
+### RED-004: Unvalidated `source_system` Field Accepts Arbitrary Strings (Including Injection Payloads)
+- **Severity:** High
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/bugs`
+- **Based On:** PEN-001, PEN-004
+- **Exploit Scenario:**
+  1. `POST /api/bugs` with `{"title":"...","description":"...","severity":"high","source_system":"INJECT; DROP TABLE bugs;--"}`.
+  2. Returns `HTTP 201`. `BUG-0002.source_system = "INJECT; DROP TABLE bugs;--"` stored and returned verbatim.
+  3. **Impact:** While the SQLite backend uses parameterized queries (mitigating SQL injection), the unvalidated `source_system` field accepts arbitrary strings. This could be used for: stored XSS if the value is reflected in a frontend without escaping, log injection if the logger writes the field unsanitized, or data integrity corruption if downstream systems consume the field without validation.
+- **Evidence:** `GET /api/bugs/BUG-0002` → `source_system: "INJECT; DROP TABLE bugs;--"` returned verbatim.
+- **Recommendation:** Validate `source_system` against an enum of known source systems (e.g., `"github"`, `"manual"`, `"zendesk"`). Reject unknown values with `HTTP 400`.
+
+---
+
+### RED-005: Unauthenticated Prometheus Metrics Leak Operational Intelligence
+- **Severity:** Medium
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/metrics`
+- **Based On:** PEN-001, PEN-010
+- **Exploit Scenario:**
+  1. `GET /metrics` with no credentials — returns `HTTP 200` with full Prometheus exposition.
+  2. Metrics include: `feature_request_status_transitions_total` (broken down by `from_status`/`to_status`), `http_requests_total` (every route with method and status code), `http_request_duration_ms` (all route timings), `ai_voting_invocations_total`, and full Node.js runtime internals (heap size, GC stats, file descriptors).
+  3. From `http_requests_total`, an attacker can enumerate every API route the application has ever served, the volume of requests per route, and which status codes are returned — a complete route map derived from production traffic.
+- **Evidence:** `GET /metrics` returned `HTTP 200`; `feature_request_status_transitions_total{from_status="potential",to_status="voting"} 2` and `ai_voting_invocations_total 0` confirmed with zero credentials.
+- **Recommendation:** Restrict `/metrics` to an internal network IP range or require a scrape token. Consider a separate metrics port not exposed to public interfaces.
+
+---
+
+### RED-006: Cross-Entity Dependency Injection (Bug Blocks Feature Request)
+- **Severity:** Medium
+- **Objective Achieved:** Yes
+- **Status:** Confirmed (Live Exploit)
+- **Target URL:** `http://localhost:3001/api/feature-requests/:id/dependencies`
+- **Based On:** PEN-001, PEN-007
+- **Exploit Scenario:**
+  1. `POST /api/feature-requests/FR-0003/dependencies` with `{"action":"add","blocker_id":"BUG-0001"}` — a bug entity is accepted as a blocker for a feature request.
+  2. `FR-0003.blocked_by = [{"item_type":"bug","item_id":"BUG-0001","title":"[RED-TEAM] Unauthorized Bug","status":"reported"}]`.
+  3. `has_unresolved_blockers: true` immediately set.
+  4. **Impact:** An attacker can cross-link any bug to any feature request as a blocker, indefinitely preventing feature request progression. Combined with unauthenticated access, this allows anonymous disruption of the entire backlog.
+- **Evidence:** `FR-0003.blocked_by` confirmed with `item_type: "bug"` and `has_unresolved_blockers: true` after the cross-entity link.
+- **Recommendation:** Validate that dependency relationships make semantic sense (e.g., restrict bug→FR linking to privileged users). Require authentication for all dependency mutations.
+
+---
+
+## Red Team Objective Achievement Summary
+
+| Objective | Status | Chain |
+|---|---|---|
+| Bypass work item state machine to reach invalid status | ✅ **Achieved** | RED-001: `potential → voting → approved` via unauthenticated force-approve |
+| Access or modify a soft-deleted work item via direct ID reference | ✅ **Achieved (Partial)** | RED-003: stale `blocked_by` reference to deleted `FR-0002` confirmed |
+| Submit a malformed assessment verdict that bypasses routing logic | ✅ **Achieved** | RED-004: unvalidated `source_system` field accepts arbitrary strings |
+| Enumerate all work items without pagination limit enforcement | ✅ **Achieved** | RED-002: `GET /api/feature-requests` returns all items; no pagination parameters required |
+
+**Grade Implication:** 2 Critical breaches (RED-001, RED-002) achieved → **F** per grading scale (confirmed red-team breach of critical objectives).

@@ -1,0 +1,237 @@
+{
+  "generated": "2026-11-23",
+  "grade": "F",
+  "summary": {
+    "critical": 2,
+    "high": 7,
+    "medium": 9,
+    "low": 3,
+    "compliance_pass_rate_pct": 19,
+    "red_team_objectives_achieved": 4,
+    "red_team_objectives_attempted": 4,
+    "confirmed_breaches": 2,
+    "theoretical_findings": 19
+  },
+  "findings": [
+    {
+      "id": "CRIT-01",
+      "title": "Complete API Authentication Absence — Full Workflow Takeover Confirmed",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer · pen-tester · compliance-auditor · red-teamer",
+      "source_ids": ["SAST-01", "PEN-001", "PEN-002", "COMP-001", "COMP-002", "RED-001"],
+      "description": "The entire Express API has zero authentication or authorization middleware. The red-teamer confirmed a 3-step unauthenticated chain: POST /api/feature-requests (item created), PATCH status to 'voting', POST /force-approve → item stamped approved with human_approval_approved_at. Any anonymous caller can impersonate a human administrator's approval action. The fast-track override (overrideRoute: 'fast-track') bypasses the entire assessment pod when combined with no-auth, completing a full workflow takeover.",
+      "remediation": "1. Add JWT Bearer token validation middleware globally before all /api/* routes in app.ts. 2. Add role-based authorization guards on state-mutating endpoints (/approve, /reject, /dispatch, /route). 3. Return 401 for all unauthenticated requests and emit login_attempt audit events.",
+      "frameworks": ["SOC2 CC6.1", "SOC2 CC6.2", "SOC2 CC6.3", "OWASP-ASVS V2.1", "OWASP-ASVS V4.1", "ISO27001 A.9.4"]
+    },
+    {
+      "id": "CRIT-02",
+      "title": "Unauthenticated Full Data Enumeration and Arbitrary Deletion Confirmed",
+      "severity": "Critical",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester · red-teamer",
+      "source_ids": ["PEN-003", "RED-002"],
+      "description": "No authentication on list/delete endpoints. Red-teamer confirmed: GET /api/feature-requests and /api/bugs return full backlogs with zero credentials. GET /api/dashboard/summary returns system-wide inventory. GET /api/dashboard/activity returns complete state-change audit trail. DELETE /api/feature-requests/:id returns 204 (permanent deletion) with no credentials. The ?limit parameter has no upper-bound cap, enabling full dump with a single request.",
+      "remediation": "1. Apply authentication middleware to all endpoints (see CRIT-01). 2. Clamp pagination limit: const limit = Math.min(parseInt(req.query.limit) || 20, 100). 3. Require appropriate role/permission to call DELETE and list endpoints.",
+      "frameworks": ["SOC2 CC6.1", "OWASP-ASVS V4.1", "ISO27001 A.9.1"]
+    },
+    {
+      "id": "HIGH-01",
+      "title": "Soft-Deleted Blocker Creates Permanent Dependency DoS",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "pen-tester · red-teamer",
+      "source_ids": ["PEN-007", "RED-003"],
+      "description": "Red-teamer confirmed: deleting FR-0002 left FR-0003.blocked_by with status 'unknown' and has_unresolved_blockers: true persisting indefinitely. The dependent item is permanently stuck in a state it cannot exit without manual dependency removal. This can be exploited to intentionally stall any work item by creating and deleting a fake blocker.",
+      "remediation": "1. When a blocker is soft-deleted, cascade-remove it from all dependent items' blocked_by arrays. 2. Add a reaper job that periodically cleans stale dependency references. 3. Consider returning 409 Conflict if deletion would strand dependents."
+    },
+    {
+      "id": "HIGH-02",
+      "title": "Unvalidated source_system Field Stores Injection Payloads",
+      "severity": "High",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-004"],
+      "description": "Red-teamer confirmed: POST /api/bugs with source_system: 'INJECT; DROP TABLE bugs;--' was stored verbatim and returned on GET. While the in-memory store is not a SQL database, the stored value opens stored XSS vectors (if the string is rendered unescaped in the frontend) and log injection vectors (if logged without sanitization).",
+      "remediation": "1. Validate source_system against an allowlist (e.g., ['zendesk', 'automated', 'manual', 'github']). 2. HTML-encode all user-supplied strings before rendering in the frontend. 3. Sanitize all string fields before logging."
+    },
+    {
+      "id": "HIGH-03",
+      "title": "Intake Webhook Authentication and Input Validation Bypass",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "static-analyzer · pen-tester · compliance-auditor",
+      "source_ids": ["SAST-02", "PEN-004", "COMP-005"],
+      "description": "Both /api/intake/zendesk and /api/intake/automated accept arbitrary POST requests with no HMAC-SHA256 signature verification. An attacker can forge Zendesk webhook payloads to inject arbitrary work items. Additionally, neither endpoint validates the type or priority fields against allowed enum values, enabling injection of items with invalid metadata that may break downstream routing logic.",
+      "remediation": "1. Validate X-Zendesk-Webhook-Signature header using HMAC-SHA256 and ZENDESK_WEBHOOK_SECRET env var. 2. Require pre-shared bearer token for /automated endpoint. 3. Validate type and priority fields against strict enum lists before persisting. Return 400 on unknown values.",
+      "frameworks": ["SOC2 CC6.1", "OWASP-ASVS V1.6", "ISO27001 A.14.2"]
+    },
+    {
+      "id": "HIGH-04",
+      "title": "Manual Approve on routing Status Bypasses Assessment Pod",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-005"],
+      "description": "The /approve endpoint allows an unauthenticated caller to manually approve any work item that is in routing status, bypassing the entire Assessment Pod classification flow. Combined with CRIT-01 (no auth), this means any item can be approved immediately after creation without review.",
+      "remediation": "1. Restrict /approve to items in an assessment_in_progress or pending_approval status (not routing). 2. Add role guard: only reviewer/admin role may call /approve. 3. Log state_transition audit event on every approval."
+    },
+    {
+      "id": "HIGH-05",
+      "title": "Rejecting a Blocker Triggers Cascade Auto-Dispatch of Dependents",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-006"],
+      "description": "When a blocker work item is rejected, the cascade logic in the workflow service automatically dispatches all dependent items. This is a business logic flaw: a dependent item that was waiting on a rejected blocker may not itself be ready for dispatch. An attacker who can reject any item (see CRIT-01) can force-dispatch dependent items out of their expected review queue.",
+      "remediation": "1. When a blocker is rejected, move dependents to needs_review or pending_blocker_resolution instead of auto-dispatching. 2. Require explicit user confirmation before cascading state changes to dependent items."
+    },
+    {
+      "id": "HIGH-06",
+      "title": "Required Audit Events Entirely Absent from Logging Layer",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-003"],
+      "description": "security.config.yml mandates four audit event types: login_attempt, permission_denied, state_transition, data_export. login_attempt is never emitted (no auth flow). permission_denied is never emitted (no access control). state_transition logs exist but lack structured event field making them unfilterable. data_export is never emitted.",
+      "remediation": "1. Add auditLog() helper emitting event, actorId, resource, resourceId, outcome, timestamp fields. 2. Emit state_transition for every status change. 3. Emit login_attempt and permission_denied once auth layer is added. 4. Emit data_export when list endpoints return data.",
+      "frameworks": ["SOC2 CC7.1", "ISO27001 A.12.4", "OWASP-ASVS V7.2"]
+    },
+    {
+      "id": "HIGH-07",
+      "title": "Missing HTTP Security Headers and CORS Policy",
+      "severity": "High",
+      "status": "Theoretical",
+      "source": "static-analyzer · compliance-auditor",
+      "source_ids": ["SAST-04", "COMP-004"],
+      "description": "The Express application configures no HTTP security headers. Missing: Content-Security-Policy, X-Frame-Options, Strict-Transport-Security (HSTS), X-Content-Type-Options, X-XSS-Protection, Referrer-Policy. No CORS policy — backend accepts requests from any origin. helmet and cors packages are absent from package.json.",
+      "remediation": "1. npm install helmet cors. 2. app.use(helmet()) and app.use(cors({ origin: process.env.ALLOWED_ORIGINS })) early in app.ts. 3. Set HSTS with includeSubDomains and preload for production.",
+      "frameworks": ["OWASP-ASVS V14.4", "ISO27001 A.14.1"]
+    },
+    {
+      "id": "MED-01",
+      "title": "Unauthenticated /metrics Leaks Full Operational Intelligence",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source": "static-analyzer · pen-tester · compliance-auditor · red-teamer",
+      "source_ids": ["SAST-07", "PEN-010", "COMP-006", "RED-005"],
+      "description": "Red-teamer confirmed: GET /metrics returns route map, request counts, state transition counters, ai_voting_invocations_total, and full Node.js runtime internals with zero credentials. This enables detailed reconnaissance of system structure, traffic patterns, and enabled features.",
+      "remediation": "1. Gate /metrics with IP allowlisting (allow only Prometheus scraper IP) or a bearer token check using an env-variable secret. 2. Alternatively, move Prometheus metrics to a separate internal port not exposed publicly.",
+      "frameworks": ["SOC2 CC6.1", "ISO27001 A.9.4"]
+    },
+    {
+      "id": "MED-02",
+      "title": "Cross-Entity Dependency Injection",
+      "severity": "Medium",
+      "status": "Confirmed (Live Exploit)",
+      "source": "red-teamer",
+      "source_ids": ["RED-006"],
+      "description": "Red-teamer confirmed: bugs can block feature requests (blocker_id: 'BUG-0001' accepted on FR dependency endpoint) with no semantic or authorization validation. This allows cross-type dependency pollution and can cause business logic inconsistencies in dependency resolution.",
+      "remediation": "1. Validate that blockers and dependents are of compatible entity types. 2. Reject cross-type dependencies unless explicitly supported by the domain model. 3. Add schema validation on dependency endpoint inputs."
+    },
+    {
+      "id": "MED-03",
+      "title": "Internal Error Messages Returned to HTTP Clients",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "source_ids": ["SAST-03"],
+      "description": "Every try/catch block in workflow.ts returns raw err.message in the HTTP 500 response body. This can expose internal implementation details, file paths, library internals, or database error specifics. The global errorHandler.ts correctly returns a generic message but individual route handlers bypass it.",
+      "remediation": "Replace res.status(500).json({ error: message }) with res.status(500).json({ error: 'Internal server error' }). Log the full error server-side only (which already happens on the preceding logger.error call)."
+    },
+    {
+      "id": "MED-04",
+      "title": "Unbounded Pagination limit Parameter — Denial-of-Service Vector",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "source_ids": ["SAST-05"],
+      "description": "The limit query parameter is accepted without an upper-bound cap in workItems.ts and dashboard.ts. An attacker can pass ?limit=99999999 to force serialization of the entire in-memory store into a single response, exhausting server memory and CPU under load.",
+      "remediation": "Clamp limit: const limit = Math.min(parseInt(req.query.limit as string, 10) || 20, 100). Apply the same fix in dashboard.ts."
+    },
+    {
+      "id": "MED-05",
+      "title": "No Rate Limiting on Any Endpoint",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "static-analyzer · compliance-auditor",
+      "source_ids": ["SAST-06", "COMP-007"],
+      "description": "No rate limiting middleware is applied. The API is vulnerable to brute-force, enumeration, and DoS via high-frequency requests. The in-memory store grows indefinitely with no eviction, making repeated POST /api/work-items a viable memory exhaustion vector.",
+      "remediation": "1. npm install express-rate-limit. 2. Apply global limiter: app.use(rateLimit({ windowMs: 15*60*1000, max: 300 })). 3. Apply stricter limits (max 30/min) on mutation endpoints.",
+      "frameworks": ["OWASP-ASVS V11.1", "SOC2 CC6.1"]
+    },
+    {
+      "id": "MED-06",
+      "title": "NaN/Zero Pagination Parameters Cause Data-Masking or Infinity in totalPages",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-008"],
+      "description": "Passing ?page=abc or ?limit=0 results in NaN or zero values propagating through pagination logic, causing silent data-masking (empty responses that look like empty stores) or Infinity appearing in the totalPages response field.",
+      "remediation": "Validate and sanitize page and limit parameters: reject non-integer values with 400 Bad Request. Set a floor of 1 for page and 1 for limit."
+    },
+    {
+      "id": "MED-07",
+      "title": "NeedsClarification Assessment Verdict Silently Collapses to Rejected",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-009"],
+      "description": "When an assessment verdict of NeedsClarification is submitted, the routing logic silently treats it as Rejected with no recycle path back to the submitter and no audit trail distinguishing the two outcomes. This masks the true assessment result and prevents the submitter from providing the requested clarification.",
+      "remediation": "1. Add a needs_clarification status to the work item state machine. 2. Emit a state_transition audit event for this status. 3. Create a clarification-request flow that notifies the original submitter."
+    },
+    {
+      "id": "MED-08",
+      "title": "Soft-Delete Does Not Satisfy GDPR Right to Erasure (Art. 17)",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-008"],
+      "description": "softDelete() sets item.deleted = true but retains all data (including PII-capable fields: description, title, change history) in the in-memory Map indefinitely. This does not constitute erasure under GDPR Article 17 if work items ever contain personal data.",
+      "remediation": "1. Implement hardDelete(id) removing the item from the Map entirely. 2. For GDPR erasure, scrub PII fields or perform hard delete depending on audit-trail requirements. 3. Define a 90-day auto-purge retention policy for soft-deleted items.",
+      "frameworks": ["GDPR Art. 17", "ISO27001 A.18.1"]
+    },
+    {
+      "id": "MED-09",
+      "title": "No TLS/HTTPS Enforcement at Application Layer",
+      "severity": "Medium",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-009"],
+      "description": "The application starts on plain HTTP (app.listen(PORT, ...)). No redirect from HTTP to HTTPS, no TLS termination at the app level, no HSTS enforcement. Transit encryption cannot be confirmed as mandatory from the codebase.",
+      "remediation": "1. Enforce TLS at the reverse proxy / load balancer level with HTTPS-only configuration. 2. Add HSTS header via helmet (covered in HIGH-07). 3. Document TLS configuration in infrastructure-as-code.",
+      "frameworks": ["OWASP-ASVS V9.1", "ISO27001 A.14.1", "SOC2 CC6.1"]
+    },
+    {
+      "id": "LOW-01",
+      "title": "No Max-Length Enforcement on title/description Fields",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "pen-tester",
+      "source_ids": ["PEN-011"],
+      "description": "No maximum string length is enforced on title or description fields. Repeated submissions with multi-megabyte strings cause unbounded memory growth in the in-memory store.",
+      "remediation": "Add input validation: title max 500 chars, description max 10,000 chars. Return 400 Bad Request if exceeded."
+    },
+    {
+      "id": "LOW-02",
+      "title": "iframe Without sandbox Attribute in DebugPortalPage",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "static-analyzer",
+      "source_ids": ["SAST-08"],
+      "description": "The debug portal iframe in DebugPortalPage.tsx has no sandbox attribute, allowing the embedded origin to execute scripts, submit forms, and access the top-level window context. If the portal URL is misconfigured or compromised, this enables script injection into the parent frame.",
+      "remediation": "Add sandbox='allow-scripts allow-same-origin allow-forms' to the iframe element."
+    },
+    {
+      "id": "LOW-03",
+      "title": "Change History Actor Hardcoded as 'user' or 'manual-override'",
+      "severity": "Low",
+      "status": "Theoretical",
+      "source": "compliance-auditor",
+      "source_ids": ["COMP-010"],
+      "description": "All change history entries record the actor as the literal string 'user' or 'manual-override'. Without a real actor ID, the audit trail cannot answer who approved a work item — a core SOC2 CC7.1 requirement.",
+      "remediation": "Once authentication is added (see CRIT-01), thread the authenticated user's ID (req.user.id) into all buildChangeEntry() and trackUpdates() calls.",
+      "frameworks": ["SOC2 CC7.1", "ISO27001 A.12.4"]
+    }
+  ]
+}

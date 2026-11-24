@@ -1,0 +1,259 @@
+{
+  "audit_id": "run-20261124-122511",
+  "audit_date": "2026-11-24",
+  "branch": "audit/inspector-2026-11-24-ddf5fd",
+  "grade": "D",
+  "prior_audit": null,
+  "trend": "first_audit",
+  "summary": {
+    "p1_total": 6,
+    "p2_total": 8,
+    "p3_total": 4,
+    "spec_coverage_pct": 96,
+    "total_findings": 18,
+    "escalations_to_guardians": 5,
+    "fixed_since_prior": 0
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "trigger": "injection",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion",
+      "package": "handlebars",
+      "affected_projects": ["Source/Backend"],
+      "cves": ["GHSA-2w6w-674q-4c4q", "GHSA-8r5x-fm3f-whwj", "GHSA-p8wg-vrv2-v86f"],
+      "cvss_max": 9.8,
+      "installed_range": "3.0.0 - 4.7.9",
+      "fix_version": "4.7.10+",
+      "escalate_to": "TheGuardians",
+      "status": "open"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "trigger": "missing access control",
+      "title": "proxy-addr IPv4-mapped IPv6 Trust Subnet Spoofing",
+      "package": "proxy-addr",
+      "affected_projects": ["Source/Backend", "platform/orchestrator"],
+      "cves": ["GHSA-jqcg-44mw-7w3h"],
+      "cvss_max": 9.1,
+      "installed_version": "2.0.7",
+      "fix_version": "2.0.8+",
+      "escalate_to": "TheGuardians",
+      "status": "open"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "trigger": "injection",
+      "title": "tinypool Prototype Pollution → RCE in Test Infrastructure",
+      "package": "tinypool",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "escalate_to": "TheGuardians",
+      "fix_version": "2.5.0+",
+      "status": "open"
+    },
+    {
+      "id": "DEP-023",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "trigger": "injection",
+      "title": "protobufjs Multiple RCE/DoS Vectors (12 CVEs)",
+      "package": "protobufjs",
+      "affected_projects": ["platform/orchestrator"],
+      "cve_count": 12,
+      "escalate_to": "TheGuardians",
+      "urgency": "CRITICAL",
+      "status": "open"
+    },
+    {
+      "id": "DEP-024",
+      "severity": "P1",
+      "category": "dependency-vulnerability",
+      "trigger": "auth bypass",
+      "title": "@grpc/grpc-js TLS Certificate Validation Bypass + Server Crash",
+      "package": "@grpc/grpc-js",
+      "affected_projects": ["platform/orchestrator"],
+      "installed_version": "1.14.3",
+      "fix_version": "1.14.5+",
+      "cves": ["GHSA-5375-pq7m-f5r2", "GHSA-99f4-grh7-6pcq", "GHSA-m9gg-hp2v-232j"],
+      "escalate_to": "TheGuardians",
+      "status": "open"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer blind to portal/ and platform/",
+      "detail": "tools/traceability-enforcer.py hard-codes source_dirs=[\"Source\",\"E2E\"] and misses portal/ (69 FRs) and platform/ (9 FRs). The CLAUDE.md verification gate appears to pass while not actually checking 78 implemented requirements.",
+      "files": ["tools/traceability-enforcer.py", "Teams/TheInspector/inspector.config.yml"],
+      "recommendation": "Add portal/ and platform/ to source_dirs. Update inspector.config.yml source.dirs. Add CI step per requirements file.",
+      "route_to": "TheFixer",
+      "status": "open"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "FR-dependency-api-types: blocked_by missing from UpdateFeatureRequestInput and UpdateBugInput",
+      "files": ["portal/Shared/api.ts", "portal/Frontend/src/components/shared/DependencyPicker.tsx"],
+      "recommendation": "Add blocked_by?: string[] to both update types. Remove as any casts.",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-003", "QO-004", "QO-008"],
+      "status": "open"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "FR-dependency-seed: seed.ts missing from portal/Backend/src/database/",
+      "files": ["portal/Backend/src/database/"],
+      "recommendation": "Create idempotent seed.ts with 5 known dependency relationships. Wire into startup.",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-002"],
+      "status": "open"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "untested",
+      "source": "quality-oracle",
+      "title": "FR-dependency-frontend-tests: DependencySection.test.tsx and BlockedBadge.test.tsx absent",
+      "files": ["portal/Frontend/tests/DependencySection.test.tsx", "portal/Frontend/tests/BlockedBadge.test.tsx"],
+      "recommendation": "Create both test files with // Verifies: FR-dependency-section and FR-dependency-blocked-badge comments.",
+      "route_to": "TheFixer",
+      "cross_ref": ["QO-002"],
+      "status": "open"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "cycleService.ts (526L) and featureRequestService.ts (506L) exceed 500-line guideline",
+      "files": ["portal/Backend/src/services/cycleService.ts", "portal/Backend/src/services/featureRequestService.ts"],
+      "recommendation": "Extract cycleLifecycleService.ts and ticketService.ts from cycleService.ts. Evaluate splitting featureRequestService.ts.",
+      "route_to": "TheFixer",
+      "status": "open"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "body-parser Denial of Service via malformed Content-Type",
+      "package": "body-parser",
+      "affected_projects": ["Source/Backend", "portal/Backend", "platform/orchestrator"],
+      "fix_version": "1.20.9+",
+      "recommendation": "npm update body-parser (all projects). Immediate.",
+      "route_to": "TheFixer",
+      "status": "open"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "follow-redirects SSRF / credential leak via URL redirect",
+      "package": "follow-redirects",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "recommendation": "npm update follow-redirects → 1.15.6+",
+      "route_to": "TheFixer",
+      "status": "open"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "browserslist Denial of Service via OOM in query parsing",
+      "package": "browserslist",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "recommendation": "npm update browserslist → 4.23.3+",
+      "route_to": "TheFixer",
+      "status": "open"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "dependency-vulnerability",
+      "source": "dependency-auditor",
+      "title": "micromatch ReDoS via crafted glob patterns",
+      "package": "micromatch",
+      "affected_projects": ["Source/Frontend", "portal/Frontend"],
+      "recommendation": "npm update micromatch → 4.0.8+",
+      "route_to": "TheFixer",
+      "status": "open"
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "QO-006",
+      "severity": "P3",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "FR-TMP-008 implemented but no Verifies comment in Dockerfile.worker",
+      "files": ["platform/Dockerfile.worker"],
+      "recommendation": "Add # Verifies: FR-TMP-008 comment near line 31. Solo session only.",
+      "route_to": "solo-session",
+      "status": "open"
+    },
+    {
+      "id": "QO-007",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "4 eslint-disable suppressions in production source",
+      "files": [
+        "Source/Frontend/src/components/DependencyPicker.tsx:82",
+        "Source/Frontend/src/hooks/useWorkItems.ts:63",
+        "portal/Frontend/src/hooks/useApi.ts:35",
+        "portal/Backend/src/middleware/errorHandler.ts:21"
+      ],
+      "recommendation": "Audit each suppression. Use _next convention for unused Express params. Fix hook dependencies.",
+      "route_to": "TheFixer",
+      "status": "open"
+    },
+    {
+      "id": "QO-008",
+      "severity": "P3",
+      "category": "pattern-violation",
+      "source": "quality-oracle",
+      "title": "as any cast in DependencyPicker (blocked by QO-002)",
+      "files": ["portal/Frontend/src/components/shared/DependencyPicker.tsx"],
+      "recommendation": "Closes automatically when QO-002 is fixed.",
+      "route_to": "TheFixer",
+      "blocked_by": "QO-002",
+      "status": "blocked"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P3",
+      "category": "dependency-outdated",
+      "source": "dependency-auditor",
+      "title": "react-router-dom v6 open redirect (upgrade path to v7 available)",
+      "package": "react-router-dom",
+      "recommendation": "Plan react-router-dom v6 → v7 migration next sprint.",
+      "route_to": "TheFixer",
+      "status": "open"
+    }
+  ],
+  "specialists_not_run": ["performance-profiler", "chaos-monkey"],
+  "specialist_modes": {
+    "quality-oracle": "static",
+    "dependency-auditor": "static",
+    "performance-profiler": "skipped — service not available",
+    "chaos-monkey": "skipped — service not available"
+  }
+}

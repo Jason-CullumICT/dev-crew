@@ -1,0 +1,323 @@
+{
+  "auditDate": "2026-11-24",
+  "auditor": "dependency_auditor",
+  "summary": {
+    "totalCVEs": 196,
+    "critical": 19,
+    "high": 48,
+    "moderate": 101,
+    "low": 28,
+    "totalNpmProjects": 10,
+    "projectsWithVulnerabilities": 8,
+    "projectsClean": 1,
+    "totalTransitiveDependencies": 2082
+  },
+  "findings": {
+    "P1_critical": [
+      {
+        "id": "DEP-001",
+        "title": "Handlebars JavaScript Injection via AST Type Confusion",
+        "package": "handlebars",
+        "severity": "critical",
+        "affectedProjects": ["Source/Backend"],
+        "cves": [
+          "GHSA-2w6w-674q-4c4q",
+          "GHSA-8r5x-fm3f-whwj",
+          "GHSA-p8wg-vrv2-v86f"
+        ],
+        "cvssScores": [9.8, 9.8],
+        "affectedRange": "3.0.0 - 4.7.9",
+        "fixAvailable": true,
+        "fixVersion": "4.7.10+",
+        "escalateTo": "TheGuardians"
+      },
+      {
+        "id": "DEP-002",
+        "title": "proxy-addr IPv4-mapped IPv6 Trust Subnet Spoofing",
+        "package": "proxy-addr",
+        "severity": "critical",
+        "affectedProjects": [
+          "Source/Backend",
+          "platform/orchestrator"
+        ],
+        "cves": ["GHSA-jqcg-44mw-7w3h"],
+        "cvssScores": [9.1],
+        "affectedRange": "1.1.0 - 2.0.7",
+        "installedVersion": "2.0.7",
+        "fixAvailable": true,
+        "fixVersion": "2.0.8+",
+        "escalateTo": "TheGuardians"
+      },
+      {
+        "id": "DEP-023",
+        "title": "protobufjs Multiple RCE/DoS Vectors",
+        "package": "protobufjs",
+        "severity": "critical",
+        "affectedProjects": ["platform/orchestrator"],
+        "cveCount": 12,
+        "cves": [
+          "Code injection via bytes field defaults",
+          "Prototype pollution in generated constructors",
+          "Arbitrary code execution",
+          "Denial of service via unbounded recursion",
+          "Denial of service via infinite loop in .proto option parsing"
+        ],
+        "fixAvailable": true,
+        "escalateTo": "TheGuardians",
+        "urgency": "CRITICAL"
+      },
+      {
+        "id": "DEP-024",
+        "title": "@grpc/grpc-js Server Crash & Certificate Validation Bypass",
+        "package": "@grpc/grpc-js",
+        "severity": "critical",
+        "affectedProjects": ["platform/orchestrator"],
+        "installedVersion": "1.14.3",
+        "cves": [
+          "GHSA-5375-pq7m-f5r2",
+          "GHSA-99f4-grh7-6pcq",
+          "GHSA-m9gg-hp2v-232j"
+        ],
+        "cvssScores": [7.5, 7.5, 7.4],
+        "affectedRange": "1.14.0 - 1.14.5",
+        "fixAvailable": true,
+        "fixVersion": "1.14.5+",
+        "escalateTo": "TheGuardians",
+        "urgency": "CRITICAL - TLS trust is broken"
+      },
+      {
+        "id": "DEP-013",
+        "title": "tinypool Prototype Pollution → Remote Code Execution",
+        "package": "tinypool",
+        "severity": "critical",
+        "affectedProjects": [
+          "Source/Frontend",
+          "portal/Frontend"
+        ],
+        "cves": [
+          "GHSA-5w5h-yvmx-wt6j",
+          "GHSA-g7mj-h69f-qvxf"
+        ],
+        "fixAvailable": true,
+        "fixVersion": "2.5.0+",
+        "escalateTo": "TheGuardians"
+      }
+    ],
+    "P2_high": [
+      {
+        "id": "DEP-003",
+        "title": "body-parser Denial of Service via Compressed Request Trailing Bytes",
+        "package": "body-parser",
+        "severity": "high",
+        "affectedProjects": [
+          "Source/Backend",
+          "platform/orchestrator"
+        ],
+        "cves": ["GHSA-27r3-jxmh-p828"],
+        "cvssScore": 7.5,
+        "affectedRange": "<1.20.9",
+        "installedVersion": "1.20.4",
+        "fixAvailable": true,
+        "fixVersion": "1.20.9+",
+        "routeTo": "TheFixer"
+      },
+      {
+        "id": "DEP-004",
+        "title": "brace-expansion DoS via Exponential Expansion",
+        "package": "brace-expansion",
+        "severity": "high",
+        "affectedProjects": ["Source/Backend"],
+        "cveCount": 7,
+        "routeTo": "TheFixer"
+      },
+      {
+        "id": "DEP-005",
+        "title": "Browserslist Unbounded Memory Growth → OOM",
+        "package": "browserslist",
+        "severity": "high",
+        "affectedProjects": [
+          "Source/Backend",
+          "Source/Frontend"
+        ],
+        "cveCount": 2,
+        "routeTo": "TheFixer"
+      },
+      {
+        "id": "DEP-014",
+        "title": "@vitest/mocker Path Traversal & Code Injection",
+        "package": "@vitest/mocker",
+        "severity": "high",
+        "affectedProjects": ["Source/Frontend"],
+        "cves": [
+          "GHSA-82fw-gwwq-j7x9",
+          "GHSA-qxg6-89mg-rqv8"
+        ],
+        "cvssScores": [5.9, 4.7],
+        "routeTo": "TheFixer"
+      },
+      {
+        "id": "DEP-015",
+        "title": "@remix-run/router Open Redirect via Protocol-Relative URL",
+        "package": "@remix-run/router",
+        "severity": "high",
+        "affectedProjects": ["Source/Frontend"],
+        "cves": ["GHSA-2j2x-hqr9-3h42"],
+        "routeTo": "TheFixer"
+      }
+    ],
+    "P3_moderate": [
+      {
+        "id": "DEP-008",
+        "title": "@babel/core Arbitrary File Read via sourceMappingURL",
+        "package": "@babel/core",
+        "severity": "moderate",
+        "cves": ["GHSA-4x5r-pxfx-6jf8"],
+        "cvssScore": 3.2
+      },
+      {
+        "id": "DEP-009",
+        "title": "baseline-browser-mapping Process Termination DoS",
+        "package": "baseline-browser-mapping",
+        "severity": "moderate"
+      },
+      {
+        "id": "DEP-010",
+        "title": "uuid CSPRNG & Format Validation",
+        "package": "uuid",
+        "severity": "moderate",
+        "installedVersion": "9.0.1",
+        "latestVersion": "14.0.3",
+        "majorVersionsBehind": 5
+      }
+    ],
+    "outdatedMajorVersions": [
+      {
+        "package": "pino",
+        "installed": "8.17.0",
+        "latest": "10.4.0",
+        "gap": "2 major",
+        "risk": "Missing security fixes in logger infrastructure",
+        "affectedProjects": ["Source/Backend"]
+      },
+      {
+        "package": "express",
+        "installed": "4.22.1",
+        "latest": "5.3.0",
+        "gap": "1 major",
+        "risk": "Likely non-breaking; test compatibility"
+      },
+      {
+        "package": "uuid",
+        "installed": "9.0.1",
+        "latest": "14.0.3",
+        "gap": "5 major",
+        "risk": "May miss CSPRNG improvements"
+      },
+      {
+        "package": "react",
+        "installed": "18.3.1",
+        "latest": "19.3.1",
+        "gap": "1 major",
+        "risk": "Automatic batching & hydration changes"
+      },
+      {
+        "package": "react-router-dom",
+        "installed": "6.30.6",
+        "latest": "7.18.6",
+        "gap": "1 major",
+        "risk": "Fixes open redirect vulnerability"
+      }
+    ],
+    "highestRiskProjects": [
+      {
+        "project": "portal/Backend",
+        "totalDependencies": 577,
+        "cveCount": 61,
+        "critical": 4,
+        "high": 11,
+        "moderate": 46,
+        "action": "Requires dedicated deep-dive audit and dependency optimization"
+      },
+      {
+        "project": "platform/orchestrator",
+        "cveCount": 9,
+        "critical": 2,
+        "risk": "gRPC infrastructure - highest impact if compromised",
+        "action": "Prioritize P1 fixes; test TLS trust post-upgrade"
+      },
+      {
+        "project": "Source/Backend",
+        "cveCount": 11,
+        "critical": 2,
+        "risk": "Template rendering + proxy-addr IP spoofing",
+        "action": "Audit template sources; prioritize proxy-addr fix"
+      }
+    ]
+  },
+  "recommendations": {
+    "immediate": [
+      "Upgrade body-parser to 1.20.9+ in all projects",
+      "Upgrade proxy-addr to 2.0.8+ in Backend and Orchestrator",
+      "Upgrade @grpc/grpc-js to 1.14.5+ and test TLS trust",
+      "Audit handlebars usage in Source/Backend",
+      "Verify protobufjs compatibility and upgrade to latest"
+    ],
+    "highPriority": [
+      "Upgrade tinypool to 2.5.0+ (Frontend test infrastructure)",
+      "Upgrade react-router-dom to 7.x (fixes open redirect)",
+      "Upgrade handlebars to 4.7.10+ if user templates present",
+      "Update browserslist and brace-expansion",
+      "Plan pino 8→10 migration"
+    ],
+    "planned": [
+      "Deep audit of portal/Backend (577 deps, 61 CVEs)",
+      "React 18→19 migration planning",
+      "express 4→5 migration planning",
+      "Add license-checker to CI pipeline",
+      "Consider dependency pinning strategy"
+    ]
+  },
+  "escalations": {
+    "toTheGuardians": [
+      "DEP-023: protobufjs RCE vectors",
+      "DEP-024: @grpc/grpc-js TLS bypass",
+      "DEP-001: Handlebars injection (if user templates)",
+      "DEP-002/027: proxy-addr IP spoofing"
+    ],
+    "toTheFixer": [
+      "All P2/P3 findings for routine updates"
+    ]
+  },
+  "metrics": {
+    "auditDate": "2026-11-24",
+    "totalNpmProjects": 10,
+    "projectsScanned": 10,
+    "projectsClean": 1,
+    "cvesByProject": {
+      "Source/Backend": 11,
+      "Source/Frontend": 17,
+      "Source/E2E": 0,
+      "platform/orchestrator": 9,
+      "portal/Backend": 61,
+      "portal/Frontend": 18,
+      "abac-demo": 21,
+      "abac-reimagined": null,
+      "abac-soc-demo": null,
+      "abac-soc-demo-v2": null
+    },
+    "dependencyTree": {
+      "totalTransitive": 2082,
+      "largest": {
+        "project": "portal/Backend",
+        "count": 577
+      },
+      "smallest": {
+        "project": "Source/E2E",
+        "count": 4
+      }
+    }
+  },
+  "methodology": "npm audit with CVE registry cross-reference",
+  "confidence": "High - npm audit directly queries official CVE sources",
+  "nextAuditRecommended": "2026-12-24"
+}

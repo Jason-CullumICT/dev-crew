@@ -1,0 +1,357 @@
+{
+  "audit_id": "inspector-2026-11-25",
+  "branch": "audit/inspector-2026-11-25-cdf88a",
+  "date": "2026-11-25",
+  "grade": "D",
+  "prior_audit": null,
+  "totals": {
+    "p1": 6,
+    "p2": 14,
+    "p3": 25,
+    "p4": 2,
+    "escalations_to_guardians": 7,
+    "fixed_since_prior": 0,
+    "new": 47
+  },
+  "spec_coverage": {
+    "FR-WF-001_to_013": {"total": 13, "covered": 13, "pct": 100},
+    "FR-001_to_069": {"total": 69, "covered": 69, "pct": 100, "note": "Enforcer blind — portal/ not scanned; actual coverage unknown"},
+    "FR-TMP-001_to_010": {"total": 10, "covered": 9, "pct": 90, "note": "FR-TMP-008 untraced in Dockerfile.worker"},
+    "unspecified_in_codebase": {"count": 30, "note": "FR-070+, FR-DUP-*, dependency FRs implemented without Specifications/ entries"}
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "finding": "handlebars JavaScript injection via AST type confusion",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.8,
+      "cwe": ["CWE-94", "CWE-843"],
+      "file": "Source/Frontend/node_modules/handlebars",
+      "fix": "npm install handlebars@^4.7.10 (Frontend)"
+    },
+    {
+      "id": "DEP-002",
+      "finding": "proxy-addr IP spoofing — access control bypass via IPv4-mapped IPv6",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.1,
+      "cwe": ["CWE-290", "CWE-348"],
+      "file": "Source/Backend/node_modules/proxy-addr, platform/orchestrator/node_modules/proxy-addr",
+      "fix": "npm install proxy-addr@^2.0.8 (Backend + Orchestrator)"
+    },
+    {
+      "id": "DEP-003",
+      "finding": "vitest UI arbitrary file read + RCE on networked interface",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.8,
+      "cwe": ["CWE-22", "CWE-862"],
+      "file": "Source/Frontend/node_modules/vitest",
+      "fix": "npm install vitest@^5.1.1 --save-dev (Frontend)"
+    },
+    {
+      "id": "DEP-004",
+      "finding": "tinypool prototype pollution RCE via worker options",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.8,
+      "cwe": ["CWE-1321", "CWE-94"],
+      "file": "Source/Frontend/node_modules/tinypool (via vitest)",
+      "fix": "Upgrade vitest to ^5.1.1 (tinypool upgraded transitively)"
+    },
+    {
+      "id": "DEP-005",
+      "finding": "protobufjs arbitrary code execution via code injection in generated toObject / unsafe option paths",
+      "escalate_to": "TheGuardians",
+      "cvss": 9.8,
+      "cwe": ["CWE-94"],
+      "file": "platform/orchestrator/node_modules/protobufjs",
+      "fix": "npm install protobufjs@^7.6.5 (Orchestrator)"
+    },
+    {
+      "id": "DEP-009",
+      "finding": "form-data CRLF injection — HTTP response splitting via unescaped field names",
+      "escalate_to": "TheGuardians",
+      "cvss": 7.5,
+      "cwe": ["CWE-93"],
+      "file": "Source/Backend, platform/orchestrator",
+      "fix": "npm install form-data@^4.0.6"
+    },
+    {
+      "id": "DEP-015",
+      "finding": "vite launch-editor command injection + path traversal",
+      "escalate_to": "TheGuardians",
+      "cvss": 7.5,
+      "cwe": ["CWE-78", "CWE-88", "CWE-22"],
+      "file": "Source/Frontend/node_modules/vite",
+      "fix": "npm install vite@^8.3.8 --save-dev (Frontend, major version bump)"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Traceability enforcer never scans portal/ or platform/ — CLAUDE.md gate is broken",
+      "file": "tools/traceability-enforcer.py",
+      "line": 70,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "recommendation": "Extend check_traceability() to walk portal/ and platform/. Add --plan dev-workflow-platform and --plan tiered-merge-pipeline as required gates in CLAUDE.md."
+    },
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "handlebars — JavaScript injection via AST type confusion (CVSS 9.8)",
+      "file": "Source/Frontend/node_modules/handlebars",
+      "cvss": 9.8,
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "recommendation": "npm install handlebars@^4.7.10 (Frontend)"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "proxy-addr — IP spoofing / access control bypass (CVSS 9.1)",
+      "file": "Source/Backend/node_modules/proxy-addr",
+      "cvss": 9.1,
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "recommendation": "npm install proxy-addr@^2.0.8 (Backend + Orchestrator)"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "vitest — arbitrary file read + RCE on networked UI server (CVSS 9.8)",
+      "file": "Source/Frontend/node_modules/vitest",
+      "cvss": 9.8,
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "recommendation": "npm install vitest@^5.1.1 --save-dev (Frontend)"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "tinypool — prototype pollution RCE in worker pool (CVSS 9.8)",
+      "file": "Source/Frontend/node_modules/tinypool",
+      "cvss": 9.8,
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "recommendation": "Upgrade vitest to ^5.1.1 (tinypool upgraded transitively)"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P1",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "protobufjs — arbitrary code execution (CVSS 9.8)",
+      "file": "platform/orchestrator/node_modules/protobufjs",
+      "cvss": 9.8,
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "recommendation": "npm install protobufjs@^7.6.5 (Orchestrator)"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "architecture-violation",
+      "source": "quality-oracle",
+      "title": "Direct DB calls in teamDispatches route handler — service layer bypassed",
+      "file": "portal/Backend/src/routes/teamDispatches.ts",
+      "line": 37,
+      "status": "NEW",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "source": "quality-oracle",
+      "title": "FR-070+, FR-DUP-*, dependency FRs implemented without Specifications/ entries",
+      "file": "Specifications/dev-workflow-platform.md",
+      "status": "NEW",
+      "escalate_to": "TheFixer"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "body-parser — DoS via compressed body trailing bytes (CVSS 7.5)",
+      "file": "Source/Backend, platform/orchestrator",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install body-parser@^1.20.9"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "brace-expansion — 5 DoS vulnerabilities (CVSS up to 7.5)",
+      "file": "Source/Frontend (transitive)",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "Update npm / miniset to pull brace-expansion >=1.1.21"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "browserslist — unbounded memory growth + prototype pollution (CVSS 7.5)",
+      "file": "Source/Frontend (transitive)",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install browserslist@^4.28.7"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "form-data — CRLF injection / HTTP response splitting (CVSS 7.5)",
+      "file": "Source/Backend, platform/orchestrator",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "fix": "npm install form-data@^4.0.6"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "js-yaml — quadratic-complexity DoS via merge keys (CVSS 7.5)",
+      "file": "Source/Backend",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install js-yaml@^3.15.2"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "postcss — arbitrary file read + path traversal via sourceMappingURL (CVSS 7.5)",
+      "file": "Source/Frontend (transitive)",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install postcss@^8.5.23"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "nanoid — integer overflow + infinite loops (CVSS 7.4)",
+      "file": "Source/Frontend (transitive)",
+      "cvss": 7.4,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install nanoid@^3.3.18"
+    },
+    {
+      "id": "DEP-013",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "source-map-js — DoS via event loop blocking (CVSS 7.5)",
+      "file": "Source/Frontend (transitive)",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install source-map-js@^1.2.2"
+    },
+    {
+      "id": "DEP-014",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "ws — memory exhaustion DoS via tiny fragments (CVSS 7.5)",
+      "file": "Source/Frontend (transitive)",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install ws@^8.21.0"
+    },
+    {
+      "id": "DEP-015",
+      "severity": "P2",
+      "category": "cve",
+      "source": "dependency-auditor",
+      "title": "vite — path traversal + launch-editor command injection (CVSS 7.5)",
+      "file": "Source/Frontend/node_modules/vite",
+      "cvss": 7.5,
+      "status": "NEW",
+      "escalate_to": "TheGuardians",
+      "fix": "npm install vite@^8.3.8 --save-dev (major bump)"
+    },
+    {
+      "id": "DEP-OM-01",
+      "severity": "P2",
+      "category": "outdated-major",
+      "source": "dependency-auditor",
+      "title": "uuid — 5 major versions behind (9.0.1 → 14.0.3), has known CVE",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install uuid@^11.1.1 --save (Backend)"
+    },
+    {
+      "id": "DEP-OM-02",
+      "severity": "P2",
+      "category": "outdated-major",
+      "source": "dependency-auditor",
+      "title": "pino logger — 2 major versions behind (8.21.0 → 10.4.0)",
+      "file": "Source/Backend/package.json",
+      "status": "NEW",
+      "escalate_to": "TheFixer",
+      "fix": "npm install pino@^10.4.0 --save (Backend)"
+    }
+  ],
+  "p3_findings": [
+    {"id": "QO-004", "severity": "P3", "source": "quality-oracle", "title": "teamDispatches route has zero test coverage", "file": "portal/Backend/src/routes/teamDispatches.ts", "status": "NEW"},
+    {"id": "QO-005", "severity": "P3", "source": "quality-oracle", "title": "Duplicate test files for WorkItemDetailPage and WorkItemListPage", "file": "Source/Frontend/tests/", "status": "NEW"},
+    {"id": "QO-006", "severity": "P3", "source": "quality-oracle", "title": "FR-TMP-008 untraced in Dockerfile.worker", "file": "platform/Dockerfile.worker", "line": 3, "status": "NEW"},
+    {"id": "DEP-016", "severity": "P3", "source": "dependency-auditor", "title": "@babel/core arbitrary file read via sourceMappingURL (CVSS 3.2)", "status": "NEW"},
+    {"id": "DEP-017", "severity": "P3", "source": "dependency-auditor", "title": "baseline-browser-mapping process termination DoS", "status": "NEW"},
+    {"id": "DEP-018", "severity": "P3", "source": "dependency-auditor", "title": "@remix-run/router protocol-relative URL open redirect", "status": "NEW"},
+    {"id": "DEP-019", "severity": "P3", "source": "dependency-auditor", "title": "@vitest/mocker path traversal via redirect mock (CVSS 5.9)", "status": "NEW"},
+    {"id": "DEP-020", "severity": "P3", "source": "dependency-auditor", "title": "@vitest/mocker code injection via manual mock registration (CVSS 4.7)", "status": "NEW"},
+    {"id": "DEP-021", "severity": "P3", "source": "dependency-auditor", "title": "esbuild dev server CORS bypass (CVSS 5.3)", "status": "NEW"},
+    {"id": "DEP-022", "severity": "P3", "source": "dependency-auditor", "title": "react-router-dom open redirect leading to XSS (CVSS 6.9)", "status": "NEW"},
+    {"id": "DEP-023", "severity": "P3", "source": "dependency-auditor", "title": "react-router open redirect via backslash bypass", "status": "NEW"},
+    {"id": "DEP-024", "severity": "P3", "source": "dependency-auditor", "title": "react-router constructor injection in SSR hydration (CVSS 6.1)", "status": "NEW"},
+    {"id": "DEP-025", "severity": "P3", "source": "dependency-auditor", "title": "qs multiple DoS via malformed input (CVSS 5.3)", "status": "NEW"},
+    {"id": "DEP-026", "severity": "P3", "source": "dependency-auditor", "title": "uuid buffer bounds check missing in v3/v5/v6 (CVSS 7.5)", "status": "NEW"},
+    {"id": "DEP-027", "severity": "P3", "source": "dependency-auditor", "title": "@grpc/grpc-js malformed request server crash (CVSS 7.5)", "status": "NEW"},
+    {"id": "DEP-028", "severity": "P3", "source": "dependency-auditor", "title": "@grpc/grpc-js malformed compressed message crash (CVSS 7.5)", "status": "NEW"},
+    {"id": "DEP-029", "severity": "P3", "source": "dependency-auditor", "title": "@grpc/grpc-js certificate auth bypass in certain configs (CVSS 7.4)", "status": "NEW"},
+    {"id": "DEP-030", "severity": "P3", "source": "dependency-auditor", "title": "@protobufjs/utf8 overlong UTF-8 decoding (CVSS 5.3)", "status": "NEW"},
+    {"id": "DEP-031", "severity": "P3", "source": "dependency-auditor", "title": "protobufjs multiple DoS + code injection issues", "status": "NEW"},
+    {"id": "DEP-032", "severity": "P3", "source": "dependency-auditor", "title": "vite path traversal, fs.deny bypass, CORS bypass (additional CVEs)", "status": "NEW"},
+    {"id": "DEP-033", "severity": "P3", "source": "dependency-auditor", "title": "vite-node inherits vite vulnerabilities", "status": "NEW"},
+    {"id": "DEP-OM-03", "severity": "P3", "source": "dependency-auditor", "title": "express — 1 major version behind (4.18.2 → 5.3.0)", "status": "NEW"},
+    {"id": "DEP-OM-04", "severity": "P3", "source": "dependency-auditor", "title": "react — 1 major version behind (18.3.1 → 19.3.1)", "status": "NEW"},
+    {"id": "DEP-OM-05", "severity": "P3", "source": "dependency-auditor", "title": "react-dom — 1 major version behind (18.3.1 → 19.3.1)", "status": "NEW"},
+    {"id": "DEP-OM-06", "severity": "P3", "source": "dependency-auditor", "title": "react-router-dom — 1 major version behind (6.30.6 → 7.18.7)", "status": "NEW"}
+  ],
+  "p4_findings": [
+    {"id": "QO-007", "severity": "P4", "source": "quality-oracle", "title": "Invalid FR-0001 traceability ID in DependencyPicker tests", "file": "portal/Frontend/tests/DependencyPicker.test.tsx", "line": 1, "status": "NEW"},
+    {"id": "QO-008", "severity": "P4", "source": "quality-oracle", "title": "eslint-disable suppressing react-hooks/exhaustive-deps without explanation", "file": "Source/Frontend/src/hooks/useWorkItems.ts", "line": 63, "status": "NEW"}
+  ]
+}

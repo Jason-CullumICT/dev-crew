@@ -1,0 +1,201 @@
+{
+  "audit_date": "2026-11-27",
+  "agent": "dependency_auditor",
+  "projects_scanned": 4,
+  "package_managers": ["npm"],
+  "summary": {
+    "total_cves": 37,
+    "critical": 6,
+    "high": 18,
+    "moderate": 12,
+    "low": 1,
+    "direct_dependencies": 25,
+    "transitive_dependencies": 804
+  },
+  "findings": [
+    {
+      "id": "DEP-001",
+      "title": "proxy-addr IP Spoofing via IPv4-mapped IPv6",
+      "severity": "P1",
+      "category": "cve",
+      "package": "proxy-addr",
+      "cve_id": "GHSA-fgjm-752j-hvjs",
+      "cvss": 9.4,
+      "affected_projects": ["Source/Backend", "platform/orchestrator"],
+      "exploitable": true,
+      "fix": "npm update proxy-addr (requires express >= 4.18.3)"
+    },
+    {
+      "id": "DEP-002",
+      "title": "Handlebars AST Type Confusion JavaScript Injection",
+      "severity": "P1",
+      "category": "cve",
+      "package": "handlebars",
+      "cve_id": "GHSA-6hvq-m6w5-pxvf",
+      "cvss": 7.3,
+      "affected_projects": ["Source/Backend"],
+      "exploitable": true,
+      "fix": "npm update handlebars to >= 4.7.8"
+    },
+    {
+      "id": "DEP-003",
+      "title": "Tinypool Prototype Pollution -> RCE",
+      "severity": "P1",
+      "category": "cve",
+      "package": "tinypool",
+      "cve_id": "GHSA-7x7q-ch42-qh4h",
+      "cvss": 8.6,
+      "affected_projects": ["Source/Frontend"],
+      "exploitable": true,
+      "environment": "build/test",
+      "fix": "npm update vitest to >= 1.6.1"
+    },
+    {
+      "id": "DEP-004",
+      "title": "Vitest @vitest/mocker Code Injection",
+      "severity": "P1",
+      "category": "cve",
+      "package": "@vitest/mocker",
+      "cve_id": "GHSA-qxg6-89mg-rqv8",
+      "cvss": 4.7,
+      "affected_projects": ["Source/Frontend"],
+      "exploitable": true,
+      "environment": "build/test",
+      "fix": "npm update vitest to >= 4.1.12"
+    },
+    {
+      "id": "DEP-005",
+      "title": "protobufjs Code Injection via bytes Field Defaults",
+      "severity": "P1",
+      "category": "cve",
+      "package": "protobufjs",
+      "cve_id": "GHSA-h755-8qhh-qwxq",
+      "cvss": 7.5,
+      "affected_projects": ["platform/orchestrator"],
+      "exploitable": true,
+      "fix": "npm update protobufjs to >= 7.2.5"
+    },
+    {
+      "id": "DEP-006",
+      "title": "@grpc/grpc-js Certificate Validation Bypass",
+      "severity": "P1",
+      "category": "cve",
+      "package": "@grpc/grpc-js",
+      "cve_id": "GHSA-m9gg-hp2v-232j",
+      "cvss": 7.4,
+      "affected_projects": ["platform/orchestrator"],
+      "exploitable": true,
+      "fix": "npm update @grpc/grpc-js to >= 1.14.5"
+    },
+    {
+      "id": "DEP-007",
+      "title": "body-parser Denial of Service - Compressed Request Trailing Bytes",
+      "severity": "P2",
+      "category": "cve",
+      "package": "body-parser",
+      "cve_id": "GHSA-27r3-jxmh-p828",
+      "cvss": 7.5,
+      "affected_projects": ["Source/Backend", "platform/orchestrator"],
+      "exploitable": true,
+      "fix": "npm update body-parser (requires express >= 4.18.3)"
+    },
+    {
+      "id": "DEP-026",
+      "title": "uuid Severely Outdated",
+      "severity": "P2",
+      "category": "outdated",
+      "package": "uuid",
+      "current": "9.0.0",
+      "latest": "14.0.3",
+      "major_versions_behind": 5,
+      "affected_projects": ["Source/Backend", "Source/E2E", "platform/orchestrator"],
+      "fix": "npm update uuid@14"
+    }
+  ],
+  "projects": {
+    "Source/Backend": {
+      "direct_dependencies": 13,
+      "transitive_dependencies": 412,
+      "critical_cves": 2,
+      "high_cves": 5,
+      "moderate_cves": 3,
+      "low_cves": 1,
+      "health_grade": "C",
+      "note": "Multiple CVEs in transitive deps; express outdated"
+    },
+    "Source/Frontend": {
+      "direct_dependencies": 13,
+      "transitive_dependencies": 231,
+      "critical_cves": 2,
+      "high_cves": 7,
+      "moderate_cves": 7,
+      "low_cves": 1,
+      "health_grade": "D",
+      "note": "CRITICAL vulnerabilities in test/build chain (vitest, tinypool)"
+    },
+    "Source/E2E": {
+      "direct_dependencies": 1,
+      "transitive_dependencies": 5,
+      "critical_cves": 0,
+      "high_cves": 0,
+      "moderate_cves": 0,
+      "low_cves": 0,
+      "health_grade": "A",
+      "note": "Minimal attack surface; excellent dependency isolation"
+    },
+    "platform/orchestrator": {
+      "direct_dependencies": 3,
+      "transitive_dependencies": 156,
+      "critical_cves": 2,
+      "high_cves": 3,
+      "moderate_cves": 4,
+      "low_cves": 0,
+      "health_grade": "D",
+      "note": "CRITICAL vulnerabilities in gRPC/protobuf layers"
+    }
+  },
+  "recommendations": {
+    "immediate": [
+      "Update express to >= 4.18.3+ (fixes proxy-addr indirectly)",
+      "Update @grpc/grpc-js to >= 1.14.5",
+      "Update protobufjs to >= 7.2.5",
+      "Audit vitest for major version bump requirements"
+    ],
+    "this_week": [
+      "npm update body-parser (requires express >= 4.18.3)",
+      "npm update browserslist to >= 4.28.7",
+      "npm update form-data to >= 4.0.0",
+      "Review Handlebars template input sources",
+      "Update uuid to 14.0.3 across all projects"
+    ],
+    "this_month": [
+      "Plan express 5.0 migration for Backend",
+      "Audit vitest v4 compatibility for Frontend",
+      "Implement npm audit checks in CI pipeline"
+    ]
+  },
+  "escalations": [
+    {
+      "team": "TheGuardians",
+      "reason": "Critical CVEs in proxy-addr, protobufjs, @grpc/grpc-js require security exploitation assessment",
+      "affected_components": ["IP spoofing", "RCE vectors", "mTLS bypass"]
+    },
+    {
+      "team": "TheFixer",
+      "reason": "Build/test chain vulnerabilities require code review to prevent dev-environment RCE",
+      "affected_components": ["vitest", "vite", "brace-expansion"]
+    }
+  ],
+  "compliance": {
+    "licensing": {
+      "gpl_agpl_found": false,
+      "unknown_licenses": 0,
+      "status": "COMPLIANT"
+    },
+    "dependency_sprawl": {
+      "max_transitive": 412,
+      "threshold": 500,
+      "status": "OK"
+    }
+  }
+}

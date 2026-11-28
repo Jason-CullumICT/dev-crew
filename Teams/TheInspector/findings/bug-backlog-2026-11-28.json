@@ -1,0 +1,327 @@
+{
+  "audit": {
+    "id": "audit-2026-11-28-D",
+    "date": "2026-11-28",
+    "grade": "D",
+    "branch": "audit/inspector-2026-11-28-c59693",
+    "project": "dev-crew Source App",
+    "specialists_run": ["quality-oracle", "dependency-auditor"],
+    "specialists_skipped": ["performance-profiler", "chaos-monkey"],
+    "skip_reason": "Services offline at audit time (backend: http://localhost:3001, frontend: http://localhost:5173)",
+    "summary": {
+      "p1_total": 5,
+      "p2_total": 13,
+      "p3_total": 121,
+      "p4_total": 19,
+      "total_findings": 158,
+      "escalations_to_guardians": 4,
+      "spec_coverage_canonical_pct": 0,
+      "spec_coverage_plan_pct": 100
+    }
+  },
+  "escalations": [
+    {
+      "id": "DEP-001",
+      "severity": "P1",
+      "category": "CVE / RCE",
+      "title": "Vitest Arbitrary File Read / RCE via tinypool prototype pollution",
+      "specialist": "dependency-auditor",
+      "package": "vitest@^2.0.5",
+      "file": "Source/Frontend/package.json",
+      "cve": ["GHSA-5xrq-8626-4rwp", "GHSA-5gmw-xhrv-c9v3", "GHSA-85c8-ppgw-ccpr"],
+      "cvss": 9.8,
+      "exploit_scenario": "When Vitest UI server is listening on network, any reachable host can read arbitrary files and trigger code execution via tinypool prototype pollution. CI environments exposing Vitest UI externally are compromised.",
+      "impact": "Full test infrastructure compromise → production code execution. Secrets in CI environment may be exfiltrated.",
+      "fix": "cd Source/Frontend && npm install vitest@5.1.2 --save-dev",
+      "escalation_target": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-002",
+      "severity": "P1",
+      "category": "CVE / SSTI / RCE",
+      "title": "Handlebars JavaScript Injection via AST Type Confusion",
+      "specialist": "dependency-auditor",
+      "package": "handlebars@<=4.7.9",
+      "files": ["Source/Backend", "Source/Frontend", "portal/Backend"],
+      "cve": ["GHSA-2w6w-674q-4c4q", "GHSA-xjpj-3mr7-gcpf", "GHSA-8r5x-fm3f-whwj", "GHSA-p8wg-vrv2-v86f"],
+      "cvss": 9.8,
+      "exploit_scenario": "Attacker supplies a crafted Handlebars template via AST Type Confusion. If any user input flows into Handlebars template compilation, full RCE is achievable.",
+      "impact": "Server-side template injection → arbitrary code execution on backend hosts.",
+      "fix": "npm audit fix in each affected project (updates handlebars to >=4.7.10)",
+      "escalation_target": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-003",
+      "severity": "P1",
+      "category": "CVE / Access Control Bypass",
+      "title": "Proxy-addr IPv4-mapped IPv6 IP Spoofing via Express",
+      "specialist": "dependency-auditor",
+      "package": "proxy-addr@<2.0.8",
+      "files": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "cve": ["GHSA-jqcg-44mw-7w3h"],
+      "cvss": 9.1,
+      "exploit_scenario": "Attacker sends requests with crafted IPv4-mapped IPv6 addresses that bypass trust subnet checks. IP-based access control, allowlists, rate limiting, and audit logs can be spoofed to appear as trusted internal addresses.",
+      "impact": "Bypass of network-layer access controls on all Express-based services.",
+      "fix": "npm audit fix in each project (updates express → proxy-addr >=2.0.8)",
+      "escalation_target": "TheGuardians",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-004",
+      "severity": "P1",
+      "category": "CVE / RCE",
+      "title": "Protobufjs Arbitrary Code Execution via gRPC in platform/orchestrator",
+      "specialist": "dependency-auditor",
+      "package": "protobufjs@<=7.5.5",
+      "file": "platform/orchestrator",
+      "cve": ["GHSA-xq3m-2v4x-88gg"],
+      "cvss": 9.8,
+      "exploit_scenario": "Attacker sends a crafted protobuf message to the gRPC-exposed orchestrator. Prototype pollution gadgets trigger arbitrary code execution. Also exploitable for DoS via recursive message payloads.",
+      "impact": "Full RCE on the orchestrator host. Attacker could hijack or corrupt all pipeline execution.",
+      "fix": "cd platform/orchestrator && npm audit fix",
+      "escalation_target": "TheGuardians",
+      "status": "NEW"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "QO-001",
+      "severity": "P1",
+      "category": "spec-drift",
+      "title": "Canonical spec describes a completely different product — 0 of 69 FRs covered",
+      "specialist": "quality-oracle",
+      "file": "Specifications/dev-workflow-platform.md",
+      "exploit_scenario": "Any engineer using the canonical spec to design features, write tests, or audit compliance will produce work for a system that does not exist. All 69 FR traceability IDs are dead references.",
+      "impact": "All spec-driven quality gates are meaningless. Teams that read the spec before coding will implement wrong features. Audits citing spec compliance are invalid.",
+      "recommendation": "Create Specifications/work-item-workflow.md describing the actual Work Item system. Extend tools/traceability-enforcer.py to scan Specifications/ alongside Plans/.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "QO-002",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Traceability enforcer is a false compliance gate — never scans Specifications/",
+      "specialist": "quality-oracle",
+      "file": "tools/traceability-enforcer.py",
+      "recommendation": "Extend enforcer to scan Specifications/ directory and validate FR-XXX IDs against canonical specs.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-003",
+      "severity": "P2",
+      "category": "spec-drift",
+      "title": "Source references FR-WF-001..013 / FR-dependency-* IDs that exist only in plan files, not canonical Specifications/",
+      "specialist": "quality-oracle",
+      "file": "Source/**",
+      "recommendation": "After creating canonical work-item-workflow.md spec, update all FR IDs in source to match canonical spec IDs.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-004",
+      "severity": "P2",
+      "category": "untested",
+      "title": "GET /api/search not wired into app.ts — search.test.ts documents known failure",
+      "specialist": "quality-oracle",
+      "file": "Source/Backend/app.ts",
+      "recommendation": "Wire GET /api/search route into app.ts OR delete the endpoint and its test if not planned for implementation.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-005",
+      "severity": "P2",
+      "category": "untested",
+      "title": "E2E test layer is a placeholder — package.json exits 1, zero Playwright specs exist",
+      "specialist": "quality-oracle",
+      "file": "Source/E2E/package.json",
+      "recommendation": "Create Playwright spec files for core user journeys (create work item, state transition, dashboard view). Fix package.json test script.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "QO-006",
+      "severity": "P2",
+      "category": "arch-violation",
+      "title": "11 recently-modified frontend files have zero // Verifies: traceability comments",
+      "specialist": "quality-oracle",
+      "files": [
+        "Source/Frontend/src/App.tsx",
+        "Source/Frontend/src/components/Layout.tsx",
+        "Source/Frontend/src/components/PriorityBadge.tsx",
+        "Source/Frontend/src/components/StatusBadge.tsx",
+        "Source/Frontend/src/components/TypeBadge.tsx",
+        "Source/Frontend/src/hooks/useDashboard.ts",
+        "Source/Frontend/src/hooks/useWorkItems.ts",
+        "Source/Frontend/src/main.tsx",
+        "Source/Frontend/src/pages/DashboardPage.tsx",
+        "Source/Frontend/src/pages/DebugPortalPage.tsx",
+        "Source/Frontend/src/pages/WorkItemListPage.tsx"
+      ],
+      "recommendation": "Add // Verifies: FR-XXX traceability comments to all 11 files. Must reference canonical spec IDs once QO-001 is resolved.",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-005",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "body-parser invalid limit value → unbounded request body → memory exhaustion DoS",
+      "specialist": "dependency-auditor",
+      "package": "body-parser@<1.20.3",
+      "files": ["Source/Backend", "platform/orchestrator", "portal/Backend"],
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-006",
+      "severity": "P2",
+      "category": "CVE / Injection",
+      "title": "form-data CRLF injection via unescaped multipart field names",
+      "specialist": "dependency-auditor",
+      "package": "form-data@<4.0.1",
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-007",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "browserslist unbounded memory growth → OOM during builds",
+      "specialist": "dependency-auditor",
+      "package": "browserslist@<4.24.2",
+      "files": ["Source/Frontend", "portal/Frontend"],
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-008",
+      "severity": "P2",
+      "category": "CVE / Crypto",
+      "title": "nanoid non-secure RNG can loop indefinitely → weak ID generation",
+      "specialist": "dependency-auditor",
+      "package": "nanoid@<3.3.5",
+      "file": "Source/Frontend",
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-009",
+      "severity": "P2",
+      "category": "CVE / XSS",
+      "title": "postcss unescaped </style> tag in CSS output → XSS in generated CSS",
+      "specialist": "dependency-auditor",
+      "package": "postcss@<8.4.32",
+      "file": "Source/Frontend",
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-010",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "brace-expansion zero-step sequence → infinite loop → build system hang",
+      "specialist": "dependency-auditor",
+      "package": "brace-expansion@<1.1.12",
+      "file": "Source/Backend",
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-011",
+      "severity": "P2",
+      "category": "CVE / Availability",
+      "title": "gRPC malformed request causes server crash in @grpc/grpc-js <1.11.4",
+      "specialist": "dependency-auditor",
+      "package": "@grpc/grpc-js@<1.11.4",
+      "file": "platform/orchestrator",
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    },
+    {
+      "id": "DEP-012",
+      "severity": "P2",
+      "category": "CVE / DoS",
+      "title": "js-yaml repeated merge key aliases → quadratic parsing time → YAML DoS",
+      "specialist": "dependency-auditor",
+      "package": "js-yaml@<4.1.0",
+      "file": "Source/Backend",
+      "fix": "npm audit fix",
+      "route_to": "TheFixer",
+      "status": "NEW"
+    }
+  ],
+  "p3_p4_summary": {
+    "quality_oracle": [
+      { "id": "QO-007", "severity": "P3", "title": "7 frontend components/hooks with no test file", "route_to": "TheFixer" },
+      { "id": "QO-008", "severity": "P3", "title": "eslint-disable react-hooks/exhaustive-deps in DependencyPicker.tsx:82 and useWorkItems.ts:63", "route_to": "TheFixer" },
+      { "id": "QO-009", "severity": "P3", "title": "Hardcoded localhost:4200 fallback in DebugPortalPage.tsx:5", "route_to": "TheFixer" }
+    ],
+    "dependency_auditor": {
+      "p3_cve_count": 118,
+      "p4_cve_count": 19,
+      "note": "Full list in Teams/TheInspector/findings/audit-2026-11-28-dependency.md. Majority resolved by npm audit fix.",
+      "major_version_gaps": [
+        { "package": "pino", "current": "8.17.0", "latest": "10.4.0", "behind": "2 majors", "risk": "P3" },
+        { "package": "uuid", "current": "9.0.0", "latest": "14.0.3", "behind": "5 majors", "risk": "P3 — verify if intentional" },
+        { "package": "React", "current": "18.3.1", "latest": "19.3.1", "behind": "1 major", "risk": "P4" },
+        { "package": "React Router", "current": "6.26.0", "latest": "7.18.7", "behind": "1 major", "risk": "P4" },
+        { "package": "Express", "current": "4.18.2", "latest": "5.3.0", "behind": "1 major", "risk": "P4" }
+      ]
+    }
+  },
+  "cross_reference_map": [
+    {
+      "root_cause": "Outdated transitive npm dependencies",
+      "affected_findings": ["DEP-002", "DEP-003", "DEP-005", "DEP-006", "DEP-007", "DEP-008", "DEP-009", "DEP-010", "DEP-011", "DEP-012", "~118 P3 CVEs"],
+      "single_fix": "npm audit fix in all 6 projects",
+      "projected_resolution_count": 130
+    },
+    {
+      "root_cause": "Canonical specs not updated to match implementation",
+      "affected_findings": ["QO-001", "QO-002", "QO-003"],
+      "single_fix": "Create Specifications/work-item-workflow.md + extend traceability-enforcer.py to scan Specifications/",
+      "projected_resolution_count": 3
+    },
+    {
+      "root_cause": "Test infrastructure incomplete",
+      "affected_findings": ["QO-004", "QO-005", "QO-007"],
+      "single_fix": "Wire search route, create Playwright E2E specs, add unit tests for 7 components",
+      "projected_resolution_count": 3
+    },
+    {
+      "root_cause": "RCE-class dependency vulnerabilities (security-escalated)",
+      "affected_findings": ["DEP-001", "DEP-002", "DEP-003", "DEP-004"],
+      "single_fix": "TheGuardians security audit + vitest@5.1.2 + npm audit fix",
+      "projected_resolution_count": 4,
+      "escalation_target": "TheGuardians"
+    }
+  ],
+  "grading_rationale": {
+    "grade": "D",
+    "thresholds_applied": {
+      "A": { "max_p1": 0, "max_p2": 3, "min_spec_coverage": 80, "met": false },
+      "B": { "max_p1": 0, "max_p2": 8, "min_spec_coverage": 60, "met": false },
+      "C": { "max_p1": 2, "max_p2": 15, "min_spec_coverage": 40, "met": false, "reason": "5 P1 findings exceeds C threshold of 2" },
+      "D": { "max_p1": 999, "applied": true }
+    },
+    "disqualifiers": [
+      "5 P1 findings (exceeds C threshold of 2 P1)",
+      "0% canonical spec coverage (requires 40% for C)",
+      "4 security-class findings requiring TheGuardians escalation"
+    ]
+  }
+}
